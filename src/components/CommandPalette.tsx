@@ -9,7 +9,7 @@ interface Props {
   onSelectPerson: (id: string) => void;
   onNavigate: (v: ViewMode) => void;
   onAddPerson: () => void;
-  onImportExport: () => void;
+  onImportExport: (tab: 'export' | 'import') => void;
   onPrint: () => void;
   onShare: () => void;
   onPresent: () => void;
@@ -69,8 +69,9 @@ export default function CommandPalette({ tree, onClose, onSelectPerson, onNaviga
 
   const actions: CommandItem[] = useMemo(() => [
     { id: 'a-add', kind: 'action', label: 'Ajouter une personne', icon: '➕', searchText: 'ajouter personne nouveau membre add', run: () => { onClose(); onAddPerson(); } },
+    { id: 'a-import', kind: 'action', label: 'Importer des données', sublabel: 'JSON, GEDCOM', icon: '📥', searchText: 'importer import charger gedcom json fichier ouvrir', run: () => { onClose(); onImportExport('import'); } },
+    { id: 'a-export', kind: 'action', label: "Exporter l'arbre", sublabel: 'JSON, GEDCOM', icon: '📤', searchText: 'exporter export telecharger sauvegarde gedcom json', run: () => { onClose(); onImportExport('export'); } },
     { id: 'a-present', kind: 'action', label: 'Mode présentation', sublabel: 'Diaporama plein écran', icon: '🎬', searchText: 'presentation diaporama plein ecran slideshow', run: () => { onClose(); onPresent(); } },
-    { id: 'a-import', kind: 'action', label: 'Importer / Exporter', icon: '📁', searchText: 'import export gedcom json sauvegarde', run: () => { onClose(); onImportExport(); } },
     { id: 'a-print', kind: 'action', label: 'Imprimer', icon: '🖨', searchText: 'imprimer print pdf', run: () => { onClose(); onPrint(); } },
     { id: 'a-share', kind: 'action', label: 'Partager', icon: '🔗', searchText: 'partager share lien', run: () => { onClose(); onShare(); } },
     { id: 'a-tree', kind: 'action', label: "Changer d'arbre", icon: '🌲', searchText: 'changer arbre tree selecteur', run: () => { onClose(); onTreeSelector(); } },

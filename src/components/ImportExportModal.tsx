@@ -7,10 +7,11 @@ interface Props {
   tree: FamilyTree;
   onImport: (tree: FamilyTree) => void;
   onClose: () => void;
+  initialTab?: 'export' | 'import';
 }
 
-export default function ImportExportModal({ tree, onImport, onClose }: Props) {
-  const [tab, setTab] = useState<'export' | 'import'>('export');
+export default function ImportExportModal({ tree, onImport, onClose, initialTab = 'export' }: Props) {
+  const [tab, setTab] = useState<'export' | 'import'>(initialTab);
   const [importing, setImporting] = useState(false);
   const [importMsg, setImportMsg] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);

@@ -45,7 +45,7 @@ export default function SuiminiApp() {
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
   const [showAddPerson, setShowAddPerson] = useState(false);
   const [showTreeSelector, setShowTreeSelector] = useState(false);
-  const [showImportExport, setShowImportExport] = useState(false);
+  const [importExportTab, setImportExportTab] = useState<'export' | 'import' | null>(null);
   const [showPrint, setShowPrint] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
@@ -116,7 +116,7 @@ export default function SuiminiApp() {
         trees={store.trees}
         onShowTreeSelector={() => setShowTreeSelector(true)}
         onAddPerson={() => setShowAddPerson(true)}
-        onShowImportExport={() => setShowImportExport(true)}
+        onShowImportExport={() => setImportExportTab('export')}
         onPrint={() => setShowPrint(true)}
         onShare={() => setShowShare(true)}
         onPresent={() => setShowPresentation(true)}
@@ -197,7 +197,7 @@ export default function SuiminiApp() {
           onSelectPerson={handleSelectPerson}
           onNavigate={setView}
           onAddPerson={() => setShowAddPerson(true)}
-          onImportExport={() => setShowImportExport(true)}
+          onImportExport={(tab) => setImportExportTab(tab)}
           onPrint={() => setShowPrint(true)}
           onShare={() => setShowShare(true)}
           onPresent={() => setShowPresentation(true)}
@@ -245,11 +245,12 @@ export default function SuiminiApp() {
         />
       )}
 
-      {showImportExport && store.activeTree && (
+      {importExportTab && store.activeTree && (
         <ImportExportModal
           tree={store.activeTree}
+          initialTab={importExportTab}
           onImport={(t) => { store.importTree(t); showToast(`Arbre "${t.name}" importé ✅`); }}
-          onClose={() => setShowImportExport(false)}
+          onClose={() => setImportExportTab(null)}
         />
       )}
 
