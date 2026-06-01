@@ -42,7 +42,7 @@ const MapView = dynamic(() => import('./MapView'), {
 });
 
 export default function SuiminiApp() {
-  const { user, signOut, isDemo } = useAuth();
+  const { user, signOut, isDemo, exitDemo } = useAuth();
   const store = useFamilyStore(user ? { id: user.id, email: user.email } : null);
   const { dark, toggle: toggleDark, mode: themeMode, setMode: setThemeMode } = useDarkMode();
   const { themeId, setTheme, previewTheme, cancelPreview } = useTheme();
@@ -182,11 +182,12 @@ export default function SuiminiApp() {
         presenceCount={store.cloud ? presenceCount : 0}
         onSignIn={() => openAuth('login')}
         isDemo={isDemo}
+        onExitDemo={exitDemo}
         onSignOut={async () => { await signOut(); showToast('Déconnecté'); }}
       />
 
       <main className="app-main" style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', minWidth: 0 }}>
-        {isDemo && <DemoBanner onCreateAccount={() => openAuth('signup')} />}
+        {isDemo && <DemoBanner onCreateAccount={() => openAuth('signup')} onExit={exitDemo} />}
         {/* Mobile header */}
         <div style={{ display: 'none', padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', alignItems: 'center', gap: '12px' }} className="mobile-header">
           <button onClick={() => setSidebarOpen(true)} className="btn btn-ghost btn-sm">☰</button>

@@ -62,6 +62,7 @@ interface Props {
   presenceCount?: number;
   onSignIn?: () => void;
   onSignOut?: () => void;
+  onExitDemo?: () => void;
 }
 
 function SyncIndicator({ status }: { status: 'idle' | 'saved' | 'syncing' | 'offline' }) {
@@ -71,7 +72,7 @@ function SyncIndicator({ status }: { status: 'idle' | 'saved' | 'syncing' | 'off
   return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--text-light)' }}><Cloud size={12} /> Local</span>;
 }
 
-export default function Sidebar({ activeView, onViewChange, activeTree, trees, onShowTreeSelector, onAddPerson, onShowImportExport, onPrint, onShare, onPresent, birthdayAlertCount = 0, dark, onToggleDark, isOpen, onClose, userEmail, displayName, isDemo, cloud, syncStatus = 'idle', presenceCount = 0, onSignIn, onSignOut }: Props) {
+export default function Sidebar({ activeView, onViewChange, activeTree, trees, onShowTreeSelector, onAddPerson, onShowImportExport, onPrint, onShare, onPresent, birthdayAlertCount = 0, dark, onToggleDark, isOpen, onClose, userEmail, displayName, isDemo, cloud, syncStatus = 'idle', presenceCount = 0, onSignIn, onSignOut, onExitDemo }: Props) {
 
   return (
     <aside style={{ width: '224px', flexShrink: 0, background: 'var(--bg-card)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 50 }}
@@ -196,15 +197,20 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
             )}
           </>
         ) : isDemo ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '2px' }}>
-            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--accent-light)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Gamepad2 size={18} />
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '2px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--accent-light)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Gamepad2 size={18} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '13px', fontWeight: 700 }}>Compte démo</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Non sauvegardé</div>
+              </div>
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: '13px', fontWeight: 700 }}>Compte démo</div>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Non sauvegardé</div>
-            </div>
-          </div>
+            <button onClick={onExitDemo} className="btn btn-ghost btn-sm" style={{ width: '100%', marginTop: '6px', justifyContent: 'center' }}>
+              <LogOut size={14} /> Quitter la démo
+            </button>
+          </>
         ) : (
           <button onClick={onSignIn} className="btn btn-secondary btn-sm" style={{ width: '100%' }}>
             <LogIn size={14} /> Se connecter pour sauvegarder

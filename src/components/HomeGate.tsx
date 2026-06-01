@@ -17,10 +17,11 @@ function Splash() {
 
 /**
  * Single source of truth for `/`:
- *   demo flag OR active Supabase session → redirect to /app
- *   brand-new visitor                    → marketing landing
- * A splash is shown during the (max 1.5s) session check to avoid a landing flash
- * for signed-in users.
+ *   active Supabase session → redirect to /app (skip the landing flash)
+ *   everyone else (incl. demo visitors) → marketing landing
+ * Demo is a "try the app" state, not an identity: it must never hijack the
+ * landing, otherwise a visitor who tried the demo once can never reach it again.
+ * A splash is shown during the (max 1.5s) session check.
  */
 export default function HomeGate() {
   const router = useRouter();
@@ -28,8 +29,6 @@ export default function HomeGate() {
 
   useEffect(() => {
     let cancelled = false;
-    const isDemo = (() => { try { return localStorage.getItem('suimini_demo') === 'true'; } catch { return false; } })();
-    if (isDemo) { router.replace('/app'); return; }
     if (!supabase) { setView('landing'); return; }
 
     supabase.auth.getSession().then(({ data }) => {
