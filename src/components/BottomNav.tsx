@@ -39,14 +39,15 @@ export default function BottomNav({ activeView, onViewChange, onOpenMenu }: Prop
         .bottom-nav { display: none; }
         @media (max-width: 768px) {
           .bottom-nav {
-            display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 45;
+            display: flex; position: fixed; left: 0; bottom: 0; z-index: 45;
+            width: 100vw; max-width: 100vw; box-sizing: border-box;
             background: var(--bg-card); border-top: 1px solid var(--border);
-            padding: 4px 4px calc(4px + env(safe-area-inset-bottom, 0px));
+            padding: 4px 0 calc(4px + env(safe-area-inset-bottom, 0px));
             box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
           }
           .bn-item {
-            position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
-            background: none; border: none; cursor: pointer; padding: 8px 4px; min-height: 52px;
+            position: relative; flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px;
+            background: none; border: none; cursor: pointer; padding: 8px 2px; min-height: 52px;
             font-family: 'Lato', sans-serif; touch-action: manipulation; transition: color var(--t-fast);
           }
           .bn-label { font-size: 10px; font-weight: 600; }
