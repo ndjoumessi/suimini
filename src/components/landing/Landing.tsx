@@ -119,10 +119,10 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 export default function Landing() {
   const { startDemo } = useAuth();
   const [showAuth, setShowAuth] = useState(false);
-  const [authTab, setAuthTab] = useState<'login' | 'signup' | 'magic'>('signup');
+  const [authTab, setAuthTab] = useState<'login' | 'signup'>('signup');
   const [count, setCount] = useState<number | null>(null);
 
-  const openAuth = (tab: 'login' | 'signup' | 'magic') => { setAuthTab(tab); setShowAuth(true); };
+  const openAuth = (tab: 'login' | 'signup') => { setAuthTab(tab); setShowAuth(true); };
   const startSignup = () => openAuth('signup');
 
   // Family count (public RPC) with graceful fallback + count-up animation.

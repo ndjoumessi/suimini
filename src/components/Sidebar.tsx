@@ -1,11 +1,23 @@
 'use client';
-import { useState } from 'react';
 import { FamilyTree, ViewMode } from '@/types';
 import {
   TreePine, Users, Calendar, Map, Images, BookOpen, Cake, Search, BarChart2, Settings,
   Plus, Play, Share2, FolderOpen, Printer, Moon, Sun, ChevronDown, LogOut, LogIn, Cloud,
-  Check, CloudOff, UserCircle2, Gamepad2, UserPlus,
+  Check, CloudOff, Gamepad2,
 } from 'lucide-react';
+
+function initials(name?: string | null, email?: string | null): string {
+  const src = (name || email || '?').trim();
+  const parts = src.split(/[\s.@_-]+/).filter(Boolean);
+  return ((parts[0]?.[0] || '?') + (parts[1]?.[0] || '')).toUpperCase().slice(0, 2);
+}
+function avatarGradient(s: string): string {
+  const h = ((s.charCodeAt(0) || 65) * 47) % 360;
+  return `linear-gradient(135deg, hsl(${h}, 42%, 52%), hsl(${h}, 44%, 38%))`;
+}
+function truncate(s: string, n: number): string {
+  return s.length > n ? s.slice(0, n - 1) + '…' : s;
+}
 import type { LucideIcon } from 'lucide-react';
 
 interface NavItem { view: ViewMode; Icon: LucideIcon; label: string }
@@ -54,7 +66,6 @@ interface Props {
   presenceCount?: number;
   onSignIn?: () => void;
   onSignOut?: () => void;
-  onCreateAccount?: () => void;
 }
 
 function SyncIndicator({ status }: { status: 'idle' | 'saved' | 'syncing' | 'offline' }) {
@@ -64,8 +75,7 @@ function SyncIndicator({ status }: { status: 'idle' | 'saved' | 'syncing' | 'off
   return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--text-light)' }}><Cloud size={12} /> Local</span>;
 }
 
-export default function Sidebar({ activeView, onViewChange, activeTree, trees, onShowTreeSelector, onAddPerson, onShowImportExport, onPrint, onShare, onPresent, birthdayAlertCount = 0, dark, onToggleDark, isOpen, onClose, userEmail, displayName, isDemo, cloud, syncStatus = 'idle', presenceCount = 0, onSignIn, onSignOut, onCreateAccount }: Props) {
-  const [menuOpen, setMenuOpen] = useState(false);
+export default function Sidebar({ activeView, onViewChange, activeTree, trees, onShowTreeSelector, onAddPerson, onShowImportExport, onPrint, onShare, onPresent, birthdayAlertCount = 0, dark, onToggleDark, isOpen, onClose, userEmail, displayName, isDemo, cloud, syncStatus = 'idle', presenceCount = 0, onSignIn, onSignOut }: Props) {
 
   return (
     <aside style={{ width: '224px', flexShrink: 0, background: 'var(--bg-card)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 50 }}
@@ -172,36 +182,17 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
       <div style={{ padding: '8px 10px', borderTop: '1px solid var(--border)', position: 'relative' }}>
         {userEmail ? (
           <>
-            <button
-              onClick={() => setMenuOpen(o => !o)}
-              aria-haspopup="menu" aria-expanded={menuOpen} aria-label="Menu du compte"
-              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px', borderRadius: 'var(--radius)' }}
-              onMouseEnter={e => e.currentTarget.style.background = 'var(--interactive)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            >
-              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, flexShrink: 0 }}>
-                {(displayName || userEmail)[0].toUpperCase()}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '2px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: avatarGradient(displayName || userEmail), color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, flexShrink: 0 }}>
+                {initials(displayName, userEmail)}
               </div>
-              <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
-                <div style={{ fontSize: '12px', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text)' }}>{displayName || userEmail.split('@')[0]}</div>
-                <div style={{ fontSize: '10px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userEmail}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '13px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text)' }}>{truncate(displayName || userEmail.split('@')[0], 16)}</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{truncate(userEmail, 22)}</div>
               </div>
-              <ChevronDown size={14} style={{ color: 'var(--text-light)', transform: menuOpen ? 'rotate(180deg)' : 'none', transition: 'transform var(--t-fast)' }} />
-            </button>
-            <div style={{ fontSize: '10px', marginTop: '4px', textAlign: 'center' }}><SyncIndicator status={cloud ? syncStatus : 'idle'} /></div>
-            {menuOpen && (
-              <div role="menu" className="animate-scale-in" style={{ position: 'absolute', bottom: '100%', left: '10px', right: '10px', marginBottom: '4px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow-lg)', overflow: 'hidden', zIndex: 100 }}>
-                <div style={{ padding: '8px 12px', fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px', borderBottom: '1px solid var(--border)' }}>
-                  <UserCircle2 size={14} /> {userEmail}
-                </div>
-                <button role="menuitem" onClick={() => { setMenuOpen(false); onViewChange('settings'); onClose(); }} className="btn btn-ghost btn-sm" style={{ width: '100%', justifyContent: 'flex-start', borderRadius: 0 }}>
-                  <Settings size={14} /> Paramètres
-                </button>
-                <button role="menuitem" onClick={() => { setMenuOpen(false); onSignOut?.(); }} className="btn btn-ghost btn-sm" style={{ width: '100%', justifyContent: 'flex-start', borderRadius: 0, color: 'var(--danger)' }}>
-                  <LogOut size={14} /> Se déconnecter
-                </button>
-              </div>
-            )}
+              <button onClick={onSignOut} aria-label="Se déconnecter" title="Se déconnecter" className="sb-logout"><LogOut size={16} /></button>
+            </div>
+            <div style={{ fontSize: '10px', marginTop: '5px', textAlign: 'center' }}><SyncIndicator status={cloud ? syncStatus : 'idle'} /></div>
             {presenceCount > 1 && (
               <div style={{ fontSize: '10px', color: 'var(--accent)', textAlign: 'center', marginTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                 <Users size={11} /> {presenceCount} connectés sur cet arbre
@@ -209,20 +200,15 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
             )}
           </>
         ) : isDemo ? (
-          <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px', marginBottom: '6px' }}>
-              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--text-light)', color: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Gamepad2 size={15} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '12px', fontWeight: 700 }}>Compte démo</div>
-                <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Non sauvegardé</div>
-              </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '2px' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#f59e0b20', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Gamepad2 size={18} />
             </div>
-            <button onClick={onCreateAccount} className="btn btn-sm" style={{ width: '100%', background: 'var(--accent)', color: '#fff' }}>
-              <UserPlus size={14} /> Créer un compte
-            </button>
-          </>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: '13px', fontWeight: 700 }}>Compte démo</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Non sauvegardé</div>
+            </div>
+          </div>
         ) : (
           <button onClick={onSignIn} className="btn btn-secondary btn-sm" style={{ width: '100%' }}>
             <LogIn size={14} /> Se connecter pour sauvegarder
@@ -238,6 +224,8 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
       </div>
 
       <style>{`
+        .sb-logout { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex-shrink: 0; border: none; background: transparent; color: var(--text-muted); border-radius: 8px; cursor: pointer; transition: background var(--t-fast), color var(--t-fast); }
+        .sb-logout:hover { background: var(--bg-muted); color: var(--danger); }
         @media (max-width: 768px) {
           .sidebar { position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-100%); transition: transform 0.3s ease; }
           .sidebar.sidebar-open { transform: translateX(0); box-shadow: var(--shadow-lg); }

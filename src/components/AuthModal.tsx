@@ -1,31 +1,21 @@
 'use client';
 import { useState } from 'react';
-import { Mail, Lock, User, Eye, EyeOff, ArrowRight, Gamepad2, Check, X as XIcon, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, ArrowRight, Gamepad2, Check, X as XIcon, AlertCircle, ArrowLeft, Leaf } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useOverlay } from '@/hooks/useOverlay';
-import { passwordChecks, passwordScore, strengthLevel, PasswordChecks } from '@/lib/password';
+import { passwordChecks, strengthInfo } from '@/lib/password';
 
-type Tab = 'login' | 'signup' | 'magic';
+type Tab = 'login' | 'signup';
 interface Props {
   onClose: () => void;
   initialTab?: Tab;
 }
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-
-const inputBase: React.CSSProperties = {
-  width: '100%', minHeight: '44px', padding: '10px 12px 10px 38px',
-  border: '1px solid var(--border)', borderRadius: 'var(--radius)',
-  background: 'var(--bg-card)', color: 'var(--text)', fontSize: '14px',
-  fontFamily: 'Lato, sans-serif', outline: 'none', transition: 'border-color var(--t-fast), box-shadow var(--t-fast)',
-};
-const labelStyle: React.CSSProperties = {
-  display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)',
-  textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '5px',
-};
+const ACCENT = '#c4935a';
 
 export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
-  const { configured, signUp, signIn, signInWithMagicLink, resetPassword, startDemo } = useAuth();
+  const { signUp, signIn, resetPassword, startDemo } = useAuth();
   const overlayRef = useOverlay<HTMLDivElement>(onClose);
 
   const [tab, setTab] = useState<Tab>(initialTab);
@@ -43,15 +33,11 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
 
   const emailValid = EMAIL_RE.test(email.trim());
   const pwChecks = passwordChecks(password);
-  const pwScore = passwordScore(password);
+  const strength = strengthInfo(password);
   const pwValid = password.length >= 8;
   const confirmValid = confirm.length > 0 && confirm === password;
 
-  const reset = () => { setError(''); };
-
-  function switchTab(t: Tab) {
-    setTab(t); setForgot(false); setError(''); setSentMsg('');
-  }
+  function switchTab(t: Tab) { setTab(t); setForgot(false); setError(''); setSentMsg(''); }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -65,22 +51,13 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
       else setSentMsg('📧 Lien de réinitialisation envoyé. Consultez votre boîte mail.');
       return;
     }
-    if (tab === 'magic') {
-      if (!emailValid) { setError('Adresse e-mail invalide.'); return; }
-      setLoading(true);
-      const { error } = await signInWithMagicLink(email);
-      setLoading(false);
-      if (error) setError(error);
-      else setSentMsg('📧 Lien envoyé ! Vérifiez votre boîte mail et cliquez le lien pour vous connecter.');
-      return;
-    }
     if (tab === 'login') {
       if (!emailValid || !password) { setError('Veuillez renseigner email et mot de passe.'); return; }
       setLoading(true);
       const { error } = await signIn(email, password);
       setLoading(false);
       if (error) setError(error);
-      else onClose(); // success → app reacts via onAuthStateChange
+      else onClose();
       return;
     }
     // signup
@@ -96,168 +73,153 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
   }
 
   const canSubmit = forgot ? emailValid
-    : tab === 'magic' ? emailValid
-      : tab === 'login' ? (emailValid && password.length > 0)
-        : (displayName.trim().length > 0 && emailValid && pwValid && confirmValid);
+    : tab === 'login' ? (emailValid && password.length > 0)
+      : (displayName.trim().length > 0 && emailValid && pwValid && confirmValid);
 
-  const submitLabel = forgot ? 'Envoyer le lien'
-    : tab === 'magic' ? 'Recevoir le lien'
-      : tab === 'login' ? 'Se connecter'
-        : 'Créer mon compte';
+  const submitLabel = forgot ? 'Envoyer le lien' : tab === 'login' ? 'Se connecter' : 'Créer mon compte';
 
   return (
-    <div
-      onMouseDown={e => e.target === e.currentTarget && onClose()}
-      style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(26,22,18,0.55)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '8vh', overflowY: 'auto' }}
-    >
-      <div ref={overlayRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Authentification" className="animate-scale-in"
-        style={{ width: '92%', maxWidth: '440px', background: 'var(--bg-card)', borderRadius: '16px', boxShadow: 'var(--shadow-xl)', border: '1px solid var(--border)', overflow: 'hidden', marginBottom: '40px' }}
-      >
-        {/* Header */}
-        <div style={{ padding: '24px 24px 16px', textAlign: 'center', position: 'relative' }}>
-          <button onClick={onClose} aria-label="Fermer" className="icon-btn" style={{ position: 'absolute', top: '12px', right: '12px' }}><XIcon size={18} /></button>
-          <div className="serif" style={{ fontSize: '1.7rem', color: 'var(--accent)' }}>🌿 Suimini</div>
-          <p className="serif" style={{ margin: '6px 0 0', fontSize: '14px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+    <div className="auth-overlay" onMouseDown={e => e.target === e.currentTarget && onClose()}>
+      <div ref={overlayRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Authentification" className="auth-modal animate-scale-in">
+        <button onClick={onClose} aria-label="Fermer" className="auth-x"><XIcon size={18} /></button>
+
+        {/* Logo + tagline */}
+        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <Leaf size={24} style={{ color: ACCENT }} aria-hidden="true" />
+            <span className="serif" style={{ fontSize: '26px', color: ACCENT, fontWeight: 700 }}>Suimini</span>
+          </div>
+          <p className="serif" style={{ margin: 0, fontSize: '15px', fontStyle: 'italic', color: 'var(--text-muted)' }}>
             Votre histoire familiale vous attend
           </p>
         </div>
 
         {sentMsg ? (
-          <div style={{ padding: '8px 28px 32px', textAlign: 'center' }} className="animate-fade-in">
+          <div className="animate-fade-in" style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '44px', marginBottom: '10px' }}>{sentMsg.slice(0, 2)}</div>
-            <p style={{ fontSize: '14px', lineHeight: 1.6, color: 'var(--text)', margin: '0 0 16px' }}>{sentMsg.slice(2).trim()}</p>
-            <button onClick={onClose} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>Fermer</button>
+            <p style={{ fontSize: '14px', lineHeight: 1.6, margin: '0 0 16px' }}>{sentMsg.slice(2).trim()}</p>
+            <button onClick={onClose} className="auth-submit">Fermer</button>
           </div>
         ) : forgot ? (
-          <form onSubmit={handleSubmit} style={{ padding: '4px 24px 24px' }}>
+          <form onSubmit={handleSubmit}>
             <button type="button" onClick={() => { setForgot(false); setError(''); }} className="btn btn-ghost btn-sm" style={{ marginBottom: '8px' }}><ArrowLeft size={14} /> Retour</button>
             <h3 className="serif" style={{ margin: '0 0 4px', fontSize: '1.1rem' }}>Mot de passe oublié</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 16px' }}>Saisissez votre email pour recevoir un lien de réinitialisation.</p>
-            <EmailField email={email} setEmail={setEmail} emailValid={emailValid} />
-            {error && <InlineError msg={error} />}
-            <SubmitBtn loading={loading} disabled={!canSubmit} label="Envoyer le lien" />
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 18px' }}>Saisissez votre email pour recevoir un lien de réinitialisation.</p>
+            <Field label="Email" Icon={Mail} type="email" value={email} onChange={setEmail} placeholder="vous@exemple.com" autoComplete="email" autoFocus valid={email.length > 0 ? emailValid : undefined} ariaLabel="Email" />
+            {error && <ErrorMsg msg={error} />}
+            <SubmitBtn loading={loading} disabled={!canSubmit} label="Envoyer le lien" style={{ marginTop: '16px' }} />
           </form>
         ) : (
           <>
-            {/* Tabs */}
-            <div role="tablist" style={{ display: 'flex', margin: '0 24px', borderBottom: '2px solid var(--border)' }}>
-              {([['login', 'Connexion'], ['signup', 'Inscription'], ['magic', 'Magic Link']] as [Tab, string][]).map(([t, lbl]) => (
+            {/* Tabs (2, 50/50, animated underline) */}
+            <div role="tablist" className="auth-tabs">
+              {([['login', 'Connexion'], ['signup', 'Inscription']] as [Tab, string][]).map(([t, lbl]) => (
                 <button key={t} role="tab" aria-selected={tab === t} onClick={() => switchTab(t)}
-                  style={{ flex: 1, minHeight: '44px', padding: '10px 6px', border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'Lato, sans-serif', fontSize: '13px', fontWeight: tab === t ? 700 : 400, color: tab === t ? 'var(--accent)' : 'var(--text-muted)', borderBottom: `2px solid ${tab === t ? 'var(--accent)' : 'transparent'}`, marginBottom: '-2px', transition: 'color var(--t-fast)' }}>
+                  className="auth-tab" style={{ color: tab === t ? ACCENT : 'var(--text-muted)', fontWeight: tab === t ? 700 : 400 }}>
                   {lbl}
                 </button>
               ))}
+              <span className="auth-tab-underline" style={{ transform: tab === 'login' ? 'translateX(0)' : 'translateX(100%)' }} />
             </div>
 
-            <form onSubmit={handleSubmit} style={{ padding: '18px 24px 8px' }}>
+            <form onSubmit={handleSubmit}>
               {tab === 'signup' && (
-                <IconField label="Nom d’affichage" Icon={User} autoFocus value={displayName} onChange={setDisplayName} placeholder="Marie Dupont" autoComplete="name" valid={displayName.trim().length > 0} ariaLabel="Nom d’affichage" />
+                <Field label="Nom d’affichage" Icon={User} value={displayName} onChange={setDisplayName} placeholder="Marie Dupont" autoComplete="name" autoFocus valid={displayName.trim().length > 0 ? true : undefined} ariaLabel="Nom d’affichage" />
               )}
 
-              <EmailField email={email} setEmail={setEmail} emailValid={emailValid} autoFocus={tab !== 'signup'} />
+              <Field label="Email" Icon={Mail} type="email" value={email} onChange={setEmail} placeholder="vous@exemple.com" autoComplete="email" autoFocus={tab !== 'signup'} valid={email.length > 0 ? emailValid : undefined} ariaLabel="Email" />
 
-              {tab !== 'magic' && (
-                <div style={{ marginBottom: '14px' }}>
-                  <label style={labelStyle} htmlFor="pw">Mot de passe</label>
-                  <div style={{ position: 'relative' }}>
-                    <Lock size={16} style={{ position: 'absolute', left: '12px', top: '22px', color: 'var(--text-light)' }} />
-                    <input id="pw" type={showPw ? 'text' : 'password'} value={password} onChange={e => { setPassword(e.target.value); reset(); }}
-                      placeholder={tab === 'signup' ? 'Min. 8 caractères' : '••••••••'} autoComplete={tab === 'signup' ? 'new-password' : 'current-password'}
-                      aria-label="Mot de passe" style={{ ...inputBase, paddingRight: '40px' }}
-                      onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-light)'; }}
-                      onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }} />
-                    <button type="button" onClick={() => setShowPw(s => !s)} aria-label={showPw ? 'Masquer le mot de passe' : 'Afficher le mot de passe'} className="icon-btn" style={{ position: 'absolute', right: '4px', top: '12px', width: '32px', height: '32px' }}>
-                      {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </button>
-                  </div>
-
-                  {tab === 'signup' && password.length > 0 && <PasswordStrength score={pwScore} checks={pwChecks} />}
-
-                  {tab === 'login' && (
-                    <div style={{ textAlign: 'right', marginTop: '6px' }}>
-                      <button type="button" onClick={() => { setForgot(true); setError(''); }} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '12px', padding: '4px' }}>Mot de passe oublié ?</button>
-                    </div>
-                  )}
+              <div className="auth-field">
+                <label className="auth-label" htmlFor="pw">Mot de passe</label>
+                <div className="auth-input-wrap">
+                  <Lock size={18} className="auth-input-icon" />
+                  <input id="pw" type={showPw ? 'text' : 'password'} value={password} onChange={e => { setPassword(e.target.value); setError(''); }}
+                    placeholder={tab === 'signup' ? 'Min. 8 caractères' : '••••••••'} autoComplete={tab === 'signup' ? 'new-password' : 'current-password'}
+                    aria-label="Mot de passe" className="auth-input" style={{ paddingRight: '44px' }} />
+                  <button type="button" onClick={() => setShowPw(s => !s)} aria-label={showPw ? 'Masquer le mot de passe' : 'Afficher le mot de passe'} className="auth-eye">
+                    {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
                 </div>
-              )}
+
+                {tab === 'signup' && password.length > 0 && (
+                  <div style={{ marginTop: '8px' }} aria-live="polite">
+                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center', marginBottom: '6px' }}>
+                      <div style={{ display: 'flex', gap: '4px', flex: 1 }}>
+                        {[0, 1, 2, 3].map(i => (
+                          <div key={i} style={{ flex: 1, height: '3px', borderRadius: '2px', background: i < strength.filled ? strength.color : 'var(--bg-muted)', transition: 'background 300ms ease, width 300ms ease' }} />
+                        ))}
+                      </div>
+                      <span style={{ fontSize: '11px', fontWeight: 600, color: strength.color }}>{strength.label}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '12px', fontSize: '11px' }}>
+                      <Crit ok={pwChecks.length} label="8 cars" />
+                      <Crit ok={pwChecks.upper} label="Majuscule" />
+                      <Crit ok={pwChecks.digit} label="Chiffre" />
+                    </div>
+                  </div>
+                )}
+
+                {tab === 'login' && (
+                  <button type="button" onClick={() => { setForgot(true); setError(''); }} className="auth-forgot">Mot de passe oublié ?</button>
+                )}
+              </div>
 
               {tab === 'signup' && (
-                <div style={{ marginBottom: '14px' }}>
-                  <label style={labelStyle} htmlFor="cpw">Confirmer le mot de passe</label>
-                  <div style={{ position: 'relative' }}>
-                    <Lock size={16} style={{ position: 'absolute', left: '12px', top: '22px', color: 'var(--text-light)' }} />
-                    <input id="cpw" type={showConfirm ? 'text' : 'password'} value={confirm} onChange={e => { setConfirm(e.target.value); reset(); }}
-                      placeholder="••••••••" autoComplete="new-password" aria-label="Confirmer le mot de passe"
-                      aria-invalid={confirm.length > 0 && !confirmValid}
-                      style={{ ...inputBase, paddingRight: '64px', borderColor: confirm.length > 0 ? (confirmValid ? 'var(--success)' : 'var(--danger)') : 'var(--border)' }} />
-                    {confirm.length > 0 && (
-                      <span style={{ position: 'absolute', right: '40px', top: '14px', color: confirmValid ? 'var(--success)' : 'var(--danger)' }}>
-                        {confirmValid ? <Check size={16} /> : <XIcon size={16} />}
-                      </span>
-                    )}
-                    <button type="button" onClick={() => setShowConfirm(s => !s)} aria-label={showConfirm ? 'Masquer' : 'Afficher'} className="icon-btn" style={{ position: 'absolute', right: '4px', top: '12px', width: '32px', height: '32px' }}>
-                      {showConfirm ? <EyeOff size={15} /> : <Eye size={15} />}
+                <div className="auth-field">
+                  <label className="auth-label" htmlFor="cpw">Confirmer le mot de passe</label>
+                  <div className="auth-input-wrap">
+                    <Lock size={18} className="auth-input-icon" />
+                    <input id="cpw" type={showConfirm ? 'text' : 'password'} value={confirm} onChange={e => { setConfirm(e.target.value); setError(''); }}
+                      placeholder="••••••••" autoComplete="new-password" aria-label="Confirmer le mot de passe" aria-invalid={confirm.length > 0 && !confirmValid}
+                      className="auth-input" style={{ paddingRight: '70px', borderColor: confirm.length > 0 ? (confirmValid ? 'var(--success)' : '#dc2626') : undefined }} />
+                    {confirm.length > 0 && <span style={{ position: 'absolute', right: '44px', top: '50%', transform: 'translateY(-50%)', color: confirmValid ? 'var(--success)' : '#dc2626' }}>{confirmValid ? <Check size={16} /> : <XIcon size={16} />}</span>}
+                    <button type="button" onClick={() => setShowConfirm(s => !s)} aria-label={showConfirm ? 'Masquer' : 'Afficher'} className="auth-eye">
+                      {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
                 </div>
               )}
 
               {tab === 'login' && (
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} style={{ width: '16px', height: '16px' }} />
-                  Rester connecté
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '14px', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} style={{ width: '16px', height: '16px' }} /> Rester connecté
                 </label>
               )}
 
-              {tab === 'magic' && (
-                <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '0 0 12px', lineHeight: 1.5 }}>
-                  Connexion sans mot de passe : vous recevrez un lien magique par e-mail.
-                </p>
-              )}
+              {error && <ErrorMsg msg={error} />}
 
-              {error && <InlineError msg={error} />}
-
-              <SubmitBtn loading={loading} disabled={!canSubmit} label={submitLabel} />
+              <SubmitBtn loading={loading} disabled={!canSubmit} label={submitLabel} style={{ marginTop: '4px' }} />
             </form>
 
-            {!configured && (
-              <p style={{ fontSize: '11px', color: 'var(--warning)', textAlign: 'center', margin: '0 24px 8px' }}>
-                ⚠️ Supabase non configuré — seul le mode démo est disponible.
-              </p>
-            )}
-
-            {/* Demo */}
-            <div style={{ padding: '4px 24px 24px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '8px 0 14px' }}>
-                <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
-                <span style={{ fontSize: '11px', color: 'var(--text-light)' }}>ou</span>
-                <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
-              </div>
-              <button type="button" onClick={startDemo} className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
-                <Gamepad2 size={16} /> Essayer le compte démo
-              </button>
-            </div>
+            {/* Separator + demo */}
+            <div className="auth-or"><span /><small>ou</small><span /></div>
+            <button type="button" onClick={startDemo} className="auth-demo">
+              <Gamepad2 size={16} /> Essayer sans compte
+            </button>
           </>
         )}
+
+        <style>{AUTH_CSS}</style>
       </div>
     </div>
   );
 }
 
-/* ---------- sub-components ---------- */
-
-function EmailField({ email, setEmail, emailValid, autoFocus }: { email: string; setEmail: (v: string) => void; emailValid: boolean; autoFocus?: boolean }) {
+/* ---------- field ---------- */
+function Field({ label, Icon, value, onChange, placeholder, type = 'text', autoComplete, valid, autoFocus, ariaLabel }: {
+  label: string; Icon: typeof Mail; value: string; onChange: (v: string) => void; placeholder: string; type?: string; autoComplete?: string; valid?: boolean; autoFocus?: boolean; ariaLabel: string;
+}) {
   return (
-    <div style={{ marginBottom: '14px' }}>
-      <label style={labelStyle} htmlFor="email">Email</label>
-      <div style={{ position: 'relative' }}>
-        <Mail size={16} style={{ position: 'absolute', left: '12px', top: '14px', color: 'var(--text-light)' }} />
-        <input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="vous@exemple.com" autoComplete="email"
-          autoFocus={autoFocus} aria-label="Email" aria-invalid={email.length > 0 && !emailValid}
-          style={{ ...inputBase, paddingRight: '36px', borderColor: email.length > 0 ? (emailValid ? 'var(--success)' : 'var(--danger)') : 'var(--border)' }} />
-        {email.length > 0 && (
-          <span style={{ position: 'absolute', right: '12px', top: '14px', color: emailValid ? 'var(--success)' : 'var(--danger)' }}>
-            {emailValid ? <Check size={16} /> : <XIcon size={16} />}
+    <div className="auth-field">
+      <label className="auth-label">{label}</label>
+      <div className="auth-input-wrap">
+        <Icon size={18} className="auth-input-icon" />
+        <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} autoComplete={autoComplete}
+          autoFocus={autoFocus} aria-label={ariaLabel} aria-invalid={valid === false} className="auth-input"
+          style={{ paddingRight: '40px', borderColor: valid === false ? '#dc2626' : valid === true ? 'var(--success)' : undefined }} />
+        {valid !== undefined && value.length > 0 && (
+          <span style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: valid ? 'var(--success)' : '#dc2626' }}>
+            {valid ? <Check size={16} /> : <XIcon size={16} />}
           </span>
         )}
       </div>
@@ -265,64 +227,48 @@ function EmailField({ email, setEmail, emailValid, autoFocus }: { email: string;
   );
 }
 
-function IconField({ label, Icon, value, onChange, placeholder, autoComplete, valid, autoFocus, ariaLabel }: {
-  label: string; Icon: typeof User; value: string; onChange: (v: string) => void; placeholder: string; autoComplete?: string; valid?: boolean; autoFocus?: boolean; ariaLabel: string;
-}) {
-  return (
-    <div style={{ marginBottom: '14px' }}>
-      <label style={labelStyle}>{label}</label>
-      <div style={{ position: 'relative' }}>
-        <Icon size={16} style={{ position: 'absolute', left: '12px', top: '14px', color: 'var(--text-light)' }} />
-        <input type="text" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} autoComplete={autoComplete}
-          autoFocus={autoFocus} aria-label={ariaLabel} style={{ ...inputBase, paddingRight: '36px' }} />
-        {value.length > 0 && valid && <span style={{ position: 'absolute', right: '12px', top: '14px', color: 'var(--success)' }}><Check size={16} /></span>}
-      </div>
-    </div>
-  );
-}
-
-function PasswordStrength({ score, checks }: { score: number; checks: PasswordChecks }) {
-  const level = strengthLevel(score);
-  const colors = ['var(--danger)', 'var(--warning)', 'var(--success)'];
-  const labels = ['Faible', 'Moyen', 'Fort'];
-  return (
-    <div style={{ marginTop: '8px' }} aria-live="polite">
-      <div style={{ display: 'flex', gap: '4px', marginBottom: '6px' }}>
-        {[0, 1, 2].map(i => (
-          <div key={i} style={{ flex: 1, height: '4px', borderRadius: '99px', background: i <= level ? colors[level] : 'var(--bg-muted)', transition: 'background var(--t-base)' }} />
-        ))}
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-        <span style={{ fontSize: '11px', color: colors[level], fontWeight: 700 }}>{labels[level]}</span>
-      </div>
-      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', fontSize: '11px' }}>
-        <Crit ok={checks.length} label="8 caractères" />
-        <Crit ok={checks.upper} label="Majuscule" />
-        <Crit ok={checks.digit} label="Chiffre" />
-      </div>
-    </div>
-  );
-}
 function Crit({ ok, label }: { ok: boolean; label: string }) {
-  return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', color: ok ? 'var(--success)' : 'var(--text-light)' }}>
-      {ok ? <Check size={12} /> : <XIcon size={12} />} {label}
-    </span>
-  );
+  return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', color: ok ? 'var(--success)' : 'var(--text-light)' }}>{ok ? <Check size={12} /> : <XIcon size={12} />} {label}</span>;
 }
 
-function InlineError({ msg }: { msg: string }) {
-  return (
-    <div role="alert" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--danger)', fontSize: '13px', marginBottom: '12px', background: 'rgba(156,59,59,0.08)', padding: '8px 10px', borderRadius: 'var(--radius)' }}>
-      <AlertCircle size={15} style={{ flexShrink: 0 }} /> {msg}
-    </div>
-  );
+function ErrorMsg({ msg }: { msg: string }) {
+  return <div role="alert" className="auth-error animate-fade-in"><AlertCircle size={14} style={{ flexShrink: 0 }} /> {msg}</div>;
 }
 
-function SubmitBtn({ loading, disabled, label }: { loading: boolean; disabled: boolean; label: string }) {
+function SubmitBtn({ loading, disabled, label, style }: { loading: boolean; disabled: boolean; label: string; style?: React.CSSProperties }) {
   return (
-    <button type="submit" disabled={disabled || loading} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', minHeight: '44px' }}>
-      {loading ? <><span className="spinner" /> {label === 'Se connecter' ? 'Connexion en cours…' : 'Veuillez patienter…'}</> : <>{label} <ArrowRight size={16} /></>}
+    <button type="submit" disabled={disabled || loading} className="auth-submit" style={style}>
+      {loading ? <><span className="spinner" style={{ borderColor: 'rgba(255,255,255,0.6)', borderRightColor: 'transparent' }} /> {label === 'Se connecter' ? 'Connexion en cours…' : '…'}</> : <>{label} <ArrowRight size={18} /></>}
     </button>
   );
 }
+
+const AUTH_CSS = `
+.auth-overlay { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.55); backdrop-filter: blur(8px); display: flex; align-items: flex-start; justify-content: center; padding-top: 7vh; overflow-y: auto; }
+.auth-modal { position: relative; width: 92%; max-width: 420px; background: var(--bg-card); border-radius: 20px; box-shadow: 0 24px 64px rgba(0,0,0,0.18); border: 1px solid var(--border); padding: 32px; margin-bottom: 40px; }
+.auth-x { position: absolute; top: 14px; right: 14px; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: none; background: transparent; color: var(--text-muted); border-radius: 8px; cursor: pointer; transition: background 200ms ease, color 200ms ease; }
+.auth-x:hover { background: var(--bg-muted); color: var(--text); }
+.auth-tabs { position: relative; display: flex; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+.auth-tab { flex: 1; min-height: 44px; padding: 12px 8px; border: none; background: none; cursor: pointer; font-family: 'Lato', sans-serif; font-size: 14px; transition: color 200ms ease; }
+.auth-tab-underline { position: absolute; bottom: -1px; left: 0; width: 50%; height: 2px; background: ${ACCENT}; transition: transform 200ms ease; }
+.auth-field { margin-bottom: 16px; }
+.auth-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.auth-input-wrap { position: relative; }
+.auth-input-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-light); pointer-events: none; }
+.auth-input { width: 100%; height: 52px; border: 1.5px solid var(--border); border-radius: 10px; padding: 0 16px 0 44px; font-size: 15px; font-family: 'Lato', sans-serif; background: var(--bg-card); color: var(--text); outline: none; transition: border-color 200ms ease, box-shadow 200ms ease; }
+.auth-input:focus { border-color: ${ACCENT}; box-shadow: 0 0 0 3px rgba(196,147,90,0.15); }
+.auth-eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: none; background: transparent; color: var(--text-muted); border-radius: 8px; cursor: pointer; }
+.auth-eye:hover { background: var(--bg-muted); color: var(--text); }
+.auth-forgot { display: block; margin: 8px 0 0 auto; background: none; border: none; color: ${ACCENT}; font-size: 12px; cursor: pointer; text-align: right; padding: 2px; }
+.auth-forgot:hover { text-decoration: underline; }
+.auth-error { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #dc2626; margin: 6px 0 12px; }
+.auth-submit { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 52px; background: linear-gradient(135deg, #c4935a, #a87340); border: none; border-radius: 12px; color: #fff; font-weight: 700; font-size: 15px; font-family: 'Lato', sans-serif; cursor: pointer; transition: transform 200ms ease, box-shadow 200ms ease, opacity 200ms ease; }
+.auth-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(196,147,90,0.35); }
+.auth-submit:active:not(:disabled) { transform: translateY(0) scale(0.99); }
+.auth-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+.auth-or { display: flex; align-items: center; gap: 12px; margin: 20px 0; }
+.auth-or span { flex: 1; height: 1px; background: var(--border); }
+.auth-or small { font-size: 12px; color: var(--text-light); }
+.auth-demo { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 48px; background: var(--bg-muted); border: 1.5px dashed var(--border); border-radius: 12px; color: var(--text-muted); font-size: 14px; font-family: 'Lato', sans-serif; cursor: pointer; transition: background 200ms ease, border-color 200ms ease, color 200ms ease; }
+.auth-demo:hover { background: var(--bg-card); border-color: ${ACCENT}; color: var(--text); }
+`;

@@ -20,3 +20,15 @@ export function passwordScore(pw: string): number {
 export function strengthLevel(score: number): 0 | 1 | 2 {
   return score <= 2 ? 0 : score <= 3 ? 1 : 2;
 }
+
+export interface StrengthInfo { filled: number; color: string; label: string }
+
+/** 4-segment strength meter: Faible (rouge) / Moyen (orange) / Bon (bleu) / Fort (vert). */
+export function strengthInfo(pw: string): StrengthInfo {
+  const s = passwordScore(pw);
+  if (s === 0) return { filled: 0, color: 'var(--border)', label: '' };
+  if (s <= 2) return { filled: 1, color: '#dc2626', label: 'Faible' };
+  if (s === 3) return { filled: 2, color: '#f59e0b', label: 'Moyen' };
+  if (s === 4) return { filled: 3, color: '#3b82f6', label: 'Bon' };
+  return { filled: 4, color: '#16a34a', label: 'Fort' };
+}

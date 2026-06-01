@@ -42,7 +42,7 @@ const MapView = dynamic(() => import('./MapView'), {
 });
 
 export default function SuiminiApp() {
-  const { user, signOut, isDemo, exitDemo } = useAuth();
+  const { user, signOut, isDemo } = useAuth();
   const store = useFamilyStore(user ? { id: user.id, email: user.email } : null);
   const { dark, toggle: toggleDark, mode: themeMode, setMode: setThemeMode } = useDarkMode();
   const { themeId, setTheme, previewTheme, cancelPreview } = useTheme();
@@ -58,8 +58,8 @@ export default function SuiminiApp() {
   const [showPalette, setShowPalette] = useState(false);
   const [showPresentation, setShowPresentation] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
-  const [authTab, setAuthTab] = useState<'login' | 'signup' | 'magic'>('login');
-  const openAuth = useCallback((tab: 'login' | 'signup' | 'magic' = 'login') => { setAuthTab(tab); setShowAuth(true); }, []);
+  const [authTab, setAuthTab] = useState<'login' | 'signup'>('login');
+  const openAuth = useCallback((tab: 'login' | 'signup' = 'login') => { setAuthTab(tab); setShowAuth(true); }, []);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [presenceCount, setPresenceCount] = useState(1);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
@@ -182,12 +182,11 @@ export default function SuiminiApp() {
         presenceCount={store.cloud ? presenceCount : 0}
         onSignIn={() => openAuth('login')}
         isDemo={isDemo}
-        onCreateAccount={() => openAuth('signup')}
         onSignOut={async () => { await signOut(); showToast('Déconnecté'); }}
       />
 
       <main className="app-main" style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', minWidth: 0 }}>
-        {isDemo && <DemoBanner onCreateAccount={() => openAuth('signup')} onExitDemo={exitDemo} />}
+        {isDemo && <DemoBanner onCreateAccount={() => openAuth('signup')} />}
         {/* Mobile header */}
         <div style={{ display: 'none', padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', alignItems: 'center', gap: '12px' }} className="mobile-header">
           <button onClick={() => setSidebarOpen(true)} className="btn btn-ghost btn-sm">☰</button>

@@ -1,34 +1,31 @@
 'use client';
 import { useState } from 'react';
-import { Gamepad2, UserPlus, LogOut, X } from 'lucide-react';
+import { Gamepad2, X } from 'lucide-react';
 
-interface Props { onCreateAccount: () => void; onExitDemo: () => void }
-
-export default function DemoBanner({ onCreateAccount, onExitDemo }: Props) {
+export default function DemoBanner({ onCreateAccount }: { onCreateAccount: () => void }) {
   const [hidden, setHidden] = useState(false);
   return (
     <div style={{ display: 'grid', gridTemplateRows: hidden ? '0fr' : '1fr', transition: 'grid-template-rows var(--t-slow) ease', flexShrink: 0 }}>
       <div style={{ overflow: 'hidden' }}>
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap',
-          padding: '8px 16px', fontSize: '13px',
-          background: 'rgba(185,119,42,0.14)', borderBottom: '1px solid var(--warning)', color: 'var(--text)',
-        }}>
-          <Gamepad2 size={16} style={{ color: 'var(--warning)', flexShrink: 0 }} aria-hidden="true" />
-          <span style={{ flex: 1, minWidth: '160px' }}>
-            <strong>Mode démo</strong> — vos données ne sont pas sauvegardées.
-          </span>
-          <button onClick={onCreateAccount} className="btn btn-sm" style={{ background: 'var(--accent)', color: '#fff' }}>
-            <UserPlus size={14} /> Créer un compte gratuit
-          </button>
-          <button onClick={onExitDemo} className="btn btn-ghost btn-sm" title="Quitter la démo">
-            <LogOut size={14} /> Quitter la démo
-          </button>
-          <button onClick={() => setHidden(true)} aria-label="Masquer la bannière" className="icon-btn" style={{ width: '30px', height: '30px' }}>
-            <X size={16} />
-          </button>
+        <div className="demo-banner">
+          <Gamepad2 size={16} style={{ color: '#d97706', flexShrink: 0 }} aria-hidden="true" />
+          <span className="demo-banner-text">Mode démo — données non sauvegardées</span>
+          <button onClick={onCreateAccount} className="demo-banner-cta">Créer un compte</button>
+          <button onClick={() => setHidden(true)} aria-label="Masquer la bannière" className="demo-banner-x"><X size={14} /></button>
         </div>
       </div>
+      <style>{`
+        .demo-banner { display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 16px; background: linear-gradient(90deg, #fef3c7, #fde68a); }
+        [data-theme="dark"] .demo-banner { background: #2a1f00; }
+        .demo-banner-text { font-size: 13px; font-weight: 500; color: #92400e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        [data-theme="dark"] .demo-banner-text { color: #fbbf24; }
+        .demo-banner-cta { margin-left: auto; flex-shrink: 0; height: 30px; padding: 0 14px; background: #c4935a; color: #fff; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; font-family: 'Lato', sans-serif; cursor: pointer; transition: background 200ms ease; }
+        .demo-banner-cta:hover { background: #a87340; }
+        .demo-banner-x { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; padding: 6px; border: none; background: transparent; color: #92400e; border-radius: 6px; cursor: pointer; transition: background 200ms ease; }
+        [data-theme="dark"] .demo-banner-x { color: #fbbf24; }
+        .demo-banner-x:hover { background: rgba(0,0,0,0.1); }
+        [data-theme="dark"] .demo-banner-x:hover { background: rgba(255,255,255,0.1); }
+      `}</style>
     </div>
   );
 }

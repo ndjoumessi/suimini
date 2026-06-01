@@ -104,16 +104,29 @@ h5, h6 { font-size: 0.9rem; line-height: 1.4; }
   letter-spacing: 0.6px; color: var(--text-muted);
 }
 
-::-webkit-scrollbar { width: 6px; height: 6px; }
+html { scroll-behavior: smooth; }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: var(--bg-muted); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-light); }
+
+::selection { background: rgba(196,147,90,0.25); color: inherit; }
+
+/* Avoid Chrome's blue autofill background */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 50px var(--bg-card) inset;
+  -webkit-text-fill-color: var(--text);
+  caret-color: var(--text);
+}
 
 /* ===== Focus visibility (keyboard only) ===== */
 :focus-visible {
-  outline: 2px solid var(--focus-ring);
+  outline: 2px solid #c4935a;
   outline-offset: 2px;
-  border-radius: 3px;
+  border-radius: 4px;
 }
 *:focus:not(:focus-visible) { outline: none; }
 
