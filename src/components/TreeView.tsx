@@ -412,7 +412,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
           {edges.map((edge, i) => (
             <line key={i}
               x1={edge.x1} y1={edge.y1} x2={edge.x2} y2={edge.y2}
-              stroke={edge.type === 'spouse' ? '#e090a8' : 'var(--border)'}
+              stroke={edge.type === 'spouse' ? 'var(--accent)' : 'var(--border)'}
               strokeWidth={edge.type === 'spouse' ? 2.5 : 1.5}
               strokeDasharray={edge.type === 'spouse' ? '7,4' : 'none'}
             />
@@ -421,8 +421,8 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
           {/* Couple hearts */}
           {hearts.map((h, i) => (
             <g key={`heart-${i}`} style={{ pointerEvents: 'none' }}>
-              <circle cx={h.x} cy={h.y} r={10} fill="var(--bg-card)" stroke="#e090a8" strokeWidth={1.5} />
-              <text x={h.x} y={h.y + 4} textAnchor="middle" fontSize={12} fill="#d6336c">♥</text>
+              <circle cx={h.x} cy={h.y} r={10} fill="var(--bg-card)" stroke="var(--accent)" strokeWidth={1.5} />
+              <text x={h.x} y={h.y + 4} textAnchor="middle" fontSize={12} fill="var(--accent)">♥</text>
             </g>
           ))}
 
@@ -441,10 +441,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                 onDoubleClick={() => { setRootId(p.id); }}
                 style={{ cursor: 'pointer' }}
               >
-                {/* Card shadow */}
-                <rect width={NODE_W} height={NODE_H} rx={10} ry={10}
-                  fill="rgba(0,0,0,0.06)" transform="translate(2,3)" />
-                {/* Card background */}
+                {/* Card background (flat at rest — no baked shadow; the generation-coloured border separates nodes) */}
                 <rect width={NODE_W} height={NODE_H} rx={10} ry={10}
                   fill={isSelected ? 'var(--accent-light)' : 'var(--bg-card)'}
                   stroke={isSelected ? 'var(--accent)' : isRoot ? '#c4a35a' : genCol}
@@ -544,11 +541,11 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                 <span>Parent → Enfant</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <svg width="32" height="10"><line x1="0" y1="5" x2="32" y2="5" stroke="#e090a8" strokeWidth="2.5" strokeDasharray="6,3" /></svg>
+                <svg width="32" height="10"><line x1="0" y1="5" x2="32" y2="5" stroke="var(--accent)" strokeWidth="2.5" strokeDasharray="6,3" /></svg>
                 <span>Conjoint(e)</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '32px', textAlign: 'center', color: '#d6336c' }}>♥</span>
+                <span style={{ width: '32px', textAlign: 'center', color: 'var(--accent)' }}>♥</span>
                 <span>Mariage (couple)</span>
               </div>
             </div>
@@ -617,7 +614,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                   />
                 ))}
                 <rect x={vx} y={vy} width={vw} height={vh}
-                  fill="rgba(220,40,40,0.12)" stroke="#dc2828" strokeWidth={1.5} rx={2} />
+                  fill="var(--accent)" fillOpacity={0.14} stroke="var(--accent)" strokeWidth={1.5} rx={2} />
               </svg>
               <div style={{ position: 'absolute', top: '2px', left: '6px', fontSize: '9px', color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', pointerEvents: 'none' }}>Minimap</div>
             </div>

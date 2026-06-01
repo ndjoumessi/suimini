@@ -11,10 +11,6 @@ function initials(name?: string | null, email?: string | null): string {
   const parts = src.split(/[\s.@_-]+/).filter(Boolean);
   return ((parts[0]?.[0] || '?') + (parts[1]?.[0] || '')).toUpperCase().slice(0, 2);
 }
-function avatarGradient(s: string): string {
-  const h = ((s.charCodeAt(0) || 65) * 47) % 360;
-  return `linear-gradient(135deg, hsl(${h}, 42%, 52%), hsl(${h}, 44%, 38%))`;
-}
 function truncate(s: string, n: number): string {
   return s.length > n ? s.slice(0, n - 1) + '…' : s;
 }
@@ -84,9 +80,11 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
       {/* Logo + dark toggle */}
       <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
-          <div className="serif" style={{ fontSize: '1.45rem', color: 'var(--accent)' }}>🌿 Suimini</div>
+          <div className="serif" style={{ fontSize: '1.45rem', color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '7px' }}>
+            <TreePine size={20} aria-hidden="true" /> Suimini
+          </div>
           {isDemo
-            ? <span className="badge" style={{ background: 'var(--warning)', color: '#fff', fontSize: '9px', marginTop: '2px' }}>Mode démo</span>
+            ? <span className="badge badge-accent" style={{ fontSize: '9px', marginTop: '2px' }}>Mode démo</span>
             : <div className="label" style={{ fontSize: '10px', letterSpacing: '1px' }}>Arbre Généalogique</div>}
         </div>
         <button onClick={onToggleDark} className="icon-btn" aria-label={dark ? 'Activer le mode clair' : 'Activer le mode sombre'} title={dark ? 'Mode clair' : 'Mode sombre'}>
@@ -138,8 +136,6 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
                   onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'var(--interactive)'; }}
                   onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}
                 >
-                  {/* Active indicator bar */}
-                  {active && <span style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', width: '3px', height: '60%', background: 'var(--accent)', borderRadius: '0 3px 3px 0' }} />}
                   <span style={{ width: '18px', display: 'inline-flex', justifyContent: 'center', position: 'relative' }}>
                     <item.Icon size={17} aria-hidden="true" />
                     {showBadge && <span className="birthday-pulse-dot" />}
@@ -183,7 +179,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         {userEmail ? (
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '2px' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: avatarGradient(displayName || userEmail), color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, flexShrink: 0 }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, flexShrink: 0 }}>
                 {initials(displayName, userEmail)}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -201,7 +197,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
           </>
         ) : isDemo ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '2px' }}>
-            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#f59e0b20', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--accent-light)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <Gamepad2 size={18} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>

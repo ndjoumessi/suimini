@@ -1,5 +1,6 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
+import { Cake, Flame, Heart, CalendarDays, User } from 'lucide-react';
 import { FamilyTree } from '@/types';
 import { getUpcomingAnniversaries } from '@/lib/treeUtils';
 import { getDisplayName } from '@/lib/treeUtils';
@@ -37,12 +38,18 @@ export default function BirthdaysView({ tree, onSelectPerson }: Props) {
     byMonth[month].push(a);
   });
 
-  const typeIcon = (type: string) => ({ birthday: '🎂', deathday: '🕯', wedding: '💒' }[type] || '📅');
+  const typeIcon = (type: string, size = 14): ReactNode => {
+    const props = { size, style: { flexShrink: 0 }, 'aria-hidden': true } as const;
+    if (type === 'birthday') return <Cake {...props} />;
+    if (type === 'deathday') return <Flame {...props} />;
+    if (type === 'wedding') return <Heart {...props} />;
+    return <CalendarDays {...props} />;
+  };
   const typeLabel = (type: string) => ({ birthday: 'Anniversaire', deathday: 'Commémoration', wedding: 'Noces' }[type] || '');
   const typeColor = (type: string) => ({
     birthday: 'var(--success)',
     deathday: 'var(--deceased)',
-    wedding: '#9c4f96',
+    wedding: 'var(--accent)',
   }[type] || 'var(--accent)');
 
   return (
@@ -50,8 +57,9 @@ export default function BirthdaysView({ tree, onSelectPerson }: Props) {
       {/* Header */}
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-          <h2 className="serif" style={{ margin: 0, fontSize: '1.1rem', flex: 1 }}>
-            🎂 Anniversaires & Commémorations
+          <h2 className="serif" style={{ margin: 0, fontSize: '1.1rem', flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Cake size={18} style={{ color: 'var(--accent)', flexShrink: 0 }} aria-hidden="true" />
+            Anniversaires &amp; Commémorations
           </h2>
           <select value={daysAhead} onChange={e => setDaysAhead(+e.target.value)} className="input" style={{ width: 'auto' }}>
             <option value={30}>30 jours</option>
@@ -66,14 +74,16 @@ export default function BirthdaysView({ tree, onSelectPerson }: Props) {
             <button
               key={f}
               onClick={() => setFilter(f)}
+              aria-pressed={filter === f}
               className="btn btn-sm"
               style={{
                 background: filter === f ? 'var(--accent)' : 'var(--bg-muted)',
                 color: filter === f ? 'white' : 'var(--text-muted)',
                 border: '1px solid var(--border)',
+                gap: '6px',
               }}
             >
-              {f === 'all' ? 'Tout' : typeIcon(f) + ' ' + { birthday: 'Anniversaires', deathday: 'Commémorations', wedding: 'Noces' }[f]}
+              {f === 'all' ? 'Tout' : <>{typeIcon(f)}{{ birthday: 'Anniversaires', deathday: 'Commémorations', wedding: 'Noces' }[f]}</>}
             </button>
           ))}
         </div>
@@ -81,9 +91,22 @@ export default function BirthdaysView({ tree, onSelectPerson }: Props) {
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
         {filtered.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-            <div style={{ fontSize: '48px', marginBottom: '12px' }}>🗓</div>
-            <p>Aucun événement dans les {daysAhead} prochains jours</p>
+          <div style={{ textAlign: 'center', padding: '48px 24px', maxWidth: '420px', margin: '0 auto' }}>
+            <CalendarDays size={44} strokeWidth={1.25} style={{ color: 'var(--text-light)', marginBottom: '12px' }} aria-hidden="true" />
+            <p style={{ fontWeight: 700, margin: '0 0 6px', color: 'var(--text)' }}>Rien à fêter pour l'instant</p>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 16px' }}>
+              {filter !== 'all'
+                ? `Aucune ${({ birthday: 'date d\'anniversaire', deathday: 'commémoration', wedding: 'noces' }[filter] || 'date')} dans les ${daysAhead} prochains jours.`
+                : `Aucun événement dans les ${daysAhead} prochains jours.`}
+            </p>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              {filter !== 'all' && (
+                <button className="btn btn-secondary btn-sm" onClick={() => setFilter('all')}>Tous les types</button>
+              )}
+              {daysAhead < 365 && (
+                <button className="btn btn-secondary btn-sm" onClick={() => setDaysAhead(365)}>Élargir à 1 an</button>
+              )}
+            </div>
           </div>
         )}
 
@@ -91,12 +114,11 @@ export default function BirthdaysView({ tree, onSelectPerson }: Props) {
         {today.length > 0 && (
           <div style={{ marginBottom: '28px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-              <div style={{ 
-                background: 'linear-gradient(135deg, #f0a500, #e07000)',
+              <div className="label" style={{
+                background: 'var(--accent)',
                 color: 'white', padding: '4px 14px', borderRadius: '100px',
-                fontWeight: '700', fontSize: '12px', letterSpacing: '1px', textTransform: 'uppercase'
               }}>
-                🌟 Aujourd'hui
+                Aujourd'hui
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -140,7 +162,7 @@ export default function BirthdaysView({ tree, onSelectPerson }: Props) {
 function AnniversaryCard({ a, onSelect, typeIcon, typeLabel, typeColor, highlight }: {
   a: ReturnType<typeof getUpcomingAnniversaries>[0];
   onSelect: (id: string) => void;
-  typeIcon: (t: string) => string;
+  typeIcon: (t: string, size?: number) => ReactNode;
   typeLabel: (t: string) => string;
   typeColor: (t: string) => string;
   highlight?: boolean;
@@ -153,12 +175,12 @@ function AnniversaryCard({ a, onSelect, typeIcon, typeLabel, typeColor, highligh
       onClick={() => onSelect(a.person.id)}
       style={{
         display: 'flex', alignItems: 'center', gap: '14px',
-        padding: '12px 14px', border: `1px solid ${highlight ? '#f0a500' : 'var(--border)'}`,
-        borderRadius: 'var(--radius)', background: highlight ? '#fffaf0' : 'var(--bg-card)',
-        cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s', width: '100%',
+        padding: '12px 14px', border: `1px solid ${highlight ? 'var(--accent)' : 'var(--border)'}`,
+        borderRadius: 'var(--radius)', background: highlight ? 'var(--accent-light)' : 'var(--bg-card)',
+        cursor: 'pointer', textAlign: 'left', transition: 'border-color var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out)', width: '100%',
       }}
       onMouseEnter={e => { e.currentTarget.style.borderColor = typeColor(a.type); e.currentTarget.style.boxShadow = 'var(--shadow)'; }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = highlight ? '#f0a500' : 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = highlight ? 'var(--accent)' : 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
     >
       {/* Avatar */}
       <div style={{
@@ -170,7 +192,7 @@ function AnniversaryCard({ a, onSelect, typeIcon, typeLabel, typeColor, highligh
       }}>
         {a.person.profilePhoto
           ? <img src={a.person.profilePhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          : a.person.gender === 'male' ? '👨' : a.person.gender === 'female' ? '👩' : '🧑'
+          : <User size={18} style={{ color: 'var(--text-light)' }} aria-hidden="true" />
         }
       </div>
 
@@ -183,7 +205,7 @@ function AnniversaryCard({ a, onSelect, typeIcon, typeLabel, typeColor, highligh
           )}
         </div>
         <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-          <span style={{ color: typeColor(a.type), fontWeight: '700' }}>{typeIcon(a.type)} {typeLabel(a.type)}</span>
+          <span style={{ color: typeColor(a.type), fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px', verticalAlign: 'middle' }}>{typeIcon(a.type)} {typeLabel(a.type)}</span>
           {' · '}{dayMonth}
           {a.age !== undefined && (
             <span style={{ marginLeft: '6px', color: 'var(--text-light)' }}>
@@ -196,10 +218,10 @@ function AnniversaryCard({ a, onSelect, typeIcon, typeLabel, typeColor, highligh
       {/* Days until */}
       <div style={{ textAlign: 'center', flexShrink: 0 }}>
         {a.daysUntil === 0 ? (
-          <div style={{ 
-            background: '#f0a500', color: 'white', 
-            borderRadius: '100px', padding: '4px 10px', 
-            fontSize: '11px', fontWeight: '700' 
+          <div style={{
+            background: 'var(--accent)', color: 'white',
+            borderRadius: '100px', padding: '4px 10px',
+            fontSize: '11px', fontWeight: '700'
           }}>Aujourd'hui !</div>
         ) : a.daysUntil === 1 ? (
           <div style={{ color: typeColor(a.type), fontWeight: '700', fontSize: '13px' }}>Demain</div>

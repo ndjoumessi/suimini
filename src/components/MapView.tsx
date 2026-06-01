@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
+import { MapPin } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -97,10 +98,13 @@ export default function MapView({ tree, onSelectPerson }: Props) {
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Toolbar */}
       <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-        <h2 className="serif" style={{ margin: 0, fontSize: '1.1rem', flex: 1, minWidth: '120px' }}>🗺 Carte des lieux</h2>
+        <h2 className="serif" style={{ margin: 0, fontSize: '1.1rem', flex: 1, minWidth: '120px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <MapPin size={18} style={{ color: 'var(--accent)', flexShrink: 0 }} aria-hidden="true" />
+          Carte des lieux
+        </h2>
         <div style={{ display: 'flex', gap: '4px' }}>
-          {([['all', 'Tous'], ['birth', '✦ Naissances'], ['death', '✝ Décès']] as [typeof filter, string][]).map(([f, label]) => (
-            <button key={f} onClick={() => setFilter(f)} className="btn btn-sm" style={{
+          {([['all', 'Tous'], ['birth', 'Naissances'], ['death', 'Décès']] as [typeof filter, string][]).map(([f, label]) => (
+            <button key={f} onClick={() => setFilter(f)} aria-pressed={filter === f} className="btn btn-sm" style={{
               background: filter === f ? 'var(--accent)' : 'var(--bg-muted)',
               color: filter === f ? '#fff' : 'var(--text-muted)',
               border: '1px solid var(--border)',
@@ -163,10 +167,10 @@ export default function MapView({ tree, onSelectPerson }: Props) {
               ))}
             </MapContainer>
           ) : (
-            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', color: 'var(--text-muted)' }}>
-              <div style={{ fontSize: '48px' }}>🗺</div>
-              <h3 style={{ margin: 0 }}>Aucun lieu à afficher</h3>
-              <p style={{ maxWidth: '360px', textAlign: 'center' }}>
+            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', color: 'var(--text-muted)', padding: '24px' }}>
+              <MapPin size={48} strokeWidth={1.25} style={{ color: 'var(--text-light)' }} aria-hidden="true" />
+              <h3 style={{ margin: 0, color: 'var(--text)' }}>Aucun lieu à afficher</h3>
+              <p style={{ maxWidth: '360px', textAlign: 'center', margin: 0 }}>
                 Renseignez une ville de naissance ou de décès pour les membres afin de les voir apparaître sur la carte.
               </p>
             </div>

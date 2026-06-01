@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
+import { BookOpen, Plus, Pencil, Trash2 } from 'lucide-react';
 import { FamilyTree, JournalEntry } from '@/types';
 import { getDisplayName, formatDate, safeHttpUrl } from '@/lib/treeUtils';
 
@@ -92,12 +93,15 @@ export default function JournalView({ tree, onSelectPerson, onAdd, onUpdate, onD
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Header */}
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-        <h2 className="serif" style={{ margin: 0, fontSize: '1.1rem', flex: 1, minWidth: '120px' }}>📖 Journal familial</h2>
+        <h2 className="serif" style={{ margin: 0, fontSize: '1.1rem', flex: 1, minWidth: '120px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <BookOpen size={18} style={{ color: 'var(--accent)', flexShrink: 0 }} aria-hidden="true" />
+          Journal familial
+        </h2>
         <select value={filterPersonId} onChange={e => setFilterPersonId(e.target.value)} className="input" style={{ width: 'auto' }}>
           <option value="">Toutes les personnes</option>
           {tree.persons.map(p => <option key={p.id} value={p.id}>{getDisplayName(p)}</option>)}
         </select>
-        <button onClick={startAdd} className="btn btn-primary btn-sm">＋ Nouvelle entrée</button>
+        <button onClick={startAdd} className="btn btn-primary btn-sm" style={{ gap: '6px' }}><Plus size={14} aria-hidden="true" /> Nouvelle entrée</button>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px', maxWidth: '760px', width: '100%', margin: '0 auto' }}>
@@ -109,11 +113,11 @@ export default function JournalView({ tree, onSelectPerson, onAdd, onUpdate, onD
         )}
 
         {entries.length === 0 && editingId !== 'new' ? (
-          <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--text-muted)' }}>
-            <div style={{ fontSize: '52px', marginBottom: '12px' }}>📖</div>
+          <div style={{ textAlign: 'center', padding: '50px 20px', maxWidth: '420px', margin: '0 auto' }}>
+            <BookOpen size={48} strokeWidth={1.25} style={{ color: 'var(--text-light)', marginBottom: '12px' }} aria-hidden="true" />
             <h3 style={{ margin: '0 0 6px' }}>Le journal est vide</h3>
-            <p>{filterPersonId ? 'Aucune entrée ne mentionne cette personne.' : 'Consignez les moments, anecdotes et souvenirs de la famille.'}</p>
-            {!filterPersonId && <button onClick={startAdd} className="btn btn-primary" style={{ marginTop: '12px' }}>＋ Première entrée</button>}
+            <p style={{ color: 'var(--text-muted)' }}>{filterPersonId ? 'Aucune entrée ne mentionne cette personne.' : 'Consignez les moments, anecdotes et souvenirs de la famille.'}</p>
+            {!filterPersonId && <button onClick={startAdd} className="btn btn-primary" style={{ marginTop: '12px', gap: '6px' }}><Plus size={16} aria-hidden="true" /> Première entrée</button>}
           </div>
         ) : (
           <div style={{ position: 'relative', paddingLeft: '20px' }}>
@@ -135,8 +139,8 @@ export default function JournalView({ tree, onSelectPerson, onAdd, onUpdate, onD
                         <h3 className="serif" style={{ margin: '2px 0 0', fontSize: '1.15rem' }}>{entry.title}</h3>
                       </div>
                       <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
-                        <button onClick={() => startEdit(entry)} className="btn btn-ghost btn-sm" style={{ fontSize: '12px' }}>✏️</button>
-                        <button onClick={() => setConfirmDelete(entry.id)} className="btn btn-ghost btn-sm" style={{ fontSize: '12px', color: 'var(--danger)' }}>🗑</button>
+                        <button onClick={() => startEdit(entry)} className="btn btn-ghost btn-icon btn-sm" aria-label="Modifier l'entrée" title="Modifier"><Pencil size={15} aria-hidden="true" /></button>
+                        <button onClick={() => setConfirmDelete(entry.id)} className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--danger)' }} aria-label="Supprimer l'entrée" title="Supprimer"><Trash2 size={15} aria-hidden="true" /></button>
                       </div>
                     </div>
 
@@ -163,8 +167,8 @@ export default function JournalView({ tree, onSelectPerson, onAdd, onUpdate, onD
                     )}
 
                     {confirmDelete === entry.id && (
-                      <div style={{ marginTop: '12px', padding: '10px', background: '#fdf2f2', border: '1px solid #f5c6c6', borderRadius: 'var(--radius)' }}>
-                        <p style={{ margin: '0 0 8px', fontSize: '13px', color: '#1a1612' }}>Supprimer cette entrée ?</p>
+                      <div style={{ marginTop: '12px', padding: '10px', background: 'var(--bg-muted)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
+                        <p style={{ margin: '0 0 8px', fontSize: '13px', color: 'var(--text)' }}>Supprimer cette entrée ?</p>
                         <div style={{ display: 'flex', gap: '6px' }}>
                           <button onClick={() => { onDelete(entry.id); setConfirmDelete(null); }} className="btn btn-danger btn-sm">Oui, supprimer</button>
                           <button onClick={() => setConfirmDelete(null)} className="btn btn-ghost btn-sm">Annuler</button>

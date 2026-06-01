@@ -2,7 +2,7 @@
 import { ColorThemeId } from '@/types';
 import { COLOR_THEMES } from '@/lib/themes';
 import { ThemeMode } from '@/hooks/useDarkMode';
-import { Sun, Moon, Monitor } from 'lucide-react';
+import { Sun, Moon, Monitor, Settings as SettingsIcon, Check } from 'lucide-react';
 
 interface Props {
   themeId: ColorThemeId;
@@ -24,7 +24,10 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '32px 24px' }}>
       <div style={{ maxWidth: '720px', margin: '0 auto' }} className="animate-fade-in">
-        <h2 className="serif" style={{ margin: '0 0 4px', fontSize: '1.6rem' }}>⚙️ Paramètres</h2>
+        <h2 className="serif" style={{ margin: '0 0 4px', fontSize: '1.6rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <SettingsIcon size={22} style={{ color: 'var(--accent)', flexShrink: 0 }} aria-hidden="true" />
+          Paramètres
+        </h2>
         <p style={{ color: 'var(--text-muted)', marginBottom: '28px' }}>
           Personnalisez l&apos;apparence de Suimini. Vos préférences sont enregistrées sur cet appareil.
         </p>
@@ -49,10 +52,10 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
                   style={{
                     textAlign: 'left', cursor: 'pointer', padding: '14px',
                     borderRadius: 'var(--radius-lg)',
-                    border: `2px solid ${active ? theme.accent : 'var(--border)'}`,
+                    border: '1px solid var(--border)',
                     background: 'var(--bg-card)',
-                    boxShadow: active ? 'var(--shadow)' : 'none',
-                    transition: 'all 0.15s ease',
+                    boxShadow: active ? `0 0 0 2px ${theme.accent}, var(--shadow)` : 'none',
+                    transition: 'box-shadow var(--t-fast) var(--ease-out)',
                     position: 'relative',
                   }}
                 >
@@ -60,7 +63,7 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
                     <span style={{ fontSize: '18px' }}>{theme.emoji}</span>
                     <span style={{ fontWeight: 700, fontSize: '14px' }}>{theme.name}</span>
                     {active && (
-                      <span style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: 700, color: theme.accent }}>✓ Actif</span>
+                      <span style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: 700, color: theme.accent, display: 'inline-flex', alignItems: 'center', gap: '3px' }}><Check size={12} aria-hidden="true" /> Actif</span>
                     )}
                   </div>
                   {/* Swatches */}
@@ -72,7 +75,7 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
                     ].map(s => (
                       <div key={s.l} style={{ flex: 1 }}>
                         <div style={{ height: '28px', borderRadius: '6px', background: s.c, marginBottom: '4px' }} />
-                        <div style={{ fontSize: '9px', color: 'var(--text-light)', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{s.l}</div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-light)', textAlign: 'center' }}>{s.l}</div>
                       </div>
                     ))}
                   </div>

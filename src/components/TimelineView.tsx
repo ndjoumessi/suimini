@@ -1,5 +1,6 @@
 'use client';
 import { useMemo } from 'react';
+import { CalendarDays, MapPin } from 'lucide-react';
 import { FamilyTree, EventType } from '@/types';
 import { getDisplayName, formatDate } from '@/lib/treeUtils';
 
@@ -13,27 +14,16 @@ interface TimelineEntry {
   place?: string;
 }
 
-const EVENT_ICONS: Record<string, string> = {
-  birth: '✦',
-  death: '✝',
-  marriage: '💒',
-  divorce: '⚡',
-  baptism: '✟',
-  graduation: '🎓',
-  military: '⚔',
-  immigration: '🌍',
-  other: '📌',
-};
-
+// Event type → a design-system token (stays on-brand and retints in dark mode).
 const EVENT_COLORS: Record<string, string> = {
   birth: 'var(--success)',
   death: 'var(--deceased)',
-  marriage: '#9c4f96',
+  marriage: 'var(--accent)',
   divorce: 'var(--danger)',
-  baptism: '#4a7cac',
-  graduation: '#c17c00',
-  military: '#4a5c3a',
-  immigration: '#2a7a8c',
+  baptism: 'var(--info)',
+  graduation: 'var(--warning)',
+  military: 'var(--text-muted)',
+  immigration: 'var(--info)',
   other: 'var(--accent)',
 };
 
@@ -81,7 +71,7 @@ export default function TimelineView({ tree, onSelectPerson }: Props) {
             type: event.type,
             personId: person.id,
             personName: name,
-            description: event.description || `${EVENT_ICONS[event.type] || '•'} ${event.type} de ${name}`,
+            description: event.description || `${event.type} de ${name}`,
             place: event.place?.city,
           });
         }
@@ -106,9 +96,11 @@ export default function TimelineView({ tree, onSelectPerson }: Props) {
 
   if (entries.length === 0) {
     return (
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '16px' }}>
-        <div style={{ fontSize: '40px' }}>📅</div>
-        <p style={{ color: 'var(--text-muted)' }}>Aucun événement à afficher</p>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '12px', padding: '24px', textAlign: 'center' }}>
+        <CalendarDays size={44} strokeWidth={1.25} style={{ color: 'var(--text-light)' }} aria-hidden="true" />
+        <p style={{ color: 'var(--text-muted)', margin: 0, maxWidth: '32ch' }}>
+          La chronologie se remplira dès que vos proches auront des dates de naissance, de décès ou d'autres événements.
+        </p>
       </div>
     );
   }
@@ -127,10 +119,7 @@ export default function TimelineView({ tree, onSelectPerson }: Props) {
             <div style={{ 
               display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px'
             }}>
-              <div style={{ 
-                fontSize: '13px', fontWeight: '700', color: 'var(--text-light)',
-                letterSpacing: '2px', textTransform: 'uppercase', minWidth: '60px'
-              }}>
+              <div className="label" style={{ fontSize: '13px', color: 'var(--text-light)', minWidth: '60px' }}>
                 {decade}s
               </div>
               <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
@@ -158,23 +147,20 @@ export default function TimelineView({ tree, onSelectPerson }: Props) {
                     onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-muted)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'none'}
                   >
-                    <span style={{ fontSize: '16px', flexShrink: 0 }}>
-                      {EVENT_ICONS[entry.type] || '📌'}
-                    </span>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)', marginBottom: '2px' }}>
                         {entry.description}
                       </div>
                       <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '12px' }}>
-                        <span>📅 {formatDate(entry.date)}</span>
-                        {entry.place && <span>📍 {entry.place}</span>}
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><CalendarDays size={11} aria-hidden="true" /> {formatDate(entry.date)}</span>
+                        {entry.place && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><MapPin size={11} aria-hidden="true" /> {entry.place}</span>}
                       </div>
                     </div>
-                    <span style={{ 
-                      fontSize: '11px', color: EVENT_COLORS[entry.type] || 'var(--accent)',
-                      fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px',
-                      background: `${EVENT_COLORS[entry.type]}20`,
-                      padding: '2px 6px', borderRadius: '100px', flexShrink: 0,
+                    <span style={{
+                      fontSize: '11px', color: 'var(--text-muted)',
+                      fontWeight: '700',
+                      background: 'var(--bg-muted)',
+                      padding: '2px 8px', borderRadius: '100px', flexShrink: 0,
                     }}>
                       {entry.year}
                     </span>

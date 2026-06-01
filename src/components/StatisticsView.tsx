@@ -7,17 +7,15 @@ interface Props {
   tree: FamilyTree;
 }
 
-function StatCard({ icon, label, value, sub, color }: { icon: string; label: string; value: string | number; sub?: string; color?: string }) {
+/** A restrained figure: large serif number + quiet caption, rendered inline (no tile). */
+function Figure({ label, value, sub, color }: { label: string; value: string | number; sub?: string; color?: string }) {
   return (
-    <div className="card" style={{ padding: '16px 20px', textAlign: 'center' }}>
-      <div style={{ fontSize: '28px', marginBottom: '6px' }}>{icon}</div>
-      <div style={{ fontSize: '28px', fontWeight: '700', color: color || 'var(--accent)', fontFamily: 'Playfair Display, serif' }}>
+    <div style={{ minWidth: '92px' }}>
+      <div style={{ fontSize: '1.6rem', fontWeight: 700, lineHeight: 1, color: color || 'var(--text)', fontFamily: 'Playfair Display, serif' }}>
         {value}
       </div>
-      <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-        {label}
-      </div>
-      {sub && <div style={{ fontSize: '11px', color: 'var(--text-light)' }}>{sub}</div>}
+      <div className="label" style={{ marginTop: '4px' }}>{label}</div>
+      {sub && <div style={{ fontSize: '11px', color: 'var(--text-light)', marginTop: '1px' }}>{sub}</div>}
     </div>
   );
 }
@@ -37,7 +35,7 @@ function BarChart({ data, maxValue, colorFn }: { data: { label: string; value: n
               background: item.color || colorFn?.(item.label) || 'var(--accent)',
               borderRadius: '100px',
               display: 'flex', alignItems: 'center',
-              transition: 'width 0.5s ease',
+              transition: 'width var(--t-base) var(--ease-out)',
               paddingLeft: '6px',
             }}>
               {item.value > 0 && (
@@ -119,20 +117,27 @@ export default function StatisticsView({ tree }: Props) {
       </div>
 
       <div style={{ padding: '20px', maxWidth: '1000px' }}>
-        {/* Overview cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px', marginBottom: '24px' }}>
-          <StatCard icon="👥" label="Personnes" value={stats.totalPersons} />
-          <StatCard icon="♂" label="Hommes" value={stats.totalMales} color="var(--male)" />
-          <StatCard icon="♀" label="Femmes" value={stats.totalFemales} color="var(--female)" />
-          <StatCard icon="💚" label="Vivants" value={stats.totalAlive} color="var(--success)" />
-          <StatCard icon="🕊" label="Décédés" value={stats.totalDeceased} color="var(--deceased)" />
-          <StatCard icon="🏛" label="Générations" value={stats.totalGenerations} />
-          <StatCard icon="💞" label="Relations" value={stats.totalRelationships} />
-          <StatCard icon="📸" label="Avec photo" value={stats.totalPhotos} />
-          <StatCard icon="📅" label="Événements" value={stats.totalEvents} />
-          {stats.averageLifespan && (
-            <StatCard icon="⏳" label="Durée de vie moy." value={`${stats.averageLifespan} ans`} color="var(--accent)" />
-          )}
+        {/* Overview — a narrative line, then a quiet row of secondary figures (no KPI-tile wall) */}
+        <div style={{ marginBottom: '28px' }}>
+          <p className="serif" style={{ margin: '0 0 18px', fontSize: '1.5rem', lineHeight: 1.35, maxWidth: '34ch', textWrap: 'balance' }}>
+            Votre famille compte{' '}
+            <span style={{ color: 'var(--accent)' }}>{stats.totalPersons}</span>
+            {stats.totalPersons > 1 ? ' personnes' : ' personne'}, sur{' '}
+            <span style={{ color: 'var(--accent)' }}>{stats.totalGenerations}</span>
+            {stats.totalGenerations > 1 ? ' générations' : ' génération'}.
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '28px 32px' }}>
+            <Figure label="Hommes" value={stats.totalMales} color="var(--male)" />
+            <Figure label="Femmes" value={stats.totalFemales} color="var(--female)" />
+            <Figure label="Vivants" value={stats.totalAlive} color="var(--success)" />
+            <Figure label="Défunts" value={stats.totalDeceased} color="var(--deceased)" />
+            <Figure label="Relations" value={stats.totalRelationships} />
+            <Figure label="Avec photo" value={stats.totalPhotos} />
+            <Figure label="Événements" value={stats.totalEvents} />
+            {stats.averageLifespan && (
+              <Figure label="Durée de vie moy." value={stats.averageLifespan} sub="ans" />
+            )}
+          </div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
@@ -179,20 +184,20 @@ export default function StatisticsView({ tree }: Props) {
           {/* Occupations */}
           <div className="card" style={{ padding: '16px' }}>
             <h3 className="serif" style={{ margin: '0 0 12px', fontSize: '1rem' }}>Professions</h3>
-            <BarChart data={occupationDist} maxValue={maxOcc} colorFn={() => '#6b8fa0'} />
+            <BarChart data={occupationDist} maxValue={maxOcc} colorFn={() => 'var(--text-muted)'} />
           </div>
 
           {/* Surnames */}
           <div className="card" style={{ padding: '16px' }}>
             <h3 className="serif" style={{ margin: '0 0 12px', fontSize: '1rem' }}>Noms de famille</h3>
-            <BarChart data={surnameDist} maxValue={maxSurname} colorFn={() => 'var(--male)'} />
+            <BarChart data={surnameDist} maxValue={maxSurname} colorFn={() => 'var(--text-muted)'} />
           </div>
         </div>
 
         {/* Countries */}
         <div className="card" style={{ padding: '16px' }}>
           <h3 className="serif" style={{ margin: '0 0 12px', fontSize: '1rem' }}>Origines géographiques (naissance)</h3>
-          <BarChart data={countryDist} maxValue={maxCountry} colorFn={() => 'var(--female)'} />
+          <BarChart data={countryDist} maxValue={maxCountry} colorFn={() => 'var(--text-muted)'} />
         </div>
 
         {/* Gender ratio visual */}
@@ -206,25 +211,25 @@ export default function StatisticsView({ tree }: Props) {
                   background: 'var(--male)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: 'white', fontSize: '12px', fontWeight: '700'
                 }}>
-                  {stats.totalMales > 0 && `♂ ${stats.totalMales}`}
+                  {stats.totalMales > 0 && stats.totalMales}
                 </div>
                 <div style={{ 
                   width: `${(stats.totalFemales / stats.totalPersons) * 100}%`, 
                   background: 'var(--female)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: 'white', fontSize: '12px', fontWeight: '700'
                 }}>
-                  {stats.totalFemales > 0 && `♀ ${stats.totalFemales}`}
+                  {stats.totalFemales > 0 && stats.totalFemales}
                 </div>
                 <div style={{ 
                   flex: 1, background: 'var(--bg-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '12px', color: 'var(--text-muted)'
                 }}>
-                  {stats.totalPersons - stats.totalMales - stats.totalFemales > 0 && `⚧ ${stats.totalPersons - stats.totalMales - stats.totalFemales}`}
+                  {stats.totalPersons - stats.totalMales - stats.totalFemales > 0 && (stats.totalPersons - stats.totalMales - stats.totalFemales)}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: 'var(--text-muted)' }}>
-                <span style={{ color: 'var(--male)' }}>♂ {Math.round((stats.totalMales / stats.totalPersons) * 100)}% hommes</span>
-                <span style={{ color: 'var(--female)' }}>♀ {Math.round((stats.totalFemales / stats.totalPersons) * 100)}% femmes</span>
+                <span style={{ color: 'var(--male)' }}>{Math.round((stats.totalMales / stats.totalPersons) * 100)}% hommes</span>
+                <span style={{ color: 'var(--female)' }}>{Math.round((stats.totalFemales / stats.totalPersons) * 100)}% femmes</span>
               </div>
             </div>
           )}

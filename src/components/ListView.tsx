@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { FamilyTree, SearchFilters } from '@/types';
 import { searchPersons, getAge, formatYear, getDisplayName } from '@/lib/treeUtils';
-import { UsersRound, Plus, ChevronDown } from 'lucide-react';
+import { UsersRound, Plus, ChevronDown, Filter, X, MapPin, User } from 'lucide-react';
 
 interface Props {
   tree: FamilyTree;
@@ -37,21 +37,21 @@ export default function ListView({ tree, onSelectPerson, onAddPerson }: Props) {
           <h2 className="serif" style={{ margin: 0, fontSize: '1.1rem', flex: 1 }}>
             Personnes — {tree.name}
           </h2>
-          <button onClick={() => setShowFilters(!showFilters)} className="btn btn-secondary btn-sm">
-            🔽 Filtres {Object.keys(filters).filter(k => filters[k as keyof SearchFilters] !== undefined).length > 0 && '●'}
+          <button onClick={() => setShowFilters(!showFilters)} className="btn btn-secondary btn-sm" style={{ gap: '6px' }} aria-expanded={showFilters}>
+            <Filter size={14} aria-hidden="true" /> Filtres {Object.keys(filters).filter(k => filters[k as keyof SearchFilters] !== undefined).length > 0 && '●'}
           </button>
           <select value={sortBy} onChange={e => setSortBy(e.target.value as typeof sortBy)} className="input" style={{ width: 'auto' }}>
             <option value="name">Trier : Nom</option>
             <option value="birth">Trier : Naissance</option>
             <option value="death">Trier : Décès</option>
           </select>
-          <button onClick={onAddPerson} className="btn btn-primary btn-sm">＋ Ajouter</button>
+          <button onClick={onAddPerson} className="btn btn-primary btn-sm" style={{ gap: '6px' }}><Plus size={14} aria-hidden="true" /> Ajouter</button>
         </div>
 
         <input
           value={filters.query || ''}
           onChange={e => setFilters(f => ({ ...f, query: e.target.value || undefined }))}
-          placeholder="🔍 Rechercher par nom, profession, biographie..."
+          placeholder="Rechercher par nom, profession, biographie…"
           className="input"
         />
 
@@ -96,7 +96,7 @@ export default function ListView({ tree, onSelectPerson, onAddPerson }: Props) {
               placeholder="Lieu de naissance..."
               className="input" style={{ width: '160px' }}
             />
-            <button onClick={() => setFilters({})} className="btn btn-ghost btn-sm">✕ Reset</button>
+            <button onClick={() => setFilters({})} className="btn btn-ghost btn-sm" style={{ gap: '6px' }}><X size={14} aria-hidden="true" /> Réinitialiser</button>
           </div>
         )}
       </div>
@@ -131,24 +131,23 @@ export default function ListView({ tree, onSelectPerson, onAddPerson }: Props) {
                   style={{
                     display: 'flex', alignItems: 'center', gap: '12px',
                     padding: '12px', border: '1px solid var(--border)',
-                    borderLeft: `4px solid ${person.gender === 'male' ? 'var(--male)' : person.gender === 'female' ? 'var(--female)' : 'var(--border)'}`,
                     borderRadius: 'var(--radius)', background: 'var(--bg-card)',
                     cursor: 'pointer', textAlign: 'left',
-                    transition: 'all 0.15s', opacity: person.isAlive ? 1 : 0.8,
+                    transition: 'border-color var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out), transform var(--t-fast) var(--ease-out)', opacity: person.isAlive ? 1 : 0.8,
                   }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = 'var(--shadow)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.borderLeftColor = person.gender === 'male' ? 'var(--male)' : person.gender === 'female' ? 'var(--female)' : 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = ''; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = ''; }}
                 >
                   {/* Avatar */}
-                  <div style={{ 
+                  <div style={{
                     width: '44px', height: '44px', borderRadius: '50%', flexShrink: 0,
-                    background: person.gender === 'male' ? '#deeaf5' : person.gender === 'female' ? '#f5dde8' : 'var(--bg-muted)',
+                    background: 'var(--bg-muted)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '20px', overflow: 'hidden'
+                    overflow: 'hidden'
                   }}>
                     {person.profilePhoto
                       ? <img src={person.profilePhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : person.gender === 'male' ? '👨' : person.gender === 'female' ? '👩' : '🧑'
+                      : <User size={20} style={{ color: 'var(--text-light)' }} aria-hidden="true" />
                     }
                   </div>
 
@@ -161,11 +160,11 @@ export default function ListView({ tree, onSelectPerson, onAddPerson }: Props) {
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '2px' }}>
                       {person.occupation || '—'}
                     </div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-light)', display: 'flex', gap: '8px' }}>
-                      {person.birthDate && <span>✦ {formatYear(person.birthDate)}</span>}
-                      {!person.isAlive && person.deathDate && <span>✝ {formatYear(person.deathDate)}</span>}
+                    <div style={{ fontSize: '11px', color: 'var(--text-light)', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      {person.birthDate && <span>{formatYear(person.birthDate)}</span>}
+                      {!person.isAlive && person.deathDate && <span>† {formatYear(person.deathDate)}</span>}
                       {age !== null && <span>{age} ans</span>}
-                      {person.birthPlace?.city && <span>📍 {person.birthPlace.city}</span>}
+                      {person.birthPlace?.city && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}><MapPin size={11} aria-hidden="true" /> {person.birthPlace.city}</span>}
                     </div>
                   </div>
 
