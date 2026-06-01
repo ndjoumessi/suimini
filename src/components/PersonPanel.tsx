@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
-import { Person, FamilyTree, Relationship, RelationType, FamilyEvent, EventType, Note } from '@/types';
-import { getParents, getChildren, getSpouses, getSiblings, getAge, formatDate, getDisplayName, generateId } from '@/lib/treeUtils';
+import { Person, FamilyTree, Relationship, RelationType, FamilyEvent, EventType, Note, Citation } from '@/types';
+import { getParents, getChildren, getSpouses, getSiblings, getAge, formatDate, getDisplayName, generateId, safeHttpUrl } from '@/lib/treeUtils';
 import PersonForm from './PersonForm';
 
 interface Props {
@@ -19,7 +19,7 @@ const EVENT_TYPES: EventType[] = ['birth','death','marriage','divorce','baptism'
 const EVENT_ICONS: Record<string, string> = { birth:'✦', death:'✝', marriage:'💒', divorce:'⚡', baptism:'✟', graduation:'🎓', military:'⚔', immigration:'🌍', other:'📌' };
 
 export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete, onSelectPerson, onAddRelationship }: Props) {
-  const [tab, setTab] = useState<'profile'|'family'|'events'|'notes'|'edit'>('profile');
+  const [tab, setTab] = useState<'profile'|'family'|'events'|'notes'|'sources'|'edit'>('profile');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showAddRel, setShowAddRel] = useState(false);
   const [newRelType, setNewRelType] = useState<RelationType>('spouse');
@@ -29,6 +29,8 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
   const [showAddNote, setShowAddNote] = useState(false);
   const [newNoteContent, setNewNoteContent] = useState('');
   const [editNoteId, setEditNoteId] = useState<string|null>(null);
+  const [showAddCitation, setShowAddCitation] = useState(false);
+  const [newCitation, setNewCitation] = useState<Partial<Citation>>({});
   // The panel is remounted per person (keyed by id in the parent), so transient UI resets naturally.
 
   const parents = getParents(person.id, tree.relationships, tree.persons);
@@ -70,6 +72,24 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
   }
   function removeNote(noteId: string) {
     onUpdate({ notes: (person.notes || []).filter(n => n.id !== noteId) });
+  }
+
+  function addCitation() {
+    if (!newCitation.title?.trim()) return;
+    const citations = [...(person.citations || []), {
+      id: generateId(),
+      title: newCitation.title.trim(),
+      author: newCitation.author?.trim() || undefined,
+      year: newCitation.year?.trim() || undefined,
+      // Only persist safe http(s) URLs (blocks javascript:/data: schemes).
+      url: safeHttpUrl(newCitation.url),
+    } as Citation];
+    onUpdate({ citations });
+    setNewCitation({});
+    setShowAddCitation(false);
+  }
+  function removeCitation(citationId: string) {
+    onUpdate({ citations: (person.citations || []).filter(c => c.id !== citationId) });
   }
 
   function PersonLink({ p }: { p: Person }) {
@@ -135,6 +155,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
           ['profile','👤'],['family','👨‍👩‍👧'],
           ['events',`📅${person.events?.length?` ${person.events.length}`:''}` ],
           ['notes',`📝${person.notes?.length?` ${person.notes.length}`:''}` ],
+          ['sources',`📚${person.citations?.length?` ${person.citations.length}`:''}` ],
           ['edit','✏️']
         ].map(([t,label]) => (
           <button key={t} onClick={() => setTab(t as typeof tab)} className={`tab ${tab===t?'active':''}`} style={{ padding:'8px 10px', whiteSpace:'nowrap', fontSize:'13px' }}>{label}</button>
@@ -311,6 +332,53 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                 <div style={{ display:'flex', gap:'6px' }}>
                   <button onClick={addNote} className="btn btn-primary btn-sm" disabled={!newNoteContent.trim()}>Ajouter</button>
                   <button onClick={()=>{setShowAddNote(false);setNewNoteContent('');}} className="btn btn-ghost btn-sm">Annuler</button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab==='sources' && (
+          <div className="animate-fade-in">
+            <div style={{ display:'flex', flexDirection:'column', gap:'10px', marginBottom:'12px' }}>
+              {(!person.citations||person.citations.length===0) ? (
+                <div style={{ textAlign:'center', padding:'20px', color:'var(--text-muted)' }}>Aucune source ni citation</div>
+              ) : (
+                person.citations.map(citation=>(
+                  <div key={citation.id} style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)', border:'1px solid var(--border)', borderLeft:'3px solid var(--accent)' }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:'8px' }}>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontWeight:'700', fontSize:'13px', lineHeight:1.4 }}>📚 {citation.title}</div>
+                        <div style={{ fontSize:'12px', color:'var(--text-muted)', marginTop:'2px' }}>
+                          {[citation.author, citation.year].filter(Boolean).join(' · ')}
+                        </div>
+                        {safeHttpUrl(citation.url) && (
+                          <a href={safeHttpUrl(citation.url)} target="_blank" rel="noopener noreferrer"
+                            style={{ fontSize:'12px', color:'var(--accent)', wordBreak:'break-all', display:'inline-block', marginTop:'4px' }}>
+                            🔗 {citation.url}
+                          </a>
+                        )}
+                      </div>
+                      <button onClick={()=>removeCitation(citation.id)} className="btn btn-ghost btn-sm" style={{ fontSize:'11px', color:'var(--danger)', flexShrink:0 }}>🗑</button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            {!showAddCitation ? (
+              <button onClick={()=>setShowAddCitation(true)} className="btn btn-secondary btn-sm">＋ Ajouter une source</button>
+            ) : (
+              <div style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)' }} className="animate-fade-in">
+                <h4 style={{ margin:'0 0 10px', fontSize:'13px' }}>Nouvelle source / citation</h4>
+                <input autoFocus value={newCitation.title||''} onChange={e=>setNewCitation(v=>({...v,title:e.target.value}))} className="input" placeholder="Titre (ex: Acte de naissance) *" style={{ marginBottom:'8px', width:'100%' }} />
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'8px' }}>
+                  <input value={newCitation.author||''} onChange={e=>setNewCitation(v=>({...v,author:e.target.value}))} className="input" placeholder="Auteur / dépôt" />
+                  <input value={newCitation.year||''} onChange={e=>setNewCitation(v=>({...v,year:e.target.value}))} className="input" placeholder="Année" />
+                </div>
+                <input value={newCitation.url||''} onChange={e=>setNewCitation(v=>({...v,url:e.target.value}))} className="input" placeholder="URL (https://…)" style={{ marginBottom:'8px', width:'100%' }} />
+                <div style={{ display:'flex', gap:'6px' }}>
+                  <button onClick={addCitation} className="btn btn-primary btn-sm" disabled={!newCitation.title?.trim()}>Ajouter</button>
+                  <button onClick={()=>{setShowAddCitation(false);setNewCitation({});}} className="btn btn-ghost btn-sm">Annuler</button>
                 </div>
               </div>
             )}

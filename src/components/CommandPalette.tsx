@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { FamilyTree, ViewMode, Person } from '@/types';
-import { getDisplayName, formatYear } from '@/lib/treeUtils';
+import { getDisplayName, formatYear, fuzzyMatch } from '@/lib/treeUtils';
 
 interface Props {
   tree: FamilyTree | null;
@@ -103,7 +103,8 @@ export default function CommandPalette({ tree, onClose, onSelectPerson, onNaviga
       groups.push({ title: 'Navigation', items: views });
       groups.push({ title: 'Membres', items: personItems.slice(0, 6) });
     } else {
-      const persons = personItems.filter(i => i.searchText.includes(q)).slice(0, 8);
+      // Fuzzy/phonetic match so typos & variants (Dupond, Dupon) still surface members.
+      const persons = personItems.filter(i => i.searchText.includes(q) || fuzzyMatch(i.searchText, query)).slice(0, 8);
       const acts = actions.filter(i => normalize(i.searchText).includes(q));
       const navs = views.filter(i => normalize(i.searchText).includes(q));
       if (persons.length) groups.push({ title: 'Membres', items: persons });

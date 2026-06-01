@@ -4,6 +4,97 @@ export function generateId(): string {
   return Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
 }
 
+// ===== Fuzzy / phonetic search =====
+
+export function normalizeText(s: string): string {
+  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+}
+
+/**
+ * Returns a safe http(s) URL or undefined. Blocks dangerous schemes (javascript:,
+ * data:, …) to prevent XSS when a user/imported URL is rendered in an href.
+ */
+export function safeHttpUrl(u?: string): string | undefined {
+  if (!u) return undefined;
+  const raw = u.trim();
+  if (!raw) return undefined;
+  // Prepend https:// when no scheme is present so "example.com" still works.
+  const candidate = /^[a-z][a-z0-9+.-]*:/i.test(raw) ? raw : `https://${raw}`;
+  try {
+    const parsed = new URL(candidate);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.toString() : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Levenshtein edit distance (number of insertions/deletions/substitutions). */
+export function levenshtein(a: string, b: string): number {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const curr = [i];
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      curr[j] = Math.min(curr[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost);
+    }
+    prev = curr;
+  }
+  return prev[b.length];
+}
+
+/** Soundex phonetic code (e.g. "Dupont" and "Dupond" → same code). */
+export function soundex(s: string): string {
+  const str = normalizeText(s).replace(/[^a-z]/g, '');
+  if (!str) return '';
+  const codes: Record<string, string> = {
+    b: '1', f: '1', p: '1', v: '1',
+    c: '2', g: '2', j: '2', k: '2', q: '2', s: '2', x: '2', z: '2',
+    d: '3', t: '3', l: '4', m: '5', n: '5', r: '6',
+  };
+  const first = str[0];
+  let prev = codes[first] || '';
+  let result = first.toUpperCase();
+  for (let i = 1; i < str.length && result.length < 4; i++) {
+    const code = codes[str[i]] || '';
+    if (code && code !== prev) result += code;
+    // Vowels (and h/w) reset the "previous" so repeated consonants across them count again
+    if ('aeiouy'.includes(str[i])) prev = '';
+    else if (str[i] !== 'h' && str[i] !== 'w') prev = code;
+  }
+  return (result + '000').slice(0, 4);
+}
+
+function maxEditDistance(len: number): number {
+  if (len <= 2) return 0;
+  if (len <= 4) return 1;
+  if (len <= 7) return 2;
+  return 3;
+}
+
+/**
+ * Tolerant text match: exact substring, else per-token soundex / Levenshtein.
+ * Every whitespace-separated token in `needle` must match some token in `haystack`.
+ * Tolerates typos and phonetic variants (e.g. "Dupont" finds "Dupond", "Dupon").
+ */
+export function fuzzyMatch(haystack: string, needle: string): boolean {
+  const h = normalizeText(haystack);
+  const n = normalizeText(needle);
+  if (!n) return true;
+  if (h.includes(n)) return true;
+  const hTokens = h.split(/\s+/).filter(Boolean);
+  const nTokens = n.split(/\s+/).filter(Boolean);
+  return nTokens.every(nt =>
+    hTokens.some(ht =>
+      ht.includes(nt) ||
+      (nt.length >= 3 && soundex(ht) === soundex(nt)) ||
+      levenshtein(ht, nt) <= maxEditDistance(nt.length)
+    )
+  );
+}
+
 export function getAge(birthDate?: string, deathDate?: string): number | null {
   if (!birthDate) return null;
   const birth = new Date(birthDate);
@@ -153,11 +244,11 @@ export function computeTreeStats(tree: FamilyTree): TreeStats {
 export function searchPersons(persons: Person[], filters: SearchFilters): Person[] {
   return persons.filter(person => {
     if (filters.query) {
-      const q = filters.query.toLowerCase();
-      const fullName = getFullName(person).toLowerCase();
-      const bio = (person.bio || '').toLowerCase();
-      const occupation = (person.occupation || '').toLowerCase();
-      if (!fullName.includes(q) && !bio.includes(q) && !occupation.includes(q)) {
+      const q = filters.query;
+      // Fuzzy/phonetic match on names (typo & variant tolerant), substring on bio/occupation.
+      const nameHay = `${getFullName(person)} ${person.nickName || ''}`;
+      const extra = normalizeText(`${person.bio || ''} ${person.occupation || ''}`);
+      if (!fuzzyMatch(nameHay, q) && !extra.includes(normalizeText(q))) {
         return false;
       }
     }
@@ -192,14 +283,88 @@ export function searchPersons(persons: Person[], filters: SearchFilters): Person
   });
 }
 
+interface GedFamily {
+  id: string;
+  husbandId?: string;
+  wifeId?: string;
+  childIds: string[];
+  marriage?: { date?: string; place?: string };
+}
+
+/** Group a tree's couples and parent-child links into GEDCOM-style FAM records. */
+function buildGedFamilies(tree: FamilyTree): GedFamily[] {
+  const { persons, relationships } = tree;
+  const byId = new Map(persons.map(p => [p.id, p]));
+  const families: GedFamily[] = [];
+  const byKey = new Map<string, GedFamily>();
+  let counter = 0;
+  const partnerKey = (a?: string, b?: string) => [a, b].filter(Boolean).sort().join('&');
+
+  function assignRoles(ids: string[]): { husbandId?: string; wifeId?: string } {
+    const ps = ids.map(id => byId.get(id)).filter((p): p is Person => !!p);
+    let husbandId = ps.find(p => p.gender === 'male')?.id;
+    let wifeId = ps.find(p => p.gender === 'female')?.id;
+    const remaining = ids.filter(id => id !== husbandId && id !== wifeId);
+    if (!husbandId) husbandId = remaining.shift();
+    if (!wifeId) wifeId = remaining.shift();
+    return { husbandId, wifeId };
+  }
+
+  // Couples (spouse / partner) — preserved even when childless.
+  relationships.filter(r => r.type === 'spouse' || r.type === 'partner').forEach(r => {
+    const { husbandId, wifeId } = assignRoles([r.person1Id, r.person2Id]);
+    const key = partnerKey(husbandId, wifeId);
+    if (byKey.has(key)) return;
+    const date = r.startDate || r.marriageEvent?.date;
+    const fam: GedFamily = {
+      id: `F${++counter}`, husbandId, wifeId, childIds: [],
+      marriage: (date || r.marriageEvent?.place?.city) ? { date, place: r.marriageEvent?.place?.city } : undefined,
+    };
+    byKey.set(key, fam);
+    families.push(fam);
+  });
+
+  // Children grouped by their set of parents (merges into the couple's family when it exists).
+  persons.forEach(child => {
+    const parentIds = getParents(child.id, relationships, persons).map(p => p.id);
+    if (parentIds.length === 0) return;
+    const { husbandId, wifeId } = assignRoles(parentIds);
+    const key = partnerKey(husbandId, wifeId);
+    let fam = byKey.get(key);
+    if (!fam) {
+      fam = { id: `F${++counter}`, husbandId, wifeId, childIds: [] };
+      byKey.set(key, fam);
+      families.push(fam);
+    }
+    if (!fam.childIds.includes(child.id)) fam.childIds.push(child.id);
+  });
+
+  return families;
+}
+
 export function exportGEDCOM(tree: FamilyTree): string {
   const lines: string[] = [];
   lines.push('0 HEAD');
+  lines.push('1 SOUR Suimini');
   lines.push('1 GEDC');
   lines.push('2 VERS 5.5.1');
+  lines.push('2 FORM LINEAGE-LINKED');
   lines.push(`1 FILE ${tree.name}`);
-  lines.push(`1 DATE ${new Date().toLocaleDateString('fr-FR')}`);
+  lines.push(`1 DATE ${formatGEDDate(new Date().toISOString())}`);
   lines.push('1 CHAR UTF-8');
+
+  const families = buildGedFamilies(tree);
+  const fams = new Map<string, string[]>(); // person → families as a partner
+  const famc = new Map<string, string[]>(); // person → family as a child
+  families.forEach(f => {
+    [f.husbandId, f.wifeId].forEach(id => {
+      if (!id) return;
+      const arr = fams.get(id) || []; arr.push(f.id); fams.set(id, arr);
+    });
+    f.childIds.forEach(id => {
+      const arr = famc.get(id) || []; arr.push(f.id); famc.set(id, arr);
+    });
+  });
 
   tree.persons.forEach(person => {
     lines.push(`0 @${person.id}@ INDI`);
@@ -209,7 +374,7 @@ export function exportGEDCOM(tree: FamilyTree): string {
     if (person.maidenName) lines.push(`2 NPFX ${person.maidenName}`);
     if (person.gender === 'male') lines.push('1 SEX M');
     else if (person.gender === 'female') lines.push('1 SEX F');
-    
+
     if (person.birthDate) {
       lines.push('1 BIRT');
       lines.push(`2 DATE ${formatGEDDate(person.birthDate)}`);
@@ -221,6 +386,21 @@ export function exportGEDCOM(tree: FamilyTree): string {
       if (person.deathPlace?.city) lines.push(`2 PLAC ${person.deathPlace.city}`);
     }
     if (person.occupation) lines.push(`1 OCCU ${person.occupation}`);
+    (fams.get(person.id) || []).forEach(fid => lines.push(`1 FAMS @${fid}@`));
+    (famc.get(person.id) || []).forEach(fid => lines.push(`1 FAMC @${fid}@`));
+  });
+
+  // Family records: HUSB / WIFE / CHIL + marriage event
+  families.forEach(f => {
+    lines.push(`0 @${f.id}@ FAM`);
+    if (f.husbandId) lines.push(`1 HUSB @${f.husbandId}@`);
+    if (f.wifeId) lines.push(`1 WIFE @${f.wifeId}@`);
+    f.childIds.forEach(cid => lines.push(`1 CHIL @${cid}@`));
+    if (f.marriage) {
+      lines.push('1 MARR');
+      if (f.marriage.date) lines.push(`2 DATE ${formatGEDDate(f.marriage.date)}`);
+      if (f.marriage.place) lines.push(`2 PLAC ${f.marriage.place}`);
+    }
   });
 
   lines.push('0 TRLR');
@@ -233,68 +413,111 @@ function formatGEDDate(dateStr: string): string {
   return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
 }
 
+interface GedFamRecord {
+  husbandId?: string;
+  wifeId?: string;
+  childIds: string[];
+  marrDate?: string;
+  marrPlace?: string;
+}
+
 export function importGEDCOM(content: string): Partial<FamilyTree> {
-  // Basic GEDCOM parser
   const persons: Person[] = [];
   const relationships: Relationship[] = [];
-  const lines = content.split('\n');
-  
+  const famRecords: GedFamRecord[] = [];
+  const lines = content.split(/\r?\n/);
+
   let currentPerson: Partial<Person> | null = null as Partial<Person> | null;
-  let inBirt = false;
-  let inDeat = false;
-  
+  let currentFam: GedFamRecord | null = null as GedFamRecord | null;
+  let context: 'birt' | 'deat' | 'marr' | null = null;
+  const xref = (v: string) => v.replace(/@/g, '').trim();
+
   lines.forEach(line => {
-    const parts = line.trim().split(' ');
+    const parts = line.trim().split(/\s+/);
+    if (parts.length < 2 || Number.isNaN(parseInt(parts[0]))) return;
     const level = parseInt(parts[0]);
     const tag = parts[1];
     const value = parts.slice(2).join(' ');
-    
+
     if (level === 0) {
       if (currentPerson?.id) persons.push(currentPerson as Person);
+      if (currentFam) famRecords.push(currentFam);
       currentPerson = null;
-      inBirt = false;
-      inDeat = false;
-      
+      currentFam = null;
+      context = null;
+
       if (tag?.startsWith('@') && parts[2] === 'INDI') {
-        const id = tag.replace(/@/g, '');
         currentPerson = {
-          id,
-          firstName: '',
-          lastName: '',
-          gender: 'unknown',
-          isAlive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          id: xref(tag), firstName: '', lastName: '', gender: 'unknown', isAlive: true,
+          createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
         };
+      } else if (tag?.startsWith('@') && parts[2] === 'FAM') {
+        currentFam = { childIds: [] };
       }
-    } else if (currentPerson) {
-      if (tag === 'NAME') {
-        const match = value.match(/^(.*?)\s*\/(.*?)\//);
-        if (match) {
-          currentPerson.firstName = match[1].trim();
-          currentPerson.lastName = match[2].trim();
+      return;
+    }
+
+    // A new level-1 record clears any sub-record context (BIRT/DEAT/MARR re-set it below).
+    if (level === 1) context = null;
+
+    if (currentPerson) {
+      switch (tag) {
+        case 'NAME': {
+          const m = value.match(/^(.*?)\s*\/(.*?)\//);
+          if (m) { currentPerson.firstName = m[1].trim(); currentPerson.lastName = m[2].trim(); }
+          else currentPerson.firstName = value.trim();
+          break;
         }
-      } else if (tag === 'SEX') {
-        currentPerson.gender = value === 'M' ? 'male' : value === 'F' ? 'female' : 'unknown';
-      } else if (tag === 'BIRT') {
-        inBirt = true; inDeat = false;
-      } else if (tag === 'DEAT') {
-        inDeat = true; inBirt = false;
-        currentPerson.isAlive = false;
-      } else if (tag === 'DATE') {
-        if (inBirt) currentPerson.birthDate = parseGEDDate(value);
-        if (inDeat) currentPerson.deathDate = parseGEDDate(value);
-      } else if (tag === 'PLAC') {
-        if (inBirt) currentPerson.birthPlace = { city: value };
-        if (inDeat) currentPerson.deathPlace = { city: value };
-      } else if (tag === 'OCCU') {
-        currentPerson.occupation = value;
+        case 'GIVN': if (!currentPerson.firstName) currentPerson.firstName = value.trim(); break;
+        case 'SURN': if (!currentPerson.lastName) currentPerson.lastName = value.trim(); break;
+        case 'NPFX': currentPerson.maidenName = value.trim(); break;
+        case 'SEX': currentPerson.gender = value === 'M' ? 'male' : value === 'F' ? 'female' : 'unknown'; break;
+        case 'BIRT': context = 'birt'; break;
+        case 'DEAT': context = 'deat'; currentPerson.isAlive = false; break;
+        case 'OCCU': currentPerson.occupation = value; break;
+        case 'DATE':
+          if (context === 'birt') currentPerson.birthDate = parseGEDDate(value);
+          else if (context === 'deat') currentPerson.deathDate = parseGEDDate(value);
+          break;
+        case 'PLAC':
+          if (context === 'birt') currentPerson.birthPlace = { city: value };
+          else if (context === 'deat') currentPerson.deathPlace = { city: value };
+          break;
+      }
+    } else if (currentFam) {
+      switch (tag) {
+        case 'HUSB': currentFam.husbandId = xref(value); break;
+        case 'WIFE': currentFam.wifeId = xref(value); break;
+        case 'CHIL': currentFam.childIds.push(xref(value)); break;
+        case 'MARR': context = 'marr'; break;
+        case 'DATE': if (context === 'marr') currentFam.marrDate = parseGEDDate(value); break;
+        case 'PLAC': if (context === 'marr') currentFam.marrPlace = value; break;
       }
     }
   });
-  
   if (currentPerson?.id) persons.push(currentPerson as Person);
-  
+  if (currentFam) famRecords.push(currentFam);
+
+  // Reconstruct all relationships from the family records.
+  const personIds = new Set(persons.map(p => p.id));
+  famRecords.forEach(f => {
+    const parents = [f.husbandId, f.wifeId].filter((id): id is string => !!id && personIds.has(id));
+    if (parents.length === 2) {
+      relationships.push({
+        id: generateId(), type: 'spouse', person1Id: parents[0], person2Id: parents[1],
+        startDate: f.marrDate, isActive: true,
+        marriageEvent: (f.marrDate || f.marrPlace)
+          ? { id: generateId(), type: 'marriage', date: f.marrDate, place: f.marrPlace ? { city: f.marrPlace } : undefined }
+          : undefined,
+      });
+    }
+    f.childIds.filter(cid => personIds.has(cid)).forEach(cid => {
+      parents.forEach(pid => {
+        relationships.push({ id: generateId(), type: 'parent', person1Id: pid, person2Id: cid });
+      });
+    });
+  });
+
   return { persons, relationships };
 }
 

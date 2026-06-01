@@ -41,6 +41,14 @@ export interface Note {
   tags?: string[];
 }
 
+export interface Citation {
+  id: string;
+  title: string;
+  author?: string;
+  year?: string;
+  url?: string;
+}
+
 export interface Person {
   id: string;
   firstName: string;
@@ -64,6 +72,7 @@ export interface Person {
   photos?: string[];
   events?: FamilyEvent[];
   notes?: Note[];
+  citations?: Citation[];
   sources?: string[];
   media?: Media[];
   customFields?: Record<string, string>;
