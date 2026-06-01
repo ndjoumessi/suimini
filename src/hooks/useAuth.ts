@@ -5,11 +5,20 @@ import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { sampleFamilyTree } from '@/lib/sampleData';
 
 const DEMO_KEY = 'suimini_demo';
+const DEMO_VALUE = 'true';
 const TREES_KEY = 'suimini_trees';
 const ACTIVE_KEY = 'suimini_active_tree';
 
 function origin() {
   return typeof window !== 'undefined' ? window.location.origin : '';
+}
+
+/** Mirror the demo flag into a cookie so the Next middleware can read it server-side. */
+function setDemoCookie(on: boolean) {
+  if (typeof document === 'undefined') return;
+  document.cookie = on
+    ? `${DEMO_KEY}=${DEMO_VALUE}; path=/; max-age=31536000; samesite=lax`
+    : `${DEMO_KEY}=; path=/; max-age=0; samesite=lax`;
 }
 
 export function useAuth() {
@@ -19,7 +28,7 @@ export function useAuth() {
   const [demo, setDemo] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') setDemo(localStorage.getItem(DEMO_KEY) === '1');
+    if (typeof window !== 'undefined') setDemo(localStorage.getItem(DEMO_KEY) === DEMO_VALUE);
     if (!supabase) { setIsLoading(false); return; }
     let active = true;
     supabase.auth.getSession().then(({ data }) => {
@@ -34,6 +43,7 @@ export function useAuth() {
       setIsLoading(false);
       if (s?.user) {
         try { localStorage.removeItem(DEMO_KEY); } catch { /* ignore */ }
+        setDemoCookie(false);
         setDemo(false);
       }
     });
@@ -98,6 +108,7 @@ export function useAuth() {
       localStorage.removeItem(ACTIVE_KEY);
       localStorage.removeItem(DEMO_KEY);
     } catch { /* ignore */ }
+    setDemoCookie(false);
     setUser(null);
     setSession(null);
     setDemo(false);
@@ -107,19 +118,28 @@ export function useAuth() {
   // --- Demo mode (sample data, no cloud sync) ---
   const startDemo = useCallback(() => {
     try {
-      localStorage.setItem(DEMO_KEY, '1');
+      localStorage.setItem(DEMO_KEY, DEMO_VALUE);
       if (!localStorage.getItem(TREES_KEY)) {
         localStorage.setItem(TREES_KEY, JSON.stringify([sampleFamilyTree]));
         localStorage.setItem(ACTIVE_KEY, sampleFamilyTree.id);
       }
     } catch { /* ignore */ }
+    setDemoCookie(true);
     setDemo(true);
     if (typeof window !== 'undefined') window.location.href = '/app';
+  }, []);
+
+  // --- Exit demo (keeps no account, back to landing) ---
+  const exitDemo = useCallback(() => {
+    try { localStorage.removeItem(DEMO_KEY); } catch { /* ignore */ }
+    setDemoCookie(false);
+    setDemo(false);
+    if (typeof window !== 'undefined') window.location.href = '/';
   }, []);
 
   return {
     user, session, isDemo, isLoading, loading: isLoading,
     configured: isSupabaseConfigured,
-    signUp, signIn, signInWithMagicLink, resetPassword, signOut, startDemo,
+    signUp, signIn, signInWithMagicLink, resetPassword, signOut, startDemo, exitDemo,
   };
 }

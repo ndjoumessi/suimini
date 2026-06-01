@@ -1,8 +1,10 @@
 'use client';
 import { useState } from 'react';
-import { Gamepad2, UserPlus, X } from 'lucide-react';
+import { Gamepad2, UserPlus, LogOut, X } from 'lucide-react';
 
-export default function DemoBanner({ onCreateAccount }: { onCreateAccount: () => void }) {
+interface Props { onCreateAccount: () => void; onExitDemo: () => void }
+
+export default function DemoBanner({ onCreateAccount, onExitDemo }: Props) {
   const [hidden, setHidden] = useState(false);
   return (
     <div style={{ display: 'grid', gridTemplateRows: hidden ? '0fr' : '1fr', transition: 'grid-template-rows var(--t-slow) ease', flexShrink: 0 }}>
@@ -18,6 +20,9 @@ export default function DemoBanner({ onCreateAccount }: { onCreateAccount: () =>
           </span>
           <button onClick={onCreateAccount} className="btn btn-sm" style={{ background: 'var(--accent)', color: '#fff' }}>
             <UserPlus size={14} /> Créer un compte gratuit
+          </button>
+          <button onClick={onExitDemo} className="btn btn-ghost btn-sm" title="Quitter la démo">
+            <LogOut size={14} /> Quitter la démo
           </button>
           <button onClick={() => setHidden(true)} aria-label="Masquer la bannière" className="icon-btn" style={{ width: '30px', height: '30px' }}>
             <X size={16} />

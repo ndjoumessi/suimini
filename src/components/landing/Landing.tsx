@@ -119,10 +119,10 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 export default function Landing() {
   const { startDemo } = useAuth();
   const [showAuth, setShowAuth] = useState(false);
-  const [authTab, setAuthTab] = useState<'signin' | 'signup' | 'magic'>('signup');
+  const [authTab, setAuthTab] = useState<'login' | 'signup' | 'magic'>('signup');
   const [count, setCount] = useState<number | null>(null);
 
-  const openAuth = (tab: 'signin' | 'signup' | 'magic') => { setAuthTab(tab); setShowAuth(true); };
+  const openAuth = (tab: 'login' | 'signup' | 'magic') => { setAuthTab(tab); setShowAuth(true); };
   const startSignup = () => openAuth('signup');
 
   // Family count (public RPC) with graceful fallback + count-up animation.
@@ -152,20 +152,26 @@ export default function Landing() {
 
   return (
     <div className="lp-root">
+      {/* ===================== STICKY NAVBAR ===================== */}
+      <nav className="lp-nav">
+        <div className="lp-logo-sm serif">🌿 Suimini</div>
+        <div className="lp-nav-links">
+          <a href="#features">Features</a>
+          <a href="#pricing">Tarifs</a>
+          <a href="#faq">FAQ</a>
+        </div>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button onClick={() => openAuth('login')} className="lp-btn-ghost">Connexion</button>
+          <button onClick={() => openAuth('signup')} className="lp-btn-primary lp-btn-nav">Commencer <ArrowRight size={15} /></button>
+        </div>
+      </nav>
+
       {/* ===================== HERO ===================== */}
       <header className="lp-hero">
         <div className="lp-grain" aria-hidden="true" />
         <div className="lp-particles" aria-hidden="true">
           {Array.from({ length: 14 }).map((_, k) => <span key={k} className="lp-particle" style={{ left: `${(k * 7 + 4) % 100}%`, animationDelay: `${(k % 7) * 1.1}s`, animationDuration: `${9 + (k % 5) * 2}s` }} />)}
         </div>
-
-        <nav className="lp-nav">
-          <div className="lp-logo-sm serif">🌿 Suimini</div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <a href="#pricing" className="lp-btn-ghost">Tarifs</a>
-            <button onClick={() => openAuth('signin')} className="lp-btn-ghost">Se connecter</button>
-          </div>
-        </nav>
 
         <div className="lp-hero-inner">
           <Reveal>
@@ -179,8 +185,13 @@ export default function Landing() {
           </Reveal>
           <Reveal delay={240}>
             <div className="lp-cta-row">
-              <button onClick={startSignup} className="lp-btn-primary">Commencer gratuitement <ArrowRight size={18} /></button>
-              <button onClick={startDemo} className="lp-btn-secondary"><Gamepad2 size={16} /> Essayer la démo</button>
+              <button onClick={startSignup} className="lp-btn-primary">✨ Commencer gratuitement <ArrowRight size={18} /></button>
+              <button onClick={() => openAuth('login')} className="lp-btn-secondary">Se connecter</button>
+            </div>
+            <div className="lp-or"><span /><small>ou</small><span /></div>
+            <div className="lp-demo-row">
+              <button onClick={startDemo} className="lp-btn-demo"><Gamepad2 size={16} /> Essayer sans compte — démo gratuite</button>
+              <span className="lp-demo-badge">Aucune inscription requise</span>
             </div>
           </Reveal>
           <Reveal delay={320}>
@@ -299,7 +310,7 @@ export default function Landing() {
       </section>
 
       {/* ===================== FAQ ===================== */}
-      <section className="lp-section lp-section-light">
+      <section id="faq" className="lp-section lp-section-light">
         <Reveal><h2 className="serif lp-h2">Questions fréquentes</h2></Reveal>
         <Reveal delay={60}>
           <div style={{ maxWidth: '760px', margin: '24px auto 0' }}>
@@ -347,7 +358,19 @@ const LANDING_CSS = `
 .lp-particles { position: absolute; inset: 0; pointer-events: none; }
 .lp-particle { position: absolute; bottom: -10px; width: 6px; height: 6px; border-radius: 50%; background: ${ACCENT}; opacity: 0.35; animation: lpFloat linear infinite; }
 @keyframes lpFloat { 0% { transform: translateY(0) scale(0.6); opacity: 0; } 15% { opacity: 0.4; } 100% { transform: translateY(-110vh) scale(1); opacity: 0; } }
-.lp-nav { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; max-width: 1180px; margin: 0 auto; width: 100%; }
+.lp-nav { position: sticky; top: 0; z-index: 50; display: flex; align-items: center; gap: 16px; justify-content: space-between; padding: 12px 24px; background: rgba(10,8,5,0.82); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.06); }
+.lp-nav-links { display: flex; gap: 22px; }
+.lp-nav-links a { color: #b8b0a4; text-decoration: none; font-size: 14px; transition: color 0.15s; }
+.lp-nav-links a:hover { color: ${ACCENT}; }
+.lp-btn-nav { padding: 9px 16px; font-size: 14px; }
+.lp-or { display: flex; align-items: center; gap: 12px; max-width: 300px; margin: 20px auto 14px; }
+.lp-or span { flex: 1; height: 1px; background: rgba(255,255,255,0.15); }
+.lp-or small { color: #8a8278; font-size: 12px; }
+.lp-demo-row { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.lp-btn-demo { display: inline-flex; align-items: center; gap: 8px; background: transparent; border: none; color: #d8d2c8; cursor: pointer; font-family: 'Lato', sans-serif; font-size: 14px; padding: 8px 14px; border-radius: 8px; transition: color 0.15s; }
+.lp-btn-demo:hover { color: ${ACCENT}; }
+.lp-demo-badge { font-size: 11px; color: ${ACCENT}; background: rgba(196,147,90,0.12); padding: 3px 10px; border-radius: 99px; }
+@media (max-width: 768px) { .lp-nav-links { display: none; } }
 .lp-logo-sm { font-size: 1.35rem; color: ${ACCENT}; }
 .lp-hero-inner { position: relative; z-index: 2; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px 24px 80px; max-width: 880px; margin: 0 auto; }
 .lp-logo { font-size: clamp(48px, 9vw, 72px); color: ${ACCENT}; line-height: 1; margin-bottom: 18px; }

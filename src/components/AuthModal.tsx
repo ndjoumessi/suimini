@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useOverlay } from '@/hooks/useOverlay';
 import { passwordChecks, passwordScore, strengthLevel, PasswordChecks } from '@/lib/password';
 
-type Tab = 'signin' | 'signup' | 'magic';
+type Tab = 'login' | 'signup' | 'magic';
 interface Props {
   onClose: () => void;
   initialTab?: Tab;
@@ -24,7 +24,7 @@ const labelStyle: React.CSSProperties = {
   textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '5px',
 };
 
-export default function AuthModal({ onClose, initialTab = 'signin' }: Props) {
+export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
   const { configured, signUp, signIn, signInWithMagicLink, resetPassword, startDemo } = useAuth();
   const overlayRef = useOverlay<HTMLDivElement>(onClose);
 
@@ -74,7 +74,7 @@ export default function AuthModal({ onClose, initialTab = 'signin' }: Props) {
       else setSentMsg('📧 Lien envoyé ! Vérifiez votre boîte mail et cliquez le lien pour vous connecter.');
       return;
     }
-    if (tab === 'signin') {
+    if (tab === 'login') {
       if (!emailValid || !password) { setError('Veuillez renseigner email et mot de passe.'); return; }
       setLoading(true);
       const { error } = await signIn(email, password);
@@ -97,12 +97,12 @@ export default function AuthModal({ onClose, initialTab = 'signin' }: Props) {
 
   const canSubmit = forgot ? emailValid
     : tab === 'magic' ? emailValid
-      : tab === 'signin' ? (emailValid && password.length > 0)
+      : tab === 'login' ? (emailValid && password.length > 0)
         : (displayName.trim().length > 0 && emailValid && pwValid && confirmValid);
 
   const submitLabel = forgot ? 'Envoyer le lien'
     : tab === 'magic' ? 'Recevoir le lien'
-      : tab === 'signin' ? 'Se connecter'
+      : tab === 'login' ? 'Se connecter'
         : 'Créer mon compte';
 
   return (
@@ -141,7 +141,7 @@ export default function AuthModal({ onClose, initialTab = 'signin' }: Props) {
           <>
             {/* Tabs */}
             <div role="tablist" style={{ display: 'flex', margin: '0 24px', borderBottom: '2px solid var(--border)' }}>
-              {([['signin', 'Connexion'], ['signup', 'Inscription'], ['magic', 'Magic Link']] as [Tab, string][]).map(([t, lbl]) => (
+              {([['login', 'Connexion'], ['signup', 'Inscription'], ['magic', 'Magic Link']] as [Tab, string][]).map(([t, lbl]) => (
                 <button key={t} role="tab" aria-selected={tab === t} onClick={() => switchTab(t)}
                   style={{ flex: 1, minHeight: '44px', padding: '10px 6px', border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'Lato, sans-serif', fontSize: '13px', fontWeight: tab === t ? 700 : 400, color: tab === t ? 'var(--accent)' : 'var(--text-muted)', borderBottom: `2px solid ${tab === t ? 'var(--accent)' : 'transparent'}`, marginBottom: '-2px', transition: 'color var(--t-fast)' }}>
                   {lbl}
@@ -173,7 +173,7 @@ export default function AuthModal({ onClose, initialTab = 'signin' }: Props) {
 
                   {tab === 'signup' && password.length > 0 && <PasswordStrength score={pwScore} checks={pwChecks} />}
 
-                  {tab === 'signin' && (
+                  {tab === 'login' && (
                     <div style={{ textAlign: 'right', marginTop: '6px' }}>
                       <button type="button" onClick={() => { setForgot(true); setError(''); }} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '12px', padding: '4px' }}>Mot de passe oublié ?</button>
                     </div>
@@ -202,7 +202,7 @@ export default function AuthModal({ onClose, initialTab = 'signin' }: Props) {
                 </div>
               )}
 
-              {tab === 'signin' && (
+              {tab === 'login' && (
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px', cursor: 'pointer' }}>
                   <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} style={{ width: '16px', height: '16px' }} />
                   Rester connecté
