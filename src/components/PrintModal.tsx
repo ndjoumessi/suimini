@@ -2,20 +2,88 @@
 import { useState, useRef } from 'react';
 import { FamilyTree } from '@/types';
 import { getDisplayName, formatDate, formatYear, getAge, computeTreeStats } from '@/lib/treeUtils';
+import { buildTreeLayout, NODE_W, NODE_H } from '@/lib/treeLayout';
 
 interface Props {
   tree: FamilyTree;
   onClose: () => void;
 }
 
-type PrintMode = 'list' | 'cards' | 'summary';
+type PrintMode = 'list' | 'cards' | 'summary' | 'tree';
 
 export default function PrintModal({ tree, onClose }: Props) {
   const [mode, setMode] = useState<PrintMode>('list');
   const [includePhotos, setIncludePhotos] = useState(true);
   const [includeDeceased, setIncludeDeceased] = useState(true);
   const [includeEvents, setIncludeEvents] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
+  const treeRef = useRef<HTMLDivElement>(null);
+
+  const treeLayout = buildTreeLayout(tree, tree.rootPersonId || tree.persons[0]?.id || null);
+
+  async function exportTreePdf() {
+    if (!treeRef.current) return;
+    setExporting(true);
+    try {
+      const [{ default: html2canvas }, jspdfMod] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+      ]);
+      const jsPDF = jspdfMod.jsPDF;
+
+      const canvas = await html2canvas(treeRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a3' });
+      const pageW = pdf.internal.pageSize.getWidth();   // 420mm
+      const pageH = pdf.internal.pageSize.getHeight();  // 297mm
+      const margin = 12;
+      const topArea = 20;    // title band
+      const bottomArea = 12; // footer band
+      const availW = pageW - margin * 2;
+      const availH = pageH - topArea - bottomArea;
+
+      const ratio = Math.min(availW / canvas.width, availH / canvas.height);
+      const imgW = canvas.width * ratio;
+      const imgH = canvas.height * ratio;
+      const imgX = (pageW - imgW) / 2;
+      const imgY = topArea + (availH - imgH) / 2;
+
+      // Title
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(20);
+      pdf.setTextColor(139, 111, 71);
+      pdf.text(tree.name, pageW / 2, 14, { align: 'center' });
+
+      // Tree image
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', imgX, imgY, imgW, imgH);
+
+      // Footer
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      pdf.setTextColor(120, 120, 120);
+      pdf.text(
+        `${tree.persons.length} personnes · Généré par Suimini le ${new Date().toLocaleDateString('fr-FR')}`,
+        pageW / 2, pageH - 5, { align: 'center' }
+      );
+
+      pdf.save(`${tree.name.replace(/\s+/g, '_')}_arbre.pdf`);
+    } catch (err) {
+      console.error('Export PDF échoué', err);
+      alert("L'export de l'arbre a échoué. Réessayez.");
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  function genderColorHex(g: string) {
+    return g === 'male' ? '#3b6fa0' : g === 'female' ? '#a05070' : '#a09890';
+  }
 
   const stats = computeTreeStats(tree);
   const persons = includeDeceased
@@ -108,38 +176,51 @@ export default function PrintModal({ tree, onClose }: Props) {
         {/* Options */}
         <div style={{ padding: '14px 24px', borderBottom: '1px solid var(--border)', display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center', background: 'var(--bg-muted)' }}>
           <div style={{ display: 'flex', gap: '6px' }}>
-            {(['list','cards','summary'] as PrintMode[]).map(m => (
+            {(['list','cards','summary','tree'] as PrintMode[]).map(m => (
               <button key={m} onClick={() => setMode(m)} className="btn btn-sm" style={{
                 background: mode === m ? 'var(--accent)' : 'var(--bg-card)',
                 color: mode === m ? 'white' : 'var(--text-muted)',
                 border: '1px solid var(--border)',
               }}>
-                {{ list: '📋 Liste', cards: '🗂 Fiches', summary: '📊 Résumé' }[m]}
+                {{ list: '📋 Liste', cards: '🗂 Fiches', summary: '📊 Résumé', tree: '🌳 Arbre visuel' }[m]}
               </button>
             ))}
           </div>
-          <label style={{ display: 'flex', gap: '6px', alignItems: 'center', fontSize: '13px', cursor: 'pointer' }}>
-            <input type="checkbox" checked={includePhotos} onChange={e => setIncludePhotos(e.target.checked)} />
-            Photos
-          </label>
-          <label style={{ display: 'flex', gap: '6px', alignItems: 'center', fontSize: '13px', cursor: 'pointer' }}>
-            <input type="checkbox" checked={includeDeceased} onChange={e => setIncludeDeceased(e.target.checked)} />
-            Décédés
-          </label>
+          {mode !== 'tree' && (
+            <>
+              <label style={{ display: 'flex', gap: '6px', alignItems: 'center', fontSize: '13px', cursor: 'pointer' }}>
+                <input type="checkbox" checked={includePhotos} onChange={e => setIncludePhotos(e.target.checked)} />
+                Photos
+              </label>
+              <label style={{ display: 'flex', gap: '6px', alignItems: 'center', fontSize: '13px', cursor: 'pointer' }}>
+                <input type="checkbox" checked={includeDeceased} onChange={e => setIncludeDeceased(e.target.checked)} />
+                Décédés
+              </label>
+            </>
+          )}
           {mode === 'list' && (
             <label style={{ display: 'flex', gap: '6px', alignItems: 'center', fontSize: '13px', cursor: 'pointer' }}>
               <input type="checkbox" checked={includeEvents} onChange={e => setIncludeEvents(e.target.checked)} />
               Événements
             </label>
           )}
-          <button onClick={doPrint} className="btn btn-primary btn-sm" style={{ marginLeft: 'auto' }}>
-            🖨 Imprimer
-          </button>
+          {mode === 'tree' && (
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Paysage A3 · racine : {tree.persons.find(p => p.id === (tree.rootPersonId || tree.persons[0]?.id))?.firstName || '—'}</span>
+          )}
+          {mode === 'tree' ? (
+            <button onClick={exportTreePdf} disabled={exporting || treeLayout.nodes.length === 0} className="btn btn-primary btn-sm" style={{ marginLeft: 'auto' }}>
+              {exporting ? '⏳ Génération…' : '📄 Exporter en PDF (A3)'}
+            </button>
+          ) : (
+            <button onClick={doPrint} className="btn btn-primary btn-sm" style={{ marginLeft: 'auto' }}>
+              🖨 Imprimer
+            </button>
+          )}
         </div>
 
         {/* Print preview */}
         <div style={{ padding: '20px 24px', maxHeight: 'calc(90vh - 160px)', overflowY: 'auto', background: '#f0ece5' }}>
-          <div ref={printRef} style={{ background: 'white', padding: '24px', borderRadius: '4px', boxShadow: '0 2px 12px rgba(0,0,0,0.1)' }}>
+          <div ref={printRef} style={{ background: 'white', padding: '24px', borderRadius: '4px', boxShadow: '0 2px 12px rgba(0,0,0,0.1)', display: mode === 'tree' ? 'none' : 'block' }}>
             {/* Header */}
             <div className="header" style={{ textAlign: 'center', marginBottom: '20px', paddingBottom: '12px', borderBottom: '2px solid #8b6f47' }}>
               <h1 className="serif" style={{ fontSize: '1.8rem', color: 'var(--accent)', margin: '0 0 4px' }}>
@@ -280,6 +361,60 @@ export default function PrintModal({ tree, onClose }: Props) {
               — Généré par Suimini · {new Date().toLocaleDateString('fr-FR')} —
             </div>
           </div>
+
+          {/* Visual tree preview (captured for PDF export) */}
+          {mode === 'tree' && (
+            <div style={{ overflow: 'auto', maxWidth: '100%' }}>
+              {treeLayout.nodes.length === 0 ? (
+                <div style={{ background: 'white', padding: '40px', borderRadius: '4px', textAlign: 'center', color: '#6b6560' }}>
+                  Aucune personne à représenter.
+                </div>
+              ) : (
+                <div ref={treeRef} style={{ position: 'relative', width: `${treeLayout.width}px`, height: `${treeLayout.height}px`, background: '#ffffff' }}>
+                  <svg
+                    width={treeLayout.width} height={treeLayout.height}
+                    viewBox={`${treeLayout.minX} ${treeLayout.minY} ${treeLayout.width} ${treeLayout.height}`}
+                    style={{ position: 'absolute', top: 0, left: 0 }}
+                  >
+                    {treeLayout.edges.map((e, i) => (
+                      <line key={i} x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2}
+                        stroke={e.type === 'spouse' ? '#e090a8' : '#cfc7bb'}
+                        strokeWidth={e.type === 'spouse' ? 2.5 : 1.5}
+                        strokeDasharray={e.type === 'spouse' ? '7,4' : 'none'}
+                      />
+                    ))}
+                  </svg>
+                  {treeLayout.nodes.map(node => {
+                    const p = node.person;
+                    const age = getAge(p.birthDate, p.deathDate);
+                    return (
+                      <div key={p.id} style={{
+                        position: 'absolute',
+                        left: `${node.x - treeLayout.minX}px`, top: `${node.y - treeLayout.minY}px`,
+                        width: `${NODE_W}px`, height: `${NODE_H}px`,
+                        background: '#ffffff', border: '1.5px solid #e8e2da', borderRadius: '10px',
+                        boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: '8px',
+                        padding: '0 10px 0 12px', overflow: 'hidden',
+                      }}>
+                        <div style={{ position: 'absolute', left: 0, top: '10px', bottom: '10px', width: '5px', borderRadius: '4px', background: genderColorHex(p.gender) }} />
+                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0, background: p.gender === 'male' ? '#deeaf5' : p.gender === 'female' ? '#f5dde8' : '#f4f1ec', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
+                          {p.gender === 'male' ? '👨' : p.gender === 'female' ? '👩' : '🧑'}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontFamily: 'Lato, sans-serif', fontWeight: 700, fontSize: '12px', color: '#1a1612', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.firstName}</div>
+                          <div style={{ fontFamily: 'Lato, sans-serif', fontSize: '11px', color: '#6b6560', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.lastName}{!p.isAlive ? ' ✝' : ''}</div>
+                          <div style={{ fontFamily: 'Lato, sans-serif', fontSize: '9.5px', color: '#a09890' }}>
+                            {p.birthDate ? `✦ ${formatYear(p.birthDate)}` : ''}
+                            {!p.isAlive && p.deathDate ? ` – ${formatYear(p.deathDate)}` : (age !== null && p.isAlive ? ` · ${age} ans` : '')}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -136,7 +136,18 @@ export interface TreeStats {
   totalEvents: number;
 }
 
-export type ViewMode = 'tree' | 'list' | 'timeline' | 'map' | 'statistics' | 'gallery' | 'birthdays' | 'ancestors';
+export type ViewMode = 'tree' | 'list' | 'timeline' | 'map' | 'statistics' | 'gallery' | 'birthdays' | 'ancestors' | 'settings';
+
+export type ColorThemeId = 'sepia' | 'slate' | 'forest' | 'bordeaux' | 'marine' | 'midnight';
+
+export interface ColorTheme {
+  id: ColorThemeId;
+  name: string;
+  emoji: string;
+  accent: string;
+  male: string;
+  female: string;
+}
 
 export interface Anniversary {
   person: Person;

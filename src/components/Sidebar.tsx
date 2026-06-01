@@ -5,10 +5,12 @@ const NAV_ITEMS: { view: ViewMode; icon: string; label: string }[] = [
   { view: 'tree',       icon: '🌳', label: 'Arbre' },
   { view: 'list',       icon: '👥', label: 'Personnes' },
   { view: 'timeline',   icon: '📅', label: 'Chronologie' },
+  { view: 'map',        icon: '🗺', label: 'Carte' },
   { view: 'gallery',    icon: '📸', label: 'Galerie' },
   { view: 'birthdays',  icon: '🎂', label: 'Anniversaires' },
   { view: 'ancestors',  icon: '🔍', label: 'Exploration' },
   { view: 'statistics', icon: '📊', label: 'Statistiques' },
+  { view: 'settings',   icon: '⚙️', label: 'Paramètres' },
 ];
 
 interface Props {
@@ -21,13 +23,15 @@ interface Props {
   onShowImportExport: () => void;
   onPrint?: () => void;
   onShare?: () => void;
+  onPresent?: () => void;
+  birthdayAlertCount?: number;
   dark: boolean;
   onToggleDark: () => void;
   isOpen: boolean;
   onClose: () => void;
 }
 
-export default function Sidebar({ activeView, onViewChange, activeTree, trees, onShowTreeSelector, onAddPerson, onShowImportExport, onPrint, onShare, dark, onToggleDark, isOpen, onClose }: Props) {
+export default function Sidebar({ activeView, onViewChange, activeTree, trees, onShowTreeSelector, onAddPerson, onShowImportExport, onPrint, onShare, onPresent, birthdayAlertCount = 0, dark, onToggleDark, isOpen, onClose }: Props) {
   return (
     <aside style={{ width: '224px', flexShrink: 0, background: 'var(--bg-card)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 50 }}
       className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}
@@ -71,50 +75,45 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
       {/* Navigation */}
       <nav style={{ flex: 1, padding: '4px 8px', overflowY: 'auto' }}>
         <div style={{ fontSize: '10px', color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '1px', padding: '6px 8px 4px', fontWeight: '700' }}>Vues</div>
-        {NAV_ITEMS.map(item => (
-          <button key={item.view}
-            onClick={() => { onViewChange(item.view); onClose(); }}
-            style={{
-              width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
-              padding: '8px 11px', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius)', marginBottom: '2px',
-              background: activeView === item.view ? 'var(--accent-light)' : 'transparent',
-              color: activeView === item.view ? 'var(--accent)' : 'var(--text-muted)',
-              fontFamily: 'Lato, sans-serif', fontSize: '13px',
-              fontWeight: activeView === item.view ? '700' : '400',
-              transition: 'all 0.12s',
-            }}
-            onMouseEnter={e => { if (activeView !== item.view) e.currentTarget.style.background = 'var(--bg-muted)'; }}
-            onMouseLeave={e => { if (activeView !== item.view) e.currentTarget.style.background = 'transparent'; }}
-          >
-            <span style={{ fontSize: '15px', width: '18px', textAlign: 'center' }}>{item.icon}</span>
-            {item.label}
-            {item.view === 'birthdays' && (activeTree?.persons || []).filter(p => {
-              if (!p.birthDate || !p.isAlive) return false;
-              const b = new Date(p.birthDate);
-              const now = new Date();
-              const next = new Date(now.getFullYear(), b.getMonth(), b.getDate());
-              const diff = Math.ceil((next.getTime() - now.getTime()) / 86400000);
-              return diff >= 0 && diff <= 7;
-            }).length > 0 && (
-              <span style={{ marginLeft: 'auto', background: 'var(--danger)', color: 'white', borderRadius: '100px', padding: '1px 6px', fontSize: '10px', fontWeight: '700' }}>
-                {(activeTree?.persons || []).filter(p => {
-                  if (!p.birthDate || !p.isAlive) return false;
-                  const b = new Date(p.birthDate);
-                  const now = new Date();
-                  const next = new Date(now.getFullYear(), b.getMonth(), b.getDate());
-                  const diff = Math.ceil((next.getTime() - now.getTime()) / 86400000);
-                  return diff >= 0 && diff <= 7;
-                }).length}
+        {NAV_ITEMS.map(item => {
+          const showBadge = item.view === 'birthdays' && birthdayAlertCount > 0;
+          return (
+            <button key={item.view}
+              onClick={() => { onViewChange(item.view); onClose(); }}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
+                padding: '8px 11px', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius)', marginBottom: '2px',
+                background: activeView === item.view ? 'var(--accent-light)' : 'transparent',
+                color: activeView === item.view ? 'var(--accent)' : 'var(--text-muted)',
+                fontFamily: 'Lato, sans-serif', fontSize: '13px',
+                fontWeight: activeView === item.view ? '700' : '400',
+                transition: 'all 0.12s',
+              }}
+              onMouseEnter={e => { if (activeView !== item.view) e.currentTarget.style.background = 'var(--bg-muted)'; }}
+              onMouseLeave={e => { if (activeView !== item.view) e.currentTarget.style.background = 'transparent'; }}
+            >
+              <span style={{ fontSize: '15px', width: '18px', textAlign: 'center', position: 'relative' }}>
+                {item.icon}
+                {showBadge && <span className="birthday-pulse-dot" />}
               </span>
-            )}
-          </button>
-        ))}
+              {item.label}
+              {showBadge && (
+                <span className="birthday-badge" style={{ marginLeft: 'auto', background: 'var(--danger)', color: 'white', borderRadius: '100px', padding: '1px 6px', fontSize: '10px', fontWeight: '700' }}>
+                  {birthdayAlertCount}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </nav>
 
       {/* Actions */}
       <div style={{ padding: '8px 10px', borderTop: '1px solid var(--border)' }}>
         <button onClick={onAddPerson} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginBottom: '6px' }}>
           ＋ Ajouter une personne
+        </button>
+        <button onClick={onPresent} className="btn btn-secondary btn-sm" style={{ width: '100%', justifyContent: 'center', marginBottom: '6px' }}>
+          🎬 Mode présentation
         </button>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px', marginBottom: '5px' }}>
           <button onClick={onShare} className="btn btn-secondary btn-sm" style={{ justifyContent: 'center' }}>
@@ -132,7 +131,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
       {/* Footer */}
       <div style={{ padding: '8px 14px', borderTop: '1px solid var(--border)', textAlign: 'center' }}>
         <div style={{ fontSize: '10px', color: 'var(--text-light)' }}>
-          {trees.length} arbre{trees.length > 1 ? 's' : ''} · Suimini v1.2
+          {trees.length} arbre{trees.length > 1 ? 's' : ''} · Suimini v1.3
         </div>
       </div>
 
