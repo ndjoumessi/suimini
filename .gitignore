@@ -6,3 +6,7 @@ node_modules/
 out/
 *.log
 .DS_Store
+
+# Impeccable design tooling (reinstall via `npx impeccable skills install`) + local harness settings
+.claude/
+.impeccable/
