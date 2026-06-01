@@ -17,6 +17,11 @@ export const samplePersons: Person[] = [
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
     tags: ['fondateur', 'ingénieur'],
+    dnaOrigins: [
+      { region: "Europe de l'Ouest", percent: 55 },
+      { region: 'Afrique subsaharienne', percent: 30 },
+      { region: "Asie de l'Est", percent: 15 },
+    ],
     events: [
       { id: 'e1', type: 'birth', date: '1935-04-12', place: { city: 'Lyon', country: 'France' } },
       { id: 'e2', type: 'marriage', date: '1960-06-15', place: { city: 'Paris', country: 'France' } },
@@ -284,6 +289,17 @@ export const sampleFamilyTree: FamilyTree = {
   updatedAt: '2024-06-01T00:00:00Z',
   persons: samplePersons,
   relationships: sampleRelationships,
+  journal: [
+    {
+      id: 'j1',
+      title: 'Réunion de famille à Paris',
+      date: '2023-07-15',
+      content: "Toute la famille s'est réunie dans la maison familiale. Henri nous a raconté ses souvenirs d'enfance à Lyon, et nous avons feuilleté les vieux albums photos ensemble.",
+      mentionedPersonIds: ['p1', 'p3', 'p6'],
+      createdAt: '2023-07-16T00:00:00Z',
+      updatedAt: '2023-07-16T00:00:00Z',
+    },
+  ],
   rootPersonId: 'p1',
   settings: {
     defaultView: 'tree',

@@ -18,10 +18,25 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel = 'E
   const set = (field: keyof Person, value: unknown) =>
     setForm(f => ({ ...f, [field]: value }));
 
+  // --- DNA / ethnic origins ---
+  const dna = form.dnaOrigins || [];
+  const dnaTotal = dna.reduce((s, d) => s + (Number(d.percent) || 0), 0);
+  const dnaInvalid = dna.length > 0 && Math.round(dnaTotal) !== 100;
+  const setDna = (next: { region: string; percent: number }[]) =>
+    set('dnaOrigins', next.length ? next : undefined);
+  const addDna = () => { if (dna.length < 8) setDna([...dna, { region: '', percent: 0 }]); };
+  const updateDna = (i: number, field: 'region' | 'percent', value: string) =>
+    setDna(dna.map((d, idx) => idx === i
+      ? { ...d, [field]: field === 'percent' ? Math.max(0, Math.min(100, Number(value) || 0)) : value }
+      : d));
+  const removeDna = (i: number) => setDna(dna.filter((_, idx) => idx !== i));
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.firstName?.trim() || !form.lastName?.trim()) return;
-    onSave(form);
+    if (dnaInvalid) return;
+    const cleanDna = dna.filter(d => d.region.trim());
+    onSave({ ...form, dnaOrigins: cleanDna.length ? cleanDna : undefined });
   };
 
   return (
@@ -193,13 +208,52 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel = 'E
         />
       </label>
 
+      {/* DNA / ethnic origins */}
+      <div style={{ borderTop: '1px solid var(--border)', paddingTop: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+          <span style={{ ...labelStyle, marginBottom: 0 }}>🧬 Origines & ADN</span>
+          <span style={{ fontSize: '12px', fontWeight: 700, color: dna.length === 0 ? 'var(--text-light)' : dnaInvalid ? 'var(--danger)' : 'var(--success)' }}>
+            Total : {Math.round(dnaTotal)}%
+          </span>
+        </div>
+        {dna.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
+            {dna.map((d, i) => (
+              <div key={i} style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                <input
+                  value={d.region}
+                  onChange={e => updateDna(i, 'region', e.target.value)}
+                  className="input" placeholder="Ex: Europe de l'Ouest" style={{ flex: 1 }}
+                />
+                <input
+                  type="number" min={0} max={100}
+                  value={d.percent || ''}
+                  onChange={e => updateDna(i, 'percent', e.target.value)}
+                  className="input" placeholder="%" style={{ width: '72px' }}
+                />
+                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>%</span>
+                <button type="button" onClick={() => removeDna(i)} className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }}>✕</button>
+              </div>
+            ))}
+          </div>
+        )}
+        {dnaInvalid && (
+          <div style={{ fontSize: '12px', color: 'var(--danger)', marginBottom: '8px' }}>
+            La somme des pourcentages doit faire exactement 100% pour enregistrer.
+          </div>
+        )}
+        <button type="button" onClick={addDna} disabled={dna.length >= 8} className="btn btn-secondary btn-sm" style={{ opacity: dna.length >= 8 ? 0.5 : 1 }}>
+          ＋ Ajouter une origine {dna.length >= 8 && '(max 8)'}
+        </button>
+      </div>
+
       <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '4px' }}>
         {onCancel && (
           <button type="button" onClick={onCancel} className="btn btn-secondary">
             Annuler
           </button>
         )}
-        <button type="submit" className="btn btn-primary">
+        <button type="submit" className="btn btn-primary" disabled={dnaInvalid} style={{ opacity: dnaInvalid ? 0.5 : 1 }}>
           ✓ {submitLabel}
         </button>
       </div>

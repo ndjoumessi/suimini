@@ -37,6 +37,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
   const [searchQ, setSearchQ] = useState('');
   const [showLegend, setShowLegend] = useState(true);
   const [viewport, setViewport] = useState({ w: 0, h: 0 }); // container size, for the minimap
+  const [layoutMode, setLayoutMode] = useState<'vertical' | 'fan'>('vertical');
 
   const rootPerson = tree.persons.find(p => p.id === rootId);
 
@@ -164,6 +165,41 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
     return `hsl(${hue}, 55%, 52%)`;
   };
 
+  // ---- Fan chart (ancestor pedigree) layout ----
+  const MAX_FAN_GEN = 4;
+  const FAN_R0 = 54;   // central root circle radius
+  const FAN_RING = 70; // ring width per generation
+  const fanGenColor = (gen: number) => {
+    const t = MAX_FAN_GEN <= 0 ? 0 : gen / MAX_FAN_GEN;
+    return `hsl(${28 + t * 168}, 55%, 55%)`;
+  };
+  const buildFan = useCallback(() => {
+    interface Slot { person: Person; gen: number; index: number; }
+    const slots: Slot[] = [];
+    const visited = new Set<string>();
+    function walk(personId: string, gen: number, index: number) {
+      const person = tree.persons.find(p => p.id === personId);
+      if (!person || visited.has(personId)) return;
+      visited.add(personId);
+      slots.push({ person, gen, index });
+      if (gen >= MAX_FAN_GEN) return;
+      const parents = getParents(personId, tree.relationships, tree.persons);
+      let father = parents.find(p => p.gender === 'male');
+      let mother = parents.find(p => p.gender === 'female');
+      const rest = parents.filter(p => p.id !== father?.id && p.id !== mother?.id);
+      if (!father) father = rest.shift();
+      if (!mother) mother = rest.shift();
+      if (father) walk(father.id, gen + 1, index * 2);
+      if (mother) walk(mother.id, gen + 1, index * 2 + 1);
+    }
+    if (rootId) walk(rootId, 0, 0);
+    const maxGen = slots.reduce((m, s) => Math.max(m, s.gen), 0);
+    const R = FAN_R0 + maxGen * FAN_RING;
+    return { slots, maxGen, R };
+  }, [rootId, tree]);
+
+  const fan = layoutMode === 'fan' ? buildFan() : null;
+
   const minX = nodes.length ? Math.min(...nodes.map(n => n.x)) - 60 : -400;
   const maxX = nodes.length ? Math.max(...nodes.map(n => n.x)) + NODE_W + 60 : 400;
   const minY = nodes.length ? Math.min(...nodes.map(n => n.y)) - 60 : -200;
@@ -195,6 +231,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
   }, []);
 
   const handleWheel = (e: React.WheelEvent) => {
+    if (layoutMode === 'fan') return; // fan chart auto-fits; no pan/zoom
     e.preventDefault();
     const rect = containerRef.current!.getBoundingClientRect();
     const mx = e.clientX - rect.left;
@@ -210,6 +247,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (layoutMode === 'fan') return; // fan chart auto-fits; no panning
     if (e.button === 0) {
       setIsDragging(true);
       setDragMoved(false);
@@ -315,10 +353,16 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
           )}
         </div>
 
-        <button onClick={() => { if(containerRef.current && nodes.length) { const root = nodes.find(n => n.person.id === rootId); if(root) { const cw = containerRef.current.clientWidth; const ch = containerRef.current.clientHeight; setOffset({ x: cw/2 - (root.x + NODE_W/2)*scale, y: ch/3 - (root.y + NODE_H/2)*scale }); } } }} className="btn btn-secondary btn-sm" title="Centrer">⊕</button>
-        <button onClick={() => setScale(s => Math.min(2.5, s * 1.2))} className="btn btn-secondary btn-sm">＋</button>
-        <button onClick={() => setScale(1)} className="btn btn-secondary btn-sm" style={{ minWidth: '48px' }}>{Math.round(scale * 100)}%</button>
-        <button onClick={() => setScale(s => Math.max(0.25, s * 0.8))} className="btn btn-secondary btn-sm">−</button>
+        <button onClick={() => setLayoutMode(m => m === 'fan' ? 'vertical' : 'fan')} className="btn btn-sm" title="Basculer en éventail (fan chart)"
+          style={{ background: layoutMode === 'fan' ? 'var(--accent)' : 'var(--bg-muted)', color: layoutMode === 'fan' ? '#fff' : 'var(--text-muted)', border: '1px solid var(--border)' }}>
+          🌀 Fan
+        </button>
+        {layoutMode === 'vertical' && <>
+          <button onClick={() => { if(containerRef.current && nodes.length) { const root = nodes.find(n => n.person.id === rootId); if(root) { const cw = containerRef.current.clientWidth; const ch = containerRef.current.clientHeight; setOffset({ x: cw/2 - (root.x + NODE_W/2)*scale, y: ch/3 - (root.y + NODE_H/2)*scale }); } } }} className="btn btn-secondary btn-sm" title="Centrer">⊕</button>
+          <button onClick={() => setScale(s => Math.min(2.5, s * 1.2))} className="btn btn-secondary btn-sm">＋</button>
+          <button onClick={() => setScale(1)} className="btn btn-secondary btn-sm" style={{ minWidth: '48px' }}>{Math.round(scale * 100)}%</button>
+          <button onClick={() => setScale(s => Math.max(0.25, s * 0.8))} className="btn btn-secondary btn-sm">−</button>
+        </>}
         <button onClick={() => setShowLegend(l => !l)} className="btn btn-secondary btn-sm">
           {showLegend ? '🙈 Légende' : '👁 Légende'}
         </button>
@@ -337,7 +381,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
         onTouchMove={handleTouchMove}
         style={{
           flex: 1, overflow: 'hidden', position: 'relative',
-          cursor: isDragging ? 'grabbing' : 'grab',
+          cursor: layoutMode === 'fan' ? 'default' : isDragging ? 'grabbing' : 'grab',
           background: 'var(--bg)',
           backgroundImage: 'radial-gradient(circle, var(--border) 1px, transparent 1px)',
           backgroundSize: `${28 * scale}px ${28 * scale}px`,
@@ -345,6 +389,12 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
         }}
         onClick={() => showSearch && setShowSearch(false)}
       >
+        {layoutMode === 'fan' && fan && (
+          <FanChart fan={fan} fanGenColor={fanGenColor} r0={FAN_R0} ring={FAN_RING}
+            selectedPersonId={selectedPersonId} onSelectPerson={onSelectPerson} />
+        )}
+
+        {layoutMode === 'vertical' && (
         <svg
           style={{ position: 'absolute', left: 0, top: 0, transformOrigin: '0 0', transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, overflow: 'visible' }}
           width={svgW} height={svgH}
@@ -467,6 +517,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
             );
           })}
         </svg>
+        )}
 
         {/* Legend */}
         {showLegend && (
@@ -525,8 +576,8 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
           {nodes.length} / {tree.persons.length} personnes
         </div>
 
-        {/* Minimap */}
-        {nodes.length > 0 && (() => {
+        {/* Minimap (vertical layout only) */}
+        {layoutMode === 'vertical' && nodes.length > 0 && (() => {
           const MM_W = 180, MM_H = 120;
           const mmScale = Math.min(MM_W / svgW, MM_H / svgH);
           const drawW = svgW * mmScale, drawH = svgH * mmScale;
@@ -572,5 +623,93 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
         })()}
       </div>
     </div>
+  );
+}
+
+// ===== Fan chart (ancestor pedigree, pure SVG, auto-fit) =====
+interface FanData { slots: { person: Person; gen: number; index: number }[]; maxGen: number; R: number; }
+
+function FanChart({ fan, fanGenColor, r0, ring, selectedPersonId, onSelectPerson }: {
+  fan: FanData;
+  fanGenColor: (gen: number) => string;
+  r0: number;
+  ring: number;
+  selectedPersonId: string | null;
+  onSelectPerson: (id: string) => void;
+}) {
+  const pad = 32;
+  const view = fan.R + pad;
+
+  const ang = (a: number) => -Math.PI / 2 + a; // 0 at top, clockwise
+  const pt = (r: number, a: number): [number, number] => [r * Math.cos(ang(a)), r * Math.sin(ang(a))];
+
+  function annular(rInner: number, rOuter: number, a0: number, a1: number): string {
+    const [xo0, yo0] = pt(rOuter, a0);
+    const [xo1, yo1] = pt(rOuter, a1);
+    const [xi1, yi1] = pt(rInner, a1);
+    const [xi0, yi0] = pt(rInner, a0);
+    const large = a1 - a0 > Math.PI ? 1 : 0;
+    return `M ${xo0.toFixed(2)} ${yo0.toFixed(2)} A ${rOuter} ${rOuter} 0 ${large} 1 ${xo1.toFixed(2)} ${yo1.toFixed(2)} L ${xi1.toFixed(2)} ${yi1.toFixed(2)} A ${rInner} ${rInner} 0 ${large} 0 ${xi0.toFixed(2)} ${yi0.toFixed(2)} Z`;
+  }
+
+  const root = fan.slots.find(s => s.gen === 0);
+
+  return (
+    <svg
+      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+      viewBox={`${-view} ${-view} ${view * 2} ${view * 2}`}
+      preserveAspectRatio="xMidYMid meet"
+    >
+      {/* Ancestor rings */}
+      {fan.slots.filter(s => s.gen >= 1).map(s => {
+        const slotAngle = (Math.PI * 2) / Math.pow(2, s.gen);
+        const a0 = s.index * slotAngle;
+        const a1 = a0 + slotAngle;
+        const rInner = r0 + (s.gen - 1) * ring;
+        const rOuter = rInner + ring;
+        const mid = (a0 + a1) / 2;
+        const [tx, ty] = pt((rInner + rOuter) / 2, mid);
+        let rot = ang(mid) * 180 / Math.PI;
+        if (rot > 90 || rot < -90) rot += 180;
+        const isSel = s.person.id === selectedPersonId;
+        const maxChars = s.gen <= 1 ? 12 : s.gen === 2 ? 9 : 7;
+        const fontSize = s.gen <= 1 ? 12 : s.gen === 2 ? 10 : 8.5;
+        const label = s.person.firstName.length > maxChars ? s.person.firstName.slice(0, maxChars - 1) + '…' : s.person.firstName;
+        return (
+          <g key={s.person.id} style={{ cursor: 'pointer' }} onClick={() => onSelectPerson(s.person.id)}>
+            <path d={annular(rInner, rOuter, a0, a1)}
+              fill={fanGenColor(s.gen)} fillOpacity={isSel ? 0.95 : 0.82}
+              stroke={isSel ? 'var(--accent)' : 'var(--bg-card)'} strokeWidth={isSel ? 3 : 1.5} />
+            <text x={tx} y={ty} transform={`rotate(${rot.toFixed(1)} ${tx.toFixed(2)} ${ty.toFixed(2)})`}
+              textAnchor="middle" dominantBaseline="central" fontSize={fontSize} fontWeight={600}
+              fontFamily="Lato, sans-serif" fill="#fff" style={{ pointerEvents: 'none' }}>
+              {label}
+            </text>
+          </g>
+        );
+      })}
+
+      {/* Root at the centre */}
+      {root && (
+        <g style={{ cursor: 'pointer' }} onClick={() => onSelectPerson(root.person.id)}>
+          <circle cx={0} cy={0} r={r0}
+            fill={fanGenColor(0)}
+            stroke={root.person.id === selectedPersonId ? 'var(--accent)' : '#c4a35a'}
+            strokeWidth={root.person.id === selectedPersonId ? 3 : 2} />
+          <text x={0} y={-6} textAnchor="middle" dominantBaseline="central" fontSize={13} fontWeight={700} fontFamily="Lato, sans-serif" fill="#fff" style={{ pointerEvents: 'none' }}>
+            {root.person.firstName.length > 12 ? root.person.firstName.slice(0, 11) + '…' : root.person.firstName}
+          </text>
+          <text x={0} y={12} textAnchor="middle" dominantBaseline="central" fontSize={10} fontFamily="Lato, sans-serif" fill="#fff" fillOpacity={0.85} style={{ pointerEvents: 'none' }}>
+            {root.person.lastName.length > 13 ? root.person.lastName.slice(0, 12) + '…' : root.person.lastName}
+          </text>
+        </g>
+      )}
+
+      {fan.maxGen === 0 && (
+        <text x={0} y={r0 + 30} textAnchor="middle" fontSize={13} fontFamily="Lato, sans-serif" fill="var(--text-muted)">
+          Aucun ancêtre enregistré pour cette racine
+        </text>
+      )}
+    </svg>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { FamilyTree, Person, Relationship } from '@/types';
+import { FamilyTree, Person, Relationship, JournalEntry } from '@/types';
 import { sampleFamilyTree } from '@/lib/sampleData';
 import { generateId, getDisplayName } from '@/lib/treeUtils';
 
@@ -170,6 +170,34 @@ export function useFamilyStore() {
     );
   }, [activeTree, updateTreeWithHistory]);
 
+  // Journal CRUD
+  const addJournalEntry = useCallback((entry: Omit<JournalEntry, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (!activeTree) return null;
+    const now = new Date().toISOString();
+    const newEntry: JournalEntry = { ...entry, id: generateId(), createdAt: now, updatedAt: now };
+    updateTreeWithHistory(
+      { ...activeTree, journal: [...(activeTree.journal || []), newEntry] },
+      `Ajout d'une entrée de journal`
+    );
+    return newEntry;
+  }, [activeTree, updateTreeWithHistory]);
+
+  const updateJournalEntry = useCallback((id: string, updates: Partial<JournalEntry>) => {
+    if (!activeTree) return;
+    const journal = (activeTree.journal || []).map(e =>
+      e.id === id ? { ...e, ...updates, updatedAt: new Date().toISOString() } : e
+    );
+    updateTreeWithHistory({ ...activeTree, journal }, `Modification d'une entrée de journal`);
+  }, [activeTree, updateTreeWithHistory]);
+
+  const deleteJournalEntry = useCallback((id: string) => {
+    if (!activeTree) return;
+    updateTreeWithHistory(
+      { ...activeTree, journal: (activeTree.journal || []).filter(e => e.id !== id) },
+      `Suppression d'une entrée de journal`
+    );
+  }, [activeTree, updateTreeWithHistory]);
+
   const importTree = useCallback((tree: FamilyTree) => {
     const imported = { ...tree, id: generateId(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
     const updated = [...trees, imported];
@@ -213,6 +241,9 @@ export function useFamilyStore() {
     deletePerson,
     addRelationship,
     deleteRelationship,
+    addJournalEntry,
+    updateJournalEntry,
+    deleteJournalEntry,
     importTree,
     // history
     undo,

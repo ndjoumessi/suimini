@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Person, FamilyTree, Relationship, RelationType, FamilyEvent, EventType, Note, Citation } from '@/types';
+import { Person, FamilyTree, Relationship, RelationType, FamilyEvent, EventType, Note, Citation, DnaOrigin } from '@/types';
 import { getParents, getChildren, getSpouses, getSiblings, getAge, formatDate, getDisplayName, generateId, safeHttpUrl } from '@/lib/treeUtils';
 import PersonForm from './PersonForm';
 
@@ -192,6 +192,12 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
             {person.tags&&person.tags.length>0&&(
               <div style={{ display:'flex', flexWrap:'wrap', gap:'4px' }}>
                 {person.tags.map(tag=><span key={tag} className="badge badge-accent">#{tag}</span>)}
+              </div>
+            )}
+            {person.dnaOrigins&&person.dnaOrigins.length>0&&(
+              <div style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)' }}>
+                <div style={{ fontSize:'11px', color:'var(--text-light)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'10px' }}>🧬 Origines &amp; ADN</div>
+                <DnaPie origins={person.dnaOrigins} />
               </div>
             )}
             {person.customFields&&Object.keys(person.customFields).length>0&&(
@@ -426,6 +432,57 @@ function FamilySection({ title, items, PersonLink }: { title: string; items: Per
       </div>
       <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
         {items.map(p=><PersonLink key={p.id} p={p}/>)}
+      </div>
+    </div>
+  );
+}
+
+const DNA_COLORS = ['#8b6f47','#3b6fa0','#4a7c59','#a05070','#c4935a','#5a6b7a','#9c6b4a','#6a5acd'];
+
+function DnaPie({ origins }: { origins: DnaOrigin[] }) {
+  const total = origins.reduce((s, o) => s + (o.percent || 0), 0) || 1;
+  const R = 60, cx = 70, cy = 70;
+  // Build cumulative slices (normalised against the actual total for display robustness).
+  const slices: { o: DnaOrigin; i: number; start: number; end: number; frac: number }[] = [];
+  let angle = -Math.PI / 2; // start at top
+  for (let i = 0; i < origins.length; i++) {
+    const frac = (origins[i].percent || 0) / total;
+    const start = angle;
+    const end = angle + frac * Math.PI * 2;
+    slices.push({ o: origins[i], i, start, end, frac });
+    angle = end;
+  }
+
+  function arc(start: number, end: number): string {
+    const x0 = cx + R * Math.cos(start), y0 = cy + R * Math.sin(start);
+    const x1 = cx + R * Math.cos(end), y1 = cy + R * Math.sin(end);
+    const large = end - start > Math.PI ? 1 : 0;
+    return `M ${cx} ${cy} L ${x0.toFixed(2)} ${y0.toFixed(2)} A ${R} ${R} 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)} Z`;
+  }
+
+  const single = slices.length === 1;
+
+  return (
+    <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap' }}>
+      <svg width={140} height={140} viewBox="0 0 140 140" style={{ flexShrink: 0 }}>
+        {single ? (
+          <circle cx={cx} cy={cy} r={R} fill={DNA_COLORS[0]} stroke="var(--bg-card)" strokeWidth={2} />
+        ) : (
+          slices.map(s => (
+            <path key={s.i} d={arc(s.start, s.end)} fill={DNA_COLORS[s.i % DNA_COLORS.length]} stroke="var(--bg-card)" strokeWidth={1.5} />
+          ))
+        )}
+        <circle cx={cx} cy={cy} r={24} fill="var(--bg-card)" />
+        <text x={cx} y={cy + 5} textAnchor="middle" fontSize={16}>🧬</text>
+      </svg>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', flex: 1, minWidth: '140px' }}>
+        {origins.map((o, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px' }}>
+            <span style={{ width: '11px', height: '11px', borderRadius: '3px', background: DNA_COLORS[i % DNA_COLORS.length], flexShrink: 0 }} />
+            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.region}</span>
+            <span style={{ fontWeight: 700, color: 'var(--text-muted)' }}>{Math.round(o.percent)}%</span>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -49,6 +49,22 @@ export interface Citation {
   url?: string;
 }
 
+export interface DnaOrigin {
+  region: string;
+  percent: number;
+}
+
+export interface JournalEntry {
+  id: string;
+  title: string;
+  date: string;
+  content: string;
+  mentionedPersonIds?: string[];
+  photos?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Person {
   id: string;
   firstName: string;
@@ -73,6 +89,7 @@ export interface Person {
   events?: FamilyEvent[];
   notes?: Note[];
   citations?: Citation[];
+  dnaOrigins?: DnaOrigin[];
   sources?: string[];
   media?: Media[];
   customFields?: Record<string, string>;
@@ -105,6 +122,7 @@ export interface FamilyTree {
   relationships: Relationship[];
   rootPersonId?: string;
   settings?: TreeSettings;
+  journal?: JournalEntry[];
 }
 
 export interface TreeSettings {
@@ -145,7 +163,7 @@ export interface TreeStats {
   totalEvents: number;
 }
 
-export type ViewMode = 'tree' | 'list' | 'timeline' | 'map' | 'statistics' | 'gallery' | 'birthdays' | 'ancestors' | 'settings';
+export type ViewMode = 'tree' | 'list' | 'timeline' | 'map' | 'statistics' | 'gallery' | 'journal' | 'birthdays' | 'ancestors' | 'settings';
 
 export type ColorThemeId = 'sepia' | 'slate' | 'forest' | 'bordeaux' | 'marine' | 'midnight';
 

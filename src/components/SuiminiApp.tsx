@@ -12,6 +12,7 @@ import ListView from './ListView';
 import TimelineView from './TimelineView';
 import StatisticsView from './StatisticsView';
 import GalleryView from './GalleryView';
+import JournalView from './JournalView';
 import BirthdaysView from './BirthdaysView';
 import AncestorsView from './AncestorsView';
 import SettingsView from './SettingsView';
@@ -145,6 +146,15 @@ export default function SuiminiApp() {
             {view === 'timeline' && <TimelineView tree={store.activeTree} onSelectPerson={handleSelectPerson} />}
             {view === 'map' && <MapView tree={store.activeTree} onSelectPerson={handleSelectPerson} />}
             {view === 'gallery' && <GalleryView tree={store.activeTree} onSelectPerson={handleSelectPerson} />}
+            {view === 'journal' && (
+              <JournalView
+                tree={store.activeTree}
+                onSelectPerson={handleSelectPerson}
+                onAdd={(entry) => { store.addJournalEntry(entry); showToast('Entrée ajoutée 📖'); }}
+                onUpdate={(id, updates) => { store.updateJournalEntry(id, updates); showToast('Entrée mise à jour'); }}
+                onDelete={(id) => { store.deleteJournalEntry(id); showToast('Entrée supprimée', '🗑'); }}
+              />
+            )}
             {view === 'birthdays' && <BirthdaysView tree={store.activeTree} onSelectPerson={handleSelectPerson} />}
             {view === 'ancestors' && <AncestorsView tree={store.activeTree} onSelectPerson={handleSelectPerson} />}
             {view === 'statistics' && <StatisticsView tree={store.activeTree} />}

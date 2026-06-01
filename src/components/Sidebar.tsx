@@ -7,6 +7,7 @@ const NAV_ITEMS: { view: ViewMode; icon: string; label: string }[] = [
   { view: 'timeline',   icon: '📅', label: 'Chronologie' },
   { view: 'map',        icon: '🗺', label: 'Carte' },
   { view: 'gallery',    icon: '📸', label: 'Galerie' },
+  { view: 'journal',    icon: '📖', label: 'Journal' },
   { view: 'birthdays',  icon: '🎂', label: 'Anniversaires' },
   { view: 'ancestors',  icon: '🔍', label: 'Exploration' },
   { view: 'statistics', icon: '📊', label: 'Statistiques' },
