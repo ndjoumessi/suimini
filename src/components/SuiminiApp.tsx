@@ -11,6 +11,7 @@ import { ViewMode } from '@/types';
 import Sidebar from './Sidebar';
 import BottomNav from './BottomNav';
 import AuthModal from './AuthModal';
+import DemoBanner from './DemoBanner';
 import TreeView from './TreeView';
 import ListView from './ListView';
 import TimelineView from './TimelineView';
@@ -41,7 +42,7 @@ const MapView = dynamic(() => import('./MapView'), {
 });
 
 export default function SuiminiApp() {
-  const { user, signIn, signOut, configured } = useAuth();
+  const { user, signOut, isDemo } = useAuth();
   const store = useFamilyStore(user ? { id: user.id, email: user.email } : null);
   const { dark, toggle: toggleDark, mode: themeMode, setMode: setThemeMode } = useDarkMode();
   const { themeId, setTheme, previewTheme, cancelPreview } = useTheme();
@@ -57,6 +58,8 @@ export default function SuiminiApp() {
   const [showPalette, setShowPalette] = useState(false);
   const [showPresentation, setShowPresentation] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
+  const [authTab, setAuthTab] = useState<'signin' | 'signup' | 'magic'>('signin');
+  const openAuth = useCallback((tab: 'signin' | 'signup' | 'magic' = 'signin') => { setAuthTab(tab); setShowAuth(true); }, []);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [presenceCount, setPresenceCount] = useState(1);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
@@ -70,7 +73,7 @@ export default function SuiminiApp() {
   }, []);
   const dismissToast = useCallback((id: number) => setToasts(prev => prev.filter(t => t.id !== id)), []);
 
-  // Surface a failed magic-link exchange (route redirects to /?auth_error=1).
+  // Surface a failed magic-link exchange + any pending toast (e.g. after password reset).
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
@@ -78,6 +81,10 @@ export default function SuiminiApp() {
       showToast('Échec de la connexion. Le lien a peut-être expiré.', 'error');
       window.history.replaceState({}, '', window.location.pathname);
     }
+    try {
+      const pending = sessionStorage.getItem('suimini_pending_toast');
+      if (pending) { showToast(pending, 'success'); sessionStorage.removeItem('suimini_pending_toast'); }
+    } catch { /* ignore */ }
   }, [showToast]);
 
   // Realtime: subscribe to the active tree's persons/relationships + presence of collaborators.
@@ -169,14 +176,18 @@ export default function SuiminiApp() {
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         userEmail={user?.email || null}
+        displayName={(user?.user_metadata?.display_name as string | undefined) || null}
         cloud={store.cloud}
         syncStatus={store.syncStatus}
         presenceCount={store.cloud ? presenceCount : 0}
-        onSignIn={() => setShowAuth(true)}
+        onSignIn={() => openAuth('signin')}
+        isDemo={isDemo}
+        onCreateAccount={() => openAuth('signup')}
         onSignOut={async () => { await signOut(); showToast('Déconnecté'); }}
       />
 
       <main className="app-main" style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', minWidth: 0 }}>
+        {isDemo && <DemoBanner onCreateAccount={() => openAuth('signup')} />}
         {/* Mobile header */}
         <div style={{ display: 'none', padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', alignItems: 'center', gap: '12px' }} className="mobile-header">
           <button onClick={() => setSidebarOpen(true)} className="btn btn-ghost btn-sm">☰</button>
@@ -310,7 +321,7 @@ export default function SuiminiApp() {
 
       {/* Auth (magic link) */}
       {showAuth && (
-        <AuthModal onClose={() => setShowAuth(false)} onSignIn={signIn} configured={configured} />
+        <AuthModal onClose={() => setShowAuth(false)} initialTab={authTab} />
       )}
 
       {/* Migration prompt on first login with local data */}
@@ -344,7 +355,7 @@ export default function SuiminiApp() {
         <ShareModal
           tree={store.activeTree}
           cloud={store.cloud}
-          onRequireAuth={() => { setShowShare(false); setShowAuth(true); }}
+          onRequireAuth={() => { setShowShare(false); openAuth('signin'); }}
           onToast={showToast}
           onClose={() => setShowShare(false)}
         />

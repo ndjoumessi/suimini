@@ -17,7 +17,8 @@ function Splash() {
 
 /**
  * Decides what to show at `/`:
- * - returning visitor (localStorage data) or signed-in user → the app
+ * - signed-in user (Supabase session) → the app
+ * - demo / returning local visitor → the app (with demo banner)
  * - brand-new visitor → the marketing landing page
  */
 export default function HomeGate() {
@@ -25,8 +26,16 @@ export default function HomeGate() {
 
   useEffect(() => {
     let cancelled = false;
-    const hasLocal = (() => { try { return !!localStorage.getItem('suimini_trees'); } catch { return false; } })();
-    if (hasLocal) { setView('app'); return; }
+    const read = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
+    const hasLocal = !!read('suimini_trees');
+    const isDemo = read('suimini_demo') === '1';
+
+    if (hasLocal || isDemo) {
+      // Treat any non-authenticated local user as demo so the banner appears.
+      try { if (!read('suimini_demo')) localStorage.setItem('suimini_demo', '1'); } catch { /* ignore */ }
+      setView('app');
+      return;
+    }
     if (supabase) {
       supabase.auth.getSession().then(({ data }) => { if (!cancelled) setView(data.session ? 'app' : 'landing'); });
     } else {

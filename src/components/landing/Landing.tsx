@@ -1,10 +1,9 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import {
   TreePine, Map, Cloud, Search, BookOpen, Play, BarChart2, Dna,
   ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Check, Mail,
-  KeyRound, UserPlus, Share2, ShieldCheck, Code2, FileText, Star,
+  KeyRound, UserPlus, Share2, ShieldCheck, Code2, FileText, Star, Gamepad2,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
@@ -118,13 +117,13 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 }
 
 export default function Landing() {
-  const router = useRouter();
-  const { signIn, configured } = useAuth();
+  const { startDemo } = useAuth();
   const [showAuth, setShowAuth] = useState(false);
+  const [authTab, setAuthTab] = useState<'signin' | 'signup' | 'magic'>('signup');
   const [count, setCount] = useState<number | null>(null);
 
-  const startDemo = () => router.push('/app');
-  const startSignup = () => setShowAuth(true);
+  const openAuth = (tab: 'signin' | 'signup' | 'magic') => { setAuthTab(tab); setShowAuth(true); };
+  const startSignup = () => openAuth('signup');
 
   // Family count (public RPC) with graceful fallback + count-up animation.
   useEffect(() => {
@@ -164,7 +163,7 @@ export default function Landing() {
           <div className="lp-logo-sm serif">🌿 Suimini</div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <a href="#pricing" className="lp-btn-ghost">Tarifs</a>
-            <button onClick={startSignup} className="lp-btn-ghost">Se connecter</button>
+            <button onClick={() => openAuth('signin')} className="lp-btn-ghost">Se connecter</button>
           </div>
         </nav>
 
@@ -181,7 +180,7 @@ export default function Landing() {
           <Reveal delay={240}>
             <div className="lp-cta-row">
               <button onClick={startSignup} className="lp-btn-primary">Commencer gratuitement <ArrowRight size={18} /></button>
-              <button onClick={startDemo} className="lp-btn-secondary"><Play size={16} /> Voir la démo</button>
+              <button onClick={startDemo} className="lp-btn-secondary"><Gamepad2 size={16} /> Essayer la démo</button>
             </div>
           </Reveal>
           <Reveal delay={320}>
@@ -330,7 +329,7 @@ export default function Landing() {
         </div>
       </footer>
 
-      {showAuth && <AuthModal onClose={() => setShowAuth(false)} onSignIn={signIn} configured={configured} />}
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} initialTab={authTab} />}
 
       <style>{LANDING_CSS}</style>
     </div>
