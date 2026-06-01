@@ -118,14 +118,15 @@ export function useAuth() {
   // --- Demo mode (sample data, no cloud sync) ---
   const startDemo = useCallback(() => {
     try {
+      // 1. Mark demo mode (localStorage + cookie for the middleware)
       localStorage.setItem(DEMO_KEY, DEMO_VALUE);
-      if (!localStorage.getItem(TREES_KEY)) {
-        localStorage.setItem(TREES_KEY, JSON.stringify([sampleFamilyTree]));
-        localStorage.setItem(ACTIVE_KEY, sampleFamilyTree.id);
-      }
+      // 2. Always (re)inject the sample data so "Essayer la démo" never lands on an empty/stale tree
+      localStorage.setItem(TREES_KEY, JSON.stringify([sampleFamilyTree]));
+      localStorage.setItem(ACTIVE_KEY, sampleFamilyTree.id);
     } catch { /* ignore */ }
     setDemoCookie(true);
     setDemo(true);
+    // 3. Full reload so the store re-reads localStorage cleanly
     if (typeof window !== 'undefined') window.location.href = '/app';
   }, []);
 

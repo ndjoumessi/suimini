@@ -43,6 +43,7 @@ export function useFamilyStore(user: StoreUser | null = null) {
       setTrees(parsed);
       localCacheRef.current = parsed;
       setActiveTreeId(activeId || parsed[0]?.id || null);
+      console.log('[store] trees loaded:', parsed.length, '· persons:', parsed[0]?.persons?.length ?? 0);
     } else {
       // Load sample data
       setTrees([sampleFamilyTree]);
@@ -50,6 +51,7 @@ export function useFamilyStore(user: StoreUser | null = null) {
       setActiveTreeId(sampleFamilyTree.id);
       localStorage.setItem(STORAGE_KEY, JSON.stringify([sampleFamilyTree]));
       localStorage.setItem(ACTIVE_TREE_KEY, sampleFamilyTree.id);
+      console.log('[store] trees loaded: sample data seeded · persons:', sampleFamilyTree.persons.length);
     }
     setLoaded(true);
   }, []);
