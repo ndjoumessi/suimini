@@ -1,4 +1,5 @@
 'use client';
+import { useOverlay } from '@/hooks/useOverlay';
 import { useState, useEffect } from 'react';
 import { FamilyTree } from '@/types';
 import { shareTree, listShares, unshareTree } from '@/lib/supabaseSync';
@@ -78,9 +79,10 @@ export default function ShareModal({ tree, cloud, onRequireAuth, onToast, onClos
 
   const socialText = `🌳 Découvrez l'arbre généalogique de la ${tree.name} sur Suimini !\n${tree.description ? tree.description + '\n' : ''}${stats}`;
 
+  const overlayRef = useOverlay(onClose);
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: '520px' }}>
+      <div ref={overlayRef} tabIndex={-1} className="modal" style={{ maxWidth: '520px' }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 className="serif" style={{ margin: 0 }}>🔗 Partager l'arbre</h2>
           <button onClick={onClose} className="btn btn-ghost btn-sm">✕</button>

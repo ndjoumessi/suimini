@@ -1,4 +1,5 @@
 'use client';
+import { useOverlay } from '@/hooks/useOverlay';
 import { useState, useRef } from 'react';
 import { FamilyTree } from '@/types';
 import { exportGEDCOM, importGEDCOM } from '@/lib/treeUtils';
@@ -67,9 +68,10 @@ export default function ImportExportModal({ tree, onImport, onClose, initialTab 
     reader.readAsText(file);
   }
 
+  const overlayRef = useOverlay(onClose);
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: '480px' }}>
+      <div ref={overlayRef} tabIndex={-1} className="modal" style={{ maxWidth: '480px' }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 className="serif" style={{ margin: 0 }}>📁 Import / Export</h2>
           <button onClick={onClose} className="btn btn-ghost btn-sm">✕</button>

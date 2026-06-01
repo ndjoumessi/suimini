@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { FamilyTree, ViewMode, Person } from '@/types';
 import { getDisplayName, formatYear, fuzzyMatch } from '@/lib/treeUtils';
+import { useOverlay } from '@/hooks/useOverlay';
 import {
   Search, SearchX, Clock, CornerDownLeft, User, UserPlus, Download, Upload, Play,
   Printer, Share2, TreePine, Users, Calendar, Map, Images, BookOpen, Cake, BarChart2, Settings,
@@ -74,6 +75,7 @@ export default function CommandPalette({ tree, onClose, onSelectPerson, onNaviga
   });
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useOverlay<HTMLDivElement>(onClose);
 
   useEffect(() => { inputRef.current?.focus(); }, []);
 
@@ -159,7 +161,7 @@ export default function CommandPalette({ tree, onClose, onSelectPerson, onNaviga
       onMouseDown={e => e.target === e.currentTarget && onClose()}
       style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(26,22,18,0.45)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '12vh' }}
     >
-      <div className="animate-scale-in" onKeyDown={handleKeyDown} role="dialog" aria-label="Palette de commandes"
+      <div ref={overlayRef} tabIndex={-1} className="animate-scale-in" onKeyDown={handleKeyDown} role="dialog" aria-modal="true" aria-label="Palette de commandes"
         style={{ width: '92%', maxWidth: '560px', background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--border)', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '70vh' }}
       >
         {/* Search input */}

@@ -1,4 +1,5 @@
 'use client';
+import { useOverlay } from '@/hooks/useOverlay';
 import { useState } from 'react';
 
 interface Props {
@@ -24,9 +25,10 @@ export default function AuthModal({ onClose, onSignIn, configured }: Props) {
     else setStatus('sent');
   }
 
+  const overlayRef = useOverlay(onClose);
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: '420px' }}>
+      <div ref={overlayRef} tabIndex={-1} className="modal" style={{ maxWidth: '420px' }}>
         <div style={{ padding: '24px 24px 8px', textAlign: 'center' }}>
           <div className="serif" style={{ fontSize: '1.8rem', color: 'var(--accent)' }}>🌿 Suimini</div>
           <h2 className="serif" style={{ margin: '12px 0 4px', fontSize: '1.3rem' }}>Connexion</h2>

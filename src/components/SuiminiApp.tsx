@@ -9,6 +9,7 @@ import { useBirthdayNotifications } from '@/hooks/useBirthdayNotifications';
 import { supabase } from '@/lib/supabase';
 import { ViewMode } from '@/types';
 import Sidebar from './Sidebar';
+import BottomNav from './BottomNav';
 import AuthModal from './AuthModal';
 import TreeView from './TreeView';
 import ListView from './ListView';
@@ -42,7 +43,7 @@ const MapView = dynamic(() => import('./MapView'), {
 export default function SuiminiApp() {
   const { user, signIn, signOut, configured } = useAuth();
   const store = useFamilyStore(user ? { id: user.id, email: user.email } : null);
-  const { dark, toggle: toggleDark } = useDarkMode();
+  const { dark, toggle: toggleDark, mode: themeMode, setMode: setThemeMode } = useDarkMode();
   const { themeId, setTheme, previewTheme, cancelPreview } = useTheme();
   const birthdayAlertCount = useBirthdayNotifications(store.activeTree);
 
@@ -175,7 +176,7 @@ export default function SuiminiApp() {
         onSignOut={async () => { await signOut(); showToast('Déconnecté'); }}
       />
 
-      <main style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', minWidth: 0 }}>
+      <main className="app-main" style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', minWidth: 0 }}>
         {/* Mobile header */}
         <div style={{ display: 'none', padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', alignItems: 'center', gap: '12px' }} className="mobile-header">
           <button onClick={() => setSidebarOpen(true)} className="btn btn-ghost btn-sm">☰</button>
@@ -212,7 +213,8 @@ export default function SuiminiApp() {
                 onPreviewTheme={previewTheme}
                 onCancelPreview={cancelPreview}
                 dark={dark}
-                onToggleDark={toggleDark}
+                mode={themeMode}
+                onSetMode={setThemeMode}
               />
             )}
 
@@ -348,12 +350,16 @@ export default function SuiminiApp() {
         />
       )}
 
+      {/* Mobile bottom navigation */}
+      <BottomNav activeView={view} onViewChange={setView} onOpenMenu={() => setSidebarOpen(true)} />
+
       {/* Toasts */}
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
 
       <style>{`
         @media (max-width: 768px) {
           .mobile-header { display: flex !important; }
+          .app-main { padding-bottom: 56px; }
           .person-panel {
             position: fixed !important; right: 0; top: 0; bottom: 0;
             width: 100% !important; max-width: 420px; z-index: 1200 !important;

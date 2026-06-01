@@ -1,4 +1,5 @@
 'use client';
+import { useOverlay } from '@/hooks/useOverlay';
 import { useState } from 'react';
 import { Person, Relationship, RelationType, FamilyTree } from '@/types';
 import { getDisplayName } from '@/lib/treeUtils';
@@ -46,9 +47,10 @@ export default function AddPersonModal({ onClose, tree, onAdd }: Props) {
     }
   }
 
+  const overlayRef = useOverlay(onClose);
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: '600px' }}>
+      <div ref={overlayRef} tabIndex={-1} className="modal" style={{ maxWidth: '600px' }}>
         {/* Header */}
         <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>

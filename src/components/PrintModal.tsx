@@ -1,4 +1,5 @@
 'use client';
+import { useOverlay } from '@/hooks/useOverlay';
 import { useState, useRef } from 'react';
 import { FamilyTree } from '@/types';
 import { getDisplayName, formatDate, formatYear, getAge, computeTreeStats } from '@/lib/treeUtils';
@@ -165,9 +166,10 @@ export default function PrintModal({ tree, onClose }: Props) {
     setTimeout(() => { printWindow.print(); }, 500);
   }
 
+  const overlayRef = useOverlay(onClose);
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: '760px', maxHeight: '90vh' }}>
+      <div ref={overlayRef} tabIndex={-1} className="modal" style={{ maxWidth: '760px', maxHeight: '90vh' }}>
         <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 className="serif" style={{ margin: 0 }}>🖨 Préparer l'impression</h2>
           <button onClick={onClose} className="btn btn-ghost btn-sm">✕</button>

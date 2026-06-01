@@ -1,6 +1,8 @@
 'use client';
 import { ColorThemeId } from '@/types';
 import { COLOR_THEMES } from '@/lib/themes';
+import { ThemeMode } from '@/hooks/useDarkMode';
+import { Sun, Moon, Monitor } from 'lucide-react';
 
 interface Props {
   themeId: ColorThemeId;
@@ -8,10 +10,17 @@ interface Props {
   onPreviewTheme: (id: ColorThemeId) => void;
   onCancelPreview: () => void;
   dark: boolean;
-  onToggleDark: () => void;
+  mode: ThemeMode;
+  onSetMode: (m: ThemeMode) => void;
 }
 
-export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, onCancelPreview, dark, onToggleDark }: Props) {
+const MODE_OPTS: { id: ThemeMode; label: string; Icon: typeof Sun }[] = [
+  { id: 'light', label: 'Clair', Icon: Sun },
+  { id: 'dark', label: 'Sombre', Icon: Moon },
+  { id: 'system', label: 'Système', Icon: Monitor },
+];
+
+export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, onCancelPreview, mode, onSetMode }: Props) {
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '32px 24px' }}>
       <div style={{ maxWidth: '720px', margin: '0 auto' }} className="animate-fade-in">
@@ -76,14 +85,26 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
         {/* Appearance */}
         <section>
           <h3 className="serif" style={{ fontSize: '1.15rem', marginBottom: '12px' }}>Apparence</h3>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', padding: '14px 16px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
             <div>
-              <div style={{ fontWeight: 700, fontSize: '14px' }}>Mode sombre</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Réduit la luminosité pour les environnements peu éclairés.</div>
+              <div style={{ fontWeight: 700, fontSize: '14px' }}>Thème d&apos;affichage</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>« Système » suit automatiquement les réglages de votre appareil.</div>
             </div>
-            <button onClick={onToggleDark} className="btn btn-secondary btn-sm">
-              {dark ? '☀️ Passer en clair' : '🌙 Passer en sombre'}
-            </button>
+            <div role="radiogroup" aria-label="Thème d'affichage" style={{ display: 'inline-flex', background: 'var(--bg-muted)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '3px', gap: '2px' }}>
+              {MODE_OPTS.map(opt => {
+                const active = mode === opt.id;
+                return (
+                  <button key={opt.id} role="radio" aria-checked={active} onClick={() => onSetMode(opt.id)}
+                    className="btn btn-sm" style={{
+                      background: active ? 'var(--accent)' : 'transparent',
+                      color: active ? '#fff' : 'var(--text-muted)',
+                      boxShadow: 'none', minHeight: '32px',
+                    }}>
+                    <opt.Icon size={14} /> {opt.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </section>
       </div>

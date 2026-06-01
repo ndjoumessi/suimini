@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Person } from '@/types';
+import { useOverlay } from '@/hooks/useOverlay';
 import { getFullName, formatDate, getAge } from '@/lib/treeUtils';
 
 interface Props {
@@ -19,6 +20,7 @@ export default function PresentationMode({ persons, onClose }: Props) {
     });
   }, [persons]);
 
+  const overlayRef = useOverlay<HTMLDivElement>(onClose);
   const [index, setIndex] = useState(0);
 
   const go = useCallback((delta: number) => {
@@ -37,7 +39,7 @@ export default function PresentationMode({ persons, onClose }: Props) {
 
   if (ordered.length === 0) {
     return (
-      <div className="presentation-root" style={rootStyle}>
+      <div ref={overlayRef} tabIndex={-1} className="presentation-root" style={rootStyle}>
         <button onClick={onClose} style={closeStyle}>✕</button>
         <div style={{ color: '#d8d2c8', textAlign: 'center' }}>
           <div style={{ fontSize: '48px', marginBottom: '12px' }}>🎬</div>
@@ -52,7 +54,7 @@ export default function PresentationMode({ persons, onClose }: Props) {
   const accent = person.gender === 'male' ? 'var(--male)' : person.gender === 'female' ? 'var(--female)' : 'var(--accent)';
 
   return (
-    <div className="presentation-root" style={rootStyle}>
+    <div ref={overlayRef} tabIndex={-1} className="presentation-root" style={rootStyle}>
       <button onClick={onClose} style={closeStyle} title="Quitter (Échap)">✕</button>
 
       {/* Navigation arrows */}

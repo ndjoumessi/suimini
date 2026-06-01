@@ -1,4 +1,5 @@
 'use client';
+import { useOverlay } from '@/hooks/useOverlay';
 import { useState } from 'react';
 import { FamilyTree } from '@/types';
 
@@ -34,9 +35,10 @@ export default function TreeSelectorModal({ trees, activeTreeId, shared = {}, on
     setEditId(null); setDeleteConfirm(null);
   }
 
+  const overlayRef = useOverlay(onClose);
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: '520px' }}>
+      <div ref={overlayRef} tabIndex={-1} className="modal" style={{ maxWidth: '520px' }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 className="serif" style={{ margin: 0 }}>🌳 Mes arbres</h2>
           <button onClick={onClose} className="btn btn-ghost btn-sm">✕</button>
