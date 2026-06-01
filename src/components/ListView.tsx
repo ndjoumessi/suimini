@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { FamilyTree, SearchFilters } from '@/types';
 import { searchPersons, getAge, formatYear, getDisplayName } from '@/lib/treeUtils';
+import { UsersRound, Plus, ChevronDown } from 'lucide-react';
 
 interface Props {
   tree: FamilyTree;
@@ -9,19 +10,24 @@ interface Props {
   onAddPerson: () => void;
 }
 
+const BATCH = 50;
+
 export default function ListView({ tree, onSelectPerson, onAddPerson }: Props) {
   const [filters, setFilters] = useState<SearchFilters>({});
   const [sortBy, setSortBy] = useState<'name' | 'birth' | 'death'>('name');
   const [showFilters, setShowFilters] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(BATCH);
 
   const filtered = searchPersons(tree.persons, filters);
-  
+
   const sorted = [...filtered].sort((a, b) => {
     if (sortBy === 'name') return a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName);
     if (sortBy === 'birth') return (a.birthDate || '9999').localeCompare(b.birthDate || '9999');
     if (sortBy === 'death') return (a.deathDate || '9999').localeCompare(b.deathDate || '9999');
     return 0;
   });
+
+  const visible = sorted.slice(0, visibleCount);
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -104,13 +110,19 @@ export default function ListView({ tree, onSelectPerson, onAddPerson }: Props) {
       {/* List */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
         {sorted.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-            <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔍</div>
-            <p>Aucune personne trouvée avec ces filtres</p>
+          <div style={{ textAlign: 'center', padding: '56px 24px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+            <UsersRound size={56} strokeWidth={1.25} style={{ color: 'var(--text-light)' }} aria-hidden="true" />
+            <div>
+              <h3 style={{ margin: '0 0 4px' }}>Aucune personne trouvée</h3>
+              <p style={{ margin: 0 }}>{tree.persons.length === 0 ? 'Cet arbre est vide.' : 'Aucun résultat avec ces filtres.'}</p>
+            </div>
+            <button onClick={tree.persons.length === 0 ? onAddPerson : () => setFilters({})} className="btn btn-primary btn-sm">
+              {tree.persons.length === 0 ? <><Plus size={14} /> Ajouter une personne</> : 'Réinitialiser les filtres'}
+            </button>
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '10px' }}>
-            {sorted.map(person => {
+            {visible.map(person => {
               const age = getAge(person.birthDate, person.deathDate);
               return (
                 <button
@@ -169,6 +181,13 @@ export default function ListView({ tree, onSelectPerson, onAddPerson }: Props) {
                 </button>
               );
             })}
+          </div>
+        )}
+        {visibleCount < sorted.length && (
+          <div style={{ textAlign: 'center', marginTop: '14px' }}>
+            <button onClick={() => setVisibleCount(c => c + BATCH)} className="btn btn-secondary btn-sm">
+              <ChevronDown size={14} /> Voir plus ({sorted.length - visibleCount} restantes)
+            </button>
           </div>
         )}
       </div>

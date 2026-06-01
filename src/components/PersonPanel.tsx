@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Person, FamilyTree, Relationship, RelationType, FamilyEvent, EventType, Note, Citation, DnaOrigin } from '@/types';
 import { getParents, getChildren, getSpouses, getSiblings, getAge, formatDate, formatYear, getDisplayName, generateId, safeHttpUrl } from '@/lib/treeUtils';
 import PersonForm from './PersonForm';
+import { X, Pencil, Trash2 } from 'lucide-react';
 
 interface Props {
   person: Person;
@@ -181,34 +182,42 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
       borderLeft:'1px solid var(--border)', display:'flex', flexDirection:'column',
       boxShadow:'var(--shadow-lg)', zIndex:60,
     }}>
-      {/* Header */}
-      <div style={{ padding:'18px 18px 14px', borderBottom:'1px solid var(--border)', display:'flex', alignItems:'flex-start', gap:'12px' }}>
-        <div style={{ width:'56px', height:'56px', borderRadius:'50%', flexShrink:0, overflow:'hidden',
-          background: person.gender==='male'?'#deeaf5':person.gender==='female'?'#f5dde8':'var(--bg-muted)',
-          display:'flex', alignItems:'center', justifyContent:'center',
-          border:`3px solid ${person.gender==='male'?'var(--male)':person.gender==='female'?'var(--female)':'var(--border)'}`,
-          fontSize:'24px'
-        }}>
-          {person.profilePhoto
-            ? <img src={person.profilePhoto} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
-            : person.gender==='male'?'👨':person.gender==='female'?'👩':'🧑'}
+      {/* Header (sticky) */}
+      <div style={{ padding:'14px 16px', borderBottom:'1px solid var(--border)', flexShrink:0, position:'sticky', top:0, background:'var(--bg-card)', zIndex:2 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'10px' }}>
+          <CompletionDonut score={completionScore} color={completionColor} />
+          <div style={{ flex:1 }} />
+          <button onClick={()=>setTab('edit')} className="icon-btn" aria-label="Modifier" title="Modifier"><Pencil size={16} /></button>
+          <button onClick={()=>{ setTab('edit'); setConfirmDelete(true); }} className="icon-btn" aria-label="Supprimer" title="Supprimer" style={{ color:'var(--danger)' }}><Trash2 size={16} /></button>
+          <button onClick={onClose} className="icon-btn" aria-label="Fermer le panneau" title="Fermer"><X size={18} /></button>
         </div>
-        <div style={{ flex:1, minWidth:0 }}>
-          <h2 className="serif" style={{ margin:'0 0 4px', fontSize:'1.2rem', lineHeight:1.25 }}>
-            {person.firstName} {person.maidenName?`(${person.maidenName}) `:''}{person.lastName}
-          </h2>
-          {person.nickName && <div style={{ fontSize:'12px', color:'var(--text-muted)', marginBottom:'4px', fontStyle:'italic' }}>«&nbsp;{person.nickName}&nbsp;»</div>}
-          <div style={{ display:'flex', gap:'5px', flexWrap:'wrap' }}>
-            <span className={`badge badge-${person.gender==='male'?'male':person.gender==='female'?'female':'accent'}`}>
-              {person.gender==='male'?'♂':person.gender==='female'?'♀':'⚧'}
-            </span>
-            <span className={`badge badge-${person.isAlive?'alive':'deceased'}`}>
-              {person.isAlive?'💚 Vivant':'🕊 Décédé'}
-            </span>
-            {age!==null&&<span className="badge badge-accent">{age} ans</span>}
+        <div style={{ display:'flex', alignItems:'flex-start', gap:'12px' }}>
+          <div style={{ width:'56px', height:'56px', borderRadius:'50%', flexShrink:0, overflow:'hidden',
+            background: person.gender==='male'?'#deeaf5':person.gender==='female'?'#f5dde8':'var(--bg-muted)',
+            display:'flex', alignItems:'center', justifyContent:'center',
+            border:`3px solid ${person.gender==='male'?'var(--male)':person.gender==='female'?'var(--female)':'var(--border)'}`,
+            fontSize:'18px', fontWeight:700, color: person.gender==='male'?'var(--male)':person.gender==='female'?'var(--female)':'var(--text-muted)'
+          }}>
+            {person.profilePhoto
+              ? <img src={person.profilePhoto} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+              : `${(person.firstName[0]||'').toUpperCase()}${(person.lastName[0]||'').toUpperCase()}`}
+          </div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <h2 className="serif" style={{ margin:'0 0 4px', fontSize:'1.2rem', lineHeight:1.25 }}>
+              {person.firstName} {person.maidenName?`(${person.maidenName}) `:''}{person.lastName}
+            </h2>
+            {person.nickName && <div style={{ fontSize:'12px', color:'var(--text-muted)', marginBottom:'4px', fontStyle:'italic' }}>«&nbsp;{person.nickName}&nbsp;»</div>}
+            <div style={{ display:'flex', gap:'5px', flexWrap:'wrap' }}>
+              <span className={`badge badge-${person.gender==='male'?'male':person.gender==='female'?'female':'accent'}`}>
+                {person.gender==='male'?'♂':person.gender==='female'?'♀':'⚧'}
+              </span>
+              <span className={`badge badge-${person.isAlive?'alive':'deceased'}`}>
+                {person.isAlive?'Vivant':'Décédé'}
+              </span>
+              {age!==null&&<span className="badge badge-accent">{age} ans</span>}
+            </div>
           </div>
         </div>
-        <button onClick={onClose} className="btn btn-ghost btn-sm" title="Fermer" style={{ padding:'4px 8px', fontSize:'16px' }}>✕</button>
       </div>
 
       {/* Tabs */}
@@ -759,6 +768,20 @@ function LifeTimeline({ person }: { person: Person }) {
         Survolez un point pour le détail · événements mondiaux en gris
       </div>
     </div>
+  );
+}
+
+function CompletionDonut({ score, color }: { score: number; color: string }) {
+  const r = 13, circ = 2 * Math.PI * r;
+  return (
+    <svg width={34} height={34} viewBox="0 0 34 34" role="img" aria-label={`Profil complété à ${score}%`}>
+      <title>{`Profil complété à ${score}%`}</title>
+      <circle cx={17} cy={17} r={r} fill="none" stroke="var(--bg-muted)" strokeWidth={4} />
+      <circle cx={17} cy={17} r={r} fill="none" stroke={color} strokeWidth={4} strokeLinecap="round"
+        strokeDasharray={circ} strokeDashoffset={circ * (1 - score / 100)} transform="rotate(-90 17 17)"
+        style={{ transition: 'stroke-dashoffset 0.4s ease' }} />
+      <text x={17} y={18} textAnchor="middle" dominantBaseline="middle" fontSize={9.5} fontWeight={700} fontFamily="Lato, sans-serif" fill="var(--text)">{score}</text>
+    </svg>
   );
 }
 

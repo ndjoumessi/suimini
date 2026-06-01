@@ -1,17 +1,33 @@
 'use client';
+import { useState } from 'react';
 import { FamilyTree, ViewMode } from '@/types';
+import {
+  TreePine, Users, Calendar, Map, Images, BookOpen, Cake, Search, BarChart2, Settings,
+  Plus, Play, Share2, FolderOpen, Printer, Moon, Sun, ChevronDown, LogOut, LogIn, Cloud,
+  Check, CloudOff, UserCircle2,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
-const NAV_ITEMS: { view: ViewMode; icon: string; label: string }[] = [
-  { view: 'tree',       icon: '🌳', label: 'Arbre' },
-  { view: 'list',       icon: '👥', label: 'Personnes' },
-  { view: 'timeline',   icon: '📅', label: 'Chronologie' },
-  { view: 'map',        icon: '🗺', label: 'Carte' },
-  { view: 'gallery',    icon: '📸', label: 'Galerie' },
-  { view: 'journal',    icon: '📖', label: 'Journal' },
-  { view: 'birthdays',  icon: '🎂', label: 'Anniversaires' },
-  { view: 'ancestors',  icon: '🔍', label: 'Exploration' },
-  { view: 'statistics', icon: '📊', label: 'Statistiques' },
-  { view: 'settings',   icon: '⚙️', label: 'Paramètres' },
+interface NavItem { view: ViewMode; Icon: LucideIcon; label: string }
+const NAV_GROUPS: NavItem[][] = [
+  [
+    { view: 'tree', Icon: TreePine, label: 'Arbre' },
+    { view: 'list', Icon: Users, label: 'Personnes' },
+    { view: 'map', Icon: Map, label: 'Carte' },
+  ],
+  [
+    { view: 'timeline', Icon: Calendar, label: 'Chronologie' },
+    { view: 'journal', Icon: BookOpen, label: 'Journal' },
+    { view: 'birthdays', Icon: Cake, label: 'Anniversaires' },
+  ],
+  [
+    { view: 'gallery', Icon: Images, label: 'Galerie' },
+    { view: 'ancestors', Icon: Search, label: 'Exploration' },
+    { view: 'statistics', Icon: BarChart2, label: 'Statistiques' },
+  ],
+  [
+    { view: 'settings', Icon: Settings, label: 'Paramètres' },
+  ],
 ];
 
 interface Props {
@@ -38,15 +54,16 @@ interface Props {
   onSignOut?: () => void;
 }
 
-const SYNC_LABEL: Record<string, { icon: string; text: string; color: string }> = {
-  saved:   { icon: '✅', text: 'Sauvegardé',        color: 'var(--success)' },
-  syncing: { icon: '⏳', text: 'Synchronisation…',  color: 'var(--accent)' },
-  offline: { icon: '❌', text: 'Hors ligne',        color: 'var(--danger)' },
-  idle:    { icon: '💾', text: 'Local',             color: 'var(--text-light)' },
-};
+function SyncIndicator({ status }: { status: 'idle' | 'saved' | 'syncing' | 'offline' }) {
+  if (status === 'syncing') return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--accent)' }}><span className="spinner" style={{ width: 11, height: 11 }} /> Synchronisation…</span>;
+  if (status === 'offline') return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--danger)' }}><CloudOff size={12} /> Hors ligne</span>;
+  if (status === 'saved') return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--success)' }}><Check size={12} /> Sauvegardé</span>;
+  return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--text-light)' }}><Cloud size={12} /> Local</span>;
+}
 
 export default function Sidebar({ activeView, onViewChange, activeTree, trees, onShowTreeSelector, onAddPerson, onShowImportExport, onPrint, onShare, onPresent, birthdayAlertCount = 0, dark, onToggleDark, isOpen, onClose, userEmail, cloud, syncStatus = 'idle', presenceCount = 0, onSignIn, onSignOut }: Props) {
-  const sync = SYNC_LABEL[cloud ? syncStatus : 'idle'] || SYNC_LABEL.idle;
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <aside style={{ width: '224px', flexShrink: 0, background: 'var(--bg-card)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 50 }}
       className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}
@@ -55,30 +72,26 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
       <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
           <div className="serif" style={{ fontSize: '1.45rem', color: 'var(--accent)' }}>🌿 Suimini</div>
-          <div style={{ fontSize: '10px', color: 'var(--text-light)', letterSpacing: '1px', textTransform: 'uppercase' }}>Arbre Généalogique</div>
+          <div className="label" style={{ fontSize: '10px', letterSpacing: '1px' }}>Arbre Généalogique</div>
         </div>
-        <button
-          onClick={onToggleDark}
-          className="btn btn-ghost btn-sm"
-          title={dark ? 'Mode clair' : 'Mode sombre'}
-          style={{ padding: '4px 6px', fontSize: '16px' }}
-        >
-          {dark ? '☀️' : '🌙'}
+        <button onClick={onToggleDark} className="icon-btn" aria-label={dark ? 'Activer le mode clair' : 'Activer le mode sombre'} title={dark ? 'Mode clair' : 'Mode sombre'}>
+          {dark ? <Sun size={17} /> : <Moon size={17} />}
         </button>
       </div>
 
       {/* Active tree selector */}
       <button onClick={onShowTreeSelector}
-        style={{ margin: '10px 12px', padding: '10px 12px', background: 'var(--accent-light)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
+        aria-label="Changer d'arbre"
+        style={{ margin: '10px 12px', padding: '10px 12px', background: 'var(--accent-light)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', cursor: 'pointer', textAlign: 'left', transition: 'border-color var(--t-fast)' }}
         onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent)'}
         onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
       >
-        <div style={{ fontSize: '10px', color: 'var(--text-light)', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Arbre actif</div>
+        <div className="label" style={{ fontSize: '10px', marginBottom: '2px' }}>Arbre actif</div>
         <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--accent)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }}>
             {activeTree?.name || 'Aucun arbre'}
           </span>
-          <span style={{ fontSize: '9px', opacity: 0.6 }}>▼</span>
+          <ChevronDown size={14} style={{ opacity: 0.6 }} />
         </div>
         {activeTree && (
           <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px' }}>
@@ -88,84 +101,107 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
       </button>
 
       {/* Navigation */}
-      <nav style={{ flex: 1, padding: '4px 8px', overflowY: 'auto' }}>
-        <div style={{ fontSize: '10px', color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '1px', padding: '6px 8px 4px', fontWeight: '700' }}>Vues</div>
-        {NAV_ITEMS.map(item => {
-          const showBadge = item.view === 'birthdays' && birthdayAlertCount > 0;
-          return (
-            <button key={item.view}
-              onClick={() => { onViewChange(item.view); onClose(); }}
-              style={{
-                width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
-                padding: '8px 11px', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius)', marginBottom: '2px',
-                background: activeView === item.view ? 'var(--accent-light)' : 'transparent',
-                color: activeView === item.view ? 'var(--accent)' : 'var(--text-muted)',
-                fontFamily: 'Lato, sans-serif', fontSize: '13px',
-                fontWeight: activeView === item.view ? '700' : '400',
-                transition: 'all 0.12s',
-              }}
-              onMouseEnter={e => { if (activeView !== item.view) e.currentTarget.style.background = 'var(--bg-muted)'; }}
-              onMouseLeave={e => { if (activeView !== item.view) e.currentTarget.style.background = 'transparent'; }}
-            >
-              <span style={{ fontSize: '15px', width: '18px', textAlign: 'center', position: 'relative' }}>
-                {item.icon}
-                {showBadge && <span className="birthday-pulse-dot" />}
-              </span>
-              {item.label}
-              {showBadge && (
-                <span className="birthday-badge" style={{ marginLeft: 'auto', background: 'var(--danger)', color: 'white', borderRadius: '100px', padding: '1px 6px', fontSize: '10px', fontWeight: '700' }}>
-                  {birthdayAlertCount}
-                </span>
-              )}
-            </button>
-          );
-        })}
+      <nav style={{ flex: 1, padding: '4px 8px', overflowY: 'auto' }} aria-label="Navigation principale">
+        {NAV_GROUPS.map((group, gi) => (
+          <div key={gi} style={{ paddingTop: gi > 0 ? '6px' : 0, marginTop: gi > 0 ? '6px' : 0, borderTop: gi > 0 ? '1px solid var(--border)' : 'none' }}>
+            {group.map(item => {
+              const active = activeView === item.view;
+              const showBadge = item.view === 'birthdays' && birthdayAlertCount > 0;
+              return (
+                <button key={item.view}
+                  onClick={() => { onViewChange(item.view); onClose(); }}
+                  aria-current={active ? 'page' : undefined}
+                  aria-label={item.label}
+                  style={{
+                    position: 'relative', width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                    padding: '8px 11px', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius)', marginBottom: '2px',
+                    background: active ? 'var(--accent-light)' : 'transparent',
+                    color: active ? 'var(--accent)' : 'var(--text-muted)',
+                    fontFamily: 'Lato, sans-serif', fontSize: '13px', fontWeight: active ? 700 : 400,
+                    transition: 'background var(--t-fast), color var(--t-fast)',
+                  }}
+                  onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'var(--interactive)'; }}
+                  onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}
+                >
+                  {/* Active indicator bar */}
+                  {active && <span style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', width: '3px', height: '60%', background: 'var(--accent)', borderRadius: '0 3px 3px 0' }} />}
+                  <span style={{ width: '18px', display: 'inline-flex', justifyContent: 'center', position: 'relative' }}>
+                    <item.Icon size={17} aria-hidden="true" />
+                    {showBadge && <span className="birthday-pulse-dot" />}
+                  </span>
+                  {item.label}
+                  {showBadge && (
+                    <span className="birthday-badge" style={{ marginLeft: 'auto', background: 'var(--danger)', color: 'white', borderRadius: '100px', padding: '1px 6px', fontSize: '10px', fontWeight: '700' }}>
+                      {birthdayAlertCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       {/* Actions */}
       <div style={{ padding: '8px 10px', borderTop: '1px solid var(--border)' }}>
-        <button onClick={onAddPerson} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginBottom: '6px' }}>
-          ＋ Ajouter une personne
+        <button onClick={onAddPerson} className="btn btn-primary" style={{ width: '100%', marginBottom: '6px' }}>
+          <Plus size={16} /> Ajouter une personne
         </button>
-        <button onClick={onPresent} className="btn btn-secondary btn-sm" style={{ width: '100%', justifyContent: 'center', marginBottom: '6px' }}>
-          🎬 Mode présentation
+        <button onClick={onPresent} className="btn btn-secondary btn-sm" style={{ width: '100%', marginBottom: '6px' }}>
+          <Play size={14} /> Mode présentation
         </button>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px', marginBottom: '5px' }}>
-          <button onClick={onShare} className="btn btn-secondary btn-sm" style={{ justifyContent: 'center' }}>
-            🔗 Partager
+          <button onClick={onShare} className="btn btn-secondary btn-sm">
+            <Share2 size={14} /> Partager
           </button>
-          <button onClick={onShowImportExport} className="btn btn-secondary btn-sm" style={{ justifyContent: 'center' }}>
-            📁 Import/Export
+          <button onClick={onShowImportExport} className="btn btn-secondary btn-sm">
+            <FolderOpen size={14} /> Import
           </button>
         </div>
-        <button onClick={onPrint} className="btn btn-secondary btn-sm" style={{ width: '100%', justifyContent: 'center' }}>
-          🖨 Imprimer
+        <button onClick={onPrint} className="btn btn-secondary btn-sm" style={{ width: '100%' }}>
+          <Printer size={14} /> Imprimer
         </button>
       </div>
 
       {/* Account & sync */}
-      <div style={{ padding: '8px 10px', borderTop: '1px solid var(--border)' }}>
+      <div style={{ padding: '8px 10px', borderTop: '1px solid var(--border)', position: 'relative' }}>
         {userEmail ? (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-              <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, flexShrink: 0 }}>
+            <button
+              onClick={() => setMenuOpen(o => !o)}
+              aria-haspopup="menu" aria-expanded={menuOpen} aria-label="Menu du compte"
+              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px', borderRadius: 'var(--radius)' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--interactive)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >
+              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, flexShrink: 0 }}>
                 {userEmail[0].toUpperCase()}
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userEmail}</div>
-                <div style={{ fontSize: '10px', color: sync.color }}>{sync.icon} {sync.text}</div>
+              <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text)' }}>{userEmail}</div>
+                <div style={{ fontSize: '10px' }}><SyncIndicator status={cloud ? syncStatus : 'idle'} /></div>
               </div>
-              <button onClick={onSignOut} className="btn btn-ghost btn-sm" title="Se déconnecter" style={{ fontSize: '12px', flexShrink: 0 }}>⎋</button>
-            </div>
+              <ChevronDown size={14} style={{ color: 'var(--text-light)', transform: menuOpen ? 'rotate(180deg)' : 'none', transition: 'transform var(--t-fast)' }} />
+            </button>
+            {menuOpen && (
+              <div role="menu" className="animate-scale-in" style={{ position: 'absolute', bottom: '100%', left: '10px', right: '10px', marginBottom: '4px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow-lg)', overflow: 'hidden', zIndex: 100 }}>
+                <div style={{ padding: '8px 12px', fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px', borderBottom: '1px solid var(--border)' }}>
+                  <UserCircle2 size={14} /> {userEmail}
+                </div>
+                <button role="menuitem" onClick={() => { setMenuOpen(false); onSignOut?.(); }} className="btn btn-ghost btn-sm" style={{ width: '100%', justifyContent: 'flex-start', borderRadius: 0, color: 'var(--danger)' }}>
+                  <LogOut size={14} /> Se déconnecter
+                </button>
+              </div>
+            )}
             {presenceCount > 1 && (
-              <div style={{ fontSize: '10px', color: 'var(--accent)', textAlign: 'center', marginBottom: '4px' }}>
-                👤 {presenceCount} personnes connectées sur cet arbre
+              <div style={{ fontSize: '10px', color: 'var(--accent)', textAlign: 'center', marginTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                <Users size={11} /> {presenceCount} connectés sur cet arbre
               </div>
             )}
           </>
         ) : (
-          <button onClick={onSignIn} className="btn btn-secondary btn-sm" style={{ width: '100%', justifyContent: 'center' }}>
-            ☁️ Se connecter pour sauvegarder
+          <button onClick={onSignIn} className="btn btn-secondary btn-sm" style={{ width: '100%' }}>
+            <LogIn size={14} /> Se connecter pour sauvegarder
           </button>
         )}
       </div>
@@ -173,7 +209,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
       {/* Footer */}
       <div style={{ padding: '6px 14px', borderTop: '1px solid var(--border)', textAlign: 'center' }}>
         <div style={{ fontSize: '10px', color: 'var(--text-light)' }}>
-          {trees.length} arbre{trees.length > 1 ? 's' : ''} · Suimini v1.4{userEmail ? '' : ' · mode invité'}
+          {trees.length} arbre{trees.length > 1 ? 's' : ''} · Suimini v1.5{userEmail ? '' : ' · invité'}
         </div>
       </div>
 

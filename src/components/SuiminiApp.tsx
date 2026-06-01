@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { useFamilyStore } from '@/hooks/useFamilyStore';
 import { useDarkMode } from '@/hooks/useDarkMode';
@@ -28,7 +28,7 @@ import TreeSelectorModal from './TreeSelectorModal';
 import ImportExportModal from './ImportExportModal';
 import PrintModal from './PrintModal';
 import ShareModal from './ShareModal';
-import Toast from './Toast';
+import ToastStack, { ToastType, ToastItem } from './Toast';
 
 const MapView = dynamic(() => import('./MapView'), {
   ssr: false,
@@ -58,19 +58,23 @@ export default function SuiminiApp() {
   const [showAuth, setShowAuth] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [presenceCount, setPresenceCount] = useState(1);
-  const [toast, setToast] = useState<{ msg: string; icon?: string } | null>(null);
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const toastCounter = useRef(0);
 
-  const showToast = useCallback((msg: string, icon = '✅') => {
-    setToast({ msg, icon });
-    setTimeout(() => setToast(null), 2800);
+  const showToast = useCallback((msg: string, type: ToastType | string = 'success') => {
+    const t: ToastType = (['success', 'error', 'info', 'warning'] as const).includes(type as ToastType) ? type as ToastType : 'info';
+    toastCounter.current += 1;
+    const id = toastCounter.current;
+    setToasts(prev => [...prev, { id, msg, type: t }].slice(-3)); // queue, max 3
   }, []);
+  const dismissToast = useCallback((id: number) => setToasts(prev => prev.filter(t => t.id !== id)), []);
 
   // Surface a failed magic-link exchange (route redirects to /?auth_error=1).
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     if (params.get('auth_error')) {
-      showToast('Échec de la connexion. Le lien a peut-être expiré.', '❌');
+      showToast('Échec de la connexion. Le lien a peut-être expiré.', 'error');
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, [showToast]);
@@ -80,7 +84,7 @@ export default function SuiminiApp() {
   useEffect(() => {
     if (!store.cloud || !supabase || !activeTreeId || !user) return;
     const sb = supabase;
-    const reload = () => { store.reloadTreeFromCloud(activeTreeId); showToast('Un collaborateur a modifié cet arbre', '🔄'); };
+    const reload = () => { store.reloadTreeFromCloud(activeTreeId); showToast('Un collaborateur a modifié cet arbre', 'info'); };
     const channel = sb
       .channel(`tree:${activeTreeId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'persons', filter: `tree_id=eq.${activeTreeId}` }, reload)
@@ -195,7 +199,7 @@ export default function SuiminiApp() {
                 onSelectPerson={handleSelectPerson}
                 onAdd={(entry) => { store.addJournalEntry(entry); showToast('Entrée ajoutée 📖'); }}
                 onUpdate={(id, updates) => { store.updateJournalEntry(id, updates); showToast('Entrée mise à jour'); }}
-                onDelete={(id) => { store.deleteJournalEntry(id); showToast('Entrée supprimée', '🗑'); }}
+                onDelete={(id) => { store.deleteJournalEntry(id); showToast('Entrée supprimée', 'info'); }}
               />
             )}
             {view === 'birthdays' && <BirthdaysView tree={store.activeTree} onSelectPerson={handleSelectPerson} />}
@@ -235,11 +239,11 @@ export default function SuiminiApp() {
           tree={store.activeTree}
           onClose={() => setSelectedPersonId(null)}
           onUpdate={(updates) => { store.updatePerson(selectedPerson.id, updates); showToast('Profil mis à jour'); }}
-          onDelete={() => { store.deletePerson(selectedPerson.id); setSelectedPersonId(null); showToast('Personne supprimée', '🗑'); }}
+          onDelete={() => { store.deletePerson(selectedPerson.id); setSelectedPersonId(null); showToast('Personne supprimée', 'info'); }}
           onSelectPerson={handleSelectPerson}
           onAddRelationship={store.addRelationship}
           onUpdateRelationship={(id, updates) => { store.updateRelationship(id, updates); showToast('Relation mise à jour'); }}
-          onDeleteRelationship={(id) => { store.deleteRelationship(id); showToast('Relation supprimée', '🗑'); }}
+          onDeleteRelationship={(id) => { store.deleteRelationship(id); showToast('Relation supprimée', 'info'); }}
         />
       )}
 
@@ -295,7 +299,7 @@ export default function SuiminiApp() {
           shared={store.shared}
           onSelect={(id) => { store.switchTree(id); showToast('Arbre changé'); }}
           onCreate={(name, desc) => { store.createTree(name, desc); showToast(`Arbre "${name}" créé 🌳`); }}
-          onDelete={(id) => { store.deleteTree(id); showToast('Arbre supprimé', '🗑'); }}
+          onDelete={(id) => { store.deleteTree(id); showToast('Arbre supprimé', 'info'); }}
           onRename={(id, meta) => { store.updateTreeMeta(id, meta); showToast('Arbre mis à jour'); }}
           onDuplicate={(id, newName) => { store.duplicateTree(id, newName); showToast(`Arbre dupliqué « ${newName} » 📋`); }}
           onClose={() => setShowTreeSelector(false)}
@@ -344,8 +348,8 @@ export default function SuiminiApp() {
         />
       )}
 
-      {/* Toast */}
-      {toast && <Toast message={toast.msg} icon={toast.icon} />}
+      {/* Toasts */}
+      <ToastStack toasts={toasts} onDismiss={dismissToast} />
 
       <style>{`
         @media (max-width: 768px) {

@@ -1,15 +1,47 @@
 'use client';
+import { useEffect } from 'react';
+import { CheckCircle2, XCircle, Info, AlertTriangle } from 'lucide-react';
 
-interface Props {
-  message: string;
-  icon?: string;
+export type ToastType = 'success' | 'error' | 'info' | 'warning';
+export interface ToastItem { id: number; msg: string; type: ToastType }
+
+const ICONS = {
+  success: CheckCircle2,
+  error: XCircle,
+  info: Info,
+  warning: AlertTriangle,
+} as const;
+
+const DURATION = 3000;
+
+function Toast({ toast, onDismiss }: { toast: ToastItem; onDismiss: (id: number) => void }) {
+  const Icon = ICONS[toast.type];
+  useEffect(() => {
+    const t = setTimeout(() => onDismiss(toast.id), DURATION);
+    return () => clearTimeout(t);
+  }, [toast.id, onDismiss]);
+
+  return (
+    <div
+      className={`toast toast-${toast.type}`}
+      role="status"
+      aria-live="polite"
+      onClick={() => onDismiss(toast.id)}
+      title="Cliquez pour fermer"
+    >
+      <span className="toast-icon"><Icon size={18} aria-hidden="true" /></span>
+      <span style={{ flex: 1 }}>{toast.msg}</span>
+      <span className="toast-progress" style={{ animationDuration: `${DURATION}ms` }} />
+    </div>
+  );
 }
 
-export default function Toast({ message, icon = '✅' }: Props) {
+/** Stack of up to 3 toasts, newest at the bottom-right. */
+export default function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id: number) => void }) {
+  if (toasts.length === 0) return null;
   return (
-    <div className="toast">
-      <span>{icon}</span>
-      <span>{message}</span>
+    <div className="toast-stack" aria-label="Notifications">
+      {toasts.map(t => <Toast key={t.id} toast={t} onDismiss={onDismiss} />)}
     </div>
   );
 }

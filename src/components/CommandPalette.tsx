@@ -2,6 +2,11 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { FamilyTree, ViewMode, Person } from '@/types';
 import { getDisplayName, formatYear, fuzzyMatch } from '@/lib/treeUtils';
+import {
+  Search, SearchX, Clock, CornerDownLeft, User, UserPlus, Download, Upload, Play,
+  Printer, Share2, TreePine, Users, Calendar, Map, Images, BookOpen, Cake, BarChart2, Settings,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface Props {
   tree: FamilyTree | null;
@@ -21,23 +26,25 @@ interface CommandItem {
   kind: 'person' | 'view' | 'action';
   label: string;
   sublabel?: string;
-  icon: string;
+  Icon: LucideIcon;
   run: () => void;
   searchText: string;
 }
 
-const VIEW_DEFS: { view: ViewMode; icon: string; label: string }[] = [
-  { view: 'tree', icon: '🌳', label: 'Arbre' },
-  { view: 'list', icon: '👥', label: 'Personnes' },
-  { view: 'timeline', icon: '📅', label: 'Chronologie' },
-  { view: 'map', icon: '🗺', label: 'Carte' },
-  { view: 'gallery', icon: '📸', label: 'Galerie' },
-  { view: 'journal', icon: '📖', label: 'Journal' },
-  { view: 'birthdays', icon: '🎂', label: 'Anniversaires' },
-  { view: 'ancestors', icon: '🔍', label: 'Exploration' },
-  { view: 'statistics', icon: '📊', label: 'Statistiques' },
-  { view: 'settings', icon: '⚙️', label: 'Paramètres' },
+const VIEW_DEFS: { view: ViewMode; Icon: LucideIcon; label: string }[] = [
+  { view: 'tree', Icon: TreePine, label: 'Arbre' },
+  { view: 'list', Icon: Users, label: 'Personnes' },
+  { view: 'timeline', Icon: Calendar, label: 'Chronologie' },
+  { view: 'map', Icon: Map, label: 'Carte' },
+  { view: 'gallery', Icon: Images, label: 'Galerie' },
+  { view: 'journal', Icon: BookOpen, label: 'Journal' },
+  { view: 'birthdays', Icon: Cake, label: 'Anniversaires' },
+  { view: 'ancestors', Icon: Search, label: 'Exploration' },
+  { view: 'statistics', Icon: BarChart2, label: 'Statistiques' },
+  { view: 'settings', Icon: Settings, label: 'Paramètres' },
 ];
+
+const RECENT_KEY = 'suimini_recent_searches';
 
 function normalize(s: string): string {
   return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -45,9 +52,7 @@ function normalize(s: string): string {
 
 function Highlight({ text, query }: { text: string; query: string }) {
   if (!query) return <>{text}</>;
-  const nText = normalize(text);
-  const nQuery = normalize(query);
-  const idx = nText.indexOf(nQuery);
+  const idx = normalize(text).indexOf(normalize(query));
   if (idx === -1) return <>{text}</>;
   return (
     <>
@@ -63,23 +68,37 @@ function Highlight({ text, query }: { text: string; query: string }) {
 export default function CommandPalette({ tree, onClose, onSelectPerson, onNavigate, onAddPerson, onImportExport, onPrint, onShare, onPresent, onTreeSelector }: Props) {
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
+  const [recent, setRecent] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); } catch { return []; }
+  });
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { inputRef.current?.focus(); }, []);
 
+  function saveRecent(term: string) {
+    const t = term.trim();
+    if (!t) return;
+    setRecent(prev => {
+      const next = [t, ...prev.filter(x => x.toLowerCase() !== t.toLowerCase())].slice(0, 5);
+      try { localStorage.setItem(RECENT_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+  }
+
   const actions: CommandItem[] = useMemo(() => [
-    { id: 'a-add', kind: 'action', label: 'Ajouter une personne', icon: '➕', searchText: 'ajouter personne nouveau membre add', run: () => { onClose(); onAddPerson(); } },
-    { id: 'a-import', kind: 'action', label: 'Importer des données', sublabel: 'JSON, GEDCOM', icon: '📥', searchText: 'importer import charger gedcom json fichier ouvrir', run: () => { onClose(); onImportExport('import'); } },
-    { id: 'a-export', kind: 'action', label: "Exporter l'arbre", sublabel: 'JSON, GEDCOM', icon: '📤', searchText: 'exporter export telecharger sauvegarde gedcom json', run: () => { onClose(); onImportExport('export'); } },
-    { id: 'a-present', kind: 'action', label: 'Mode présentation', sublabel: 'Diaporama plein écran', icon: '🎬', searchText: 'presentation diaporama plein ecran slideshow', run: () => { onClose(); onPresent(); } },
-    { id: 'a-print', kind: 'action', label: 'Imprimer', icon: '🖨', searchText: 'imprimer print pdf', run: () => { onClose(); onPrint(); } },
-    { id: 'a-share', kind: 'action', label: 'Partager', icon: '🔗', searchText: 'partager share lien', run: () => { onClose(); onShare(); } },
-    { id: 'a-tree', kind: 'action', label: "Changer d'arbre", icon: '🌲', searchText: 'changer arbre tree selecteur', run: () => { onClose(); onTreeSelector(); } },
+    { id: 'a-add', kind: 'action', label: 'Ajouter une personne', Icon: UserPlus, searchText: 'ajouter personne nouveau membre add', run: () => { onClose(); onAddPerson(); } },
+    { id: 'a-import', kind: 'action', label: 'Importer des données', sublabel: 'JSON, GEDCOM', Icon: Download, searchText: 'importer import charger gedcom json fichier ouvrir', run: () => { onClose(); onImportExport('import'); } },
+    { id: 'a-export', kind: 'action', label: "Exporter l'arbre", sublabel: 'JSON, GEDCOM', Icon: Upload, searchText: 'exporter export telecharger sauvegarde gedcom json', run: () => { onClose(); onImportExport('export'); } },
+    { id: 'a-present', kind: 'action', label: 'Mode présentation', sublabel: 'Diaporama plein écran', Icon: Play, searchText: 'presentation diaporama plein ecran slideshow', run: () => { onClose(); onPresent(); } },
+    { id: 'a-print', kind: 'action', label: 'Imprimer', Icon: Printer, searchText: 'imprimer print pdf', run: () => { onClose(); onPrint(); } },
+    { id: 'a-share', kind: 'action', label: 'Partager', Icon: Share2, searchText: 'partager share lien', run: () => { onClose(); onShare(); } },
+    { id: 'a-tree', kind: 'action', label: "Changer d'arbre", Icon: TreePine, searchText: 'changer arbre tree selecteur', run: () => { onClose(); onTreeSelector(); } },
   ], [onClose, onAddPerson, onPresent, onImportExport, onPrint, onShare, onTreeSelector]);
 
   const views: CommandItem[] = useMemo(() => VIEW_DEFS.map(v => ({
-    id: `v-${v.view}`, kind: 'view' as const, label: `Aller à : ${v.label}`, icon: v.icon,
+    id: `v-${v.view}`, kind: 'view' as const, label: `Aller à : ${v.label}`, Icon: v.Icon,
     searchText: `${v.label} vue navigation aller`,
     run: () => { onClose(); onNavigate(v.view); },
   })), [onClose, onNavigate]);
@@ -90,7 +109,7 @@ export default function CommandPalette({ tree, onClose, onSelectPerson, onNaviga
       id: `p-${p.id}`, kind: 'person' as const,
       label: getDisplayName(p),
       sublabel: [p.occupation, formatYear(p.birthDate)].filter(Boolean).join(' · ') || undefined,
-      icon: p.gender === 'male' ? '👨' : p.gender === 'female' ? '👩' : '🧑',
+      Icon: User,
       searchText: normalize(`${getDisplayName(p)} ${p.maidenName || ''} ${p.occupation || ''} ${(p.tags || []).join(' ')}`),
       run: () => { onClose(); onSelectPerson(p.id); },
     }));
@@ -104,7 +123,6 @@ export default function CommandPalette({ tree, onClose, onSelectPerson, onNaviga
       groups.push({ title: 'Navigation', items: views });
       groups.push({ title: 'Membres', items: personItems.slice(0, 6) });
     } else {
-      // Fuzzy/phonetic match so typos & variants (Dupond, Dupon) still surface members.
       const persons = personItems.filter(i => i.searchText.includes(q) || fuzzyMatch(i.searchText, query)).slice(0, 8);
       const acts = actions.filter(i => normalize(i.searchText).includes(q));
       const navs = views.filter(i => normalize(i.searchText).includes(q));
@@ -117,11 +135,16 @@ export default function CommandPalette({ tree, onClose, onSelectPerson, onNaviga
 
   const flat = useMemo(() => results.flatMap(g => g.items), [results]);
 
+  function runItem(item: CommandItem) {
+    if (query.trim()) saveRecent(query.trim());
+    item.run();
+  }
+
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Escape') { e.preventDefault(); onClose(); }
     else if (e.key === 'ArrowDown') { e.preventDefault(); setActive(a => Math.min(a + 1, flat.length - 1)); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(a => Math.max(a - 1, 0)); }
-    else if (e.key === 'Enter') { e.preventDefault(); flat[active]?.run(); }
+    else if (e.key === 'Enter') { e.preventDefault(); if (flat[active]) runItem(flat[active]); }
   }
 
   useEffect(() => {
@@ -136,32 +159,46 @@ export default function CommandPalette({ tree, onClose, onSelectPerson, onNaviga
       onMouseDown={e => e.target === e.currentTarget && onClose()}
       style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(26,22,18,0.45)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '12vh' }}
     >
-      <div className="animate-scale-in" onKeyDown={handleKeyDown}
+      <div className="animate-scale-in" onKeyDown={handleKeyDown} role="dialog" aria-label="Palette de commandes"
         style={{ width: '92%', maxWidth: '560px', background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--border)', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '70vh' }}
       >
         {/* Search input */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 18px', borderBottom: '1px solid var(--border)' }}>
-          <span style={{ fontSize: '18px', color: 'var(--text-muted)' }}>🔍</span>
+          <Search size={18} style={{ color: 'var(--text-muted)', flexShrink: 0 }} aria-hidden="true" />
           <input
             ref={inputRef}
             value={query}
             onChange={e => { setQuery(e.target.value); setActive(0); }}
             placeholder="Rechercher un membre, une vue, une action…"
+            aria-label="Rechercher"
             style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: '16px', color: 'var(--text)', fontFamily: 'Lato, sans-serif' }}
           />
           <kbd style={{ fontSize: '10px', color: 'var(--text-light)', border: '1px solid var(--border)', borderRadius: '4px', padding: '2px 6px' }}>Esc</kbd>
         </div>
 
+        {/* Recent searches (when empty) */}
+        {!query && recent.length > 0 && (
+          <div style={{ padding: '8px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <Clock size={13} style={{ color: 'var(--text-light)' }} aria-hidden="true" />
+            {recent.map(r => (
+              <button key={r} onClick={() => { setQuery(r); inputRef.current?.focus(); }} className="badge" style={{ background: 'var(--bg-muted)', color: 'var(--text-muted)', border: '1px solid var(--border)', cursor: 'pointer', textTransform: 'none', letterSpacing: 0 }}>
+                {r}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Results */}
         <div ref={listRef} style={{ overflowY: 'auto', padding: '8px' }}>
           {flat.length === 0 && (
-            <div style={{ padding: '28px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>
-              Aucun résultat pour « {query} »
+            <div style={{ padding: '36px 28px', textAlign: 'center', color: 'var(--text-muted)' }}>
+              <SearchX size={40} style={{ color: 'var(--text-light)', marginBottom: '10px' }} aria-hidden="true" />
+              <div style={{ fontSize: '14px' }}>Aucun résultat pour « {query} »</div>
             </div>
           )}
           {results.map(group => (
             <div key={group.title} style={{ marginBottom: '6px' }}>
-              <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.6px', color: 'var(--text-light)', padding: '6px 10px 4px', fontWeight: 700 }}>{group.title}</div>
+              <div className="label" style={{ fontSize: '10px', color: 'var(--text-light)', padding: '6px 10px 4px' }}>{group.title}</div>
               {group.items.map(item => {
                 runningIdx++;
                 const idx = runningIdx;
@@ -171,7 +208,7 @@ export default function CommandPalette({ tree, onClose, onSelectPerson, onNaviga
                     key={item.id}
                     data-idx={idx}
                     onMouseEnter={() => setActive(idx)}
-                    onClick={() => item.run()}
+                    onClick={() => runItem(item)}
                     style={{
                       width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
                       padding: '9px 10px', border: 'none', borderRadius: 'var(--radius)', cursor: 'pointer',
@@ -179,14 +216,16 @@ export default function CommandPalette({ tree, onClose, onSelectPerson, onNaviga
                       textAlign: 'left', fontFamily: 'Lato, sans-serif',
                     }}
                   >
-                    <span style={{ fontSize: '18px', width: '24px', textAlign: 'center', flexShrink: 0 }}>{item.icon}</span>
+                    <span style={{ width: '24px', display: 'inline-flex', justifyContent: 'center', flexShrink: 0, color: isActive ? 'var(--accent)' : 'var(--text-muted)' }}>
+                      <item.Icon size={18} aria-hidden="true" />
+                    </span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: '14px', color: isActive ? 'var(--accent)' : 'var(--text)', fontWeight: isActive ? 700 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         <Highlight text={item.label} query={query} />
                       </div>
                       {item.sublabel && <div style={{ fontSize: '12px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.sublabel}</div>}
                     </div>
-                    {isActive && <span style={{ fontSize: '11px', color: 'var(--text-light)' }}>↵</span>}
+                    {isActive && <CornerDownLeft size={13} style={{ color: 'var(--text-light)', flexShrink: 0 }} aria-hidden="true" />}
                   </button>
                 );
               })}
@@ -199,6 +238,7 @@ export default function CommandPalette({ tree, onClose, onSelectPerson, onNaviga
           <span>↑↓ naviguer</span>
           <span>↵ ouvrir</span>
           <span>esc fermer</span>
+          <span style={{ marginLeft: 'auto' }}>⌘K</span>
         </div>
       </div>
     </div>

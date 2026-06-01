@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { FamilyTree, Person } from '@/types';
 import { getParents, getChildren, getSpouses, getDisplayName, formatYear, getAge } from '@/lib/treeUtils';
+import { Search, ZoomIn, ZoomOut, Crosshair, Eye, EyeOff, Plus, Aperture } from 'lucide-react';
 
 interface TreeNode {
   person: Person;
@@ -330,8 +331,8 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
 
         {/* Search root */}
         <div style={{ position: 'relative' }}>
-          <button onClick={() => setShowSearch(!showSearch)} className="btn btn-secondary btn-sm">
-            🔍 Changer de racine
+          <button onClick={() => setShowSearch(!showSearch)} className="btn btn-secondary btn-sm" aria-label="Changer la racine de l'arbre">
+            <Search size={14} /> Racine
           </button>
           {showSearch && (
             <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 200, marginTop: '4px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px', width: '240px', boxShadow: 'var(--shadow-lg)' }}>
@@ -353,20 +354,20 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
           )}
         </div>
 
-        <button onClick={() => setLayoutMode(m => m === 'fan' ? 'vertical' : 'fan')} className="btn btn-sm" title="Basculer en éventail (fan chart)"
+        <button onClick={() => setLayoutMode(m => m === 'fan' ? 'vertical' : 'fan')} className="btn btn-sm" title="Basculer en éventail (fan chart)" aria-pressed={layoutMode === 'fan'}
           style={{ background: layoutMode === 'fan' ? 'var(--accent)' : 'var(--bg-muted)', color: layoutMode === 'fan' ? '#fff' : 'var(--text-muted)', border: '1px solid var(--border)' }}>
-          🌀 Fan
+          <Aperture size={14} /> Fan
         </button>
         {layoutMode === 'vertical' && <>
-          <button onClick={() => { if(containerRef.current && nodes.length) { const root = nodes.find(n => n.person.id === rootId); if(root) { const cw = containerRef.current.clientWidth; const ch = containerRef.current.clientHeight; setOffset({ x: cw/2 - (root.x + NODE_W/2)*scale, y: ch/3 - (root.y + NODE_H/2)*scale }); } } }} className="btn btn-secondary btn-sm" title="Centrer">⊕</button>
-          <button onClick={() => setScale(s => Math.min(2.5, s * 1.2))} className="btn btn-secondary btn-sm">＋</button>
-          <button onClick={() => setScale(1)} className="btn btn-secondary btn-sm" style={{ minWidth: '48px' }}>{Math.round(scale * 100)}%</button>
-          <button onClick={() => setScale(s => Math.max(0.25, s * 0.8))} className="btn btn-secondary btn-sm">−</button>
+          <button onClick={() => { if(containerRef.current && nodes.length) { const root = nodes.find(n => n.person.id === rootId); if(root) { const cw = containerRef.current.clientWidth; const ch = containerRef.current.clientHeight; setOffset({ x: cw/2 - (root.x + NODE_W/2)*scale, y: ch/3 - (root.y + NODE_H/2)*scale }); } } }} className="btn btn-secondary btn-sm btn-icon" title="Centrer sur la racine" aria-label="Centrer sur la racine"><Crosshair size={15} /></button>
+          <button onClick={() => setScale(s => Math.min(2.5, s * 1.2))} className="btn btn-secondary btn-sm btn-icon" title="Zoom avant" aria-label="Zoom avant"><ZoomIn size={15} /></button>
+          <button onClick={() => setScale(1)} className="btn btn-secondary btn-sm" style={{ minWidth: '48px' }} title="Réinitialiser le zoom" aria-label="Réinitialiser le zoom">{Math.round(scale * 100)}%</button>
+          <button onClick={() => setScale(s => Math.max(0.25, s * 0.8))} className="btn btn-secondary btn-sm btn-icon" title="Zoom arrière" aria-label="Zoom arrière"><ZoomOut size={15} /></button>
         </>}
-        <button onClick={() => setShowLegend(l => !l)} className="btn btn-secondary btn-sm">
-          {showLegend ? '🙈 Légende' : '👁 Légende'}
+        <button onClick={() => setShowLegend(l => !l)} className="btn btn-secondary btn-sm" aria-pressed={showLegend}>
+          {showLegend ? <EyeOff size={14} /> : <Eye size={14} />} Légende
         </button>
-        <button onClick={onAddPerson} className="btn btn-primary btn-sm">＋ Ajouter</button>
+        <button onClick={onAddPerson} className="btn btn-primary btn-sm"><Plus size={14} /> Ajouter</button>
       </div>
 
       {/* Canvas */}
@@ -396,6 +397,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
 
         {layoutMode === 'vertical' && (
         <svg
+          className="tree-svg"
           style={{ position: 'absolute', left: 0, top: 0, transformOrigin: '0 0', transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, overflow: 'visible' }}
           width={svgW} height={svgH}
           viewBox={`${minX} ${minY} ${svgW} ${svgH}`}
