@@ -14,15 +14,16 @@ interface Props {
 export default function AncestorsView({ tree, onSelectPerson }: Props) {
   const [person1Id, setPerson1Id] = useState('');
   const [person2Id, setPerson2Id] = useState('');
-  const [mode, setMode] = useState<'relation' | 'ancestors' | 'descendants'>('relation');
+  const [mode, setMode] = useState<'relation' | 'compare' | 'ancestors' | 'descendants'>('relation');
+  const dual = mode === 'relation' || mode === 'compare';
 
   const person1 = tree.persons.find(p => p.id === person1Id) || null;
   const person2 = tree.persons.find(p => p.id === person2Id) || null;
 
   const relationPath = useMemo(() => {
-    if (!person1Id || !person2Id || mode !== 'relation') return null;
+    if (!person1Id || !person2Id || !dual) return null;
     return findRelationPath(person1Id, person2Id, tree.relationships, tree.persons);
-  }, [person1Id, person2Id, tree, mode]);
+  }, [person1Id, person2Id, tree, dual]);
 
   const relation = useMemo(() => {
     if (!relationPath || !person1Id || !person2Id) return null;
@@ -30,9 +31,9 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
   }, [relationPath, person1Id, person2Id, tree]);
 
   const commonAncestors = useMemo(() => {
-    if (!person1Id || !person2Id || mode !== 'relation') return [];
+    if (!person1Id || !person2Id || !dual) return [];
     return findCommonAncestors(person1Id, person2Id, tree.relationships, tree.persons);
-  }, [person1Id, person2Id, tree, mode]);
+  }, [person1Id, person2Id, tree, dual]);
 
   const ancestors = useMemo(() => {
     if (!person1Id || mode !== 'ancestors') return [];
@@ -57,7 +58,7 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
         </h2>
         {/* Mode selector */}
         <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
-          {(['relation','ancestors','descendants'] as const).map(m => (
+          {(['relation','compare','ancestors','descendants'] as const).map(m => (
             <button
               key={m}
               onClick={() => setMode(m)}
@@ -68,7 +69,7 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
                 border: '1px solid var(--border)',
               }}
             >
-              {{ relation: '🔗 Lien de parenté', ancestors: '🌲 Ancêtres', descendants: '🌱 Descendants' }[m]}
+              {{ relation: '🔗 Lien de parenté', compare: '⚖️ Comparer', ancestors: '🌲 Ancêtres', descendants: '🌱 Descendants' }[m]}
             </button>
           ))}
         </div>
@@ -77,7 +78,7 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: '200px' }}>
             <label style={{ fontSize: '11px', color: 'var(--text-light)', display: 'block', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              {mode === 'relation' ? 'Personne A' : 'Personne'}
+              {dual ? 'Personne A' : 'Personne'}
             </label>
             <select value={person1Id} onChange={e => setPerson1Id(e.target.value)} className="input">
               <option value="">Choisir...</option>
@@ -87,7 +88,7 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
             </select>
           </div>
 
-          {mode === 'relation' && (
+          {dual && (
             <>
               <div style={{ color: 'var(--text-muted)', fontSize: '20px', paddingTop: '20px' }}>⟷</div>
               <div style={{ flex: 1, minWidth: '200px' }}>
@@ -188,6 +189,77 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
           </div>
         )}
 
+        {/* COMPARE MODE */}
+        {mode === 'compare' && person1 && person2 && (
+          <div className="animate-fade-in">
+            {/* Header */}
+            <div className="card" style={{ padding: '16px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-around', gap: '12px' }}>
+              <PersonBubble person={person1} onClick={() => onSelectPerson(person1.id)} />
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '22px', marginBottom: '4px' }}>⚖️</div>
+                {relation
+                  ? <span className="badge badge-accent" style={{ fontSize: '12px' }}>{relation}</span>
+                  : <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Aucun lien direct</span>}
+              </div>
+              <PersonBubble person={person2} onClick={() => onSelectPerson(person2.id)} />
+            </div>
+
+            {/* Attribute comparison */}
+            <div className="card" style={{ padding: '16px', marginBottom: '16px' }}>
+              <h3 className="serif" style={{ margin: '0 0 4px', fontSize: '1rem' }}>Comparaison des fiches</h3>
+              <div style={{ fontSize: '11px', color: 'var(--text-light)', marginBottom: '12px' }}>
+                <span style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '2px', background: 'var(--success)', verticalAlign: 'middle', marginRight: '4px' }} /> point commun
+                &nbsp;·&nbsp; valeurs différentes en neutre
+              </div>
+              {COMPARE_FIELDS.map(f => {
+                const a = f.get(person1); const b = f.get(person2);
+                const same = !!a && !!b && a.toLowerCase() === b.toLowerCase();
+                return <CompareRow key={f.label} label={f.label} a={a} b={b} same={same} />;
+              })}
+            </div>
+
+            {/* DNA comparison */}
+            {((person1.dnaOrigins?.length || 0) > 0 || (person2.dnaOrigins?.length || 0) > 0) && (() => {
+              const regionsA = new Set((person1.dnaOrigins || []).map(d => d.region.toLowerCase()));
+              const regionsB = new Set((person2.dnaOrigins || []).map(d => d.region.toLowerCase()));
+              const chip = (region: string, percent: number, shared: boolean) => (
+                <span key={region} className="badge" style={{ background: shared ? 'var(--success)' : 'var(--bg-muted)', color: shared ? '#fff' : 'var(--text-muted)', border: '1px solid var(--border)' }}>
+                  {region} {Math.round(percent)}%
+                </span>
+              );
+              return (
+                <div className="card" style={{ padding: '16px', marginBottom: '16px' }}>
+                  <h3 className="serif" style={{ margin: '0 0 12px', fontSize: '1rem' }}>🧬 Origines &amp; ADN</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignContent: 'flex-start' }}>
+                      {(person1.dnaOrigins || []).length === 0 ? <span style={{ fontSize: '12px', color: 'var(--text-light)' }}>—</span>
+                        : (person1.dnaOrigins || []).map(d => chip(d.region, d.percent, regionsB.has(d.region.toLowerCase())))}
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignContent: 'flex-start' }}>
+                      {(person2.dnaOrigins || []).length === 0 ? <span style={{ fontSize: '12px', color: 'var(--text-light)' }}>—</span>
+                        : (person2.dnaOrigins || []).map(d => chip(d.region, d.percent, regionsA.has(d.region.toLowerCase())))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Common ancestors */}
+            <div className="card" style={{ padding: '16px' }}>
+              <h3 className="serif" style={{ margin: '0 0 12px', fontSize: '1rem' }}>
+                Ancêtres communs ({commonAncestors.length})
+              </h3>
+              {commonAncestors.length === 0 ? (
+                <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Aucun ancêtre commun trouvé.</div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '8px' }}>
+                  {commonAncestors.map(p => <PersonCard key={p.id} person={p} onClick={() => onSelectPerson(p.id)} />)}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* ANCESTORS MODE */}
         {mode === 'ancestors' && person1Id && (
           <div className="animate-fade-in">
@@ -234,12 +306,14 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
           </div>
         )}
 
-        {!person1Id && (
+        {(!person1Id || (dual && !person2Id)) && (
           <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>
             <div style={{ fontSize: '48px', marginBottom: '12px' }}>
-              {{ relation: '🔗', ancestors: '🌲', descendants: '🌱' }[mode]}
+              {{ relation: '🔗', compare: '⚖️', ancestors: '🌲', descendants: '🌱' }[mode]}
             </div>
-            <p>Sélectionnez une personne pour commencer</p>
+            <p>{!person1Id
+              ? 'Sélectionnez une personne pour commencer'
+              : 'Sélectionnez une seconde personne à comparer'}</p>
           </div>
         )}
       </div>
@@ -307,5 +381,36 @@ function PersonCard({ person, onClick }: { person: Person; onClick: () => void }
         </div>
       </div>
     </button>
+  );
+}
+
+const COMPARE_FIELDS: { label: string; get: (p: Person) => string }[] = [
+  { label: 'Sexe', get: p => p.gender === 'male' ? 'Homme' : p.gender === 'female' ? 'Femme' : p.gender === 'other' ? 'Autre' : '' },
+  { label: 'Naissance', get: p => formatYear(p.birthDate) },
+  { label: 'Lieu de naissance', get: p => p.birthPlace?.city || '' },
+  { label: 'Statut', get: p => p.isAlive ? 'Vivant' : 'Décédé' },
+  { label: 'Décès', get: p => p.deathDate ? formatYear(p.deathDate) : '' },
+  { label: 'Lieu de décès', get: p => p.deathPlace?.city || '' },
+  { label: 'Profession', get: p => p.occupation || '' },
+  { label: 'Nationalité', get: p => p.nationality || '' },
+  { label: 'Religion', get: p => p.religion || '' },
+];
+
+function CompareRow({ label, a, b, same }: { label: string; a: string; b: string; same: boolean }) {
+  const cell = (v: string): React.CSSProperties => ({
+    flex: 1, padding: '6px 10px', fontSize: '13px', fontWeight: 600,
+    background: same ? 'var(--success)' : 'var(--bg-muted)',
+    color: same ? '#fff' : v ? 'var(--text)' : 'var(--text-light)',
+    borderRadius: 'var(--radius)', textAlign: 'center',
+    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+  });
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+      <div style={cell(a)}>{a || '—'}</div>
+      <div style={{ width: '120px', flexShrink: 0, textAlign: 'center', fontSize: '11px', color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+        {same ? '✓ ' : ''}{label}
+      </div>
+      <div style={cell(b)}>{b || '—'}</div>
+    </div>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { Person, FamilyTree, Relationship, RelationType, FamilyEvent, EventType, Note, Citation, DnaOrigin } from '@/types';
-import { getParents, getChildren, getSpouses, getSiblings, getAge, formatDate, getDisplayName, generateId, safeHttpUrl } from '@/lib/treeUtils';
+import { getParents, getChildren, getSpouses, getSiblings, getAge, formatDate, formatYear, getDisplayName, generateId, safeHttpUrl } from '@/lib/treeUtils';
 import PersonForm from './PersonForm';
 
 interface Props {
@@ -19,7 +19,7 @@ const EVENT_TYPES: EventType[] = ['birth','death','marriage','divorce','baptism'
 const EVENT_ICONS: Record<string, string> = { birth:'✦', death:'✝', marriage:'💒', divorce:'⚡', baptism:'✟', graduation:'🎓', military:'⚔', immigration:'🌍', other:'📌' };
 
 export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete, onSelectPerson, onAddRelationship }: Props) {
-  const [tab, setTab] = useState<'profile'|'family'|'events'|'notes'|'sources'|'edit'>('profile');
+  const [tab, setTab] = useState<'profile'|'life'|'family'|'events'|'notes'|'sources'|'edit'>('profile');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showAddRel, setShowAddRel] = useState(false);
   const [newRelType, setNewRelType] = useState<RelationType>('spouse');
@@ -38,6 +38,19 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
   const spouses = getSpouses(person.id, tree.relationships, tree.persons);
   const siblings = getSiblings(person.id, tree.relationships, tree.persons);
   const age = getAge(person.birthDate, person.deathDate);
+
+  // --- Profile completeness (smart completion) ---
+  const completionChecks = [
+    { label: 'Photo de profil', has: !!person.profilePhoto, impact: 'Galerie, fiches et présentation' },
+    { label: 'Date de naissance', has: !!person.birthDate, impact: 'Âge, frises et statistiques' },
+    { label: 'Lieu de naissance', has: !!person.birthPlace?.city, impact: 'Carte des lieux' },
+    { label: 'Date de décès', has: person.isAlive || !!person.deathDate, impact: 'Espérance de vie, commémorations' },
+    { label: 'Profession', has: !!person.occupation, impact: 'Statistiques des métiers' },
+    { label: 'Biographie', has: !!(person.bio && person.bio.trim()), impact: 'Présentation et impression' },
+  ];
+  const completionMissing = completionChecks.filter(c => !c.has);
+  const completionScore = Math.round((completionChecks.length - completionMissing.length) / completionChecks.length * 100);
+  const completionColor = completionScore < 40 ? 'var(--danger)' : completionScore < 70 ? '#d08a2a' : 'var(--success)';
 
   const availablePersons = tree.persons.filter(p =>
     p.id !== person.id &&
@@ -152,7 +165,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
       {/* Tabs */}
       <div className="tabs" style={{ margin:'0 14px', paddingTop:'4px', overflowX:'auto', flexShrink:0 }}>
         {[
-          ['profile','👤'],['family','👨‍👩‍👧'],
+          ['profile','👤'],['life','🕰'],['family','👨‍👩‍👧'],
           ['events',`📅${person.events?.length?` ${person.events.length}`:''}` ],
           ['notes',`📝${person.notes?.length?` ${person.notes.length}`:''}` ],
           ['sources',`📚${person.citations?.length?` ${person.citations.length}`:''}` ],
@@ -167,6 +180,27 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
 
         {tab==='profile' && (
           <div className="animate-fade-in" style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
+            {/* Smart completion banner */}
+            {completionMissing.length > 0 && (
+              <div style={{ padding:'12px', background:'var(--accent-light)', border:'1px solid var(--border)', borderRadius:'var(--radius)' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'8px' }}>
+                  <span style={{ fontSize:'13px', fontWeight:700 }}>💡 Suggestions</span>
+                  <span style={{ fontSize:'13px', fontWeight:700, color:completionColor }}>{completionScore}%</span>
+                </div>
+                <div style={{ height:'7px', background:'var(--bg-muted)', borderRadius:'100px', overflow:'hidden', marginBottom:'10px' }}>
+                  <div style={{ width:`${completionScore}%`, height:'100%', background:completionColor, transition:'width 0.3s' }} />
+                </div>
+                <div style={{ display:'flex', flexDirection:'column', gap:'5px' }}>
+                  {completionMissing.map(c => (
+                    <div key={c.label} style={{ fontSize:'12px', display:'flex', gap:'6px', lineHeight:1.4 }}>
+                      <span style={{ color:'var(--danger)', flexShrink:0 }}>○</span>
+                      <span><strong>{c.label}</strong> <span style={{ color:'var(--text-muted)' }}>— {c.impact}</span></span>
+                    </div>
+                  ))}
+                </div>
+                <button onClick={()=>setTab('edit')} className="btn btn-primary btn-sm" style={{ marginTop:'10px' }}>✏️ Compléter le profil</button>
+              </div>
+            )}
             <InfoBlock label="Naissance" icon="✦">
               {formatDate(person.birthDate, person.birthDateApprox)||'—'}
               {person.birthPlace?.city&&<><br/><small>📍 {[person.birthPlace.city, person.birthPlace.country].filter(Boolean).join(', ')}</small></>}
@@ -211,6 +245,12 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {tab==='life' && (
+          <div className="animate-fade-in">
+            <LifeTimeline person={person} />
           </div>
         )}
 
@@ -432,6 +472,122 @@ function FamilySection({ title, items, PersonLink }: { title: string; items: Per
       </div>
       <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
         {items.map(p=><PersonLink key={p.id} p={p}/>)}
+      </div>
+    </div>
+  );
+}
+
+interface WorldEvent { label: string; start: number; end?: number; icon: string; }
+const WORLD_EVENTS: WorldEvent[] = [
+  { label: 'Première Guerre mondiale', start: 1914, end: 1918, icon: '⚔️' },
+  { label: 'Grande Dépression', start: 1929, end: 1933, icon: '📉' },
+  { label: 'Seconde Guerre mondiale', start: 1939, end: 1945, icon: '⚔️' },
+  { label: 'Mai 68', start: 1968, icon: '✊' },
+  { label: 'Premier homme sur la Lune', start: 1969, icon: '🚀' },
+  { label: 'Chute du mur de Berlin', start: 1989, icon: '🧱' },
+  { label: 'Web grand public', start: 1991, icon: '🌐' },
+  { label: "Passage à l'euro", start: 2002, icon: '💶' },
+  { label: 'Pandémie de COVID-19', start: 2020, end: 2022, icon: '🦠' },
+];
+
+function yearFloat(dateStr?: string): number | null {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.getFullYear() + d.getMonth() / 12;
+}
+
+function LifeTimeline({ person }: { person: Person }) {
+  const PAD = 46;
+  const PX = 26; // pixels per year
+  const dotY = 64;
+  const nowYear = new Date().getFullYear();
+
+  const events = (person.events || []).filter(e => e.date) as { id: string; type: string; date: string; description?: string }[];
+
+  const startYf = yearFloat(person.birthDate) ?? (events.length ? Math.min(...events.map(e => yearFloat(e.date)!)) : null);
+  const endYf = (!person.isAlive ? yearFloat(person.deathDate) : null)
+    ?? (events.length ? Math.max(...events.map(e => yearFloat(e.date)!)) : null)
+    ?? (startYf !== null ? Math.max(startYf, nowYear) : null);
+
+  if (startYf === null || endYf === null) {
+    return <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>Renseignez une date de naissance ou des événements pour afficher la ligne de vie.</div>;
+  }
+
+  const startYear = Math.floor(startYf);
+  const endYear = Math.max(Math.ceil(endYf), startYear + 1);
+  const span = endYear - startYear;
+  const x = (yf: number) => PAD + (yf - startYear) * PX;
+  const width = x(endYear) + PAD;
+  const HEIGHT = 168;
+
+  // Point list (synthesize birth/death if not present as events)
+  const points = [...events];
+  if (person.birthDate && !events.some(e => e.type === 'birth')) points.push({ id: 'syn-birth', type: 'birth', date: person.birthDate });
+  if (!person.isAlive && person.deathDate && !events.some(e => e.type === 'death')) points.push({ id: 'syn-death', type: 'death', date: person.deathDate });
+  points.sort((a, b) => a.date.localeCompare(b.date));
+
+  const worldInRange = WORLD_EVENTS.filter(w => (w.end ?? w.start) >= startYear && w.start <= endYear);
+
+  // Decade ticks
+  const ticks: number[] = [];
+  for (let y = Math.ceil(startYear / 10) * 10; y <= endYear; y += 10) ticks.push(y);
+
+  return (
+    <div>
+      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>
+        🕰 De {startYear} à {!person.isAlive && person.deathDate ? formatYear(person.deathDate) : "aujourd'hui"}
+        {span > 0 && <> · {span} ans</>}
+      </div>
+      <div style={{ overflowX: 'auto', overflowY: 'hidden', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-muted)' }}>
+        <svg width={width} height={HEIGHT} style={{ display: 'block' }}>
+          {/* Decade ticks */}
+          {ticks.map(y => (
+            <g key={y}>
+              <line x1={x(y)} y1={dotY - 4} x2={x(y)} y2={dotY + 4} stroke="var(--border)" strokeWidth={1} />
+              <text x={x(y)} y={dotY + 18} textAnchor="middle" fontSize={9} fill="var(--text-light)" fontFamily="Lato, sans-serif">{y}</text>
+            </g>
+          ))}
+
+          {/* Life line */}
+          <line x1={x(startYf)} y1={dotY} x2={x(endYf)} y2={dotY} stroke="var(--accent)" strokeWidth={3} strokeLinecap="round" opacity={0.5} />
+
+          {/* World events (below) */}
+          {worldInRange.map((w, i) => {
+            const x0 = x(Math.max(w.start, startYear));
+            const x1 = x(Math.min(w.end ?? w.start, endYear));
+            const wy = 112;
+            return (
+              <g key={i}>
+                <title>{w.label} ({w.start}{w.end ? `–${w.end}` : ''})</title>
+                {w.end
+                  ? <rect x={x0} y={wy} width={Math.max(3, x1 - x0)} height={16} rx={4} fill="#8a8278" opacity={0.55} />
+                  : <circle cx={x0} cy={wy + 8} r={6} fill="#8a8278" opacity={0.7} />}
+                <text x={w.end ? (x0 + x1) / 2 : x0} y={wy + 34} textAnchor="middle" fontSize={9} fill="var(--text-muted)" fontFamily="Lato, sans-serif">
+                  {w.icon} {w.label.length > 18 ? w.label.slice(0, 17) + '…' : w.label}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Person events (above the line) */}
+          {points.map(ev => {
+            const yf = yearFloat(ev.date)!;
+            const px = x(yf);
+            return (
+              <g key={ev.id} style={{ cursor: 'default' }}>
+                <title>{`${ev.type.charAt(0).toUpperCase() + ev.type.slice(1)} — ${formatDate(ev.date)}${ev.description ? `\n${ev.description}` : ''}`}</title>
+                <line x1={px} y1={dotY} x2={px} y2={36} stroke="var(--border)" strokeWidth={1} />
+                <text x={px} y={28} textAnchor="middle" fontSize={14}>{EVENT_ICONS[ev.type] || '📌'}</text>
+                <circle cx={px} cy={dotY} r={5} fill="var(--accent)" stroke="var(--bg-card)" strokeWidth={1.5} />
+                <text x={px} y={48} textAnchor="middle" fontSize={9} fill="var(--text-muted)" fontFamily="Lato, sans-serif">{formatYear(ev.date)}</text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+      <div style={{ fontSize: '11px', color: 'var(--text-light)', marginTop: '6px', textAlign: 'center' }}>
+        Survolez un point pour le détail · événements mondiaux en gris
       </div>
     </div>
   );
