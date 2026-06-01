@@ -194,6 +194,15 @@ create trigger on_auth_user_created
   for each row execute function public.handle_new_user();
 
 -- ----------------------------------------------------------------------------
+-- Compteur public "familles préservées" pour la landing page
+-- ----------------------------------------------------------------------------
+create or replace function public.family_count()
+returns integer language sql security definer stable set search_path = public as $$
+  select count(*)::int from public.trees;
+$$;
+grant execute on function public.family_count() to anon, authenticated;
+
+-- ----------------------------------------------------------------------------
 -- Realtime : publier persons et relationships (et journal) pour les souscriptions
 -- ----------------------------------------------------------------------------
 do $$

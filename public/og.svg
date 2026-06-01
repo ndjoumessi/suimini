@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="0%" r="100%">
+      <stop offset="0%" stop-color="#1c140c"/>
+      <stop offset="70%" stop-color="#0a0805"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <!-- tree connectors -->
+  <g stroke="#c4935a" stroke-width="3" opacity="0.35" fill="none">
+    <path d="M600 400 V440 M460 440 H740 M460 440 V480 M740 440 V480"/>
+  </g>
+  <g fill="#c4935a" opacity="0.5">
+    <circle cx="600" cy="400" r="10"/>
+    <circle cx="460" cy="490" r="9"/>
+    <circle cx="740" cy="490" r="9"/>
+  </g>
+  <text x="600" y="250" text-anchor="middle" font-family="Georgia, 'Playfair Display', serif" font-size="120" fill="#c4935a">🌿 Suimini</text>
+  <text x="600" y="330" text-anchor="middle" font-family="Georgia, 'Playfair Display', serif" font-size="38" fill="#f0ece5">Préservez l'histoire de votre famille</text>
+  <text x="600" y="378" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="24" fill="#a09890">L'arbre généalogique moderne — élégant, collaboratif, et toujours avec vous</text>
+</svg>

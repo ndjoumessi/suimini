@@ -1,0 +1,41 @@
+'use client';
+import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
+import { supabase } from '@/lib/supabase';
+
+const SuiminiApp = dynamic(() => import('@/components/SuiminiApp'), { ssr: false });
+const Landing = dynamic(() => import('@/components/landing/Landing'), { ssr: false });
+
+function Splash() {
+  return (
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '14px', background: '#0a0805' }}>
+      <div className="serif" style={{ fontSize: '2.2rem', color: '#c4935a' }}>🌿 Suimini</div>
+      <div style={{ color: '#8a8278', fontSize: '13px' }}>Chargement…</div>
+    </div>
+  );
+}
+
+/**
+ * Decides what to show at `/`:
+ * - returning visitor (localStorage data) or signed-in user → the app
+ * - brand-new visitor → the marketing landing page
+ */
+export default function HomeGate() {
+  const [view, setView] = useState<'loading' | 'app' | 'landing'>('loading');
+
+  useEffect(() => {
+    let cancelled = false;
+    const hasLocal = (() => { try { return !!localStorage.getItem('suimini_trees'); } catch { return false; } })();
+    if (hasLocal) { setView('app'); return; }
+    if (supabase) {
+      supabase.auth.getSession().then(({ data }) => { if (!cancelled) setView(data.session ? 'app' : 'landing'); });
+    } else {
+      setView('landing');
+    }
+    return () => { cancelled = true; };
+  }, []);
+
+  if (view === 'loading') return <Splash />;
+  if (view === 'app') return <SuiminiApp />;
+  return <Landing />;
+}
