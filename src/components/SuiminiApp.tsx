@@ -4,9 +4,12 @@ import dynamic from 'next/dynamic';
 import { useFamilyStore } from '@/hooks/useFamilyStore';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useTheme } from '@/hooks/useTheme';
+import { useAuth } from '@/hooks/useAuth';
 import { useBirthdayNotifications } from '@/hooks/useBirthdayNotifications';
+import { supabase } from '@/lib/supabase';
 import { ViewMode } from '@/types';
 import Sidebar from './Sidebar';
+import AuthModal from './AuthModal';
 import TreeView from './TreeView';
 import ListView from './ListView';
 import TimelineView from './TimelineView';
@@ -37,7 +40,8 @@ const MapView = dynamic(() => import('./MapView'), {
 });
 
 export default function SuiminiApp() {
-  const store = useFamilyStore();
+  const { user, signIn, signOut, configured } = useAuth();
+  const store = useFamilyStore(user ? { id: user.id, email: user.email } : null);
   const { dark, toggle: toggleDark } = useDarkMode();
   const { themeId, setTheme, previewTheme, cancelPreview } = useTheme();
   const birthdayAlertCount = useBirthdayNotifications(store.activeTree);
@@ -51,13 +55,46 @@ export default function SuiminiApp() {
   const [showShare, setShowShare] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
   const [showPresentation, setShowPresentation] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [presenceCount, setPresenceCount] = useState(1);
   const [toast, setToast] = useState<{ msg: string; icon?: string } | null>(null);
 
   const showToast = useCallback((msg: string, icon = '✅') => {
     setToast({ msg, icon });
     setTimeout(() => setToast(null), 2800);
   }, []);
+
+  // Surface a failed magic-link exchange (route redirects to /?auth_error=1).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('auth_error')) {
+      showToast('Échec de la connexion. Le lien a peut-être expiré.', '❌');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [showToast]);
+
+  // Realtime: subscribe to the active tree's persons/relationships + presence of collaborators.
+  const activeTreeId = store.activeTree?.id;
+  useEffect(() => {
+    if (!store.cloud || !supabase || !activeTreeId || !user) return;
+    const sb = supabase;
+    const reload = () => { store.reloadTreeFromCloud(activeTreeId); showToast('Un collaborateur a modifié cet arbre', '🔄'); };
+    const channel = sb
+      .channel(`tree:${activeTreeId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'persons', filter: `tree_id=eq.${activeTreeId}` }, reload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'relationships', filter: `tree_id=eq.${activeTreeId}` }, reload)
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        setPresenceCount(Math.max(1, Object.keys(state).length));
+      })
+      .subscribe(status => {
+        if (status === 'SUBSCRIBED') channel.track({ user: user.email || user.id, at: Date.now() });
+      });
+    return () => { sb.removeChannel(channel); setPresenceCount(1); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store.cloud, activeTreeId, user]);
 
   const handleSelectPerson = useCallback((id: string) => {
     setSelectedPersonId(id);
@@ -126,6 +163,12 @@ export default function SuiminiApp() {
         onToggleDark={toggleDark}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        userEmail={user?.email || null}
+        cloud={store.cloud}
+        syncStatus={store.syncStatus}
+        presenceCount={store.cloud ? presenceCount : 0}
+        onSignIn={() => setShowAuth(true)}
+        onSignOut={async () => { await signOut(); showToast('Déconnecté'); }}
       />
 
       <main style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', minWidth: 0 }}>
@@ -195,7 +238,8 @@ export default function SuiminiApp() {
           onDelete={() => { store.deletePerson(selectedPerson.id); setSelectedPersonId(null); showToast('Personne supprimée', '🗑'); }}
           onSelectPerson={handleSelectPerson}
           onAddRelationship={store.addRelationship}
-          onDeleteRelationship={store.deleteRelationship}
+          onUpdateRelationship={(id, updates) => { store.updateRelationship(id, updates); showToast('Relation mise à jour'); }}
+          onDeleteRelationship={(id) => { store.deleteRelationship(id); showToast('Relation supprimée', '🗑'); }}
         />
       )}
 
@@ -248,11 +292,33 @@ export default function SuiminiApp() {
         <TreeSelectorModal
           trees={store.trees}
           activeTreeId={store.activeTreeId}
+          shared={store.shared}
           onSelect={(id) => { store.switchTree(id); showToast('Arbre changé'); }}
           onCreate={(name, desc) => { store.createTree(name, desc); showToast(`Arbre "${name}" créé 🌳`); }}
           onDelete={(id) => { store.deleteTree(id); showToast('Arbre supprimé', '🗑'); }}
+          onRename={(id, meta) => { store.updateTreeMeta(id, meta); showToast('Arbre mis à jour'); }}
+          onDuplicate={(id, newName) => { store.duplicateTree(id, newName); showToast(`Arbre dupliqué « ${newName} » 📋`); }}
           onClose={() => setShowTreeSelector(false)}
         />
+      )}
+
+      {/* Auth (magic link) */}
+      {showAuth && (
+        <AuthModal onClose={() => setShowAuth(false)} onSignIn={signIn} configured={configured} />
+      )}
+
+      {/* Migration prompt on first login with local data */}
+      {store.migrationPending && (
+        <div style={{ position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 1500, background: 'var(--bg-card)', border: '1px solid var(--accent)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', padding: '14px 18px', maxWidth: '440px', width: '92%' }}>
+          <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '4px' }}>☁️ Importer vos données locales ?</div>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px' }}>
+            Vous avez des arbres enregistrés sur cet appareil. Voulez-vous les copier vers votre compte pour les synchroniser ?
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={() => { store.runMigration(); showToast('Données importées dans le cloud ☁️'); }} className="btn btn-primary btn-sm">Importer maintenant</button>
+            <button onClick={store.dismissMigration} className="btn btn-ghost btn-sm">Plus tard</button>
+          </div>
+        </div>
       )}
 
       {importExportTab && store.activeTree && (
@@ -269,7 +335,13 @@ export default function SuiminiApp() {
       )}
 
       {showShare && store.activeTree && (
-        <ShareModal tree={store.activeTree} onClose={() => setShowShare(false)} />
+        <ShareModal
+          tree={store.activeTree}
+          cloud={store.cloud}
+          onRequireAuth={() => { setShowShare(false); setShowAuth(true); }}
+          onToast={showToast}
+          onClose={() => setShowShare(false)}
+        />
       )}
 
       {/* Toast */}

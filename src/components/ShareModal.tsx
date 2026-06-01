@@ -1,15 +1,44 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FamilyTree } from '@/types';
+import { shareTree, listShares, unshareTree } from '@/lib/supabaseSync';
 
 interface Props {
   tree: FamilyTree;
+  cloud?: boolean;
+  onRequireAuth?: () => void;
+  onToast?: (msg: string, icon?: string) => void;
   onClose: () => void;
 }
 
-export default function ShareModal({ tree, onClose }: Props) {
+export default function ShareModal({ tree, cloud, onRequireAuth, onToast, onClose }: Props) {
   const [copied, setCopied] = useState<string | null>(null);
   const [includePrivate, setIncludePrivate] = useState(false);
+  const [shareEmail, setShareEmail] = useState('');
+  const [sharePerm, setSharePerm] = useState<'read' | 'write'>('read');
+  const [shares, setShares] = useState<{ email: string; permission: string }[]>([]);
+  const [sharing, setSharing] = useState(false);
+
+  useEffect(() => {
+    if (cloud) listShares(tree.id).then(setShares);
+  }, [cloud, tree.id]);
+
+  async function doShare() {
+    const email = shareEmail.trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { onToast?.('E-mail invalide', '⚠️'); return; }
+    setSharing(true);
+    const { error } = await shareTree(tree.id, email, sharePerm);
+    setSharing(false);
+    if (error) { onToast?.('Échec du partage', '❌'); return; }
+    setShareEmail('');
+    setShares(await listShares(tree.id));
+    onToast?.(`Invitation envoyée à ${email} ✉️`);
+  }
+  async function removeShare(email: string) {
+    await unshareTree(tree.id, email);
+    setShares(await listShares(tree.id));
+    onToast?.('Partage retiré', '🗑');
+  }
 
   // Generate a shareable JSON data URL
   const shareData = JSON.stringify({
@@ -58,6 +87,43 @@ export default function ShareModal({ tree, onClose }: Props) {
         </div>
 
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Supabase collaboration */}
+          <div>
+            <div style={{ fontSize: '11px', color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px', fontWeight: '700' }}>
+              ☁️ Partager avec un compte Supabase
+            </div>
+            {!cloud ? (
+              <div style={{ padding: '12px', background: 'var(--bg-muted)', borderRadius: 'var(--radius)', fontSize: '13px', color: 'var(--text-muted)' }}>
+                Connectez-vous pour inviter des proches à collaborer en temps réel.
+                <button onClick={onRequireAuth} className="btn btn-primary btn-sm" style={{ marginTop: '8px', width: '100%', justifyContent: 'center' }}>Se connecter</button>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <input value={shareEmail} onChange={e => setShareEmail(e.target.value)} placeholder="email@exemple.com" className="input" type="email" style={{ flex: 1 }} />
+                  <select value={sharePerm} onChange={e => setSharePerm(e.target.value as 'read' | 'write')} className="input" style={{ width: 'auto' }}>
+                    <option value="read">Lecture</option>
+                    <option value="write">Écriture</option>
+                  </select>
+                  <button onClick={doShare} disabled={sharing} className="btn btn-primary btn-sm">{sharing ? '…' : 'Inviter'}</button>
+                </div>
+                {shares.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '8px' }}>
+                    {shares.map(s => (
+                      <div key={s.email} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', padding: '6px 8px', background: 'var(--bg-muted)', borderRadius: 'var(--radius)' }}>
+                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.email}</span>
+                        <span className="badge badge-accent">{s.permission === 'write' ? '✏️ Écriture' : '👁 Lecture'}</span>
+                        <button onClick={() => removeShare(s.email)} className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)', fontSize: '11px' }}>✕</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          <hr className="divider" style={{ margin: 0 }} />
+
           {/* Tree info */}
           <div style={{ padding: '12px', background: 'var(--bg-muted)', borderRadius: 'var(--radius)', display: 'flex', gap: '12px', alignItems: 'center' }}>
             <span style={{ fontSize: '32px' }}>🌳</span>

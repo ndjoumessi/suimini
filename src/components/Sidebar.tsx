@@ -30,9 +30,23 @@ interface Props {
   onToggleDark: () => void;
   isOpen: boolean;
   onClose: () => void;
+  userEmail?: string | null;
+  cloud?: boolean;
+  syncStatus?: 'idle' | 'saved' | 'syncing' | 'offline';
+  presenceCount?: number;
+  onSignIn?: () => void;
+  onSignOut?: () => void;
 }
 
-export default function Sidebar({ activeView, onViewChange, activeTree, trees, onShowTreeSelector, onAddPerson, onShowImportExport, onPrint, onShare, onPresent, birthdayAlertCount = 0, dark, onToggleDark, isOpen, onClose }: Props) {
+const SYNC_LABEL: Record<string, { icon: string; text: string; color: string }> = {
+  saved:   { icon: '✅', text: 'Sauvegardé',        color: 'var(--success)' },
+  syncing: { icon: '⏳', text: 'Synchronisation…',  color: 'var(--accent)' },
+  offline: { icon: '❌', text: 'Hors ligne',        color: 'var(--danger)' },
+  idle:    { icon: '💾', text: 'Local',             color: 'var(--text-light)' },
+};
+
+export default function Sidebar({ activeView, onViewChange, activeTree, trees, onShowTreeSelector, onAddPerson, onShowImportExport, onPrint, onShare, onPresent, birthdayAlertCount = 0, dark, onToggleDark, isOpen, onClose, userEmail, cloud, syncStatus = 'idle', presenceCount = 0, onSignIn, onSignOut }: Props) {
+  const sync = SYNC_LABEL[cloud ? syncStatus : 'idle'] || SYNC_LABEL.idle;
   return (
     <aside style={{ width: '224px', flexShrink: 0, background: 'var(--bg-card)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 50 }}
       className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}
@@ -129,10 +143,37 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         </button>
       </div>
 
+      {/* Account & sync */}
+      <div style={{ padding: '8px 10px', borderTop: '1px solid var(--border)' }}>
+        {userEmail ? (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, flexShrink: 0 }}>
+                {userEmail[0].toUpperCase()}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userEmail}</div>
+                <div style={{ fontSize: '10px', color: sync.color }}>{sync.icon} {sync.text}</div>
+              </div>
+              <button onClick={onSignOut} className="btn btn-ghost btn-sm" title="Se déconnecter" style={{ fontSize: '12px', flexShrink: 0 }}>⎋</button>
+            </div>
+            {presenceCount > 1 && (
+              <div style={{ fontSize: '10px', color: 'var(--accent)', textAlign: 'center', marginBottom: '4px' }}>
+                👤 {presenceCount} personnes connectées sur cet arbre
+              </div>
+            )}
+          </>
+        ) : (
+          <button onClick={onSignIn} className="btn btn-secondary btn-sm" style={{ width: '100%', justifyContent: 'center' }}>
+            ☁️ Se connecter pour sauvegarder
+          </button>
+        )}
+      </div>
+
       {/* Footer */}
-      <div style={{ padding: '8px 14px', borderTop: '1px solid var(--border)', textAlign: 'center' }}>
+      <div style={{ padding: '6px 14px', borderTop: '1px solid var(--border)', textAlign: 'center' }}>
         <div style={{ fontSize: '10px', color: 'var(--text-light)' }}>
-          {trees.length} arbre{trees.length > 1 ? 's' : ''} · Suimini v1.3
+          {trees.length} arbre{trees.length > 1 ? 's' : ''} · Suimini v1.4{userEmail ? '' : ' · mode invité'}
         </div>
       </div>
 

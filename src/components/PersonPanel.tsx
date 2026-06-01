@@ -12,20 +12,26 @@ interface Props {
   onDelete: () => void;
   onSelectPerson: (id: string) => void;
   onAddRelationship: (rel: Omit<Relationship, 'id'>) => Relationship | null;
+  onUpdateRelationship: (relId: string, updates: Partial<Relationship>) => void;
   onDeleteRelationship: (relId: string) => void;
 }
 
 const EVENT_TYPES: EventType[] = ['birth','death','marriage','divorce','baptism','graduation','military','immigration','other'];
 const EVENT_ICONS: Record<string, string> = { birth:'✦', death:'✝', marriage:'💒', divorce:'⚡', baptism:'✟', graduation:'🎓', military:'⚔', immigration:'🌍', other:'📌' };
+const REL_LABELS: Record<RelationType, string> = { spouse: 'Conjoint(e)', partner: 'Partenaire', parent: 'Parent de', child: 'Enfant de', sibling: 'Frère/Sœur de' };
 
-export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete, onSelectPerson, onAddRelationship }: Props) {
+export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete, onSelectPerson, onAddRelationship, onUpdateRelationship, onDeleteRelationship }: Props) {
   const [tab, setTab] = useState<'profile'|'life'|'family'|'events'|'notes'|'sources'|'edit'>('profile');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showAddRel, setShowAddRel] = useState(false);
   const [newRelType, setNewRelType] = useState<RelationType>('spouse');
   const [newRelPersonId, setNewRelPersonId] = useState('');
+  const [editRelId, setEditRelId] = useState<string|null>(null);
   const [showAddEvent, setShowAddEvent] = useState(false);
   const [newEvent, setNewEvent] = useState<Partial<FamilyEvent>>({ type: 'other' });
+  const [editEventId, setEditEventId] = useState<string|null>(null);
+  const [customEventType, setCustomEventType] = useState('');
+  const [dragIndex, setDragIndex] = useState<number|null>(null);
   const [showAddNote, setShowAddNote] = useState(false);
   const [newNoteContent, setNewNoteContent] = useState('');
   const [editNoteId, setEditNoteId] = useState<string|null>(null);
@@ -60,15 +66,58 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
     )
   );
 
+  // --- All raw relationships involving this person (for management) ---
+  const myRelationships = tree.relationships.filter(r => r.person1Id === person.id || r.person2Id === person.id);
+  const relCount = myRelationships.length;
+  const personById = (id: string) => tree.persons.find(p => p.id === id);
+
+  // Inconsistency detection: self-links + simple ancestor loops.
+  const inconsistencies: string[] = [];
+  myRelationships.forEach(r => {
+    if (r.person1Id === r.person2Id) {
+      inconsistencies.push(`Relation invalide : ${person.firstName} est en relation « ${REL_LABELS[r.type]} » avec elle-même.`);
+    }
+  });
+  // Detect an ancestor cycle (person is its own ancestor) — iterative to stay render-pure.
+  const ancestorLoop = (() => {
+    const seen = new Set<string>();
+    const stack = getParents(person.id, tree.relationships, tree.persons).map(p => p.id);
+    while (stack.length) {
+      const id = stack.pop()!;
+      if (id === person.id) return true;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      getParents(id, tree.relationships, tree.persons).forEach(p => stack.push(p.id));
+    }
+    return false;
+  })();
+  if (ancestorLoop) inconsistencies.push(`Boucle généalogique détectée : ${person.firstName} est son propre ancêtre.`);
+
   function addEvent() {
-    if (!newEvent.type) return;
-    const events = [...(person.events || []), { ...newEvent, id: generateId() } as FamilyEvent];
+    const type = (customEventType.trim() ? customEventType.trim() : newEvent.type) as EventType;
+    if (!type) return;
+    const events = [...(person.events || []), { ...newEvent, type, id: generateId() } as FamilyEvent];
     onUpdate({ events });
     setNewEvent({ type: 'other' });
+    setCustomEventType('');
     setShowAddEvent(false);
+  }
+  function updateEvent(eventId: string, updates: Partial<FamilyEvent>) {
+    onUpdate({ events: (person.events || []).map(e => e.id === eventId ? { ...e, ...updates } : e) });
   }
   function removeEvent(eventId: string) {
     onUpdate({ events: (person.events || []).filter(e => e.id !== eventId) });
+  }
+  function reorderEvents(from: number, to: number) {
+    const arr = [...(person.events || [])];
+    if (from < 0 || to < 0 || from >= arr.length || to >= arr.length || from === to) return;
+    const [moved] = arr.splice(from, 1);
+    arr.splice(to, 0, moved);
+    onUpdate({ events: arr });
+  }
+  function sortEventsByDate() {
+    const arr = [...(person.events || [])].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    onUpdate({ events: arr });
   }
   function addNote() {
     if (!newNoteContent.trim()) return;
@@ -263,6 +312,73 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
             {spouses.length===0&&parents.length===0&&children.length===0&&siblings.length===0&&(
               <div style={{ textAlign:'center', padding:'20px', color:'var(--text-muted)' }}>Aucune relation enregistrée</div>
             )}
+
+            {/* Inconsistency warnings */}
+            {inconsistencies.length>0 && (
+              <div style={{ padding:'10px 12px', background:'#fdf2f2', border:'1px solid #f5c6c6', borderRadius:'var(--radius)' }}>
+                <div style={{ fontSize:'12px', fontWeight:700, color:'var(--danger)', marginBottom:'4px' }}>⚠️ Relations incohérentes</div>
+                {inconsistencies.map((msg,i)=>(
+                  <div key={i} style={{ fontSize:'12px', color:'#1a1612', lineHeight:1.4 }}>• {msg}</div>
+                ))}
+              </div>
+            )}
+
+            {/* Manage raw relationships */}
+            {myRelationships.length>0 && (
+              <div>
+                <div style={{ fontSize:'12px', fontWeight:'700', color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'8px' }}>
+                  Gérer les relations ({myRelationships.length})
+                </div>
+                <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
+                  {myRelationships.map(rel => {
+                    const otherId = rel.person1Id === person.id ? rel.person2Id : rel.person1Id;
+                    const other = personById(otherId);
+                    const self = rel.person1Id === rel.person2Id;
+                    const dates = [rel.startDate && `dès ${formatDate(rel.startDate)}`, rel.endDate && `jusqu'à ${formatDate(rel.endDate)}`].filter(Boolean).join(' · ');
+                    return (
+                      <div key={rel.id} style={{ padding:'10px', background:'var(--bg-muted)', borderRadius:'var(--radius)', border:`1px solid ${self?'#f5c6c6':'var(--border)'}` }}>
+                        {editRelId===rel.id ? (
+                          <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
+                            <select defaultValue={rel.type} id={`rel-type-${rel.id}`} className="input">
+                              {(Object.keys(REL_LABELS) as RelationType[]).map(t=><option key={t} value={t}>{REL_LABELS[t]}</option>)}
+                            </select>
+                            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'6px' }}>
+                              <input type="date" defaultValue={rel.startDate||''} id={`rel-start-${rel.id}`} className="input" title="Début" />
+                              <input type="date" defaultValue={rel.endDate||''} id={`rel-end-${rel.id}`} className="input" title="Fin" />
+                            </div>
+                            <input defaultValue={rel.notes||''} id={`rel-notes-${rel.id}`} className="input" placeholder="Notes (optionnel)" />
+                            <div style={{ display:'flex', gap:'6px' }}>
+                              <button onClick={()=>{
+                                const type=(document.getElementById(`rel-type-${rel.id}`) as HTMLSelectElement).value as RelationType;
+                                const startDate=(document.getElementById(`rel-start-${rel.id}`) as HTMLInputElement).value||undefined;
+                                const endDate=(document.getElementById(`rel-end-${rel.id}`) as HTMLInputElement).value||undefined;
+                                const notes=(document.getElementById(`rel-notes-${rel.id}`) as HTMLInputElement).value||undefined;
+                                onUpdateRelationship(rel.id,{type,startDate,endDate,notes});
+                                setEditRelId(null);
+                              }} className="btn btn-primary btn-sm">Sauvegarder</button>
+                              <button onClick={()=>setEditRelId(null)} className="btn btn-ghost btn-sm">Annuler</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ fontSize:'13px', fontWeight:700 }}>
+                                {REL_LABELS[rel.type]} <span style={{ color:'var(--text-muted)', fontWeight:400 }}>{other?getDisplayName(other):'(personne inconnue)'}</span>
+                              </div>
+                              {dates && <div style={{ fontSize:'11px', color:'var(--text-light)' }}>{dates}</div>}
+                              {rel.notes && <div style={{ fontSize:'12px', color:'var(--text-muted)', marginTop:'2px' }}>📝 {rel.notes}</div>}
+                            </div>
+                            <button onClick={()=>setEditRelId(rel.id)} className="btn btn-ghost btn-sm" style={{ fontSize:'12px' }}>✏️</button>
+                            <button onClick={()=>onDeleteRelationship(rel.id)} className="btn btn-ghost btn-sm" style={{ fontSize:'12px', color:'var(--danger)' }}>🗑</button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {!showAddRel ? (
               <button onClick={()=>setShowAddRel(true)} className="btn btn-secondary btn-sm" style={{ alignSelf:'flex-start' }}>＋ Ajouter une relation</button>
             ) : (
@@ -294,24 +410,68 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
             {(!person.events||person.events.length===0) ? (
               <div style={{ textAlign:'center', padding:'20px', color:'var(--text-muted)' }}>Aucun événement enregistré</div>
             ) : (
-              <div style={{ paddingLeft:'16px', borderLeft:'2px solid var(--border)', display:'flex', flexDirection:'column', marginBottom:'12px' }}>
-                {[...(person.events||[])].sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map((event)=>(
-                  <div key={event.id} className="timeline-item">
-                    <div className="timeline-dot" />
-                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
-                      <div>
-                        <div style={{ fontWeight:'700', fontSize:'13px' }}>
-                          {EVENT_ICONS[event.type]||'📌'} {event.type.charAt(0).toUpperCase()+event.type.slice(1)}
+              <>
+                <div style={{ fontSize:'11px', color:'var(--text-light)', marginBottom:'8px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                  <span>↕ Glissez pour réordonner</span>
+                  <button onClick={sortEventsByDate} className="btn btn-ghost btn-sm" style={{ fontSize:'11px' }}>📅 Trier par date</button>
+                </div>
+                <div style={{ display:'flex', flexDirection:'column', gap:'6px', marginBottom:'12px' }}>
+                  {(person.events||[]).map((event, idx)=>(
+                    <div key={event.id}
+                      draggable={editEventId!==event.id}
+                      onDragStart={()=>setDragIndex(idx)}
+                      onDragOver={e=>e.preventDefault()}
+                      onDrop={()=>{ if(dragIndex!==null) reorderEvents(dragIndex, idx); setDragIndex(null); }}
+                      style={{ padding:'10px', background:'var(--bg-muted)', borderRadius:'var(--radius)', border:'1px solid var(--border)', opacity: dragIndex===idx?0.5:1 }}
+                    >
+                      {editEventId===event.id ? (
+                        <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
+                          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'6px' }}>
+                            <input defaultValue={event.type} id={`ev-type-${event.id}`} className="input" placeholder="Type" list="event-types-list" />
+                            <input type="date" defaultValue={event.date||''} id={`ev-date-${event.id}`} className="input" />
+                            <input defaultValue={event.place?.city||''} id={`ev-city-${event.id}`} className="input" placeholder="Ville" />
+                            <input defaultValue={event.place?.country||''} id={`ev-country-${event.id}`} className="input" placeholder="Pays" />
+                          </div>
+                          <input defaultValue={event.description||''} id={`ev-desc-${event.id}`} className="input" placeholder="Description" />
+                          <div style={{ display:'flex', gap:'6px' }}>
+                            <button onClick={()=>{
+                              const type=((document.getElementById(`ev-type-${event.id}`) as HTMLInputElement).value.trim()||'other') as EventType;
+                              const date=(document.getElementById(`ev-date-${event.id}`) as HTMLInputElement).value||undefined;
+                              const city=(document.getElementById(`ev-city-${event.id}`) as HTMLInputElement).value;
+                              const country=(document.getElementById(`ev-country-${event.id}`) as HTMLInputElement).value;
+                              const description=(document.getElementById(`ev-desc-${event.id}`) as HTMLInputElement).value||undefined;
+                              updateEvent(event.id,{type,date,description,place:(city||country)?{city,country}:undefined});
+                              setEditEventId(null);
+                            }} className="btn btn-primary btn-sm">Sauvegarder</button>
+                            <button onClick={()=>setEditEventId(null)} className="btn btn-ghost btn-sm">Annuler</button>
+                          </div>
                         </div>
-                        {event.date&&<div style={{ fontSize:'12px', color:'var(--text-muted)' }}>{formatDate(event.date, event.dateApprox)}</div>}
-                        {event.place?.city&&<div style={{ fontSize:'12px', color:'var(--text-muted)' }}>📍 {[event.place.city, event.place.country].filter(Boolean).join(', ')}</div>}
-                        {event.description&&<div style={{ fontSize:'13px', marginTop:'4px' }}>{event.description}</div>}
-                      </div>
-                      <button onClick={()=>removeEvent(event.id)} className="btn btn-ghost btn-sm" style={{ color:'var(--danger)', fontSize:'12px', flexShrink:0 }}>✕</button>
+                      ) : (
+                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:'8px' }}>
+                          <div style={{ display:'flex', gap:'8px', alignItems:'flex-start' }}>
+                            <span style={{ cursor:'grab', color:'var(--text-light)', fontSize:'13px', userSelect:'none' }}>⠿</span>
+                            <div>
+                              <div style={{ fontWeight:'700', fontSize:'13px' }}>
+                                {EVENT_ICONS[event.type]||'📌'} {event.type.charAt(0).toUpperCase()+event.type.slice(1)}
+                              </div>
+                              {event.date&&<div style={{ fontSize:'12px', color:'var(--text-muted)' }}>{formatDate(event.date, event.dateApprox)}</div>}
+                              {event.place?.city&&<div style={{ fontSize:'12px', color:'var(--text-muted)' }}>📍 {[event.place.city, event.place.country].filter(Boolean).join(', ')}</div>}
+                              {event.description&&<div style={{ fontSize:'13px', marginTop:'4px' }}>{event.description}</div>}
+                            </div>
+                          </div>
+                          <div style={{ display:'flex', gap:'4px', flexShrink:0 }}>
+                            <button onClick={()=>setEditEventId(event.id)} className="btn btn-ghost btn-sm" style={{ fontSize:'12px' }}>✏️</button>
+                            <button onClick={()=>removeEvent(event.id)} className="btn btn-ghost btn-sm" style={{ color:'var(--danger)', fontSize:'12px' }}>🗑</button>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+                <datalist id="event-types-list">
+                  {EVENT_TYPES.map(t=><option key={t} value={t} />)}
+                </datalist>
+              </>
             )}
             {!showAddEvent ? (
               <button onClick={()=>setShowAddEvent(true)} className="btn btn-secondary btn-sm">＋ Ajouter un événement</button>
@@ -319,17 +479,21 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
               <div style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)' }} className="animate-fade-in">
                 <h4 style={{ margin:'0 0 10px', fontSize:'13px' }}>Nouvel événement</h4>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'8px' }}>
-                  <select value={newEvent.type} onChange={e=>setNewEvent(v=>({...v,type:e.target.value as EventType}))} className="input">
+                  <select value={customEventType ? '__custom__' : newEvent.type} onChange={e=>{ if(e.target.value==='__custom__'){ setCustomEventType(' '); } else { setCustomEventType(''); setNewEvent(v=>({...v,type:e.target.value as EventType})); } }} className="input">
                     {EVENT_TYPES.map(t=><option key={t} value={t}>{EVENT_ICONS[t]} {t}</option>)}
+                    <option value="__custom__">✎ Type personnalisé…</option>
                   </select>
                   <input type="date" value={newEvent.date||''} onChange={e=>setNewEvent(v=>({...v,date:e.target.value||undefined}))} className="input" placeholder="Date"/>
                   <input value={newEvent.place?.city||''} onChange={e=>setNewEvent(v=>({...v,place:{...v.place,city:e.target.value}}))} className="input" placeholder="Ville"/>
                   <input value={newEvent.place?.country||''} onChange={e=>setNewEvent(v=>({...v,place:{...v.place,country:e.target.value}}))} className="input" placeholder="Pays"/>
                 </div>
+                {customEventType!=='' && (
+                  <input autoFocus value={customEventType.trim()===''?'':customEventType} onChange={e=>setCustomEventType(e.target.value||' ')} className="input" placeholder="Nom du type personnalisé (ex: Décoration)" style={{ marginBottom:'8px', width:'100%' }}/>
+                )}
                 <input value={newEvent.description||''} onChange={e=>setNewEvent(v=>({...v,description:e.target.value}))} className="input" placeholder="Description (optionnel)" style={{ marginBottom:'8px', width:'100%' }}/>
                 <div style={{ display:'flex', gap:'6px' }}>
                   <button onClick={addEvent} className="btn btn-primary btn-sm">Ajouter</button>
-                  <button onClick={()=>setShowAddEvent(false)} className="btn btn-ghost btn-sm">Annuler</button>
+                  <button onClick={()=>{setShowAddEvent(false);setCustomEventType('');}} className="btn btn-ghost btn-sm">Annuler</button>
                 </div>
               </div>
             )}
@@ -439,7 +603,12 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
               <button onClick={()=>setConfirmDelete(true)} className="btn btn-danger btn-sm">🗑 Supprimer cette personne</button>
             ) : (
               <div style={{ padding:'12px', background:'#fdf2f2', border:'1px solid #f5c6c6', borderRadius:'var(--radius)' }}>
-                <p style={{ margin:'0 0 10px', fontSize:'13px', color:'#1a1612' }}>⚠️ Supprimer définitivement <strong>{getDisplayName(person)}</strong> et toutes ses relations ?</p>
+                <p style={{ margin:'0 0 10px', fontSize:'13px', color:'#1a1612' }}>
+                  ⚠️ Supprimer définitivement <strong>{getDisplayName(person)}</strong> ?
+                  {relCount > 0
+                    ? <> Cela supprimera aussi <strong>{relCount} relation{relCount > 1 ? 's' : ''}</strong> liée{relCount > 1 ? 's' : ''} à cette personne.</>
+                    : <> Cette personne n&apos;a aucune relation enregistrée.</>}
+                </p>
                 <div style={{ display:'flex', gap:'8px' }}>
                   <button onClick={onDelete} className="btn btn-danger btn-sm">Oui, supprimer</button>
                   <button onClick={()=>setConfirmDelete(false)} className="btn btn-ghost btn-sm">Annuler</button>

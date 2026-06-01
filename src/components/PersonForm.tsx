@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Person, Gender } from '@/types';
 
 interface Props {
@@ -14,9 +14,32 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel = 'E
     firstName: '', lastName: '', gender: 'unknown', isAlive: true,
     ...initial
   });
+  const [cfEntries, setCfEntries] = useState<{ key: string; value: string }[]>(
+    () => Object.entries(initial?.customFields || {}).map(([key, value]) => ({ key, value }))
+  );
+  const [photoError, setPhotoError] = useState('');
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const set = (field: keyof Person, value: unknown) =>
     setForm(f => ({ ...f, [field]: value }));
+
+  // --- Photo upload (→ base64 data URL) ---
+  const handlePhotoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoError('');
+    if (!file.type.startsWith('image/')) { setPhotoError('Le fichier doit être une image.'); return; }
+    if (file.size > 2 * 1024 * 1024) { setPhotoError("Image trop volumineuse (max 2 Mo)."); return; }
+    const reader = new FileReader();
+    reader.onload = ev => set('profilePhoto', ev.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  // --- Custom fields ---
+  const addCf = () => setCfEntries(e => [...e, { key: '', value: '' }]);
+  const updateCf = (i: number, field: 'key' | 'value', val: string) =>
+    setCfEntries(e => e.map((c, idx) => idx === i ? { ...c, [field]: val } : c));
+  const removeCf = (i: number) => setCfEntries(e => e.filter((_, idx) => idx !== i));
 
   // --- DNA / ethnic origins ---
   const dna = form.dnaOrigins || [];
@@ -31,12 +54,21 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel = 'E
       : d));
   const removeDna = (i: number) => setDna(dna.filter((_, idx) => idx !== i));
 
+  // --- Validation ---
+  const dateInvalid = !!(!form.isAlive && form.birthDate && form.deathDate && form.deathDate < form.birthDate);
+  const nameMissing = !form.firstName?.trim() || !form.lastName?.trim();
+  const blocked = nameMissing || dnaInvalid || dateInvalid;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.firstName?.trim() || !form.lastName?.trim()) return;
-    if (dnaInvalid) return;
+    if (blocked) return;
     const cleanDna = dna.filter(d => d.region.trim());
-    onSave({ ...form, dnaOrigins: cleanDna.length ? cleanDna : undefined });
+    const cf = cfEntries.filter(c => c.key.trim()).reduce<Record<string, string>>((acc, c) => { acc[c.key.trim()] = c.value; return acc; }, {});
+    onSave({
+      ...form,
+      dnaOrigins: cleanDna.length ? cleanDna : undefined,
+      customFields: Object.keys(cf).length ? cf : undefined,
+    });
   };
 
   return (
@@ -141,6 +173,12 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel = 'E
         </div>
       )}
 
+      {dateInvalid && (
+        <div style={{ fontSize: '12px', color: 'var(--danger)' }}>
+          ⚠️ La date de décès doit être postérieure à la date de naissance.
+        </div>
+      )}
+
       <label style={labelStyle}>
         Profession
         <input
@@ -178,14 +216,26 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel = 'E
         />
       </label>
 
-      <label style={labelStyle}>
-        URL photo de profil
-        <input
-          value={form.profilePhoto || ''}
-          onChange={e => set('profilePhoto', e.target.value)}
-          className="input" placeholder="https://..."
-        />
-      </label>
+      <div style={labelStyle}>
+        Photo de profil
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', textTransform: 'none', fontWeight: 400 }}>
+          {form.profilePhoto && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={form.profilePhoto} alt="" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border)', flexShrink: 0 }} />
+          )}
+          <input
+            value={form.profilePhoto || ''}
+            onChange={e => set('profilePhoto', e.target.value || undefined)}
+            className="input" placeholder="Coller une URL https://… ou importer un fichier"
+          />
+          <input ref={fileRef} type="file" accept="image/*" onChange={handlePhotoFile} style={{ display: 'none' }} />
+          <button type="button" onClick={() => fileRef.current?.click()} className="btn btn-secondary btn-sm" style={{ flexShrink: 0 }}>📷 Importer</button>
+          {form.profilePhoto && (
+            <button type="button" onClick={() => set('profilePhoto', undefined)} className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)', flexShrink: 0 }}>✕</button>
+          )}
+        </div>
+        {photoError && <span style={{ color: 'var(--danger)', fontSize: '11px', textTransform: 'none', fontWeight: 400 }}>{photoError}</span>}
+      </div>
 
       <label style={labelStyle}>
         Biographie
@@ -247,13 +297,39 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel = 'E
         </button>
       </div>
 
+      {/* Custom fields */}
+      <div style={{ borderTop: '1px solid var(--border)', paddingTop: '12px' }}>
+        <span style={{ ...labelStyle, marginBottom: '8px', display: 'block' }}>🗂 Champs personnalisés</span>
+        {cfEntries.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
+            {cfEntries.map((c, i) => (
+              <div key={i} style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                <input value={c.key} onChange={e => updateCf(i, 'key', e.target.value)} className="input" placeholder="Clé (ex: Régiment)" style={{ flex: 1 }} />
+                <input value={c.value} onChange={e => updateCf(i, 'value', e.target.value)} className="input" placeholder="Valeur" style={{ flex: 1 }} />
+                <button type="button" onClick={() => removeCf(i)} className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }}>✕</button>
+              </div>
+            ))}
+          </div>
+        )}
+        <button type="button" onClick={addCf} className="btn btn-secondary btn-sm">＋ Ajouter un champ</button>
+      </div>
+
+      <label style={labelStyle}>
+        Confidentialité
+        <select value={form.privacy || 'public'} onChange={e => set('privacy', e.target.value as Person['privacy'])} className="input">
+          <option value="public">🌍 Public</option>
+          <option value="family">👨‍👩‍👧 Famille</option>
+          <option value="private">🔒 Privé</option>
+        </select>
+      </label>
+
       <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '4px' }}>
         {onCancel && (
           <button type="button" onClick={onCancel} className="btn btn-secondary">
             Annuler
           </button>
         )}
-        <button type="submit" className="btn btn-primary" disabled={dnaInvalid} style={{ opacity: dnaInvalid ? 0.5 : 1 }}>
+        <button type="submit" className="btn btn-primary" disabled={blocked} style={{ opacity: blocked ? 0.5 : 1 }}>
           ✓ {submitLabel}
         </button>
       </div>

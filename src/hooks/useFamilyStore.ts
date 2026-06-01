@@ -1,25 +1,37 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { FamilyTree, Person, Relationship, JournalEntry } from '@/types';
 import { sampleFamilyTree } from '@/lib/sampleData';
 import { generateId, getDisplayName } from '@/lib/treeUtils';
+import { isSupabaseConfigured } from '@/lib/supabase';
+import { loadTreesFromSupabase, saveTreeToSupabase, deleteTreeFromSupabase, loadOneTree, SharedMeta } from '@/lib/supabaseSync';
 
 const STORAGE_KEY = 'suimini_trees';
 const ACTIVE_TREE_KEY = 'suimini_active_tree';
 const MAX_HISTORY = 50;
+
+export type SyncStatus = 'idle' | 'saved' | 'syncing' | 'offline';
+export interface StoreUser { id: string; email?: string }
 
 interface HistorySnapshot {
   trees: FamilyTree[];
   description: string;
 }
 
-export function useFamilyStore() {
+export function useFamilyStore(user: StoreUser | null = null) {
   const [trees, setTrees] = useState<FamilyTree[]>([]);
   const [activeTreeId, setActiveTreeId] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   // Undo / redo stacks
   const [past, setPast] = useState<HistorySnapshot[]>([]);
   const [future, setFuture] = useState<HistorySnapshot[]>([]);
+  // Cloud sync state
+  const cloud = !!user && isSupabaseConfigured;
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
+  const [shared, setShared] = useState<Record<string, SharedMeta>>({});
+  const [migrationPending, setMigrationPending] = useState(false);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const localCacheRef = useRef<FamilyTree[]>([]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -29,10 +41,12 @@ export function useFamilyStore() {
     if (stored) {
       const parsed = JSON.parse(stored) as FamilyTree[];
       setTrees(parsed);
+      localCacheRef.current = parsed;
       setActiveTreeId(activeId || parsed[0]?.id || null);
     } else {
       // Load sample data
       setTrees([sampleFamilyTree]);
+      localCacheRef.current = [sampleFamilyTree];
       setActiveTreeId(sampleFamilyTree.id);
       localStorage.setItem(STORAGE_KEY, JSON.stringify([sampleFamilyTree]));
       localStorage.setItem(ACTIVE_TREE_KEY, sampleFamilyTree.id);
@@ -40,8 +54,40 @@ export function useFamilyStore() {
     setLoaded(true);
   }, []);
 
+  // On login: load cloud data (and offer migration of local data when the cloud is empty).
+  useEffect(() => {
+    if (!cloud || !user) { setSyncStatus('idle'); setShared({}); setMigrationPending(false); return; }
+    let active = true;
+    (async () => {
+      setSyncStatus('syncing');
+      try {
+        const { trees: remote, shared: sharedMeta } = await loadTreesFromSupabase(user.id);
+        if (!active) return;
+        setShared(sharedMeta);
+        const localTrees = localCacheRef.current;
+        if (remote.length === 0 && localTrees.length > 0) {
+          // Cloud empty but we have local data → keep showing it and propose migration.
+          setMigrationPending(true);
+          setSyncStatus('saved');
+        } else {
+          setMigrationPending(false);
+          setTrees(remote);
+          setActiveTreeId(prev => (remote.find(t => t.id === prev) ? prev : remote[0]?.id || null));
+          setSyncStatus('saved');
+        }
+      } catch {
+        if (active) setSyncStatus('offline');
+      }
+    })();
+    return () => { active = false; };
+  }, [cloud, user]);
+
+  // Debounced push of the active tree to the cloud after any change.
+  // (declared after activeTree below)
+
   const persist = useCallback((updated: FamilyTree[]) => {
     setTrees(updated);
+    localCacheRef.current = updated;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
   }, []);
 
@@ -57,6 +103,47 @@ export function useFamilyStore() {
   }, [trees, persist]);
 
   const activeTree = trees.find(t => t.id === activeTreeId) || null;
+
+  // Debounced cloud push of the active tree after any local change.
+  const activeTreeKey = activeTree ? JSON.stringify(activeTree) : '';
+  useEffect(() => {
+    if (!cloud || !user || !activeTree || migrationPending) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      setSyncStatus('syncing');
+      const isOwner = !shared[activeTree.id];
+      saveTreeToSupabase(activeTree, user.id, isOwner)
+        .then(() => setSyncStatus('saved'))
+        .catch(() => setSyncStatus('offline'));
+    }, 700);
+    return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTreeKey, cloud]);
+
+  // Reload one tree from the cloud (used by realtime collaborator updates).
+  const reloadTreeFromCloud = useCallback(async (treeId: string) => {
+    if (!cloud) return;
+    const fresh = await loadOneTree(treeId);
+    if (fresh) {
+      setTrees(prev => prev.map(t => t.id === treeId ? fresh : t));
+      localCacheRef.current = localCacheRef.current.map(t => t.id === treeId ? fresh : t);
+    }
+  }, [cloud]);
+
+  // Migrate local trees to the cloud (on user confirmation).
+  const runMigration = useCallback(async () => {
+    if (!user) return;
+    setSyncStatus('syncing');
+    try {
+      for (const t of localCacheRef.current) await saveTreeToSupabase(t, user.id, true);
+      setMigrationPending(false);
+      setSyncStatus('saved');
+    } catch {
+      setSyncStatus('offline');
+    }
+  }, [user]);
+
+  const dismissMigration = useCallback(() => setMigrationPending(false), []);
 
   // updateTree is the primitive used by every editing action — it records history.
   const updateTreeWithHistory = useCallback((updatedTree: FamilyTree, description: string) => {
@@ -97,17 +184,47 @@ export function useFamilyStore() {
   const deleteTree = useCallback((treeId: string) => {
     const updated = trees.filter(t => t.id !== treeId);
     persist(updated);
+    if (cloud) deleteTreeFromSupabase(treeId).catch(() => {});
     if (activeTreeId === treeId) {
       const newActive = updated[0]?.id || null;
       setActiveTreeId(newActive);
       if (newActive) localStorage.setItem(ACTIVE_TREE_KEY, newActive);
     }
-  }, [trees, persist, activeTreeId]);
+  }, [trees, persist, activeTreeId, cloud]);
 
   const switchTree = useCallback((treeId: string) => {
     setActiveTreeId(treeId);
     localStorage.setItem(ACTIVE_TREE_KEY, treeId);
   }, []);
+
+  // Rename / edit description of any tree (undoable).
+  const updateTreeMeta = useCallback((treeId: string, meta: { name?: string; description?: string }) => {
+    const target = trees.find(t => t.id === treeId);
+    if (!target) return;
+    updateTreeWithHistory(
+      { ...target, name: meta.name ?? target.name, description: meta.description ?? target.description },
+      `Modification de l'arbre « ${meta.name ?? target.name} »`
+    );
+  }, [trees, updateTreeWithHistory]);
+
+  // Deep-clone a tree under a new name (becomes active).
+  const duplicateTree = useCallback((treeId: string, newName: string) => {
+    const src = trees.find(t => t.id === treeId);
+    if (!src) return null;
+    const now = new Date().toISOString();
+    const copy: FamilyTree = {
+      ...JSON.parse(JSON.stringify(src)),
+      id: generateId(),
+      name: newName,
+      createdAt: now,
+      updatedAt: now,
+    };
+    const updated = [...trees, copy];
+    persist(updated);
+    setActiveTreeId(copy.id);
+    localStorage.setItem(ACTIVE_TREE_KEY, copy.id);
+    return copy;
+  }, [trees, persist]);
 
   // Person CRUD
   const addPerson = useCallback((person: Omit<Person, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -159,6 +276,14 @@ export function useFamilyStore() {
       `Ajout d'une relation`
     );
     return newRel;
+  }, [activeTree, updateTreeWithHistory]);
+
+  const updateRelationship = useCallback((relId: string, updates: Partial<Relationship>) => {
+    if (!activeTree) return;
+    const relationships = activeTree.relationships.map(r =>
+      r.id === relId ? { ...r, ...updates } : r
+    );
+    updateTreeWithHistory({ ...activeTree, relationships }, `Modification d'une relation`);
   }, [activeTree, updateTreeWithHistory]);
 
   const deleteRelationship = useCallback((relId: string) => {
@@ -236,10 +361,13 @@ export function useFamilyStore() {
     deleteTree,
     switchTree,
     updateTree,
+    updateTreeMeta,
+    duplicateTree,
     addPerson,
     updatePerson,
     deletePerson,
     addRelationship,
+    updateRelationship,
     deleteRelationship,
     addJournalEntry,
     updateJournalEntry,
@@ -252,5 +380,13 @@ export function useFamilyStore() {
     canRedo: future.length > 0,
     lastAction: past.length > 0 ? past[past.length - 1].description : null,
     nextAction: future.length > 0 ? future[future.length - 1].description : null,
+    // cloud sync
+    cloud,
+    syncStatus,
+    shared,
+    migrationPending,
+    runMigration,
+    dismissMigration,
+    reloadTreeFromCloud,
   };
 }
