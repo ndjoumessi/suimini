@@ -20,10 +20,8 @@ export default function PresentationMode({ persons, onClose }: Props) {
   }, [persons]);
 
   const [index, setIndex] = useState(0);
-  const [dir, setDir] = useState<1 | -1>(1);
 
   const go = useCallback((delta: number) => {
-    setDir(delta > 0 ? 1 : -1);
     setIndex(i => Math.max(0, Math.min(ordered.length - 1, i + delta)));
   }, [ordered.length]);
 
@@ -61,8 +59,8 @@ export default function PresentationMode({ persons, onClose }: Props) {
       <button onClick={() => go(-1)} disabled={index === 0} style={{ ...arrowStyle, left: '24px', opacity: index === 0 ? 0.25 : 1 }} title="Précédent (←)">‹</button>
       <button onClick={() => go(1)} disabled={index === ordered.length - 1} style={{ ...arrowStyle, right: '24px', opacity: index === ordered.length - 1 ? 0.25 : 1 }} title="Suivant (→)">›</button>
 
-      {/* Slide */}
-      <div key={index} className={dir === 1 ? 'present-slide-next' : 'present-slide-prev'}
+      {/* Slide (fade transition on each change, retriggered via key) */}
+      <div key={index} className="present-fade"
         style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', maxWidth: '760px', padding: '0 60px' }}
       >
         {/* Photo */}
@@ -76,8 +74,8 @@ export default function PresentationMode({ persons, onClose }: Props) {
             : (person.gender === 'male' ? '👨' : person.gender === 'female' ? '👩' : '🧑')}
         </div>
 
-        {/* Name */}
-        <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(2rem, 5vw, 3.4rem)', color: '#f5f0e8', margin: '0 0 12px', fontWeight: 600, lineHeight: 1.1 }}>
+        {/* Name — Playfair Display 48px */}
+        <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(2rem, 6vw, 48px)', color: '#f5f0e8', margin: '0 0 12px', fontWeight: 600, lineHeight: 1.1 }}>
           {getFullName(person)}
         </h1>
 
@@ -104,7 +102,7 @@ export default function PresentationMode({ persons, onClose }: Props) {
       <div style={{ position: 'absolute', bottom: '28px', left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '60%' }}>
           {ordered.map((_, i) => (
-            <button key={i} onClick={() => { setDir(i > index ? 1 : -1); setIndex(i); }}
+            <button key={i} onClick={() => setIndex(i)}
               style={{ width: i === index ? '22px' : '8px', height: '8px', borderRadius: '100px', border: 'none', cursor: 'pointer', padding: 0, transition: 'all 0.25s', background: i === index ? accent : 'rgba(255,255,255,0.25)' }}
             />
           ))}

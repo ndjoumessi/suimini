@@ -10,6 +10,9 @@ interface TreeNode {
   generation: number;
 }
 
+interface Edge { x1: number; y1: number; x2: number; y2: number; type: string; }
+interface Heart { x: number; y: number; }
+
 interface Props {
   tree: FamilyTree;
   selectedPersonId: string | null;
@@ -33,15 +36,16 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
   const [showSearch, setShowSearch] = useState(false);
   const [searchQ, setSearchQ] = useState('');
   const [showLegend, setShowLegend] = useState(true);
+  const [viewport, setViewport] = useState({ w: 0, h: 0 }); // container size, for the minimap
 
   const rootPerson = tree.persons.find(p => p.id === rootId);
 
   const buildLayout = useCallback(() => {
-    if (!rootId || !rootPerson) return { nodes: [], edges: [] };
+    if (!rootId || !rootPerson) return { nodes: [] as TreeNode[], edges: [] as Edge[], hearts: [] as Heart[] };
     const nodes: TreeNode[] = [];
-    const edges: { x1: number; y1: number; x2: number; y2: number; type: string }[] = [];
+    const edges: Edge[] = [];
+    const hearts: Heart[] = [];
     const visited = new Set<string>();
-    const positionedIds = new Map<string, { x: number; y: number }>();
 
     function placeFamily(personId: string, genY: number, centerX: number) {
       if (visited.has(personId)) return;
@@ -50,51 +54,58 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
       if (!person) return;
 
       const spouses = getSpouses(personId, tree.relationships, tree.persons).filter(s => !visited.has(s.id));
-      const totalWidth = (1 + spouses.length) * (NODE_W + H_GAP);
-      let startX = centerX - totalWidth / 2 + (NODE_W + H_GAP) / 2;
 
-      nodes.push({ person, x: startX, y: genY, generation: genY / (NODE_H + V_GAP) });
-      positionedIds.set(personId, { x: startX, y: genY });
-      const mainX = startX;
-      startX += NODE_W + H_GAP;
+      // Couple-centred layout: the whole couple row is centred on `centerX`, so the
+      // children hang from the midpoint between the partners (where the ♥ sits).
+      const unit = 1 + spouses.length;
+      const rowW = unit * NODE_W + (unit - 1) * H_GAP;
+      const mainX = centerX - rowW / 2;
+
+      nodes.push({ person, x: mainX, y: genY, generation: 0 });
+      let prevNodeX = mainX;
 
       spouses.forEach(spouse => {
         visited.add(spouse.id);
-        nodes.push({ person: spouse, x: startX, y: genY, generation: genY / (NODE_H + V_GAP) });
-        positionedIds.set(spouse.id, { x: startX, y: genY });
-        // Dashed spouse line
-        edges.push({ x1: mainX + NODE_W, y1: genY + NODE_H / 2, x2: startX, y2: genY + NODE_H / 2, type: 'spouse' });
-        startX += NODE_W + H_GAP;
+        const sx = prevNodeX + NODE_W + H_GAP;
+        nodes.push({ person: spouse, x: sx, y: genY, generation: 0 });
+        const lineY = genY + NODE_H / 2;
+        // Partner link + heart marker at the gap centre
+        edges.push({ x1: prevNodeX + NODE_W, y1: lineY, x2: sx, y2: lineY, type: 'spouse' });
+        hearts.push({ x: prevNodeX + NODE_W + H_GAP / 2, y: lineY });
+        prevNodeX = sx;
       });
 
-      // Children
+      const coupleMidX = centerX; // row centred on centerX → couple midpoint = centerX
+
+      // Children descend from the couple midpoint via a single trunk + bus.
       const children = getChildren(personId, tree.relationships, tree.persons);
       if (children.length > 0) {
         const childY = genY + NODE_H + V_GAP;
         const childTotalW = children.length * (NODE_W + H_GAP) - H_GAP;
-        const childStartX = centerX - childTotalW / 2;
-        const parentMidX = mainX + NODE_W / 2;
+        const childStartX = coupleMidX - childTotalW / 2;
         const childMidY = genY + NODE_H + V_GAP / 2;
+        // For a simple couple the trunk starts at the ♥; otherwise from the row bottom.
+        const trunkTopY = spouses.length === 1 ? genY + NODE_H / 2 : genY + NODE_H;
+
+        edges.push({ x1: coupleMidX, y1: trunkTopY, x2: coupleMidX, y2: childMidY, type: 'parent-v' });
 
         children.forEach((child, i) => {
           const childX = childStartX + i * (NODE_W + H_GAP);
           const childMidX = childX + NODE_W / 2;
-          // Elbow connector
-          edges.push({ x1: parentMidX, y1: genY + NODE_H, x2: parentMidX, y2: childMidY, type: 'parent-v' });
-          edges.push({ x1: parentMidX, y1: childMidY, x2: childMidX, y2: childMidY, type: 'parent-h' });
+          edges.push({ x1: coupleMidX, y1: childMidY, x2: childMidX, y2: childMidY, type: 'parent-h' });
           edges.push({ x1: childMidX, y1: childMidY, x2: childMidX, y2: childY, type: 'parent-v' });
-          placeFamily(child.id, childY, childX + NODE_W / 2);
+          placeFamily(child.id, childY, childMidX);
         });
       }
 
-      // Parents (only for root)
+      // Parents + grandparents (only for the root person)
       if (personId === rootId) {
         const parents = getParents(personId, tree.relationships, tree.persons);
         if (parents.length > 0) {
           const parentY = genY - NODE_H - V_GAP;
           const parentTotalW = parents.length * (NODE_W + H_GAP) - H_GAP;
           const parentStartX = centerX - parentTotalW / 2;
-          const childMidX = mainX + NODE_W / 2;
+          const rootMidX = mainX + NODE_W / 2;
           const midY = genY - V_GAP / 2;
 
           parents.forEach((parent, i) => {
@@ -102,14 +113,12 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
             const parentMidX2 = parentX + NODE_W / 2;
             if (!visited.has(parent.id)) {
               visited.add(parent.id);
-              nodes.push({ person: parent, x: parentX, y: parentY, generation: -1 });
-              positionedIds.set(parent.id, { x: parentX, y: parentY });
+              nodes.push({ person: parent, x: parentX, y: parentY, generation: 0 });
             }
             edges.push({ x1: parentMidX2, y1: parentY + NODE_H, x2: parentMidX2, y2: midY, type: 'parent-v' });
-            edges.push({ x1: parentMidX2, y1: midY, x2: childMidX, y2: midY, type: 'parent-h' });
-            edges.push({ x1: childMidX, y1: midY, x2: childMidX, y2: genY, type: 'parent-v' });
+            edges.push({ x1: parentMidX2, y1: midY, x2: rootMidX, y2: midY, type: 'parent-h' });
+            edges.push({ x1: rootMidX, y1: midY, x2: rootMidX, y2: genY, type: 'parent-v' });
 
-            // Grandparents
             const grandparents = getParents(parent.id, tree.relationships, tree.persons);
             if (grandparents.length > 0) {
               const gpY = parentY - NODE_H - V_GAP;
@@ -117,7 +126,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                 const gpX = parentX + (j - (grandparents.length - 1) / 2) * (NODE_W + H_GAP);
                 if (!visited.has(gp.id)) {
                   visited.add(gp.id);
-                  nodes.push({ person: gp, x: gpX, y: gpY, generation: -2 });
+                  nodes.push({ person: gp, x: gpX, y: gpY, generation: 0 });
                   edges.push({ x1: gpX + NODE_W / 2, y1: gpY + NODE_H, x2: gpX + NODE_W / 2, y2: parentY - V_GAP / 2, type: 'parent-v' });
                   edges.push({ x1: gpX + NODE_W / 2, y1: parentY - V_GAP / 2, x2: parentMidX2, y2: parentY - V_GAP / 2, type: 'parent-h' });
                   edges.push({ x1: parentMidX2, y1: parentY - V_GAP / 2, x2: parentMidX2, y2: parentY, type: 'parent-v' });
@@ -125,15 +134,35 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
               });
             }
           });
+
+          // Link the two root parents as a couple (♥ between them).
+          if (parents.length === 2) {
+            const p0Right = parentStartX + NODE_W;
+            const p1Left = parentStartX + NODE_W + H_GAP;
+            const lineY = parentY + NODE_H / 2;
+            edges.push({ x1: p0Right, y1: lineY, x2: p1Left, y2: lineY, type: 'spouse' });
+            hearts.push({ x: parentStartX + NODE_W + H_GAP / 2, y: lineY });
+          }
         }
       }
     }
 
     placeFamily(rootId, 0, 0);
-    return { nodes, edges };
+    return { nodes, edges, hearts };
   }, [rootId, rootPerson, tree]);
 
-  const { nodes, edges } = buildLayout();
+  const { nodes, edges, hearts } = buildLayout();
+
+  // Generation index (by vertical position) → color gradient, oldest (top) to newest (bottom).
+  const genYs = Array.from(new Set(nodes.map(n => n.y))).sort((a, b) => a - b);
+  const genIndexOfY = new Map(genYs.map((y, i) => [y, i]));
+  const genCount = genYs.length;
+  const generationColor = (y: number) => {
+    const idx = genIndexOfY.get(y) ?? 0;
+    const t = genCount <= 1 ? 0 : idx / (genCount - 1);
+    const hue = 28 + t * 168; // 28° amber (ancien) → 196° cyan (récent)
+    return `hsl(${hue}, 55%, 52%)`;
+  };
 
   const minX = nodes.length ? Math.min(...nodes.map(n => n.x)) - 60 : -400;
   const maxX = nodes.length ? Math.max(...nodes.map(n => n.x)) + NODE_W + 60 : 400;
@@ -155,6 +184,15 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rootId]);
+
+  // Track container size for the minimap viewport rectangle (ResizeObserver fires on observe).
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setViewport({ w: el.clientWidth, h: el.clientHeight }));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
@@ -328,12 +366,21 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
             />
           ))}
 
+          {/* Couple hearts */}
+          {hearts.map((h, i) => (
+            <g key={`heart-${i}`} style={{ pointerEvents: 'none' }}>
+              <circle cx={h.x} cy={h.y} r={10} fill="var(--bg-card)" stroke="#e090a8" strokeWidth={1.5} />
+              <text x={h.x} y={h.y + 4} textAnchor="middle" fontSize={12} fill="#d6336c">♥</text>
+            </g>
+          ))}
+
           {/* Nodes */}
           {nodes.map(node => {
             const p = node.person;
             const isSelected = p.id === selectedPersonId;
             const isRoot = p.id === rootId;
             const age = getAge(p.birthDate, p.deathDate);
+            const genCol = generationColor(node.y);
 
             return (
               <g key={p.id}
@@ -348,9 +395,13 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                 {/* Card background */}
                 <rect width={NODE_W} height={NODE_H} rx={10} ry={10}
                   fill={isSelected ? 'var(--accent-light)' : 'var(--bg-card)'}
-                  stroke={isSelected ? 'var(--accent)' : isRoot ? '#c4a35a' : 'var(--border)'}
-                  strokeWidth={isSelected ? 2.5 : isRoot ? 2 : 1.5}
+                  stroke={isSelected ? 'var(--accent)' : isRoot ? '#c4a35a' : genCol}
+                  strokeWidth={isSelected ? 2.5 : isRoot ? 2 : 1.8}
                 />
+                {/* Generation tint overlay (subtle, theme-safe) */}
+                {!isSelected && (
+                  <rect width={NODE_W} height={NODE_H} rx={10} ry={10} fill={genCol} opacity={0.13} />
+                )}
                 {/* Gender bar */}
                 <rect x={0} y={0} width={5} height={NODE_H} rx={10}
                   fill={genderColor(p.gender)} />
@@ -443,10 +494,22 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                 <svg width="32" height="10"><line x1="0" y1="5" x2="32" y2="5" stroke="#e090a8" strokeWidth="2.5" strokeDasharray="6,3" /></svg>
                 <span>Conjoint(e)</span>
               </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ width: '32px', textAlign: 'center', color: '#d6336c' }}>♥</span>
+                <span>Mariage (couple)</span>
+              </div>
+            </div>
+            {/* Generations */}
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: '8px', marginBottom: '8px' }}>
+              <div style={{ fontWeight: '700', marginBottom: '6px', color: 'var(--text)', fontSize: '11px' }}>Générations</div>
+              <div style={{ height: '8px', borderRadius: '4px', background: 'linear-gradient(to right, hsl(28,55%,52%), hsl(112,55%,52%), hsl(196,55%,52%))' }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: 'var(--text-light)', marginTop: '2px' }}>
+                <span>Ancien</span><span>Récent</span>
+              </div>
             </div>
             {/* Symbols */}
             <div style={{ borderTop: '1px solid var(--border)', paddingTop: '8px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
-              <div>👑 Racine de l'arbre</div>
+              <div>👑 Racine de l&apos;arbre</div>
               <div>✝ Décédé(e)</div>
               <div style={{ marginTop: '4px', color: 'var(--text-light)', fontSize: '10px', lineHeight: '1.4' }}>
                 Clic → voir le profil<br/>
@@ -461,6 +524,52 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
         <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '100px', padding: '4px 12px', fontSize: '11px', color: 'var(--text-muted)' }}>
           {nodes.length} / {tree.persons.length} personnes
         </div>
+
+        {/* Minimap */}
+        {nodes.length > 0 && (() => {
+          const MM_W = 180, MM_H = 120;
+          const mmScale = Math.min(MM_W / svgW, MM_H / svgH);
+          const drawW = svgW * mmScale, drawH = svgH * mmScale;
+          const padX = (MM_W - drawW) / 2, padY = (MM_H - drawH) / 2;
+          const cw = viewport.w, ch = viewport.h;
+          // Visible viewport rectangle (content coords → minimap coords)
+          const vx = padX + (-offset.x / scale) * mmScale;
+          const vy = padY + (-offset.y / scale) * mmScale;
+          const vw = (cw / scale) * mmScale;
+          const vh = (ch / scale) * mmScale;
+          const navigate = (e: React.MouseEvent) => {
+            e.stopPropagation();
+            const rect = e.currentTarget.getBoundingClientRect();
+            const cx = minX + (e.clientX - rect.left - padX) / mmScale;
+            const cy = minY + (e.clientY - rect.top - padY) / mmScale;
+            setOffset({ x: cw / 2 - scale * (cx - minX), y: ch / 2 - scale * (cy - minY) });
+          };
+          return (
+            <div
+              onMouseDown={e => e.stopPropagation()}
+              onClick={navigate}
+              title="Cliquez pour naviguer"
+              style={{ position: 'absolute', bottom: '16px', right: '16px', width: `${MM_W}px`, height: `${MM_H}px`, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)', overflow: 'hidden', cursor: 'pointer' }}
+            >
+              <svg width={MM_W} height={MM_H} style={{ display: 'block' }}>
+                {nodes.map(n => (
+                  <rect key={n.person.id}
+                    x={padX + (n.x - minX) * mmScale}
+                    y={padY + (n.y - minY) * mmScale}
+                    width={Math.max(2, NODE_W * mmScale)}
+                    height={Math.max(1.5, NODE_H * mmScale)}
+                    rx={1.5}
+                    fill={generationColor(n.y)}
+                    opacity={0.85}
+                  />
+                ))}
+                <rect x={vx} y={vy} width={vw} height={vh}
+                  fill="rgba(220,40,40,0.12)" stroke="#dc2828" strokeWidth={1.5} rx={2} />
+              </svg>
+              <div style={{ position: 'absolute', top: '2px', left: '6px', fontSize: '9px', color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', pointerEvents: 'none' }}>Minimap</div>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
