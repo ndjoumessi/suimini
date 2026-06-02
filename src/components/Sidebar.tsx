@@ -136,6 +136,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
                   onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'var(--interactive)'; }}
                   onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}
                 >
+                  {active && <span aria-hidden="true" style={{ position: 'absolute', left: 0, top: '6px', bottom: '6px', width: '2px', borderRadius: '2px', background: 'var(--accent)' }} />}
                   <span style={{ width: '18px', display: 'inline-flex', justifyContent: 'center', position: 'relative' }}>
                     <item.Icon size={17} aria-hidden="true" />
                     {showBadge && <span className="birthday-pulse-dot" />}
@@ -155,7 +156,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
 
       {/* Actions */}
       <div style={{ padding: '8px 10px', borderTop: '1px solid var(--border)' }}>
-        <button onClick={onAddPerson} className="btn btn-primary" style={{ width: '100%', marginBottom: '6px' }}>
+        <button onClick={onAddPerson} className="btn btn-primary" style={{ width: '100%', height: '36px', borderRadius: '8px', marginBottom: '6px' }}>
           <Plus size={16} /> Ajouter une personne
         </button>
         <button onClick={onPresent} className="btn btn-secondary btn-sm" style={{ width: '100%', marginBottom: '6px' }}>

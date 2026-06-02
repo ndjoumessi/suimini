@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { FamilyTree, Person } from '@/types';
 import { getParents, getChildren, getSpouses, getDisplayName, formatYear, getAge } from '@/lib/treeUtils';
-import { Search, ZoomIn, ZoomOut, Crosshair, Info, Plus, Aperture, Crown, Cross, Sprout } from 'lucide-react';
+import { Search, ZoomIn, ZoomOut, Crosshair, Info, Plus, Aperture, Sprout } from 'lucide-react';
 
 /** Two-letter initials for the avatar fallback (same logic as PersonPanel/Sidebar). */
 function nodeInitials(p: Person): string {
@@ -11,27 +11,20 @@ function nodeInitials(p: Person): string {
 
 /**
  * Monochrome WARM-NEUTRAL ramp, used ONLY by the fan chart so its concentric
- * ancestor rings stay distinguishable. The vertical tree no longer colours nodes
- * by generation: generation is read by vertical POSITION, and the cuir-taupe
- * accent is reserved for root / selection (Rare Accent Rule, DESIGN.md).
+ * ancestor rings stay distinguishable. The vertical tree reads generation by
+ * vertical POSITION; the cuir-taupe accent stays reserved for root / selection.
  */
 function taupeScale(t: number): string {
-  const a = [211, 204, 192]; // #d3ccc0 (warm light neutral)
-  const b = [132, 124, 112]; // #847c70 (warm grey / --text-light)
+  const a = [211, 204, 192]; // #d3ccc0
+  const b = [132, 124, 112]; // #847c70
   const k = Math.max(0, Math.min(1, t));
   const c = a.map((v, i) => Math.round(v + (b[i] - v) * k));
   return `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
 }
 
-interface TreeNode {
-  person: Person;
-  x: number;
-  y: number;
-  generation: number;
-}
-
+interface TreeNode { person: Person; x: number; y: number; }
 interface Edge { x1: number; y1: number; x2: number; y2: number; type: string; }
-interface Heart { x: number; y: number; }
+interface Pearl { x: number; y: number; }
 
 interface Props {
   tree: FamilyTree;
@@ -40,11 +33,12 @@ interface Props {
   onAddPerson: () => void;
 }
 
-// Larger, more legible nodes (see DESIGN.md "Tree node (signature)").
-const NODE_W = 200;
-const NODE_H = 96;
-const H_GAP = 56;
-const V_GAP = 96;
+// "Album de famille relié" — compact register-card nodes (see DESIGN.md).
+const NODE_W = 172;
+const NODE_H = 80;
+const H_GAP = 24;
+const V_GAP = 64;
+const GRID = 24; // canvas dot-grid spacing
 
 export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAddPerson }: Props) {
   const [rootId, setRootId] = useState(tree.rootPersonId || tree.persons[0]?.id || null);
@@ -52,21 +46,21 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [dragMoved, setDragMoved] = useState(false); // distinguish click vs drag
+  const [dragMoved, setDragMoved] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQ, setSearchQ] = useState('');
-  const [showLegend, setShowLegend] = useState(false); // discreet by default
-  const [viewport, setViewport] = useState({ w: 0, h: 0 }); // container size, for the minimap
+  const [showLegend, setShowLegend] = useState(false);
+  const [viewport, setViewport] = useState({ w: 0, h: 0 });
   const [layoutMode, setLayoutMode] = useState<'vertical' | 'fan'>('vertical');
 
   const rootPerson = tree.persons.find(p => p.id === rootId);
 
   const buildLayout = useCallback(() => {
-    if (!rootId || !rootPerson) return { nodes: [] as TreeNode[], edges: [] as Edge[], hearts: [] as Heart[] };
+    if (!rootId || !rootPerson) return { nodes: [] as TreeNode[], edges: [] as Edge[], pearls: [] as Pearl[] };
     const nodes: TreeNode[] = [];
     const edges: Edge[] = [];
-    const hearts: Heart[] = [];
+    const pearls: Pearl[] = [];
     const visited = new Set<string>();
 
     function placeFamily(personId: string, genY: number, centerX: number) {
@@ -77,50 +71,47 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
 
       const spouses = getSpouses(personId, tree.relationships, tree.persons).filter(s => !visited.has(s.id));
 
-      // Couple-centred layout: the whole couple row is centred on `centerX`, so the
-      // children hang from the midpoint between the partners (where the ♥ sits).
+      // Couple row centred on `centerX`; spouses extend to the right (x positive).
       const unit = 1 + spouses.length;
       const rowW = unit * NODE_W + (unit - 1) * H_GAP;
       const mainX = centerX - rowW / 2;
 
-      nodes.push({ person, x: mainX, y: genY, generation: 0 });
+      nodes.push({ person, x: mainX, y: genY });
       let prevNodeX = mainX;
 
       spouses.forEach(spouse => {
         visited.add(spouse.id);
         const sx = prevNodeX + NODE_W + H_GAP;
-        nodes.push({ person: spouse, x: sx, y: genY, generation: 0 });
+        nodes.push({ person: spouse, x: sx, y: genY });
         const lineY = genY + NODE_H / 2;
-        // Partner link + heart marker at the gap centre
         edges.push({ x1: prevNodeX + NODE_W, y1: lineY, x2: sx, y2: lineY, type: 'spouse' });
-        hearts.push({ x: prevNodeX + NODE_W + H_GAP / 2, y: lineY });
+        pearls.push({ x: prevNodeX + NODE_W + H_GAP / 2, y: lineY });
         prevNodeX = sx;
       });
 
-      const coupleMidX = centerX; // row centred on centerX → couple midpoint = centerX
+      const coupleMidX = centerX;
 
-      // Children descend from the couple midpoint via a single trunk + bus.
+      // Children descend (y positive) via an elbow trunk + bus.
       const children = getChildren(personId, tree.relationships, tree.persons);
       if (children.length > 0) {
         const childY = genY + NODE_H + V_GAP;
         const childTotalW = children.length * (NODE_W + H_GAP) - H_GAP;
         const childStartX = coupleMidX - childTotalW / 2;
         const childMidY = genY + NODE_H + V_GAP / 2;
-        // For a simple couple the trunk starts at the ♥; otherwise from the row bottom.
         const trunkTopY = spouses.length === 1 ? genY + NODE_H / 2 : genY + NODE_H;
 
-        edges.push({ x1: coupleMidX, y1: trunkTopY, x2: coupleMidX, y2: childMidY, type: 'parent-v' });
+        edges.push({ x1: coupleMidX, y1: trunkTopY, x2: coupleMidX, y2: childMidY, type: 'parent' });
 
         children.forEach((child, i) => {
           const childX = childStartX + i * (NODE_W + H_GAP);
           const childMidX = childX + NODE_W / 2;
-          edges.push({ x1: coupleMidX, y1: childMidY, x2: childMidX, y2: childMidY, type: 'parent-h' });
-          edges.push({ x1: childMidX, y1: childMidY, x2: childMidX, y2: childY, type: 'parent-v' });
+          edges.push({ x1: coupleMidX, y1: childMidY, x2: childMidX, y2: childMidY, type: 'parent' });
+          edges.push({ x1: childMidX, y1: childMidY, x2: childMidX, y2: childY, type: 'parent' });
           placeFamily(child.id, childY, childMidX);
         });
       }
 
-      // Parents + grandparents (only for the root person)
+      // Parents + grandparents ascend (y negative), root only.
       if (personId === rootId) {
         const parents = getParents(personId, tree.relationships, tree.persons);
         if (parents.length > 0) {
@@ -135,11 +126,11 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
             const parentMidX2 = parentX + NODE_W / 2;
             if (!visited.has(parent.id)) {
               visited.add(parent.id);
-              nodes.push({ person: parent, x: parentX, y: parentY, generation: 0 });
+              nodes.push({ person: parent, x: parentX, y: parentY });
             }
-            edges.push({ x1: parentMidX2, y1: parentY + NODE_H, x2: parentMidX2, y2: midY, type: 'parent-v' });
-            edges.push({ x1: parentMidX2, y1: midY, x2: rootMidX, y2: midY, type: 'parent-h' });
-            edges.push({ x1: rootMidX, y1: midY, x2: rootMidX, y2: genY, type: 'parent-v' });
+            edges.push({ x1: parentMidX2, y1: parentY + NODE_H, x2: parentMidX2, y2: midY, type: 'parent' });
+            edges.push({ x1: parentMidX2, y1: midY, x2: rootMidX, y2: midY, type: 'parent' });
+            edges.push({ x1: rootMidX, y1: midY, x2: rootMidX, y2: genY, type: 'parent' });
 
             const grandparents = getParents(parent.id, tree.relationships, tree.persons);
             if (grandparents.length > 0) {
@@ -148,42 +139,50 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                 const gpX = parentX + (j - (grandparents.length - 1) / 2) * (NODE_W + H_GAP);
                 if (!visited.has(gp.id)) {
                   visited.add(gp.id);
-                  nodes.push({ person: gp, x: gpX, y: gpY, generation: 0 });
-                  edges.push({ x1: gpX + NODE_W / 2, y1: gpY + NODE_H, x2: gpX + NODE_W / 2, y2: parentY - V_GAP / 2, type: 'parent-v' });
-                  edges.push({ x1: gpX + NODE_W / 2, y1: parentY - V_GAP / 2, x2: parentMidX2, y2: parentY - V_GAP / 2, type: 'parent-h' });
-                  edges.push({ x1: parentMidX2, y1: parentY - V_GAP / 2, x2: parentMidX2, y2: parentY, type: 'parent-v' });
+                  nodes.push({ person: gp, x: gpX, y: gpY });
+                  edges.push({ x1: gpX + NODE_W / 2, y1: gpY + NODE_H, x2: gpX + NODE_W / 2, y2: parentY - V_GAP / 2, type: 'parent' });
+                  edges.push({ x1: gpX + NODE_W / 2, y1: parentY - V_GAP / 2, x2: parentMidX2, y2: parentY - V_GAP / 2, type: 'parent' });
+                  edges.push({ x1: parentMidX2, y1: parentY - V_GAP / 2, x2: parentMidX2, y2: parentY, type: 'parent' });
                 }
               });
             }
           });
 
-          // Link the two root parents as a couple (♥ between them).
           if (parents.length === 2) {
             const p0Right = parentStartX + NODE_W;
             const p1Left = parentStartX + NODE_W + H_GAP;
             const lineY = parentY + NODE_H / 2;
             edges.push({ x1: p0Right, y1: lineY, x2: p1Left, y2: lineY, type: 'spouse' });
-            hearts.push({ x: parentStartX + NODE_W + H_GAP / 2, y: lineY });
+            pearls.push({ x: parentStartX + NODE_W + H_GAP / 2, y: lineY });
           }
         }
       }
     }
 
     placeFamily(rootId, 0, 0);
-    return { nodes, edges, hearts };
+
+    // Re-anchor so the ROOT node's centre sits exactly at content (0, 0). The
+    // centring effect can then just set offset = (cw/2, ch/2) — no SVG-coordinate
+    // maths, no dependency on layout timing (fixes the persistent off-centre bug).
+    const root = nodes.find(n => n.person.id === rootId);
+    if (root) {
+      const dx = -(root.x + NODE_W / 2);
+      const dy = -(root.y + NODE_H / 2);
+      for (const n of nodes) { n.x += dx; n.y += dy; }
+      for (const e of edges) { e.x1 += dx; e.y1 += dy; e.x2 += dx; e.y2 += dy; }
+      for (const p of pearls) { p.x += dx; p.y += dy; }
+    }
+
+    return { nodes, edges, pearls };
   }, [rootId, rootPerson, tree]);
 
-  const { nodes, edges, hearts } = buildLayout();
+  const { nodes, edges, pearls } = buildLayout();
 
   // ---- Fan chart (ancestor pedigree) layout ----
   const MAX_FAN_GEN = 4;
-  const FAN_R0 = 54;   // central root circle radius
-  const FAN_RING = 70; // ring width per generation
-  const fanGenColor = (gen: number) => {
-    // Monochrome warm ramp, centre (root, newest) → outer (older).
-    const t = MAX_FAN_GEN <= 0 ? 1 : 1 - gen / MAX_FAN_GEN;
-    return taupeScale(t);
-  };
+  const FAN_R0 = 54;
+  const FAN_RING = 70;
+  const fanGenColor = (gen: number) => taupeScale(MAX_FAN_GEN <= 0 ? 1 : 1 - gen / MAX_FAN_GEN);
   const buildFan = useCallback(() => {
     interface Slot { person: Person; gen: number; index: number; }
     const slots: Slot[] = [];
@@ -211,57 +210,48 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
 
   const fan = layoutMode === 'fan' ? buildFan() : null;
 
-  const minX = nodes.length ? Math.min(...nodes.map(n => n.x)) - 60 : -400;
-  const maxX = nodes.length ? Math.max(...nodes.map(n => n.x)) + NODE_W + 60 : 400;
-  const minY = nodes.length ? Math.min(...nodes.map(n => n.y)) - 60 : -200;
-  const maxY = nodes.length ? Math.max(...nodes.map(n => n.y)) + NODE_H + 60 : 400;
+  // Content bounds (for the minimap only).
+  const minX = nodes.length ? Math.min(...nodes.map(n => n.x)) - 40 : -200;
+  const maxX = nodes.length ? Math.max(...nodes.map(n => n.x)) + NODE_W + 40 : 200;
+  const minY = nodes.length ? Math.min(...nodes.map(n => n.y)) - 40 : -150;
+  const maxY = nodes.length ? Math.max(...nodes.map(n => n.y)) + NODE_H + 40 : 150;
   const svgW = maxX - minX;
   const svgH = maxY - minY;
 
-  // Screen position of a content point is `offset + scale·(coord − minX/minY)`,
-  // because the <svg> viewBox starts at (minX, minY) (both negative). Centring
-  // MUST subtract minX/minY — omitting it was the "tree pushed to the right" bug.
+  // Screen position of a content point is `offset + scale·point` (inner <g> model),
+  // so the root (always at content 0,0) is centred by offset = (cw/2, ch/2).
   const centerOn = (id: string | null) => {
     const el = containerRef.current;
     if (!el || !id) return;
     const node = nodes.find(n => n.person.id === id);
     if (!node) return;
     const { clientWidth: cw, clientHeight: ch } = el;
-    if (cw === 0) return; // container not laid out yet
+    if (cw === 0) return;
     setOffset({
-      x: cw / 2 - (node.x + NODE_W / 2 - minX) * scale,
-      y: ch / 2 - (node.y + NODE_H / 2 - minY) * scale,
+      x: cw / 2 - (node.x + NODE_W / 2) * scale,
+      y: ch / 2 - (node.y + NODE_H / 2) * scale,
     });
   };
-
   const recenter = () => centerOn(rootId);
 
-  // Centre on root once the nodes exist AND the container has a real width.
-  // Depends on `nodes.length` so it fires when the layout is first computed
-  // (so clientWidth is already known — the timing half of the original bug).
-  // The rAF loop is the ResizeObserver/setTimeout fallback for a 0-width container.
+  // Centre on root: the root is fixed at content (0,0), so screen-centre = offset.
+  // Poll until the container has a real size (rAF fallback for the 0-size case).
+  // Depends ONLY on rootId — never on nodes.length / layout timing.
   useEffect(() => {
-    if (!nodes.length || !rootId) return;
-    const root = nodes.find(n => n.person.id === rootId);
-    if (!root) return;
+    const el = containerRef.current;
+    if (!el) return;
     let raf = 0;
-    let tries = 0;
     const attempt = () => {
-      const el = containerRef.current;
-      if (el && el.clientWidth > 0) {
-        const { clientWidth: cw, clientHeight: ch } = el;
-        setOffset({
-          x: cw / 2 - (root.x + NODE_W / 2 - minX) * scale,
-          y: ch / 2 - (root.y + NODE_H / 2 - minY) * scale,
-        });
+      const { clientWidth: cw, clientHeight: ch } = el;
+      if (cw > 0 && ch > 0) {
+        setOffset({ x: cw / 2, y: ch / 2 });
         return;
       }
-      if (tries++ < 60) raf = requestAnimationFrame(attempt);
+      raf = requestAnimationFrame(attempt);
     };
     attempt();
-    return () => { if (raf) cancelAnimationFrame(raf); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rootId, nodes.length]);
+    return () => cancelAnimationFrame(raf);
+  }, [rootId]);
 
   // Track container size for the minimap viewport rectangle.
   useEffect(() => {
@@ -273,14 +263,13 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
   }, []);
 
   const handleWheel = (e: React.WheelEvent) => {
-    if (layoutMode === 'fan') return; // fan chart auto-fits; no pan/zoom
+    if (layoutMode === 'fan') return;
     e.preventDefault();
     const rect = containerRef.current!.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
     const delta = e.deltaY > 0 ? 0.88 : 1.12;
     const newScale = Math.max(0.25, Math.min(2.5, scale * delta));
-    // Zoom toward mouse position
     setOffset(o => ({
       x: mx - (mx - o.x) * (newScale / scale),
       y: my - (my - o.y) * (newScale / scale),
@@ -289,14 +278,13 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (layoutMode === 'fan') return; // fan chart auto-fits; no panning
+    if (layoutMode === 'fan') return;
     if (e.button === 0) {
       setIsDragging(true);
       setDragMoved(false);
       setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
     }
   };
-
   const handleMouseMove = (e: React.MouseEvent) => {
     if (isDragging) {
       const dx = Math.abs(e.clientX - (dragStart.x + offset.x));
@@ -305,10 +293,8 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
       setOffset({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
     }
   };
+  const handleMouseUp = () => setIsDragging(false);
 
-  const handleMouseUp = () => { setIsDragging(false); };
-
-  // Touch support
   const lastTouchRef = useRef<{ x: number; y: number } | null>(null);
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 1) {
@@ -326,11 +312,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
     }
   };
 
-  const handleNodeClick = (personId: string) => {
-    if (!dragMoved) {
-      onSelectPerson(personId);
-    }
-  };
+  const handleNodeClick = (personId: string) => { if (!dragMoved) onSelectPerson(personId); };
 
   const genderColor = (g: string) =>
     g === 'male' ? 'var(--male)' : g === 'female' ? 'var(--female)' : 'var(--text-muted)';
@@ -338,6 +320,20 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
   const filteredPersons = showSearch && searchQ
     ? tree.persons.filter(p => getDisplayName(p).toLowerCase().includes(searchQ.toLowerCase()))
     : [];
+
+  function dateLine(p: Person): string {
+    const birth = formatYear(p.birthDate);
+    const death = formatYear(p.deathDate);
+    const prefix = p.gender === 'female' ? 'née' : 'né';
+    if (!p.isAlive) {
+      if (birth && death) return `${birth} – ${death}`;
+      if (death) return `† ${death}`;
+      return birth ? `${prefix} ${birth}` : '';
+    }
+    if (!birth) return '';
+    const age = getAge(p.birthDate, p.deathDate);
+    return age !== null ? `${prefix} ${birth} · ${age} ans` : `${prefix} ${birth}`;
+  }
 
   if (tree.persons.length === 0) {
     return (
@@ -350,17 +346,17 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
     );
   }
 
-  const sepStyle: React.CSSProperties = { width: '1px', height: '20px', background: 'var(--border)', flexShrink: 0 };
+  const sep = <div aria-hidden="true" style={{ width: '1px', height: '16px', background: 'var(--border)', flexShrink: 0 }} />;
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      {/* Toolbar — grouped: [Racine] | [centrer][zoom][%] | [Fan][Légende] | [+ Ajouter] */}
-      <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-        <h2 className="serif" style={{ margin: 0, fontSize: '1.2rem', flex: 1, minWidth: '100px' }}>
+      {/* Toolbar — compact 44px, grouped with thin separators */}
+      <div style={{ height: '44px', padding: '0 14px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+        <h2 className="serif" style={{ margin: 0, fontSize: '1rem', color: 'var(--text)', flex: 1, minWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {tree.name}
         </h2>
 
-        {/* Group: change root */}
+        {/* Change root */}
         <div style={{ position: 'relative' }}>
           <button onClick={() => setShowSearch(!showSearch)} className="btn btn-secondary btn-sm" style={{ gap: '6px' }} aria-label="Changer la racine de l'arbre" aria-expanded={showSearch}>
             <Search size={14} aria-hidden="true" /> Racine
@@ -385,17 +381,15 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
           )}
         </div>
 
-        {/* Group: pan / zoom (vertical only) */}
         {layoutMode === 'vertical' && <>
-          <div aria-hidden="true" style={sepStyle} />
-          <button onClick={recenter} className="btn btn-secondary btn-sm btn-icon" title="Centrer sur la racine" aria-label="Centrer"><Crosshair size={15} aria-hidden="true" /></button>
-          <button onClick={() => setScale(s => Math.max(0.25, s * 0.8))} className="btn btn-secondary btn-sm btn-icon" title="Zoom arrière" aria-label="Zoom arrière"><ZoomOut size={15} aria-hidden="true" /></button>
-          <button onClick={() => setScale(1)} className="btn btn-secondary btn-sm" style={{ minWidth: '48px' }} title="Réinitialiser le zoom" aria-label="Réinitialiser le zoom">{Math.round(scale * 100)}%</button>
-          <button onClick={() => setScale(s => Math.min(2.5, s * 1.2))} className="btn btn-secondary btn-sm btn-icon" title="Zoom avant" aria-label="Zoom avant"><ZoomIn size={15} aria-hidden="true" /></button>
+          {sep}
+          <button onClick={recenter} className="btn btn-secondary btn-sm btn-icon" title="Centrer sur la racine" aria-label="Centrer"><Crosshair size={14} aria-hidden="true" /></button>
+          <button onClick={() => setScale(s => Math.max(0.25, s * 0.8))} className="btn btn-secondary btn-sm btn-icon" title="Zoom arrière" aria-label="Zoom arrière"><ZoomOut size={14} aria-hidden="true" /></button>
+          <button onClick={() => setScale(1)} className="btn btn-secondary btn-sm" style={{ minWidth: '46px' }} title="Réinitialiser le zoom" aria-label="Réinitialiser le zoom">{Math.round(scale * 100)}%</button>
+          <button onClick={() => setScale(s => Math.min(2.5, s * 1.2))} className="btn btn-secondary btn-sm btn-icon" title="Zoom avant" aria-label="Zoom avant"><ZoomIn size={14} aria-hidden="true" /></button>
         </>}
 
-        {/* Group: view options */}
-        <div aria-hidden="true" style={sepStyle} />
+        {sep}
         <button onClick={() => setLayoutMode(m => m === 'fan' ? 'vertical' : 'fan')} className="btn btn-sm" style={{ gap: '6px', background: layoutMode === 'fan' ? 'var(--accent)' : 'var(--bg-muted)', color: layoutMode === 'fan' ? '#fff' : 'var(--text-muted)', border: '1px solid var(--border)' }} title="Basculer en éventail (fan chart)" aria-pressed={layoutMode === 'fan'}>
           <Aperture size={14} aria-hidden="true" /> Fan
         </button>
@@ -403,8 +397,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
           <Info size={14} aria-hidden="true" />
         </button>
 
-        {/* Group: primary action */}
-        <div aria-hidden="true" style={sepStyle} />
+        {sep}
         <button onClick={onAddPerson} className="btn btn-primary btn-sm" style={{ gap: '6px' }}><Plus size={14} aria-hidden="true" /> Ajouter</button>
       </div>
 
@@ -423,8 +416,8 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
           cursor: layoutMode === 'fan' ? 'default' : isDragging ? 'grabbing' : 'grab',
           background: 'var(--bg)',
           backgroundImage: 'radial-gradient(circle, var(--border) 1px, transparent 1px)',
-          backgroundSize: `${28 * scale}px ${28 * scale}px`,
-          backgroundPosition: `${offset.x % (28 * scale)}px ${offset.y % (28 * scale)}px`,
+          backgroundSize: `${GRID * scale}px ${GRID * scale}px`,
+          backgroundPosition: `${offset.x % (GRID * scale)}px ${offset.y % (GRID * scale)}px`,
         }}
         onClick={() => showSearch && setShowSearch(false)}
       >
@@ -434,141 +427,116 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
         )}
 
         {layoutMode === 'vertical' && (
-        <svg
-          className="tree-svg"
-          style={{ position: 'absolute', left: 0, top: 0, transformOrigin: '0 0', transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, overflow: 'visible' }}
-          width={svgW} height={svgH}
-          viewBox={`${minX} ${minY} ${svgW} ${svgH}`}
-        >
-          {/* Edges */}
-          {edges.map((edge, i) => {
-            const isSpouse = edge.type === 'spouse';
-            return (
-              <line key={i}
-                x1={edge.x1} y1={edge.y1} x2={edge.x2} y2={edge.y2}
-                stroke={isSpouse ? 'var(--accent)' : 'var(--border)'}
-                strokeWidth={isSpouse ? 2 : 1.5}
-                strokeDasharray={isSpouse ? '6,4' : 'none'}
-                opacity={isSpouse ? 0.5 : 1}
-              />
-            );
-          })}
-
-          {/* Couple hearts */}
-          {hearts.map((h, i) => (
-            <g key={`heart-${i}`} style={{ pointerEvents: 'none' }}>
-              <circle cx={h.x} cy={h.y} r={9} fill="var(--bg-card)" stroke="var(--accent)" strokeWidth={1.5} />
-              <text x={h.x} y={h.y + 4} textAnchor="middle" fontSize={11} fill="var(--accent)">♥</text>
-            </g>
-          ))}
-
-          {/* Nodes */}
-          {nodes.map(node => {
-            const p = node.person;
-            const isSelected = p.id === selectedPersonId;
-            const isRoot = p.id === rootId;
-            const age = getAge(p.birthDate, p.deathDate);
-            const year = formatYear(p.birthDate);
-            const ariaLabel = `${getDisplayName(p)}${p.birthDate ? `, ${p.gender === 'female' ? 'née' : 'né'} en ${year}` : ''}`;
-
-            return (
-              <g key={p.id}
-                className="person-node"
-                role="button"
-                tabIndex={0}
-                aria-label={ariaLabel}
-                transform={`translate(${node.x}, ${node.y})`}
-                onClick={() => handleNodeClick(p.id)}
-                onDoubleClick={() => { setRootId(p.id); }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleNodeClick(p.id); }
-                }}
-                opacity={p.isAlive ? 1 : 0.8}
-                style={{ cursor: 'pointer' }}
-              >
-                {/* Card background — flat at rest, single-colour border (Rare Accent Rule).
-                    Generation reads by vertical position, never by colour. */}
-                <rect width={NODE_W} height={NODE_H} rx={10} ry={10}
-                  fill="var(--bg-card)"
-                  stroke={isSelected ? 'var(--accent)' : isRoot ? 'var(--accent)' : 'var(--border)'}
-                  strokeWidth={isSelected ? 2.5 : isRoot ? 2 : 1}
+        <svg className="tree-svg" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible', willChange: 'transform' }}>
+          <g transform={`translate(${offset.x}, ${offset.y}) scale(${scale})`}>
+            {/* Edges (elbow filiation + dashed spouse) */}
+            {edges.map((edge, i) => {
+              const isSpouse = edge.type === 'spouse';
+              return (
+                <line key={i}
+                  x1={edge.x1} y1={edge.y1} x2={edge.x2} y2={edge.y2}
+                  stroke={isSpouse ? 'var(--accent)' : 'var(--border)'}
+                  strokeWidth={isSpouse ? 1.5 : 1.2}
+                  strokeDasharray={isSpouse ? '4,3' : 'none'}
+                  opacity={isSpouse ? 0.35 : 1}
                 />
+              );
+            })}
 
-                {/* Gender signal bar (left) */}
-                <rect x={0} y={0} width={5} height={NODE_H} rx={10}
-                  fill={genderColor(p.gender)} />
-                <rect x={0} y={10} width={5} height={NODE_H - 20}
-                  fill={genderColor(p.gender)} />
+            {/* Spouse pearls */}
+            {pearls.map((p, i) => (
+              <circle key={`pearl-${i}`} cx={p.x} cy={p.y} r={3}
+                fill="var(--bg-card)" stroke="var(--accent)" strokeWidth={1} style={{ pointerEvents: 'none' }} />
+            ))}
 
-                {/* Root crown */}
-                {isRoot && (
-                  <Crown x={NODE_W - 24} y={7} width={15} height={15} color="var(--accent)" aria-hidden="true" />
-                )}
-                {/* Deceased cross */}
-                {!p.isAlive && (
-                  <Cross x={NODE_W - 22} y={NODE_H - 21} width={13} height={13} color="var(--deceased)" aria-hidden="true" />
-                )}
+            {/* Nodes — register-card style */}
+            {nodes.map(node => {
+              const p = node.person;
+              const isSelected = p.id === selectedPersonId;
+              const isRoot = p.id === rootId;
+              const ariaLabel = `${getDisplayName(p)}${p.birthDate ? `, ${p.gender === 'female' ? 'née' : 'né'} en ${formatYear(p.birthDate)}` : ''}`;
 
-                {/* Avatar */}
-                <clipPath id={`clip-${p.id}`}>
-                  <circle cx={30} cy={NODE_H / 2} r={20} />
-                </clipPath>
-                <circle cx={30} cy={NODE_H / 2} r={20} fill="var(--accent-light)" />
-                {p.profilePhoto ? (
-                  <image href={p.profilePhoto} x={10} y={NODE_H / 2 - 20} width={40} height={40}
-                    clipPath={`url(#clip-${p.id})`}
-                    preserveAspectRatio="xMidYMid slice"
-                  />
-                ) : (
-                  <text x={30} y={NODE_H / 2 + 5} textAnchor="middle" fontSize={16} fontWeight="700"
-                    fontFamily="Lato, sans-serif" fill="var(--accent)">
-                    {nodeInitials(p)}
+              return (
+                <g key={p.id}
+                  className="person-node"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={ariaLabel}
+                  transform={`translate(${node.x}, ${node.y})`}
+                  onClick={() => handleNodeClick(p.id)}
+                  onDoubleClick={() => setRootId(p.id)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleNodeClick(p.id); } }}
+                  opacity={p.isAlive ? 1 : 0.72}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <clipPath id={`card-${p.id}`}><rect width={NODE_W} height={NODE_H} rx={8} ry={8} /></clipPath>
+
+                  {/* Card */}
+                  <rect width={NODE_W} height={NODE_H} rx={8} ry={8}
+                    fill={isSelected ? 'var(--accent-light)' : 'var(--bg-card)'}
+                    stroke={isSelected ? 'var(--accent)' : 'var(--border)'}
+                    strokeWidth={isSelected ? 2 : 1} />
+
+                  {/* Gender spine (clipped to the rounded card) */}
+                  <g clipPath={`url(#card-${p.id})`}>
+                    <rect x={0} y={0} width={4} height={NODE_H} fill={genderColor(p.gender)} />
+                  </g>
+
+                  {/* Root crown (inline path, no React component in SVG) */}
+                  {isRoot && (
+                    <path transform={`translate(${NODE_W - 24}, 9)`}
+                      d="M0 3 L3 7 L6 1.5 L9 7 L12 3 L11 10 L1 10 Z"
+                      fill="var(--accent)" />
+                  )}
+
+                  {/* Avatar */}
+                  <clipPath id={`avatar-${p.id}`}><circle cx={24} cy={NODE_H / 2} r={16} /></clipPath>
+                  <circle cx={24} cy={NODE_H / 2} r={16} fill="var(--accent-light)" />
+                  {p.profilePhoto ? (
+                    <image href={p.profilePhoto} x={8} y={NODE_H / 2 - 16} width={32} height={32}
+                      clipPath={`url(#avatar-${p.id})`} preserveAspectRatio="xMidYMid slice" />
+                  ) : (
+                    <text x={24} y={NODE_H / 2 + 4} textAnchor="middle"
+                      fontFamily="'Playfair Display', serif" fontSize={13} fontWeight={700} fill="var(--accent)">
+                      {nodeInitials(p)}
+                    </text>
+                  )}
+
+                  {/* First name */}
+                  <text x={48} y={NODE_H / 2 - 9} fontFamily="'Playfair Display', serif" fontSize={13} fontWeight={600} fill="var(--text)">
+                    {p.firstName.length > 14 ? p.firstName.slice(0, 13) + '…' : p.firstName}
                   </text>
-                )}
-
-                {/* First name */}
-                <text x={60} y={NODE_H / 2 - 10} fontSize={13} fontWeight="700"
-                  fontFamily="Lato, sans-serif" fill="var(--text)">
-                  {p.firstName.length > 16 ? p.firstName.slice(0, 15) + '…' : p.firstName}
-                </text>
-                {/* Last name */}
-                <text x={60} y={NODE_H / 2 + 6} fontSize={12}
-                  fontFamily="Lato, sans-serif" fill="var(--text-muted)">
-                  {p.lastName.length > 18 ? p.lastName.slice(0, 17) + '…' : p.lastName}
-                </text>
-                {/* Dates */}
-                <text x={60} y={NODE_H / 2 + 22} fontSize={10.5}
-                  fontFamily="Lato, sans-serif" fill="var(--text-light)">
-                  {p.birthDate ? year : ''}
-                  {!p.isAlive && p.deathDate ? ` – ${formatYear(p.deathDate)}` : ''}
-                  {age !== null && p.isAlive ? ` · ${age} ans` : ''}
-                </text>
-              </g>
-            );
-          })}
+                  {/* Last name */}
+                  <text x={48} y={NODE_H / 2 + 5} fontFamily="Lato, sans-serif" fontSize={11} fill="var(--text-muted)">
+                    {p.lastName.length > 16 ? p.lastName.slice(0, 15) + '…' : p.lastName}
+                  </text>
+                  {/* Dates */}
+                  <text x={48} y={NODE_H / 2 + 19} fontFamily="Lato, sans-serif" fontSize={10} fill="var(--text-light)">
+                    {dateLine(p)}
+                  </text>
+                </g>
+              );
+            })}
+          </g>
         </svg>
         )}
 
-        {/* Legend — compact, discreet, hidden by default */}
+        {/* Legend — minimalist, hidden by default */}
         {showLegend && (
-          <div style={{ position: 'absolute', bottom: '16px', left: '16px', maxWidth: '160px', background: 'color-mix(in srgb, var(--bg-card) 85%, transparent)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '10px', fontSize: '11px', color: 'var(--text-muted)', boxShadow: 'var(--shadow)' }}>
+          <div style={{ position: 'absolute', bottom: '12px', left: '12px', maxWidth: '140px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '10px', fontSize: '11px', color: 'var(--text-muted)', boxShadow: 'var(--shadow)' }}>
             <div className="label" style={{ marginBottom: '8px', color: 'var(--text)' }}>Légende</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '5px', height: '16px', background: 'var(--male)', borderRadius: '2px', flexShrink: 0 }} />
-                <span>Homme</span>
+                <span style={{ width: '4px', height: '14px', background: 'var(--male)', borderRadius: '2px', flexShrink: 0 }} /> Homme
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '5px', height: '16px', background: 'var(--female)', borderRadius: '2px', flexShrink: 0 }} />
-                <span>Femme</span>
+                <span style={{ width: '4px', height: '14px', background: 'var(--female)', borderRadius: '2px', flexShrink: 0 }} /> Femme
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <svg width="28" height="8" style={{ flexShrink: 0 }}><line x1="0" y1="4" x2="28" y2="4" stroke="var(--border)" strokeWidth="1.5" /></svg>
-                <span>Filiation</span>
+                <svg width="26" height="8" style={{ flexShrink: 0 }}><line x1="0" y1="4" x2="26" y2="4" stroke="var(--border)" strokeWidth="1.2" /></svg> Filiation
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <svg width="28" height="8" style={{ flexShrink: 0 }}><line x1="0" y1="4" x2="28" y2="4" stroke="var(--accent)" strokeWidth="2" strokeDasharray="6,4" opacity="0.5" /></svg>
-                <span>Conjoint(e)</span>
+                <svg width="26" height="8" style={{ flexShrink: 0 }}><line x1="0" y1="4" x2="26" y2="4" stroke="var(--accent)" strokeWidth="1.5" strokeDasharray="4,3" opacity="0.35" /></svg> Conjoint(e)
               </div>
             </div>
           </div>
@@ -579,16 +547,15 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
           {nodes.length} / {tree.persons.length} personnes
         </div>
 
-        {/* Minimap (vertical layout only) — always visible */}
+        {/* Minimap */}
         {layoutMode === 'vertical' && nodes.length > 0 && (() => {
-          const MM_W = 160, MM_H = 100;
+          const MM_W = 140, MM_H = 88;
           const mmScale = Math.min(MM_W / svgW, MM_H / svgH);
           const drawW = svgW * mmScale, drawH = svgH * mmScale;
           const padX = (MM_W - drawW) / 2, padY = (MM_H - drawH) / 2;
           const cw = viewport.w, ch = viewport.h;
-          // Visible viewport rectangle (content coords → minimap coords)
-          const vx = padX + (-offset.x / scale) * mmScale;
-          const vy = padY + (-offset.y / scale) * mmScale;
+          const vx = padX + (-offset.x / scale - minX) * mmScale;
+          const vy = padY + (-offset.y / scale - minY) * mmScale;
           const vw = (cw / scale) * mmScale;
           const vh = (ch / scale) * mmScale;
           const navigate = (e: React.MouseEvent) => {
@@ -596,30 +563,22 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
             const rect = e.currentTarget.getBoundingClientRect();
             const cx = minX + (e.clientX - rect.left - padX) / mmScale;
             const cy = minY + (e.clientY - rect.top - padY) / mmScale;
-            setOffset({ x: cw / 2 - scale * (cx - minX), y: ch / 2 - scale * (cy - minY) });
+            setOffset({ x: cw / 2 - scale * cx, y: ch / 2 - scale * cy });
           };
           return (
-            <div
-              onMouseDown={e => e.stopPropagation()}
-              onClick={navigate}
-              title="Cliquez pour naviguer"
-              style={{ position: 'absolute', bottom: '16px', right: '16px', width: `${MM_W}px`, height: `${MM_H}px`, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)', overflow: 'hidden', cursor: 'pointer' }}
-            >
+            <div onMouseDown={e => e.stopPropagation()} onClick={navigate} title="Cliquez pour naviguer"
+              style={{ position: 'absolute', bottom: '12px', right: '12px', width: `${MM_W}px`, height: `${MM_H}px`, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)', overflow: 'hidden', cursor: 'pointer' }}>
               <svg width={MM_W} height={MM_H} style={{ display: 'block' }}>
                 {nodes.map(n => {
                   const active = n.person.id === selectedPersonId || n.person.id === rootId;
                   return (
                     <rect key={n.person.id}
-                      x={padX + (n.x - minX) * mmScale}
-                      y={padY + (n.y - minY) * mmScale}
-                      width={6} height={4} rx={1}
-                      fill={active ? 'var(--accent)' : 'var(--border)'}
-                    />
+                      x={padX + (n.x - minX) * mmScale} y={padY + (n.y - minY) * mmScale}
+                      width={5} height={3} rx={1}
+                      fill={active ? 'var(--accent)' : 'var(--border)'} />
                   );
                 })}
-                {/* Visible viewport */}
-                <rect x={vx} y={vy} width={vw} height={vh}
-                  fill="transparent" stroke="var(--accent)" strokeWidth={1.5} rx={2} />
+                <rect x={vx} y={vy} width={vw} height={vh} fill="none" stroke="var(--accent)" strokeWidth={1.2} rx={2} />
               </svg>
               <div className="label" style={{ position: 'absolute', top: '3px', left: '6px', fontSize: '9px', pointerEvents: 'none' }}>Minimap</div>
             </div>
@@ -643,8 +602,7 @@ function FanChart({ fan, fanGenColor, r0, ring, selectedPersonId, onSelectPerson
 }) {
   const pad = 32;
   const view = fan.R + pad;
-
-  const ang = (a: number) => -Math.PI / 2 + a; // 0 at top, clockwise
+  const ang = (a: number) => -Math.PI / 2 + a;
   const pt = (r: number, a: number): [number, number] => [r * Math.cos(ang(a)), r * Math.sin(ang(a))];
 
   function annular(rInner: number, rOuter: number, a0: number, a1: number): string {
@@ -659,12 +617,8 @@ function FanChart({ fan, fanGenColor, r0, ring, selectedPersonId, onSelectPerson
   const root = fan.slots.find(s => s.gen === 0);
 
   return (
-    <svg
-      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
-      viewBox={`${-view} ${-view} ${view * 2} ${view * 2}`}
-      preserveAspectRatio="xMidYMid meet"
-    >
-      {/* Ancestor rings */}
+    <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+      viewBox={`${-view} ${-view} ${view * 2} ${view * 2}`} preserveAspectRatio="xMidYMid meet">
       {fan.slots.filter(s => s.gen >= 1).map(s => {
         const slotAngle = (Math.PI * 2) / Math.pow(2, s.gen);
         const a0 = s.index * slotAngle;
@@ -693,14 +647,10 @@ function FanChart({ fan, fanGenColor, r0, ring, selectedPersonId, onSelectPerson
         );
       })}
 
-      {/* Root at the centre */}
       {root && (
         <g style={{ cursor: 'pointer' }} onClick={() => onSelectPerson(root.person.id)}>
-          <circle cx={0} cy={0} r={r0}
-            fill={fanGenColor(0)}
-            stroke="var(--accent)"
-            strokeWidth={root.person.id === selectedPersonId ? 3 : 2} />
-          <text x={0} y={-6} textAnchor="middle" dominantBaseline="central" fontSize={13} fontWeight={700} fontFamily="Lato, sans-serif" fill="#fff" style={{ pointerEvents: 'none' }}>
+          <circle cx={0} cy={0} r={r0} fill={fanGenColor(0)} stroke="var(--accent)" strokeWidth={root.person.id === selectedPersonId ? 3 : 2} />
+          <text x={0} y={-6} textAnchor="middle" dominantBaseline="central" fontSize={13} fontWeight={700} fontFamily="'Playfair Display', serif" fill="#fff" style={{ pointerEvents: 'none' }}>
             {root.person.firstName.length > 12 ? root.person.firstName.slice(0, 11) + '…' : root.person.firstName}
           </text>
           <text x={0} y={12} textAnchor="middle" dominantBaseline="central" fontSize={10} fontFamily="Lato, sans-serif" fill="#fff" fillOpacity={0.85} style={{ pointerEvents: 'none' }}>
