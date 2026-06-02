@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#faf8f5"/>
+  <!-- family tree connectors -->
+  <g stroke="#8b6f47" stroke-width="13" opacity="0.4" fill="none" stroke-linecap="round">
+    <path d="M256 186 V256 M154 256 H358 M154 256 V326 M358 256 V326"/>
+  </g>
+  <g fill="#8b6f47" opacity="0.55">
+    <circle cx="256" cy="176" r="24"/>
+    <circle cx="154" cy="336" r="21"/>
+    <circle cx="358" cy="336" r="21"/>
+  </g>
+  <text x="256" y="420" text-anchor="middle" font-family="Georgia, 'Playfair Display', serif" font-size="170" fill="#8b6f47">🌿</text>
+</svg>

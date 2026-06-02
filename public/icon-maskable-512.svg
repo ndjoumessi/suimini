@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- full-bleed background for maskable safe zone -->
+  <rect width="512" height="512" fill="#faf8f5"/>
+  <!-- content kept within the central 80% safe zone -->
+  <g stroke="#8b6f47" stroke-width="11" opacity="0.4" fill="none" stroke-linecap="round">
+    <path d="M256 206 V262 M174 262 H338 M174 262 V318 M338 262 V318"/>
+  </g>
+  <g fill="#8b6f47" opacity="0.55">
+    <circle cx="256" cy="198" r="20"/>
+    <circle cx="174" cy="326" r="18"/>
+    <circle cx="338" cy="326" r="18"/>
+  </g>
+  <text x="256" y="392" text-anchor="middle" font-family="Georgia, 'Playfair Display', serif" font-size="140" fill="#8b6f47">🌿</text>
+</svg>
