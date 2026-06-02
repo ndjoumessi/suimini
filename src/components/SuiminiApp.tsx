@@ -185,7 +185,6 @@ export default function SuiminiApp() {
         presenceCount={store.cloud ? presenceCount : 0}
         onSignIn={() => openAuth('login')}
         isDemo={isDemo}
-        onExitDemo={exitDemo}
         onSignOut={async () => { await signOut(); showToast('Déconnecté'); }}
       />
 
