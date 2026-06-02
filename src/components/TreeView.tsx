@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { FamilyTree, Person } from '@/types';
 import { getParents, getChildren, getSpouses, getDisplayName, formatYear, getAge } from '@/lib/treeUtils';
-import { Search, ZoomIn, ZoomOut, Crosshair, Eye, EyeOff, Plus, Aperture, Crown, Cross, Sprout } from 'lucide-react';
+import { Search, ZoomIn, ZoomOut, Crosshair, Info, Plus, Aperture, Crown, Cross, Sprout } from 'lucide-react';
 
 /** Two-letter initials for the avatar fallback (same logic as PersonPanel/Sidebar). */
 function nodeInitials(p: Person): string {
@@ -10,10 +10,10 @@ function nodeInitials(p: Person): string {
 }
 
 /**
- * Monochrome WARM-NEUTRAL generation ramp (not the rare accent):
- * t=0 → light reliure #d3ccc0 (oldest), t=1 → warm grey #847c70 (newest).
- * Keeps generations legible and warm without spending the cuir-taupe accent,
- * which stays reserved for the selected / root node (Rare Accent Rule).
+ * Monochrome WARM-NEUTRAL ramp, used ONLY by the fan chart so its concentric
+ * ancestor rings stay distinguishable. The vertical tree no longer colours nodes
+ * by generation: generation is read by vertical POSITION, and the cuir-taupe
+ * accent is reserved for root / selection (Rare Accent Rule, DESIGN.md).
  */
 function taupeScale(t: number): string {
   const a = [211, 204, 192]; // #d3ccc0 (warm light neutral)
@@ -40,10 +40,11 @@ interface Props {
   onAddPerson: () => void;
 }
 
-const NODE_W = 168;
-const NODE_H = 84;
-const H_GAP = 48;
-const V_GAP = 88;
+// Larger, more legible nodes (see DESIGN.md "Tree node (signature)").
+const NODE_W = 200;
+const NODE_H = 96;
+const H_GAP = 56;
+const V_GAP = 96;
 
 export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAddPerson }: Props) {
   const [rootId, setRootId] = useState(tree.rootPersonId || tree.persons[0]?.id || null);
@@ -55,7 +56,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
   const containerRef = useRef<HTMLDivElement>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQ, setSearchQ] = useState('');
-  const [showLegend, setShowLegend] = useState(true);
+  const [showLegend, setShowLegend] = useState(false); // discreet by default
   const [viewport, setViewport] = useState({ w: 0, h: 0 }); // container size, for the minimap
   const [layoutMode, setLayoutMode] = useState<'vertical' | 'fan'>('vertical');
 
@@ -174,23 +175,12 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
 
   const { nodes, edges, hearts } = buildLayout();
 
-  // Generation index (by vertical position) → color gradient, oldest (top) to newest (bottom).
-  const genYs = Array.from(new Set(nodes.map(n => n.y))).sort((a, b) => a - b);
-  const genIndexOfY = new Map(genYs.map((y, i) => [y, i]));
-  const genCount = genYs.length;
-  const generationColor = (y: number) => {
-    const idx = genIndexOfY.get(y) ?? 0;
-    // Monochrome taupe ramp: oldest (top) = accent-light → newest (bottom) = accent.
-    const t = genCount <= 1 ? 1 : idx / (genCount - 1);
-    return taupeScale(t);
-  };
-
   // ---- Fan chart (ancestor pedigree) layout ----
   const MAX_FAN_GEN = 4;
   const FAN_R0 = 54;   // central root circle radius
   const FAN_RING = 70; // ring width per generation
   const fanGenColor = (gen: number) => {
-    // Same monochrome taupe ramp, centre (root, newest) = accent → outer (older) = accent-light.
+    // Monochrome warm ramp, centre (root, newest) → outer (older).
     const t = MAX_FAN_GEN <= 0 ? 1 : 1 - gen / MAX_FAN_GEN;
     return taupeScale(t);
   };
@@ -228,21 +218,52 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
   const svgW = maxX - minX;
   const svgH = maxY - minY;
 
-  // Center on root on load
-  useEffect(() => {
-    const root = nodes.find(n => n.person.id === rootId);
-    if (root && containerRef.current) {
-      const cw = containerRef.current.clientWidth;
-      const ch = containerRef.current.clientHeight;
-      setOffset({
-        x: cw / 2 - (root.x + NODE_W / 2) * scale,
-        y: ch / 3 - (root.y + NODE_H / 2) * scale,
-      });
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rootId]);
+  // Screen position of a content point is `offset + scale·(coord − minX/minY)`,
+  // because the <svg> viewBox starts at (minX, minY) (both negative). Centring
+  // MUST subtract minX/minY — omitting it was the "tree pushed to the right" bug.
+  const centerOn = (id: string | null) => {
+    const el = containerRef.current;
+    if (!el || !id) return;
+    const node = nodes.find(n => n.person.id === id);
+    if (!node) return;
+    const { clientWidth: cw, clientHeight: ch } = el;
+    if (cw === 0) return; // container not laid out yet
+    setOffset({
+      x: cw / 2 - (node.x + NODE_W / 2 - minX) * scale,
+      y: ch / 2 - (node.y + NODE_H / 2 - minY) * scale,
+    });
+  };
 
-  // Track container size for the minimap viewport rectangle (ResizeObserver fires on observe).
+  const recenter = () => centerOn(rootId);
+
+  // Centre on root once the nodes exist AND the container has a real width.
+  // Depends on `nodes.length` so it fires when the layout is first computed
+  // (so clientWidth is already known — the timing half of the original bug).
+  // The rAF loop is the ResizeObserver/setTimeout fallback for a 0-width container.
+  useEffect(() => {
+    if (!nodes.length || !rootId) return;
+    const root = nodes.find(n => n.person.id === rootId);
+    if (!root) return;
+    let raf = 0;
+    let tries = 0;
+    const attempt = () => {
+      const el = containerRef.current;
+      if (el && el.clientWidth > 0) {
+        const { clientWidth: cw, clientHeight: ch } = el;
+        setOffset({
+          x: cw / 2 - (root.x + NODE_W / 2 - minX) * scale,
+          y: ch / 2 - (root.y + NODE_H / 2 - minY) * scale,
+        });
+        return;
+      }
+      if (tries++ < 60) raf = requestAnimationFrame(attempt);
+    };
+    attempt();
+    return () => { if (raf) cancelAnimationFrame(raf); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rootId, nodes.length]);
+
+  // Track container size for the minimap viewport rectangle.
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -318,18 +339,6 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
     ? tree.persons.filter(p => getDisplayName(p).toLowerCase().includes(searchQ.toLowerCase()))
     : [];
 
-  function centerOnPerson(id: string) {
-    const node = nodes.find(n => n.person.id === id);
-    if (node && containerRef.current) {
-      const cw = containerRef.current.clientWidth;
-      const ch = containerRef.current.clientHeight;
-      setOffset({
-        x: cw / 2 - (node.x + NODE_W / 2) * scale,
-        y: ch / 2 - (node.y + NODE_H / 2) * scale,
-      });
-    }
-  }
-
   if (tree.persons.length === 0) {
     return (
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '20px', padding: '24px', textAlign: 'center' }}>
@@ -341,25 +350,27 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
     );
   }
 
+  const sepStyle: React.CSSProperties = { width: '1px', height: '20px', background: 'var(--border)', flexShrink: 0 };
+
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      {/* Toolbar */}
-      <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+      {/* Toolbar — grouped: [Racine] | [centrer][zoom][%] | [Fan][Légende] | [+ Ajouter] */}
+      <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
         <h2 className="serif" style={{ margin: 0, fontSize: '1.2rem', flex: 1, minWidth: '100px' }}>
           {tree.name}
         </h2>
 
-        {/* Search root */}
+        {/* Group: change root */}
         <div style={{ position: 'relative' }}>
-          <button onClick={() => setShowSearch(!showSearch)} className="btn btn-secondary btn-sm" aria-label="Changer la racine de l'arbre">
-            <Search size={14} /> Racine
+          <button onClick={() => setShowSearch(!showSearch)} className="btn btn-secondary btn-sm" style={{ gap: '6px' }} aria-label="Changer la racine de l'arbre" aria-expanded={showSearch}>
+            <Search size={14} aria-hidden="true" /> Racine
           </button>
           {showSearch && (
             <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 200, marginTop: '4px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px', width: '240px', boxShadow: 'var(--shadow-lg)' }}>
               <input autoFocus value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Nom de la personne..." className="input" style={{ marginBottom: '6px' }} />
               <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
                 {(searchQ ? filteredPersons : tree.persons.slice(0, 20)).map(p => (
-                  <button key={p.id} onClick={() => { setRootId(p.id); setShowSearch(false); setSearchQ(''); setTimeout(() => centerOnPerson(p.id), 100); }}
+                  <button key={p.id} onClick={() => { setRootId(p.id); setShowSearch(false); setSearchQ(''); setTimeout(() => centerOn(p.id), 120); }}
                     style={{ width: '100%', padding: '7px 8px', border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left', borderRadius: 'var(--radius)', fontSize: '13px', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}
                     onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-muted)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'none'}
@@ -374,20 +385,27 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
           )}
         </div>
 
-        <button onClick={() => setLayoutMode(m => m === 'fan' ? 'vertical' : 'fan')} className="btn btn-sm" title="Basculer en éventail (fan chart)" aria-pressed={layoutMode === 'fan'}
-          style={{ background: layoutMode === 'fan' ? 'var(--accent)' : 'var(--bg-muted)', color: layoutMode === 'fan' ? '#fff' : 'var(--text-muted)', border: '1px solid var(--border)' }}>
-          <Aperture size={14} /> Fan
-        </button>
+        {/* Group: pan / zoom (vertical only) */}
         {layoutMode === 'vertical' && <>
-          <button onClick={() => { if(containerRef.current && nodes.length) { const root = nodes.find(n => n.person.id === rootId); if(root) { const cw = containerRef.current.clientWidth; const ch = containerRef.current.clientHeight; setOffset({ x: cw/2 - (root.x + NODE_W/2)*scale, y: ch/3 - (root.y + NODE_H/2)*scale }); } } }} className="btn btn-secondary btn-sm btn-icon" title="Centrer sur la racine" aria-label="Centrer sur la racine"><Crosshair size={15} /></button>
-          <button onClick={() => setScale(s => Math.min(2.5, s * 1.2))} className="btn btn-secondary btn-sm btn-icon" title="Zoom avant" aria-label="Zoom avant"><ZoomIn size={15} /></button>
+          <div aria-hidden="true" style={sepStyle} />
+          <button onClick={recenter} className="btn btn-secondary btn-sm btn-icon" title="Centrer sur la racine" aria-label="Centrer"><Crosshair size={15} aria-hidden="true" /></button>
+          <button onClick={() => setScale(s => Math.max(0.25, s * 0.8))} className="btn btn-secondary btn-sm btn-icon" title="Zoom arrière" aria-label="Zoom arrière"><ZoomOut size={15} aria-hidden="true" /></button>
           <button onClick={() => setScale(1)} className="btn btn-secondary btn-sm" style={{ minWidth: '48px' }} title="Réinitialiser le zoom" aria-label="Réinitialiser le zoom">{Math.round(scale * 100)}%</button>
-          <button onClick={() => setScale(s => Math.max(0.25, s * 0.8))} className="btn btn-secondary btn-sm btn-icon" title="Zoom arrière" aria-label="Zoom arrière"><ZoomOut size={15} /></button>
+          <button onClick={() => setScale(s => Math.min(2.5, s * 1.2))} className="btn btn-secondary btn-sm btn-icon" title="Zoom avant" aria-label="Zoom avant"><ZoomIn size={15} aria-hidden="true" /></button>
         </>}
-        <button onClick={() => setShowLegend(l => !l)} className="btn btn-secondary btn-sm" aria-pressed={showLegend}>
-          {showLegend ? <EyeOff size={14} /> : <Eye size={14} />} Légende
+
+        {/* Group: view options */}
+        <div aria-hidden="true" style={sepStyle} />
+        <button onClick={() => setLayoutMode(m => m === 'fan' ? 'vertical' : 'fan')} className="btn btn-sm" style={{ gap: '6px', background: layoutMode === 'fan' ? 'var(--accent)' : 'var(--bg-muted)', color: layoutMode === 'fan' ? '#fff' : 'var(--text-muted)', border: '1px solid var(--border)' }} title="Basculer en éventail (fan chart)" aria-pressed={layoutMode === 'fan'}>
+          <Aperture size={14} aria-hidden="true" /> Fan
         </button>
-        <button onClick={onAddPerson} className="btn btn-primary btn-sm"><Plus size={14} /> Ajouter</button>
+        <button onClick={() => setShowLegend(l => !l)} className="btn btn-secondary btn-sm btn-icon" title="Afficher la légende" aria-label="Légende" aria-pressed={showLegend}>
+          <Info size={14} aria-hidden="true" />
+        </button>
+
+        {/* Group: primary action */}
+        <div aria-hidden="true" style={sepStyle} />
+        <button onClick={onAddPerson} className="btn btn-primary btn-sm" style={{ gap: '6px' }}><Plus size={14} aria-hidden="true" /> Ajouter</button>
       </div>
 
       {/* Canvas */}
@@ -422,27 +440,25 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
           width={svgW} height={svgH}
           viewBox={`${minX} ${minY} ${svgW} ${svgH}`}
         >
-          <defs>
-            <filter id="node-shadow">
-              <feDropShadow dx="0" dy="2" stdDeviation="4" floodOpacity="0.1" />
-            </filter>
-          </defs>
-
           {/* Edges */}
-          {edges.map((edge, i) => (
-            <line key={i}
-              x1={edge.x1} y1={edge.y1} x2={edge.x2} y2={edge.y2}
-              stroke={edge.type === 'spouse' ? 'var(--accent)' : 'var(--border)'}
-              strokeWidth={edge.type === 'spouse' ? 2.5 : 1.5}
-              strokeDasharray={edge.type === 'spouse' ? '7,4' : 'none'}
-            />
-          ))}
+          {edges.map((edge, i) => {
+            const isSpouse = edge.type === 'spouse';
+            return (
+              <line key={i}
+                x1={edge.x1} y1={edge.y1} x2={edge.x2} y2={edge.y2}
+                stroke={isSpouse ? 'var(--accent)' : 'var(--border)'}
+                strokeWidth={isSpouse ? 2 : 1.5}
+                strokeDasharray={isSpouse ? '6,4' : 'none'}
+                opacity={isSpouse ? 0.5 : 1}
+              />
+            );
+          })}
 
           {/* Couple hearts */}
           {hearts.map((h, i) => (
             <g key={`heart-${i}`} style={{ pointerEvents: 'none' }}>
-              <circle cx={h.x} cy={h.y} r={10} fill="var(--bg-card)" stroke="var(--accent)" strokeWidth={1.5} />
-              <text x={h.x} y={h.y + 4} textAnchor="middle" fontSize={12} fill="var(--accent)">♥</text>
+              <circle cx={h.x} cy={h.y} r={9} fill="var(--bg-card)" stroke="var(--accent)" strokeWidth={1.5} />
+              <text x={h.x} y={h.y + 4} textAnchor="middle" fontSize={11} fill="var(--accent)">♥</text>
             </g>
           ))}
 
@@ -452,23 +468,33 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
             const isSelected = p.id === selectedPersonId;
             const isRoot = p.id === rootId;
             const age = getAge(p.birthDate, p.deathDate);
-            const genCol = generationColor(node.y);
+            const year = formatYear(p.birthDate);
+            const ariaLabel = `${getDisplayName(p)}${p.birthDate ? `, ${p.gender === 'female' ? 'née' : 'né'} en ${year}` : ''}`;
 
             return (
               <g key={p.id}
                 className="person-node"
+                role="button"
+                tabIndex={0}
+                aria-label={ariaLabel}
                 transform={`translate(${node.x}, ${node.y})`}
                 onClick={() => handleNodeClick(p.id)}
                 onDoubleClick={() => { setRootId(p.id); }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleNodeClick(p.id); }
+                }}
+                opacity={p.isAlive ? 1 : 0.8}
                 style={{ cursor: 'pointer' }}
               >
-                {/* Card background (flat at rest — no baked shadow; the generation-coloured border separates nodes) */}
+                {/* Card background — flat at rest, single-colour border (Rare Accent Rule).
+                    Generation reads by vertical position, never by colour. */}
                 <rect width={NODE_W} height={NODE_H} rx={10} ry={10}
-                  fill={isSelected ? 'var(--accent-light)' : 'var(--bg-card)'}
-                  stroke={isSelected ? 'var(--accent)' : isRoot ? 'var(--accent)' : genCol}
-                  strokeWidth={isSelected ? 2.5 : isRoot ? 2 : 1.8}
+                  fill="var(--bg-card)"
+                  stroke={isSelected ? 'var(--accent)' : isRoot ? 'var(--accent)' : 'var(--border)'}
+                  strokeWidth={isSelected ? 2.5 : isRoot ? 2 : 1}
                 />
-                {/* Gender bar */}
+
+                {/* Gender signal bar (left) */}
                 <rect x={0} y={0} width={5} height={NODE_H} rx={10}
                   fill={genderColor(p.gender)} />
                 <rect x={0} y={10} width={5} height={NODE_H - 20}
@@ -476,118 +502,73 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
 
                 {/* Root crown */}
                 {isRoot && (
-                  <Crown x={NODE_W - 21} y={6} width={13} height={13} color="var(--accent)" aria-hidden="true" />
+                  <Crown x={NODE_W - 24} y={7} width={15} height={15} color="var(--accent)" aria-hidden="true" />
                 )}
                 {/* Deceased cross */}
                 {!p.isAlive && (
-                  <Cross x={NODE_W - 20} y={NODE_H - 18} width={12} height={12} color="var(--deceased)" aria-hidden="true" />
+                  <Cross x={NODE_W - 22} y={NODE_H - 21} width={13} height={13} color="var(--deceased)" aria-hidden="true" />
                 )}
 
-                {/* Avatar circle */}
+                {/* Avatar */}
                 <clipPath id={`clip-${p.id}`}>
-                  <circle cx={28} cy={NODE_H / 2} r={18} />
+                  <circle cx={30} cy={NODE_H / 2} r={20} />
                 </clipPath>
-                <circle cx={28} cy={NODE_H / 2} r={18} fill="var(--accent-light)" />
+                <circle cx={30} cy={NODE_H / 2} r={20} fill="var(--accent-light)" />
                 {p.profilePhoto ? (
-                  <image href={p.profilePhoto} x={10} y={NODE_H / 2 - 18} width={36} height={36}
+                  <image href={p.profilePhoto} x={10} y={NODE_H / 2 - 20} width={40} height={40}
                     clipPath={`url(#clip-${p.id})`}
                     preserveAspectRatio="xMidYMid slice"
                   />
                 ) : (
-                  <text x={28} y={NODE_H / 2 + 4} textAnchor="middle" fontSize={13} fontWeight="700"
+                  <text x={30} y={NODE_H / 2 + 5} textAnchor="middle" fontSize={16} fontWeight="700"
                     fontFamily="Lato, sans-serif" fill="var(--accent)">
                     {nodeInitials(p)}
                   </text>
                 )}
 
-                {/* Name */}
-                <text x={54} y={NODE_H / 2 - 8} fontSize={12} fontWeight="700"
-                  fontFamily="Lato, sans-serif" fill={isSelected ? 'var(--accent)' : 'var(--text)'}
-                  clipPath="url(#text-clip)">
-                  {p.firstName.length > 12 ? p.firstName.slice(0, 11) + '…' : p.firstName}
+                {/* First name */}
+                <text x={60} y={NODE_H / 2 - 10} fontSize={13} fontWeight="700"
+                  fontFamily="Lato, sans-serif" fill="var(--text)">
+                  {p.firstName.length > 16 ? p.firstName.slice(0, 15) + '…' : p.firstName}
                 </text>
-                <text x={54} y={NODE_H / 2 + 7} fontSize={11}
+                {/* Last name */}
+                <text x={60} y={NODE_H / 2 + 6} fontSize={12}
                   fontFamily="Lato, sans-serif" fill="var(--text-muted)">
-                  {p.lastName.length > 13 ? p.lastName.slice(0, 12) + '…' : p.lastName}
+                  {p.lastName.length > 18 ? p.lastName.slice(0, 17) + '…' : p.lastName}
                 </text>
-
-                {/* Dates (birth marked by a small point; death by the corner cross + en-dash range) */}
-                {p.birthDate && (
-                  <circle cx={52} cy={NODE_H / 2 + 17} r={1.6} fill={p.isAlive ? 'var(--success)' : 'var(--text-light)'} />
-                )}
-                <text x={58} y={NODE_H / 2 + 21} fontSize={9.5}
-                  fontFamily="Lato, sans-serif"
-                  fill={p.isAlive ? 'var(--success)' : 'var(--text-light)'}>
-                  {p.birthDate ? formatYear(p.birthDate) : ''}
+                {/* Dates */}
+                <text x={60} y={NODE_H / 2 + 22} fontSize={10.5}
+                  fontFamily="Lato, sans-serif" fill="var(--text-light)">
+                  {p.birthDate ? year : ''}
                   {!p.isAlive && p.deathDate ? ` – ${formatYear(p.deathDate)}` : ''}
                   {age !== null && p.isAlive ? ` · ${age} ans` : ''}
                 </text>
-
-                {/* Hover highlight ring */}
-                <rect width={NODE_W} height={NODE_H} rx={10} ry={10}
-                  fill="transparent"
-                  stroke="var(--accent)"
-                  strokeWidth={0}
-                  className={`node-hover-ring`}
-                  style={{ transition: 'stroke-width 0.15s' }}
-                />
               </g>
             );
           })}
         </svg>
         )}
 
-        {/* Legend */}
+        {/* Legend — compact, discreet, hidden by default */}
         {showLegend && (
-          <div style={{ position: 'absolute', bottom: '16px', left: '16px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '12px 14px', fontSize: '11px', color: 'var(--text-muted)', boxShadow: 'var(--shadow)', minWidth: '170px' }}>
-            <div style={{ fontWeight: '700', marginBottom: '8px', color: 'var(--text)', fontSize: '12px' }}>Légende</div>
-            {/* Gender */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <div style={{ width: '5px', height: '20px', background: 'var(--male)', borderRadius: '2px' }} />
+          <div style={{ position: 'absolute', bottom: '16px', left: '16px', maxWidth: '160px', background: 'color-mix(in srgb, var(--bg-card) 85%, transparent)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '10px', fontSize: '11px', color: 'var(--text-muted)', boxShadow: 'var(--shadow)' }}>
+            <div className="label" style={{ marginBottom: '8px', color: 'var(--text)' }}>Légende</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ width: '5px', height: '16px', background: 'var(--male)', borderRadius: '2px', flexShrink: 0 }} />
                 <span>Homme</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <div style={{ width: '5px', height: '20px', background: 'var(--female)', borderRadius: '2px' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ width: '5px', height: '16px', background: 'var(--female)', borderRadius: '2px', flexShrink: 0 }} />
                 <span>Femme</span>
               </div>
-            </div>
-            {/* Relations */}
-            <div style={{ borderTop: '1px solid var(--border)', paddingTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '8px' }}>
-              <div style={{ fontWeight: '700', marginBottom: '2px', color: 'var(--text)', fontSize: '11px' }}>Relations</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <svg width="32" height="10"><line x1="0" y1="5" x2="32" y2="5" stroke="var(--border)" strokeWidth="1.5" /></svg>
-                <span>Parent → Enfant</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <svg width="32" height="10"><line x1="0" y1="5" x2="32" y2="5" stroke="var(--accent)" strokeWidth="2.5" strokeDasharray="6,3" /></svg>
-                <span>Conjoint(e)</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '32px', textAlign: 'center', color: 'var(--accent)' }}>♥</span>
-                <span>Mariage (couple)</span>
-              </div>
-            </div>
-            {/* Generations */}
-            <div style={{ borderTop: '1px solid var(--border)', paddingTop: '8px', marginBottom: '8px' }}>
-              <div style={{ fontWeight: '700', marginBottom: '6px', color: 'var(--text)', fontSize: '11px' }}>Générations</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: taupeScale(0), border: '1px solid var(--border)', flexShrink: 0 }} />
-                <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: taupeScale(0.5), flexShrink: 0 }} />
-                <span style={{ width: '16px', height: '16px', borderRadius: '50%', background: taupeScale(1), flexShrink: 0 }} />
-                <span style={{ display: 'flex', justifyContent: 'space-between', flex: 1, fontSize: '9px', color: 'var(--text-light)' }}>
-                  <span>Ancien</span><span>Récent</span>
-                </span>
+                <svg width="28" height="8" style={{ flexShrink: 0 }}><line x1="0" y1="4" x2="28" y2="4" stroke="var(--border)" strokeWidth="1.5" /></svg>
+                <span>Filiation</span>
               </div>
-            </div>
-            {/* Symbols */}
-            <div style={{ borderTop: '1px solid var(--border)', paddingTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Crown size={13} style={{ color: 'var(--accent)', flexShrink: 0 }} aria-hidden="true" /> Racine de l&apos;arbre</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Cross size={13} style={{ color: 'var(--deceased)', flexShrink: 0 }} aria-hidden="true" /> Décédé(e)</div>
-              <div style={{ marginTop: '4px', color: 'var(--text-light)', fontSize: '10px', lineHeight: '1.4' }}>
-                Clic → voir le profil<br/>
-                Double-clic → nouvelle racine<br/>
-                Molette → zoom
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <svg width="28" height="8" style={{ flexShrink: 0 }}><line x1="0" y1="4" x2="28" y2="4" stroke="var(--accent)" strokeWidth="2" strokeDasharray="6,4" opacity="0.5" /></svg>
+                <span>Conjoint(e)</span>
               </div>
             </div>
           </div>
@@ -598,9 +579,9 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
           {nodes.length} / {tree.persons.length} personnes
         </div>
 
-        {/* Minimap (vertical layout only) */}
+        {/* Minimap (vertical layout only) — always visible */}
         {layoutMode === 'vertical' && nodes.length > 0 && (() => {
-          const MM_W = 180, MM_H = 120;
+          const MM_W = 160, MM_H = 100;
           const mmScale = Math.min(MM_W / svgW, MM_H / svgH);
           const drawW = svgW * mmScale, drawH = svgH * mmScale;
           const padX = (MM_W - drawW) / 2, padY = (MM_H - drawH) / 2;
@@ -625,21 +606,22 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
               style={{ position: 'absolute', bottom: '16px', right: '16px', width: `${MM_W}px`, height: `${MM_H}px`, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)', overflow: 'hidden', cursor: 'pointer' }}
             >
               <svg width={MM_W} height={MM_H} style={{ display: 'block' }}>
-                {nodes.map(n => (
-                  <rect key={n.person.id}
-                    x={padX + (n.x - minX) * mmScale}
-                    y={padY + (n.y - minY) * mmScale}
-                    width={Math.max(2, NODE_W * mmScale)}
-                    height={Math.max(1.5, NODE_H * mmScale)}
-                    rx={1.5}
-                    fill={generationColor(n.y)}
-                    opacity={0.85}
-                  />
-                ))}
+                {nodes.map(n => {
+                  const active = n.person.id === selectedPersonId || n.person.id === rootId;
+                  return (
+                    <rect key={n.person.id}
+                      x={padX + (n.x - minX) * mmScale}
+                      y={padY + (n.y - minY) * mmScale}
+                      width={6} height={4} rx={1}
+                      fill={active ? 'var(--accent)' : 'var(--border)'}
+                    />
+                  );
+                })}
+                {/* Visible viewport */}
                 <rect x={vx} y={vy} width={vw} height={vh}
-                  fill="var(--accent)" fillOpacity={0.14} stroke="var(--accent)" strokeWidth={1.5} rx={2} />
+                  fill="transparent" stroke="var(--accent)" strokeWidth={1.5} rx={2} />
               </svg>
-              <div style={{ position: 'absolute', top: '2px', left: '6px', fontSize: '9px', color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', pointerEvents: 'none' }}>Minimap</div>
+              <div className="label" style={{ position: 'absolute', top: '3px', left: '6px', fontSize: '9px', pointerEvents: 'none' }}>Minimap</div>
             </div>
           );
         })()}
@@ -716,7 +698,7 @@ function FanChart({ fan, fanGenColor, r0, ring, selectedPersonId, onSelectPerson
         <g style={{ cursor: 'pointer' }} onClick={() => onSelectPerson(root.person.id)}>
           <circle cx={0} cy={0} r={r0}
             fill={fanGenColor(0)}
-            stroke={root.person.id === selectedPersonId ? 'var(--accent)' : 'var(--accent)'}
+            stroke="var(--accent)"
             strokeWidth={root.person.id === selectedPersonId ? 3 : 2} />
           <text x={0} y={-6} textAnchor="middle" dominantBaseline="central" fontSize={13} fontWeight={700} fontFamily="Lato, sans-serif" fill="#fff" style={{ pointerEvents: 'none' }}>
             {root.person.firstName.length > 12 ? root.person.firstName.slice(0, 11) + '…' : root.person.firstName}
