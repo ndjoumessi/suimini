@@ -13,7 +13,7 @@ import { createServerClient } from '@supabase/ssr';
  * the client guard re-checks demo via localStorage as well.
  */
 export async function proxy(req: NextRequest) {
-  let response = NextResponse.next({ request: req });
+  const response = NextResponse.next({ request: req });
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -33,6 +33,17 @@ export async function proxy(req: NextRequest) {
   const isDemo = req.cookies.get('suimini_demo')?.value === 'true';
   const path = req.nextUrl.pathname;
 
+  // Account status (multitenant validation). When the column/migration is absent
+  // the query returns nothing → treat as approved so the app keeps working.
+  let approved = true;
+  if (user) {
+    try {
+      const { data: profile } = await supabase.from('profiles').select('status').eq('id', user.id).single();
+      const status = (profile as { status?: string } | null)?.status;
+      approved = !status || status === 'approved';
+    } catch { approved = true; }
+  }
+
   const redirectTo = (pathname: string) => {
     const u = req.nextUrl.clone();
     u.pathname = pathname;
@@ -44,8 +55,11 @@ export async function proxy(req: NextRequest) {
 
   if (path === '/app' || path.startsWith('/app/')) {
     if (!user && !isDemo) return redirectTo('/');
+    // Connected but not yet approved → back to '/', which shows the status screen.
+    if (user && !approved) return redirectTo('/');
   } else if (path === '/') {
-    if (user) return redirectTo('/app');
+    // Only approved users skip the landing; pending/rejected/suspended stay on '/'.
+    if (user && approved) return redirectTo('/app');
   }
 
   return response;

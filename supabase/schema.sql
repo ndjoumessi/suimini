@@ -215,3 +215,212 @@ begin
   begin execute 'alter publication supabase_realtime add table public.relationships'; exception when others then null; end;
   begin execute 'alter publication supabase_realtime add table public.journal_entries'; exception when others then null; end;
 end $$;
+
+-- ============================================================================
+-- MULTITENANT + VALIDATION DES COMPTES PAR UN ADMINISTRATEUR
+-- (idempotent : add column if not exists / create if not exists / drop policy if exists)
+-- NOTE : après cette migration, les comptes existants passent en status 'pending'
+-- (DEFAULT). Exécuter ensuite supabase/seed-admin.sql pour approuver le superadmin.
+-- ============================================================================
+
+-- A. Statuts & rôles de compte sur profiles ----------------------------------
+alter table public.profiles add column if not exists
+  status text not null default 'pending'
+  check (status in ('pending','approved','rejected','suspended'));
+alter table public.profiles add column if not exists
+  role text not null default 'user'
+  check (role in ('user','admin','superadmin'));
+alter table public.profiles add column if not exists approved_at timestamptz;
+alter table public.profiles add column if not exists approved_by uuid references auth.users(id);
+alter table public.profiles add column if not exists rejection_reason text;
+alter table public.profiles add column if not exists organization text;
+
+-- B. Tenants (organisations) -------------------------------------------------
+create table if not exists public.tenants (
+  id          uuid primary key default gen_random_uuid(),
+  name        text not null,
+  slug        text unique not null,
+  owner_id    uuid references auth.users(id),
+  plan        text default 'free' check (plan in ('free','family','pro')),
+  max_trees   int default 1,
+  max_members int default 50,
+  created_at  timestamptz default now(),
+  is_active   boolean default true
+);
+alter table public.tenants enable row level security;
+
+-- Policies tenants : les admins gèrent ; un user voit son propre tenant.
+drop policy if exists tenants_select on public.tenants;
+create policy tenants_select on public.tenants for select to authenticated
+  using (
+    owner_id = auth.uid()
+    or exists (select 1 from public.profiles where id = auth.uid() and role in ('admin','superadmin'))
+    or exists (select 1 from public.profiles where id = auth.uid() and tenant_id = tenants.id)
+  );
+drop policy if exists tenants_admin_write on public.tenants;
+create policy tenants_admin_write on public.tenants for all to authenticated
+  using (exists (select 1 from public.profiles where id = auth.uid() and role in ('admin','superadmin')))
+  with check (exists (select 1 from public.profiles where id = auth.uid() and role in ('admin','superadmin')));
+
+-- C. Lier profiles à tenants -------------------------------------------------
+alter table public.profiles add column if not exists tenant_id uuid references public.tenants(id);
+
+-- D. Notifications admin -----------------------------------------------------
+create table if not exists public.admin_notifications (
+  id         uuid primary key default gen_random_uuid(),
+  type       text not null,
+  payload    jsonb,
+  is_read    boolean default false,
+  created_at timestamptz default now()
+);
+alter table public.admin_notifications enable row level security;
+drop policy if exists admin_notif_select on public.admin_notifications;
+create policy admin_notif_select on public.admin_notifications for select to authenticated
+  using (exists (
+    select 1 from public.profiles
+    where id = auth.uid() and role in ('admin','superadmin')
+  ));
+
+-- E. Création du profil à l'inscription — étendue pour capturer l'organisation.
+create or replace function public.handle_new_user()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.profiles (id, email, display_name, organization)
+  values (
+    new.id,
+    new.email,
+    coalesce(nullif(new.raw_user_meta_data->>'display_name', ''), split_part(new.email, '@', 1)),
+    nullif(new.raw_user_meta_data->>'organization', '')
+  )
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
+
+-- E bis. Notifier les admins à chaque nouveau profil --------------------------
+create or replace function public.notify_admin_new_user()
+returns trigger language plpgsql security definer as $$
+begin
+  insert into public.admin_notifications (type, payload, created_at)
+  values (
+    'new_user',
+    jsonb_build_object(
+      'user_id', new.id,
+      'email', new.email,
+      'display_name', new.display_name,
+      'created_at', new.created_at
+    ),
+    now()
+  );
+  return new;
+end; $$;
+
+drop trigger if exists on_new_user_notify on public.profiles;
+create trigger on_new_user_notify
+  after insert on public.profiles
+  for each row execute function public.notify_admin_new_user();
+
+-- F. RPC SECURITY DEFINER (validation des comptes, admin-only) ----------------
+
+-- Approuver un user
+create or replace function public.approve_user(target_user_id uuid)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from public.profiles where id = auth.uid() and role in ('admin','superadmin')) then
+    raise exception 'Unauthorized';
+  end if;
+  update public.profiles set
+    status = 'approved',
+    approved_at = now(),
+    approved_by = auth.uid()
+  where id = target_user_id;
+  update public.admin_notifications set is_read = true
+  where type = 'new_user' and payload->>'user_id' = target_user_id::text;
+end; $$;
+
+-- Rejeter un user
+create or replace function public.reject_user(target_user_id uuid, reason text default null)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from public.profiles where id = auth.uid() and role in ('admin','superadmin')) then
+    raise exception 'Unauthorized';
+  end if;
+  update public.profiles set
+    status = 'rejected',
+    rejection_reason = reason
+  where id = target_user_id;
+  update public.admin_notifications set is_read = true
+  where type = 'new_user' and payload->>'user_id' = target_user_id::text;
+end; $$;
+
+-- Suspendre / réactiver un user
+create or replace function public.set_user_status(target_user_id uuid, new_status text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from public.profiles where id = auth.uid() and role in ('admin','superadmin')) then
+    raise exception 'Unauthorized';
+  end if;
+  update public.profiles set status = new_status where id = target_user_id;
+end; $$;
+
+-- Promouvoir / rétrograder (superadmin only)
+create or replace function public.set_user_role(target_user_id uuid, new_role text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from public.profiles where id = auth.uid() and role = 'superadmin') then
+    raise exception 'Unauthorized';
+  end if;
+  update public.profiles set role = new_role where id = target_user_id;
+end; $$;
+
+-- Lister tous les users (admin only)
+create or replace function public.list_all_users()
+returns table (
+  id uuid, email text, display_name text,
+  status text, role text, organization text,
+  tenant_id uuid, created_at timestamptz,
+  approved_at timestamptz, rejection_reason text
+) language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from public.profiles where id = auth.uid() and role in ('admin','superadmin')) then
+    raise exception 'Unauthorized';
+  end if;
+  return query
+    select p.id, p.email, p.display_name, p.status, p.role, p.organization,
+           p.tenant_id, p.created_at, p.approved_at, p.rejection_reason
+    from public.profiles p
+    order by p.created_at desc;
+end; $$;
+
+-- Lister les notifications non lues (admin only)
+create or replace function public.get_unread_notifications()
+returns table (id uuid, type text, payload jsonb, created_at timestamptz)
+language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from public.profiles where id = auth.uid() and role in ('admin','superadmin')) then
+    raise exception 'Unauthorized';
+  end if;
+  return query
+    select n.id, n.type, n.payload, n.created_at
+    from public.admin_notifications n
+    where n.is_read = false
+    order by n.created_at desc;
+end; $$;
+
+-- Marquer toutes les notifications comme lues (admin only)
+create or replace function public.mark_all_notifications_read()
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from public.profiles where id = auth.uid() and role in ('admin','superadmin')) then
+    raise exception 'Unauthorized';
+  end if;
+  update public.admin_notifications set is_read = true where is_read = false;
+end; $$;
+
+grant execute on function public.approve_user(uuid)                 to authenticated;
+grant execute on function public.reject_user(uuid, text)            to authenticated;
+grant execute on function public.set_user_status(uuid, text)        to authenticated;
+grant execute on function public.set_user_role(uuid, text)          to authenticated;
+grant execute on function public.list_all_users()                   to authenticated;
+grant execute on function public.get_unread_notifications()         to authenticated;
+grant execute on function public.mark_all_notifications_read()      to authenticated;

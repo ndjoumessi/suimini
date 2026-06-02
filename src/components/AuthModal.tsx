@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Mail, Lock, User, Eye, EyeOff, ArrowRight, Gamepad2, Check, X as XIcon, AlertCircle, ArrowLeft, Leaf } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, ArrowRight, Gamepad2, Check, X as XIcon, AlertCircle, ArrowLeft, Leaf, Building2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useOverlay } from '@/hooks/useOverlay';
 import { passwordChecks, strengthInfo } from '@/lib/password';
@@ -24,6 +24,7 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [organization, setOrganization] = useState('');
   const [remember, setRemember] = useState(true);
   const [showPw, setShowPw] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -66,10 +67,10 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
     if (!pwValid) { setError('Le mot de passe doit faire au moins 8 caractères.'); return; }
     if (!confirmValid) { setError('Les mots de passe ne correspondent pas.'); return; }
     setLoading(true);
-    const { error } = await signUp(email, password, displayName);
+    const { error } = await signUp(email, password, displayName, organization);
     setLoading(false);
     if (error) setError(error);
-    else setSentMsg('✉️ Vérifiez votre boîte mail pour confirmer votre compte.');
+    else setSentMsg('✅ Demande envoyée ! Un administrateur va examiner votre inscription.');
   }
 
   const canSubmit = forgot ? emailValid
@@ -125,6 +126,10 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
             <form onSubmit={handleSubmit}>
               {tab === 'signup' && (
                 <Field label="Nom d’affichage" Icon={User} value={displayName} onChange={setDisplayName} placeholder="Marie Dupont" autoComplete="name" autoFocus valid={displayName.trim().length > 0 ? true : undefined} ariaLabel="Nom d’affichage" />
+              )}
+
+              {tab === 'signup' && (
+                <Field label="Organisation / Famille (optionnel)" Icon={Building2} value={organization} onChange={setOrganization} placeholder="Ex: Famille Dupont, Association..." autoComplete="organization" ariaLabel="Organisation ou famille" />
               )}
 
               <Field label="Email" Icon={Mail} type="email" value={email} onChange={setEmail} placeholder="vous@exemple.com" autoComplete="email" autoFocus={tab !== 'signup'} valid={email.length > 0 ? emailValid : undefined} ariaLabel="Email" />

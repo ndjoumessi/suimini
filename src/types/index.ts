@@ -163,7 +163,47 @@ export interface TreeStats {
   totalEvents: number;
 }
 
-export type ViewMode = 'tree' | 'list' | 'timeline' | 'map' | 'statistics' | 'gallery' | 'journal' | 'birthdays' | 'ancestors' | 'settings';
+export type ViewMode = 'tree' | 'list' | 'timeline' | 'map' | 'statistics' | 'gallery' | 'journal' | 'birthdays' | 'ancestors' | 'settings' | 'admin';
+
+// ----- Multitenant + validation des comptes -----
+export type UserStatus = 'pending' | 'approved' | 'rejected' | 'suspended';
+export type UserRole = 'user' | 'admin' | 'superadmin';
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  display_name?: string;
+  status: UserStatus;
+  role: UserRole;
+  organization?: string;
+  tenant_id?: string;
+  created_at: string;
+  approved_at?: string;
+  rejection_reason?: string;
+}
+
+export interface AdminNotification {
+  id: string;
+  type: string;
+  payload: {
+    user_id: string;
+    email: string;
+    display_name?: string;
+    created_at: string;
+  };
+  created_at: string;
+}
+
+export interface Tenant {
+  id: string;
+  name: string;
+  slug: string;
+  plan: 'free' | 'family' | 'pro';
+  max_trees: number;
+  max_members: number;
+  is_active: boolean;
+  created_at: string;
+}
 
 export type ColorThemeId = 'sepia' | 'slate' | 'forest' | 'bordeaux' | 'marine' | 'midnight';
 

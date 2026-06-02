@@ -3,7 +3,7 @@ import { FamilyTree, ViewMode } from '@/types';
 import {
   TreePine, Users, Calendar, Map, Images, BookOpen, Cake, Search, BarChart2, Settings,
   Plus, Play, Share2, FolderOpen, Printer, Moon, Sun, ChevronDown, LogOut, LogIn, Cloud,
-  Check, CloudOff,
+  Check, CloudOff, Shield,
 } from 'lucide-react';
 
 function initials(name?: string | null, email?: string | null): string {
@@ -62,6 +62,8 @@ interface Props {
   presenceCount?: number;
   onSignIn?: () => void;
   onSignOut?: () => void;
+  isAdmin?: boolean;
+  unreadCount?: number;
 }
 
 function SyncIndicator({ status }: { status: 'idle' | 'saved' | 'syncing' | 'offline' }) {
@@ -71,7 +73,7 @@ function SyncIndicator({ status }: { status: 'idle' | 'saved' | 'syncing' | 'off
   return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--text-light)' }}><Cloud size={12} /> Local</span>;
 }
 
-export default function Sidebar({ activeView, onViewChange, activeTree, trees, onShowTreeSelector, onAddPerson, onShowImportExport, onPrint, onShare, onPresent, birthdayAlertCount = 0, dark, onToggleDark, isOpen, onClose, userEmail, displayName, isDemo, cloud, syncStatus = 'idle', presenceCount = 0, onSignIn, onSignOut }: Props) {
+export default function Sidebar({ activeView, onViewChange, activeTree, trees, onShowTreeSelector, onAddPerson, onShowImportExport, onPrint, onShare, onPresent, birthdayAlertCount = 0, dark, onToggleDark, isOpen, onClose, userEmail, displayName, isDemo, cloud, syncStatus = 'idle', presenceCount = 0, onSignIn, onSignOut, isAdmin = false, unreadCount = 0 }: Props) {
 
   return (
     <aside style={{ width: '224px', flexShrink: 0, background: 'var(--bg-card)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 50 }}
@@ -152,6 +154,42 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
             })}
           </div>
         ))}
+
+        {/* Admin (visible uniquement pour les admins) */}
+        {isAdmin && (() => {
+          const active = activeView === 'admin';
+          return (
+            <div style={{ paddingTop: '6px', marginTop: '6px', borderTop: '1px solid var(--border)' }}>
+              <button
+                onClick={() => { onViewChange('admin'); onClose(); }}
+                aria-current={active ? 'page' : undefined}
+                aria-label="Admin"
+                style={{
+                  position: 'relative', width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                  padding: '8px 11px', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius)', marginBottom: '2px',
+                  background: active ? 'var(--accent-light)' : 'transparent',
+                  color: active ? 'var(--accent)' : 'var(--text-muted)',
+                  fontFamily: 'Lato, sans-serif', fontSize: '13px', fontWeight: active ? 700 : 400,
+                  transition: 'background var(--t-fast), color var(--t-fast)',
+                }}
+                onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'var(--interactive)'; }}
+                onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}
+              >
+                {active && <span aria-hidden="true" style={{ position: 'absolute', left: 0, top: '6px', bottom: '6px', width: '2px', borderRadius: '2px', background: 'var(--accent)' }} />}
+                <span style={{ width: '18px', display: 'inline-flex', justifyContent: 'center', position: 'relative' }}>
+                  <Shield size={17} aria-hidden="true" />
+                  {unreadCount > 0 && <span className="birthday-pulse-dot" />}
+                </span>
+                Admin
+                {unreadCount > 0 && (
+                  <span className="birthday-badge" style={{ marginLeft: 'auto', background: 'var(--danger)', color: 'white', borderRadius: '100px', padding: '1px 6px', fontSize: '10px', fontWeight: 700 }}>
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+            </div>
+          );
+        })()}
       </nav>
 
       {/* Actions */}

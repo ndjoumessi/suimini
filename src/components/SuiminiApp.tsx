@@ -5,6 +5,7 @@ import { useFamilyStore } from '@/hooks/useFamilyStore';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
+import { useAdminData } from '@/hooks/useAdminData';
 import { useBirthdayNotifications } from '@/hooks/useBirthdayNotifications';
 import { supabase } from '@/lib/supabase';
 import { ViewMode } from '@/types';
@@ -27,6 +28,7 @@ import CommandPalette from './CommandPalette';
 import PresentationMode from './PresentationMode';
 import NarrativeModal from './NarrativeModal';
 import AddPersonModal from './AddPersonModal';
+import AdminDashboard from './AdminDashboard';
 import TreeSelectorModal from './TreeSelectorModal';
 import ImportExportModal from './ImportExportModal';
 import PrintModal from './PrintModal';
@@ -44,7 +46,8 @@ const MapView = dynamic(() => import('./MapView'), {
 });
 
 export default function SuiminiApp() {
-  const { user, signOut, isDemo, exitDemo } = useAuth();
+  const { user, signOut, isDemo, exitDemo, isAdmin, role } = useAuth();
+  const admin = useAdminData({ enabled: isAdmin });
   const store = useFamilyStore(user ? { id: user.id, email: user.email } : null);
   const { dark, toggle: toggleDark, mode: themeMode, setMode: setThemeMode } = useDarkMode();
   const { themeId, setTheme, previewTheme, cancelPreview } = useTheme();
@@ -185,6 +188,8 @@ export default function SuiminiApp() {
         presenceCount={store.cloud ? presenceCount : 0}
         onSignIn={() => openAuth('login')}
         isDemo={isDemo}
+        isAdmin={isAdmin}
+        unreadCount={admin.unreadCount}
         onSignOut={async () => { await signOut(); showToast('Déconnecté'); }}
       />
 
@@ -198,7 +203,9 @@ export default function SuiminiApp() {
           <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{store.activeTree?.name}</span>
         </div>
 
-        {!store.activeTree ? (
+        {view === 'admin' ? (
+          <AdminDashboard admin={admin} role={role} onToast={showToast} />
+        ) : !store.activeTree ? (
           <EmptyState onCreateTree={() => setShowTreeSelector(true)} />
         ) : (
           <>
