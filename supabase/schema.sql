@@ -249,6 +249,10 @@ create table if not exists public.tenants (
 );
 alter table public.tenants enable row level security;
 
+-- C. Lier profiles à tenants — DOIT précéder les policies tenants ci-dessous, qui
+-- référencent profiles.tenant_id (CREATE POLICY valide les colonnes immédiatement).
+alter table public.profiles add column if not exists tenant_id uuid references public.tenants(id);
+
 -- Policies tenants : les admins gèrent ; un user voit son propre tenant.
 drop policy if exists tenants_select on public.tenants;
 create policy tenants_select on public.tenants for select to authenticated
@@ -261,9 +265,6 @@ drop policy if exists tenants_admin_write on public.tenants;
 create policy tenants_admin_write on public.tenants for all to authenticated
   using (exists (select 1 from public.profiles where id = auth.uid() and role in ('admin','superadmin')))
   with check (exists (select 1 from public.profiles where id = auth.uid() and role in ('admin','superadmin')));
-
--- C. Lier profiles à tenants -------------------------------------------------
-alter table public.profiles add column if not exists tenant_id uuid references public.tenants(id);
 
 -- D. Notifications admin -----------------------------------------------------
 create table if not exists public.admin_notifications (
@@ -382,7 +383,9 @@ returns table (
   approved_at timestamptz, rejection_reason text
 ) language plpgsql security definer set search_path = public as $$
 begin
-  if not exists (select 1 from public.profiles where id = auth.uid() and role in ('admin','superadmin')) then
+  -- alias `pr` : les colonnes de sortie RETURNS TABLE (id, role, …) sont des
+  -- variables PL/pgSQL et entreraient en collision avec un `id`/`role` non qualifié.
+  if not exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.role in ('admin','superadmin')) then
     raise exception 'Unauthorized';
   end if;
   return query
@@ -397,7 +400,9 @@ create or replace function public.get_unread_notifications()
 returns table (id uuid, type text, payload jsonb, created_at timestamptz)
 language plpgsql security definer set search_path = public as $$
 begin
-  if not exists (select 1 from public.profiles where id = auth.uid() and role in ('admin','superadmin')) then
+  -- alias `pr` : RETURNS TABLE (id, type, created_at) crée des variables qui
+  -- entreraient en collision avec un `id` non qualifié dans le contrôle.
+  if not exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.role in ('admin','superadmin')) then
     raise exception 'Unauthorized';
   end if;
   return query
