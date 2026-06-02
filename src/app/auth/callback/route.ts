@@ -13,6 +13,15 @@ export async function GET(request: Request) {
   const code = searchParams.get('code');
   const next = searchParams.get('next') ?? '/';
 
+  // Expired / denied magic-link (Supabase appends ?error=access_denied&error_code=
+  // otp_expired to the redirect). Send the user home with a clean flag — no hash
+  // fragment in the final URL — so the landing can show the "link expired" banner.
+  const errorCode = searchParams.get('error_code');
+  const errorParam = searchParams.get('error');
+  if (errorCode === 'otp_expired' || errorParam === 'access_denied') {
+    return NextResponse.redirect(`${origin}/?auth_error=expired`);
+  }
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 

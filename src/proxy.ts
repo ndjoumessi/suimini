@@ -33,15 +33,19 @@ export async function proxy(req: NextRequest) {
   const isDemo = req.cookies.get('suimini_demo')?.value === 'true';
   const path = req.nextUrl.pathname;
 
-  // Account status (multitenant validation). When the column/migration is absent
-  // the query returns nothing → treat as approved so the app keeps working.
-  let approved = true;
+  // Account status (multitenant validation). Fail CLOSED: only an explicit
+  // 'approved' status grants /app. The single exception is "column does not exist"
+  // (Postgres 42703) — i.e. the migration hasn't been applied yet — which keeps the
+  // app usable pre-migration and self-heals once schema.sql runs. Any other error
+  // (missing row, transient failure) denies access.
+  let approved = false;
   if (user) {
-    try {
-      const { data: profile } = await supabase.from('profiles').select('status').eq('id', user.id).single();
-      const status = (profile as { status?: string } | null)?.status;
-      approved = !status || status === 'approved';
-    } catch { approved = true; }
+    const { data: profile, error } = await supabase.from('profiles').select('status').eq('id', user.id).single();
+    if (error) {
+      approved = error.code === '42703';
+    } else {
+      approved = (profile as { status?: string } | null)?.status === 'approved';
+    }
   }
 
   const redirectTo = (pathname: string) => {

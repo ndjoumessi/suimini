@@ -424,3 +424,69 @@ grant execute on function public.set_user_role(uuid, text)          to authentic
 grant execute on function public.list_all_users()                   to authenticated;
 grant execute on function public.get_unread_notifications()         to authenticated;
 grant execute on function public.mark_all_notifications_read()      to authenticated;
+
+-- ============================================================================
+-- DURCISSEMENT SÉCURITÉ
+-- (1) Empêcher l'auto-élévation de privilèges via la policy profiles_modify
+-- (2) Ne plus divulguer les colonnes sensibles de profiles aux autres users
+-- ============================================================================
+
+-- Helper SECURITY DEFINER (évite la récursion RLS dans la policy profiles_select).
+create or replace function public.is_admin()
+returns boolean language sql security definer stable set search_path = public as $$
+  select exists (select 1 from public.profiles where id = auth.uid() and role in ('admin','superadmin'));
+$$;
+grant execute on function public.is_admin() to authenticated;
+
+-- (1) CRITIQUE — La policy profiles_modify autorise un user à écrire SA ligne, ce
+-- qui, avec les nouvelles colonnes, lui permettrait de se promouvoir
+-- (role='superadmin') ou de s'auto-approuver (status='approved'). Ce trigger borne
+-- quelles colonnes un non-admin peut modifier. Les RPC admin (SECURITY DEFINER,
+-- auth.uid()=admin) et les contextes service/SQL-editor (auth.uid() null) passent.
+create or replace function public.guard_profile_privileged_columns()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  -- Contexte backend (service_role / SQL editor / trigger d'auth) : auth.uid() null.
+  if auth.uid() is null then return new; end if;
+  -- Admin authentifié : autorisé (les RPC d'admin passent par ici).
+  if public.is_admin() then return new; end if;
+  if tg_op = 'INSERT' then
+    -- Auto-insert d'un non-admin : forcer des valeurs sûres (jamais d'élévation).
+    new.status := 'pending';
+    new.role := 'user';
+    new.tenant_id := null;
+    new.approved_at := null;
+    new.approved_by := null;
+    new.rejection_reason := null;
+    return new;
+  end if;
+  -- UPDATE par un non-admin : interdire tout changement de colonne privilégiée.
+  if new.status          is distinct from old.status
+     or new.role         is distinct from old.role
+     or new.tenant_id    is distinct from old.tenant_id
+     or new.approved_at  is distinct from old.approved_at
+     or new.approved_by  is distinct from old.approved_by
+     or new.rejection_reason is distinct from old.rejection_reason then
+    raise exception 'Modification non autorisée des champs privilégiés du profil';
+  end if;
+  return new;
+end; $$;
+
+drop trigger if exists guard_profiles_privileged on public.profiles;
+create trigger guard_profiles_privileged
+  before insert or update on public.profiles
+  for each row execute function public.guard_profile_privileged_columns();
+
+-- (2) DIVULGATION — Restreindre la lecture directe de profiles à soi-même et aux
+-- admins (auparavant `using (true)` exposait role/status/email/… à tout le monde).
+drop policy if exists profiles_select on public.profiles;
+create policy profiles_select on public.profiles for select to authenticated
+  using (id = auth.uid() or public.is_admin());
+
+-- Les pairs n'ont besoin que de id/display_name/email (affichage « Partagé par … »).
+create or replace function public.get_public_profiles(ids uuid[])
+returns table (id uuid, display_name text, email text)
+language sql security definer stable set search_path = public as $$
+  select p.id, p.display_name, p.email from public.profiles p where p.id = any(ids);
+$$;
+grant execute on function public.get_public_profiles(uuid[]) to authenticated;

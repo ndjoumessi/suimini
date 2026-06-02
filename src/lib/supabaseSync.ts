@@ -98,8 +98,19 @@ export async function loadTreesFromSupabase(userId: string): Promise<LoadResult>
   const otherOwners = Array.from(new Set(treeRows.filter(t => t.owner_id !== userId).map(t => t.owner_id)));
   const ownerNames: Record<string, string> = {};
   if (otherOwners.length) {
-    const { data: profs } = await supabase.from('profiles').select('id, display_name, email').in('id', otherOwners);
-    (profs || []).forEach(p => { ownerNames[p.id] = p.display_name || p.email || 'un collaborateur'; });
+    // Peer profiles are no longer directly selectable (RLS now restricts profiles
+    // to self/admin); fetch only the safe display fields via the RPC. Falls back to
+    // a direct select if the RPC isn't deployed yet (pre-migration).
+    type PubProfile = { id: string; display_name?: string | null; email?: string | null };
+    const rpc = await supabase.rpc('get_public_profiles', { ids: otherOwners });
+    let profs: PubProfile[] = [];
+    if (!rpc.error && rpc.data) {
+      profs = rpc.data as PubProfile[];
+    } else {
+      const direct = await supabase.from('profiles').select('id, display_name, email').in('id', otherOwners);
+      profs = (direct.data ?? []) as PubProfile[];
+    }
+    profs.forEach(p => { ownerNames[p.id] = p.display_name || p.email || 'un collaborateur'; });
   }
 
   const trees: FamilyTree[] = treeRows.map(t => {
