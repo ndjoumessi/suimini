@@ -482,11 +482,17 @@ create trigger guard_profiles_privileged
   before insert or update on public.profiles
   for each row execute function public.guard_profile_privileged_columns();
 
--- (2) DIVULGATION — Restreindre la lecture directe de profiles à soi-même et aux
--- admins (auparavant `using (true)` exposait role/status/email/… à tout le monde).
+-- (2) DIVULGATION — Restreindre la lecture directe de profiles à SON PROPRE profil
+-- (auparavant `using (true)` exposait role/status/email/… à tout le monde). Les
+-- admins lisent tous les profils via list_all_users() (SECURITY DEFINER) et les
+-- pairs via get_public_profiles() : la policy n'a donc PAS besoin d'appeler
+-- is_admin(). L'éviter supprime aussi tout risque de 42501 (permission denied) si
+-- l'EXECUTE sur le helper n'est pas accordé à l'appelant — ce qui bloquait la
+-- lecture de son propre profil et masquait le nav Admin.
+grant select on public.profiles to authenticated;
 drop policy if exists profiles_select on public.profiles;
 create policy profiles_select on public.profiles for select to authenticated
-  using (id = auth.uid() or public.is_admin());
+  using (id = auth.uid());
 
 -- Les pairs n'ont besoin que de id/display_name/email (affichage « Partagé par … »).
 create or replace function public.get_public_profiles(ids uuid[])
