@@ -9,10 +9,15 @@ function nodeInitials(p: Person): string {
   return (((p.firstName?.[0] || '') + (p.lastName?.[0] || '')).toUpperCase()) || '?';
 }
 
-/** Monochrome taupe scale: t=0 → accent-light (#f0e8da, oldest), t=1 → accent (#8b6f47, newest). */
+/**
+ * Monochrome WARM-NEUTRAL generation ramp (not the rare accent):
+ * t=0 → light reliure #d3ccc0 (oldest), t=1 → warm grey #847c70 (newest).
+ * Keeps generations legible and warm without spending the cuir-taupe accent,
+ * which stays reserved for the selected / root node (Rare Accent Rule).
+ */
 function taupeScale(t: number): string {
-  const a = [240, 232, 218]; // #f0e8da
-  const b = [139, 111, 71];  // #8b6f47
+  const a = [211, 204, 192]; // #d3ccc0 (warm light neutral)
+  const b = [132, 124, 112]; // #847c70 (warm grey / --text-light)
   const k = Math.max(0, Math.min(1, t));
   const c = a.map((v, i) => Math.round(v + (b[i] - v) * k));
   return `rgb(${c[0]}, ${c[1]}, ${c[2]})`;

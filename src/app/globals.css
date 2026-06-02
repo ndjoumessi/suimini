@@ -157,7 +157,9 @@ input:-webkit-autofill:focus {
   vertical-align: -2px;
 }
 
-.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+/* Flat at rest: cards rely on the 1px reliure border + surface contrast, not a resting shadow.
+   Interactive cards elevate on their own :hover; modals/toasts carry their own elevation. */
+.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); }
 
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;

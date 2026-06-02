@@ -122,8 +122,8 @@ export default function ListView({ tree, onSelectPerson, onAddPerson }: Props) {
             </button>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '10px' }}>
-            {visible.map(person => {
+          <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden', background: 'var(--bg-card)', maxWidth: '760px', margin: '0 auto' }}>
+            {visible.map((person, idx) => {
               const age = getAge(person.birthDate, person.deathDate);
               return (
                 <button
@@ -131,13 +131,13 @@ export default function ListView({ tree, onSelectPerson, onAddPerson }: Props) {
                   onClick={() => onSelectPerson(person.id)}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '12px',
-                    padding: '12px', border: '1px solid var(--border)',
-                    borderRadius: 'var(--radius)', background: 'var(--bg-card)',
-                    cursor: 'pointer', textAlign: 'left',
-                    transition: 'border-color var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out), transform var(--t-fast) var(--ease-out)', opacity: person.isAlive ? 1 : 0.8,
+                    padding: '10px 14px', border: 'none',
+                    borderBottom: idx < visible.length - 1 ? '1px solid var(--border)' : 'none',
+                    background: 'transparent', cursor: 'pointer', textAlign: 'left', width: '100%',
+                    transition: 'background var(--t-fast) var(--ease-out)', opacity: person.isAlive ? 1 : 0.75,
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = 'var(--shadow)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = ''; }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-muted)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
                 >
                   {/* Avatar */}
                   <div style={{
@@ -170,7 +170,7 @@ export default function ListView({ tree, onSelectPerson, onAddPerson }: Props) {
                   </div>
 
                   {/* Badges */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }}>
+                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexShrink: 0 }}>
                     <span className={`badge badge-${person.gender === 'male' ? 'male' : person.gender === 'female' ? 'female' : 'accent'}`}>
                       {person.gender === 'male' ? 'Homme' : person.gender === 'female' ? 'Femme' : 'Autre'}
                     </span>

@@ -88,13 +88,10 @@ export default function GalleryView({ tree, onSelectPerson }: Props) {
             )}
           </div>
         ) : (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: layout === 'grid'
-              ? 'repeat(auto-fill, minmax(160px, 1fr))'
-              : 'repeat(auto-fill, minmax(180px, 1fr))',
-            gap: '10px',
-          }}>
+          <div style={layout === 'grid'
+            ? { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '10px' }
+            : { columnWidth: '180px', columnGap: '10px' }
+          }>
             {photos.map((photo, i) => (
               <button
                 key={i}
@@ -108,7 +105,9 @@ export default function GalleryView({ tree, onSelectPerson }: Props) {
                   border: '1px solid var(--border)',
                   transition: 'transform var(--t-base) var(--ease-out), box-shadow var(--t-base) var(--ease-out)',
                   aspectRatio: layout === 'grid' ? '1' : undefined,
-                  background: 'var(--bg-muted)', display: 'block', width: '100%', textAlign: 'left',
+                  breakInside: layout === 'masonry' ? 'avoid' : undefined,
+                  marginBottom: layout === 'masonry' ? '10px' : undefined,
+                  background: 'var(--bg-muted)', display: layout === 'masonry' ? 'inline-block' : 'block', width: '100%', textAlign: 'left', verticalAlign: 'top',
                 }}
               >
                 <img
@@ -117,7 +116,6 @@ export default function GalleryView({ tree, onSelectPerson }: Props) {
                   style={{
                     width: '100%',
                     height: layout === 'grid' ? '100%' : 'auto',
-                    minHeight: layout === 'masonry' ? '120px' : undefined,
                     objectFit: 'cover', display: 'block',
                   }}
                   onError={e => { (e.target as HTMLImageElement).src = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><rect width='160' height='160' fill='%23f4f1ec'/><g transform='translate(56,56) scale(2)' fill='none' stroke='%23847c70' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z'/><circle cx='12' cy='13' r='3'/></g></svg>"; }}
