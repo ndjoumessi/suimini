@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   TreePine, Map, Cloud, Search, BookOpen, Play, BarChart2, Dna,
   ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Check, Mail,
-  KeyRound, UserPlus, Share2, ShieldCheck, Code2, FileText, Star, Gamepad2,
+  KeyRound, UserPlus, Share2, ShieldCheck, FileText, Star, Gamepad2,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
@@ -186,7 +186,6 @@ export default function Landing() {
           <Reveal delay={240}>
             <div className="lp-cta-row">
               <button onClick={startSignup} className="lp-btn-primary">✨ Commencer gratuitement <ArrowRight size={18} /></button>
-              <button onClick={() => openAuth('login')} className="lp-btn-secondary">Se connecter</button>
             </div>
             <div className="lp-or"><span /><small>ou</small><span /></div>
             <div className="lp-demo-row">
@@ -329,7 +328,6 @@ export default function Landing() {
           <div className="lp-footer-links">
             <span className="lp-foot-h">Produit</span>
             <a href="/app">Ouvrir l’app</a>
-            <a href="https://github.com/ndjoumessi/suimini" target="_blank" rel="noopener noreferrer"><Code2 size={13} /> GitHub</a>
             <a href="#features"><FileText size={13} /> Documentation</a>
             <a href="mailto:hello@suimini.app"><Mail size={13} /> Contact</a>
           </div>

@@ -229,7 +229,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
     if (cw === 0) return;
     setOffset({
       x: cw / 2 - (node.x + NODE_W / 2) * scale,
-      y: ch / 2 - (node.y + NODE_H / 2) * scale,
+      y: Math.round(ch * 0.35) - (node.y + NODE_H / 2) * scale, // root at the upper third
     });
   };
   const recenter = () => centerOn(rootId);
@@ -244,7 +244,9 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
     const attempt = () => {
       const { clientWidth: cw, clientHeight: ch } = el;
       if (cw > 0 && ch > 0) {
-        setOffset({ x: cw / 2, y: ch / 2 });
+        // Root is fixed at content (0,0); place it at the upper third so children
+        // below have room (ch*0.35, not ch/2 which pushed the tree too low).
+        setOffset({ x: cw / 2, y: Math.round(ch * 0.35) });
         return;
       }
       raf = requestAnimationFrame(attempt);

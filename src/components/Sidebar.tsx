@@ -3,7 +3,7 @@ import { FamilyTree, ViewMode } from '@/types';
 import {
   TreePine, Users, Calendar, Map, Images, BookOpen, Cake, Search, BarChart2, Settings,
   Plus, Play, Share2, FolderOpen, Printer, Moon, Sun, ChevronDown, LogOut, LogIn, Cloud,
-  Check, CloudOff, Gamepad2,
+  Check, CloudOff,
 } from 'lucide-react';
 
 function initials(name?: string | null, email?: string | null): string {
@@ -196,19 +196,9 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
               </div>
             )}
           </>
-        ) : isDemo ? (
-          <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '2px' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--accent-light)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Gamepad2 size={18} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '13px', fontWeight: 700 }}>Compte démo</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Non sauvegardé</div>
-              </div>
-            </div>
-          </>
         ) : (
+          // Demo mode also lands here: the top DemoBanner already shows the demo
+          // status + "Quitter la démo", so the sidebar only offers the sign-in CTA.
           <button onClick={onSignIn} className="btn btn-secondary btn-sm" style={{ width: '100%' }}>
             <LogIn size={14} /> Se connecter pour sauvegarder
           </button>
