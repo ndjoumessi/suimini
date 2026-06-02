@@ -5,7 +5,7 @@ import { getDisplayName, formatYear, fuzzyMatch } from '@/lib/treeUtils';
 import { useOverlay } from '@/hooks/useOverlay';
 import {
   Search, SearchX, Clock, CornerDownLeft, User, UserPlus, Download, Upload, Play,
-  Printer, Share2, TreePine, Users, Calendar, Map, Images, BookOpen, Cake, BarChart2, Settings,
+  Printer, Share2, TreePine, Users, Calendar, Map, Images, BookOpen, Cake, BarChart2, Settings, ScrollText,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -20,6 +20,7 @@ interface Props {
   onShare: () => void;
   onPresent: () => void;
   onTreeSelector: () => void;
+  onNarrative: () => void;
 }
 
 interface CommandItem {
@@ -66,7 +67,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
   );
 }
 
-export default function CommandPalette({ tree, onClose, onSelectPerson, onNavigate, onAddPerson, onImportExport, onPrint, onShare, onPresent, onTreeSelector }: Props) {
+export default function CommandPalette({ tree, onClose, onSelectPerson, onNavigate, onAddPerson, onImportExport, onPrint, onShare, onPresent, onTreeSelector, onNarrative }: Props) {
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
   const [recent, setRecent] = useState<string[]>(() => {
@@ -93,11 +94,12 @@ export default function CommandPalette({ tree, onClose, onSelectPerson, onNaviga
     { id: 'a-add', kind: 'action', label: 'Ajouter une personne', Icon: UserPlus, searchText: 'ajouter personne nouveau membre add', run: () => { onClose(); onAddPerson(); } },
     { id: 'a-import', kind: 'action', label: 'Importer des données', sublabel: 'JSON, GEDCOM', Icon: Download, searchText: 'importer import charger gedcom json fichier ouvrir', run: () => { onClose(); onImportExport('import'); } },
     { id: 'a-export', kind: 'action', label: "Exporter l'arbre", sublabel: 'JSON, GEDCOM', Icon: Upload, searchText: 'exporter export telecharger sauvegarde gedcom json', run: () => { onClose(); onImportExport('export'); } },
+    { id: 'a-narrative', kind: 'action', label: 'Générer le rapport', sublabel: 'Récit IA de la famille', Icon: ScrollText, searchText: 'rapport narratif recit histoire ia genere texte resume biographie', run: () => { onClose(); onNarrative(); } },
     { id: 'a-present', kind: 'action', label: 'Mode présentation', sublabel: 'Diaporama plein écran', Icon: Play, searchText: 'presentation diaporama plein ecran slideshow', run: () => { onClose(); onPresent(); } },
     { id: 'a-print', kind: 'action', label: 'Imprimer', Icon: Printer, searchText: 'imprimer print pdf', run: () => { onClose(); onPrint(); } },
     { id: 'a-share', kind: 'action', label: 'Partager', Icon: Share2, searchText: 'partager share lien', run: () => { onClose(); onShare(); } },
     { id: 'a-tree', kind: 'action', label: "Changer d'arbre", Icon: TreePine, searchText: 'changer arbre tree selecteur', run: () => { onClose(); onTreeSelector(); } },
-  ], [onClose, onAddPerson, onPresent, onImportExport, onPrint, onShare, onTreeSelector]);
+  ], [onClose, onAddPerson, onPresent, onImportExport, onPrint, onShare, onTreeSelector, onNarrative]);
 
   const views: CommandItem[] = useMemo(() => VIEW_DEFS.map(v => ({
     id: `v-${v.view}`, kind: 'view' as const, label: `Aller à : ${v.label}`, Icon: v.Icon,

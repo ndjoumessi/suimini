@@ -25,6 +25,7 @@ import PersonPanel from './PersonPanel';
 import HistoryIndicator from './HistoryIndicator';
 import CommandPalette from './CommandPalette';
 import PresentationMode from './PresentationMode';
+import NarrativeModal from './NarrativeModal';
 import AddPersonModal from './AddPersonModal';
 import TreeSelectorModal from './TreeSelectorModal';
 import ImportExportModal from './ImportExportModal';
@@ -58,6 +59,7 @@ export default function SuiminiApp() {
   const [showShare, setShowShare] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
   const [showPresentation, setShowPresentation] = useState(false);
+  const [showNarrative, setShowNarrative] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [authTab, setAuthTab] = useState<'login' | 'signup'>('login');
   const openAuth = useCallback((tab: 'login' | 'signup' = 'login') => { setAuthTab(tab); setShowAuth(true); }, []);
@@ -279,7 +281,13 @@ export default function SuiminiApp() {
           onShare={() => setShowShare(true)}
           onPresent={() => setShowPresentation(true)}
           onTreeSelector={() => setShowTreeSelector(true)}
+          onNarrative={() => setShowNarrative(true)}
         />
+      )}
+
+      {/* AI narrative report */}
+      {showNarrative && store.activeTree && (
+        <NarrativeModal tree={store.activeTree} onClose={() => setShowNarrative(false)} />
       )}
 
       {/* Fullscreen presentation */}
