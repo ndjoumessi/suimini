@@ -30,15 +30,37 @@ function shade(hex: string, percent: number): string {
   return `#${[f(r), f(g), f(b)].map(c => c.toString(16).padStart(2, '0')).join('')}`;
 }
 
-/** Apply a color theme by overriding accent/male/female CSS variables on <html>. */
+function isDarkActive(): boolean {
+  return typeof document !== 'undefined'
+    && document.documentElement.getAttribute('data-theme') === 'dark';
+}
+
+/**
+ * Apply a color theme by overriding accent/male/female CSS variables on <html>.
+ *
+ * These inline vars sit on top of the `[data-theme="dark"]` stylesheet block, so
+ * applyColorTheme must itself be dark-aware — otherwise the light accent/gender
+ * colours leak into dark mode (DESIGN.md wants the cuir-taupe accent to brighten
+ * to bronze in dark for contrast). In dark we brighten multiplicatively, which
+ * preserves each theme's hue (e.g. sépia #8b6f47 → ~#c9a167 bronze) instead of
+ * washing it toward grey. Must be re-applied whenever `data-theme` flips
+ * (see useDarkMode), since it reads the current mode at call time.
+ */
 export function applyColorTheme(id: ColorThemeId) {
   if (typeof document === 'undefined') return;
   const theme = getTheme(id);
   const root = document.documentElement;
-  const [r, g, b] = hexToRgb(theme.accent);
-  root.style.setProperty('--accent', theme.accent);
-  root.style.setProperty('--accent-hover', shade(theme.accent, -14));
-  root.style.setProperty('--accent-light', `rgba(${r}, ${g}, ${b}, 0.14)`);
-  root.style.setProperty('--male', theme.male);
-  root.style.setProperty('--female', theme.female);
+  const dark = isDarkActive();
+
+  const accent = dark ? shade(theme.accent, 45) : theme.accent;
+  const accentHover = dark ? shade(theme.accent, 62) : shade(theme.accent, -14);
+  const male = dark ? shade(theme.male, 28) : theme.male;
+  const female = dark ? shade(theme.female, 28) : theme.female;
+  const [r, g, b] = hexToRgb(accent);
+
+  root.style.setProperty('--accent', accent);
+  root.style.setProperty('--accent-hover', accentHover);
+  root.style.setProperty('--accent-light', `rgba(${r}, ${g}, ${b}, ${dark ? 0.20 : 0.14})`);
+  root.style.setProperty('--male', male);
+  root.style.setProperty('--female', female);
 }

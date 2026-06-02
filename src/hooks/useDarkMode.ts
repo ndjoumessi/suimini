@@ -1,5 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { ColorThemeId } from '@/types';
+import { applyColorTheme, THEME_STORAGE_KEY } from '@/lib/themes';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 const MODE_KEY = 'suimini_theme_mode';
@@ -12,6 +14,13 @@ function prefersDark(): boolean {
 function apply(mode: ThemeMode) {
   const isDark = mode === 'dark' || (mode === 'system' && prefersDark());
   document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  // Re-apply the active colour theme so its accent/gender variables resolve to the
+  // light or dark variant matching the mode we just set (the inline vars otherwise
+  // override the [data-theme="dark"] block with light colours).
+  try {
+    const storedTheme = (localStorage.getItem(THEME_STORAGE_KEY) as ColorThemeId | null) || 'sepia';
+    applyColorTheme(storedTheme);
+  } catch { /* localStorage unavailable — ignore */ }
   return isDark;
 }
 
