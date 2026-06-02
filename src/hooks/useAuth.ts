@@ -28,9 +28,12 @@ async function fetchProfile(userId: string): Promise<UserProfile | null> {
   if (!supabase) return null;
   try {
     const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
+    // Diagnostic: confirm role/status are read from Supabase for the current user.
+    console.log('[useAuth] profile:', data, error ? { error } : '');
     if (error || !data) return null;
     return data as UserProfile;
-  } catch {
+  } catch (e) {
+    console.log('[useAuth] profile fetch threw:', e);
     return null;
   }
 }
