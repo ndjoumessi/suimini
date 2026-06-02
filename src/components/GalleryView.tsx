@@ -129,7 +129,7 @@ export default function GalleryView({ tree, onSelectPerson }: Props) {
                     minHeight: layout === 'masonry' ? '120px' : undefined,
                     objectFit: 'cover', display: 'block',
                   }}
-                  onError={e => { (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><rect width="160" height="160" fill="%23f4f1ec"/><text x="80" y="85" text-anchor="middle" font-size="40">📷</text></svg>'; }}
+                  onError={e => { (e.target as HTMLImageElement).src = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><rect width='160' height='160' fill='%23f4f1ec'/><g transform='translate(56,56) scale(2)' fill='none' stroke='%23847c70' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z'/><circle cx='12' cy='13' r='3'/></g></svg>"; }}
                 />
                 {photo.isProfile && (
                   <div className="badge badge-accent" style={{

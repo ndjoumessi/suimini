@@ -309,6 +309,8 @@ body.modal-open { overflow: hidden; }
 /* ===== Tree node interactions ===== */
 .tree-svg { will-change: transform; }
 .tree-node { transition: transform var(--t-fast) ease; }
+/* Hover affordance: the ring (stroke-width 0 at rest) thickens on node hover. */
+.person-node:hover .node-hover-ring { stroke-width: 2; }
 
 /* ===== Icon button (accessible square) ===== */
 .icon-btn {

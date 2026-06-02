@@ -185,8 +185,8 @@ function AnniversaryCard({ a, onSelect, typeIcon, typeLabel, typeColor, highligh
       {/* Avatar */}
       <div style={{
         width: '42px', height: '42px', borderRadius: '50%', flexShrink: 0,
-        background: a.person.gender === 'male' ? '#deeaf5' : a.person.gender === 'female' ? '#f5dde8' : 'var(--bg-muted)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px',
+        background: 'var(--accent-light)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
         overflow: 'hidden',
         border: `2px solid ${typeColor(a.type)}`,
       }}>
@@ -224,10 +224,10 @@ function AnniversaryCard({ a, onSelect, typeIcon, typeLabel, typeColor, highligh
             fontSize: '11px', fontWeight: '700'
           }}>Aujourd'hui !</div>
         ) : a.daysUntil === 1 ? (
-          <div style={{ color: typeColor(a.type), fontWeight: '700', fontSize: '13px' }}>Demain</div>
+          <div style={{ color: 'var(--text)', fontWeight: '700', fontSize: '13px' }}>Demain</div>
         ) : (
           <div>
-            <div style={{ fontSize: '20px', fontWeight: '700', color: typeColor(a.type), fontFamily: 'Playfair Display, serif' }}>
+            <div style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text)', fontFamily: 'Playfair Display, serif' }}>
               {a.daysUntil}
             </div>
             <div style={{ fontSize: '10px', color: 'var(--text-light)' }}>jours</div>

@@ -2,7 +2,21 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { FamilyTree, Person } from '@/types';
 import { getParents, getChildren, getSpouses, getDisplayName, formatYear, getAge } from '@/lib/treeUtils';
-import { Search, ZoomIn, ZoomOut, Crosshair, Eye, EyeOff, Plus, Aperture } from 'lucide-react';
+import { Search, ZoomIn, ZoomOut, Crosshair, Eye, EyeOff, Plus, Aperture, Crown, Cross, Sprout } from 'lucide-react';
+
+/** Two-letter initials for the avatar fallback (same logic as PersonPanel/Sidebar). */
+function nodeInitials(p: Person): string {
+  return (((p.firstName?.[0] || '') + (p.lastName?.[0] || '')).toUpperCase()) || '?';
+}
+
+/** Monochrome taupe scale: t=0 → accent-light (#f0e8da, oldest), t=1 → accent (#8b6f47, newest). */
+function taupeScale(t: number): string {
+  const a = [240, 232, 218]; // #f0e8da
+  const b = [139, 111, 71];  // #8b6f47
+  const k = Math.max(0, Math.min(1, t));
+  const c = a.map((v, i) => Math.round(v + (b[i] - v) * k));
+  return `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
+}
 
 interface TreeNode {
   person: Person;
@@ -161,9 +175,9 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
   const genCount = genYs.length;
   const generationColor = (y: number) => {
     const idx = genIndexOfY.get(y) ?? 0;
-    const t = genCount <= 1 ? 0 : idx / (genCount - 1);
-    const hue = 28 + t * 168; // 28° amber (ancien) → 196° cyan (récent)
-    return `hsl(${hue}, 55%, 52%)`;
+    // Monochrome taupe ramp: oldest (top) = accent-light → newest (bottom) = accent.
+    const t = genCount <= 1 ? 1 : idx / (genCount - 1);
+    return taupeScale(t);
   };
 
   // ---- Fan chart (ancestor pedigree) layout ----
@@ -171,8 +185,9 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
   const FAN_R0 = 54;   // central root circle radius
   const FAN_RING = 70; // ring width per generation
   const fanGenColor = (gen: number) => {
-    const t = MAX_FAN_GEN <= 0 ? 0 : gen / MAX_FAN_GEN;
-    return `hsl(${28 + t * 168}, 55%, 55%)`;
+    // Same monochrome taupe ramp, centre (root, newest) = accent → outer (older) = accent-light.
+    const t = MAX_FAN_GEN <= 0 ? 1 : 1 - gen / MAX_FAN_GEN;
+    return taupeScale(t);
   };
   const buildFan = useCallback(() => {
     interface Slot { person: Person; gen: number; index: number; }
@@ -312,11 +327,11 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
 
   if (tree.persons.length === 0) {
     return (
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '20px' }}>
-        <div style={{ fontSize: '56px' }}>🌱</div>
-        <h3>Cet arbre est vide</h3>
-        <p style={{ color: 'var(--text-muted)' }}>Ajoutez la première personne pour commencer</p>
-        <button onClick={onAddPerson} className="btn btn-primary">＋ Première personne</button>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '20px', padding: '24px', textAlign: 'center' }}>
+        <Sprout size={52} strokeWidth={1.25} style={{ color: 'var(--text-light)' }} aria-hidden="true" />
+        <h3 style={{ margin: 0 }}>Cet arbre est vide</h3>
+        <p style={{ color: 'var(--text-muted)', margin: 0 }}>Ajoutez la première personne pour commencer</p>
+        <button onClick={onAddPerson} className="btn btn-primary" style={{ gap: '6px' }}><Plus size={16} aria-hidden="true" /> Première personne</button>
       </div>
     );
   }
@@ -344,7 +359,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                     onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-muted)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'none'}
                   >
-                    <span>{p.gender === 'male' ? '👨' : p.gender === 'female' ? '👩' : '🧑'}</span>
+                    <span style={{ width: '22px', height: '22px', flexShrink: 0, borderRadius: '50%', background: 'var(--accent-light)', color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700 }}>{nodeInitials(p)}</span>
                     <span style={{ flex: 1 }}>{getDisplayName(p)}</span>
                     <span style={{ color: 'var(--text-light)', fontSize: '11px' }}>{formatYear(p.birthDate)}</span>
                   </button>
@@ -436,6 +451,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
 
             return (
               <g key={p.id}
+                className="person-node"
                 transform={`translate(${node.x}, ${node.y})`}
                 onClick={() => handleNodeClick(p.id)}
                 onDoubleClick={() => { setRootId(p.id); }}
@@ -459,28 +475,27 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
 
                 {/* Root crown */}
                 {isRoot && (
-                  <text x={NODE_W - 12} y={15} fontSize={11} textAnchor="middle">👑</text>
+                  <Crown x={NODE_W - 21} y={6} width={13} height={13} color="var(--accent)" aria-hidden="true" />
                 )}
                 {/* Deceased cross */}
                 {!p.isAlive && (
-                  <text x={NODE_W - 12} y={NODE_H - 6} fontSize={10} textAnchor="middle" fill="var(--deceased)">✝</text>
+                  <Cross x={NODE_W - 20} y={NODE_H - 18} width={12} height={12} color="var(--deceased)" aria-hidden="true" />
                 )}
 
                 {/* Avatar circle */}
                 <clipPath id={`clip-${p.id}`}>
                   <circle cx={28} cy={NODE_H / 2} r={18} />
                 </clipPath>
-                <circle cx={28} cy={NODE_H / 2} r={18}
-                  fill={p.gender === 'male' ? '#deeaf5' : p.gender === 'female' ? '#f5dde8' : 'var(--bg-muted)'}
-                />
+                <circle cx={28} cy={NODE_H / 2} r={18} fill="var(--accent-light)" />
                 {p.profilePhoto ? (
                   <image href={p.profilePhoto} x={10} y={NODE_H / 2 - 18} width={36} height={36}
                     clipPath={`url(#clip-${p.id})`}
                     preserveAspectRatio="xMidYMid slice"
                   />
                 ) : (
-                  <text x={28} y={NODE_H / 2 + 7} textAnchor="middle" fontSize={18}>
-                    {p.gender === 'male' ? '👨' : p.gender === 'female' ? '👩' : '🧑'}
+                  <text x={28} y={NODE_H / 2 + 4} textAnchor="middle" fontSize={13} fontWeight="700"
+                    fontFamily="Lato, sans-serif" fill="var(--accent)">
+                    {nodeInitials(p)}
                   </text>
                 )}
 
@@ -495,12 +510,15 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                   {p.lastName.length > 13 ? p.lastName.slice(0, 12) + '…' : p.lastName}
                 </text>
 
-                {/* Dates */}
-                <text x={54} y={NODE_H / 2 + 21} fontSize={9.5}
+                {/* Dates (birth marked by a small point; death by the corner cross + en-dash range) */}
+                {p.birthDate && (
+                  <circle cx={52} cy={NODE_H / 2 + 17} r={1.6} fill={p.isAlive ? 'var(--success)' : 'var(--text-light)'} />
+                )}
+                <text x={58} y={NODE_H / 2 + 21} fontSize={9.5}
                   fontFamily="Lato, sans-serif"
                   fill={p.isAlive ? 'var(--success)' : 'var(--text-light)'}>
-                  {p.birthDate ? `✦ ${formatYear(p.birthDate)}` : ''}
-                  {!p.isAlive && p.deathDate ? ` ✝ ${formatYear(p.deathDate)}` : ''}
+                  {p.birthDate ? formatYear(p.birthDate) : ''}
+                  {!p.isAlive && p.deathDate ? ` – ${formatYear(p.deathDate)}` : ''}
                   {age !== null && p.isAlive ? ` · ${age} ans` : ''}
                 </text>
 
@@ -552,15 +570,19 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
             {/* Generations */}
             <div style={{ borderTop: '1px solid var(--border)', paddingTop: '8px', marginBottom: '8px' }}>
               <div style={{ fontWeight: '700', marginBottom: '6px', color: 'var(--text)', fontSize: '11px' }}>Générations</div>
-              <div style={{ height: '8px', borderRadius: '4px', background: 'linear-gradient(to right, hsl(28,55%,52%), hsl(112,55%,52%), hsl(196,55%,52%))' }} />
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: 'var(--text-light)', marginTop: '2px' }}>
-                <span>Ancien</span><span>Récent</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: taupeScale(0), border: '1px solid var(--border)', flexShrink: 0 }} />
+                <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: taupeScale(0.5), flexShrink: 0 }} />
+                <span style={{ width: '16px', height: '16px', borderRadius: '50%', background: taupeScale(1), flexShrink: 0 }} />
+                <span style={{ display: 'flex', justifyContent: 'space-between', flex: 1, fontSize: '9px', color: 'var(--text-light)' }}>
+                  <span>Ancien</span><span>Récent</span>
+                </span>
               </div>
             </div>
             {/* Symbols */}
-            <div style={{ borderTop: '1px solid var(--border)', paddingTop: '8px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
-              <div>👑 Racine de l&apos;arbre</div>
-              <div>✝ Décédé(e)</div>
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Crown size={13} style={{ color: 'var(--accent)', flexShrink: 0 }} aria-hidden="true" /> Racine de l&apos;arbre</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Cross size={13} style={{ color: 'var(--deceased)', flexShrink: 0 }} aria-hidden="true" /> Décédé(e)</div>
               <div style={{ marginTop: '4px', color: 'var(--text-light)', fontSize: '10px', lineHeight: '1.4' }}>
                 Clic → voir le profil<br/>
                 Double-clic → nouvelle racine<br/>

@@ -29,12 +29,15 @@ interface MarkerGroup {
   points: GeoPoint[];
 }
 
+function initialsOf(person: Person): string {
+  return (((person.firstName?.[0] || '') + (person.lastName?.[0] || '')).toUpperCase()) || '?';
+}
+
 function buildAvatar(person: Person): string {
   if (person.profilePhoto) {
     return `<img src="${person.profilePhoto}" alt="" style="width:100%;height:100%;object-fit:cover;" />`;
   }
-  const emoji = person.gender === 'male' ? '👨' : person.gender === 'female' ? '👩' : '🧑';
-  return `<span style="font-size:18px;line-height:34px;">${emoji}</span>`;
+  return `<span style="font-size:13px;font-weight:700;color:var(--accent);font-family:Lato,sans-serif;">${initialsOf(person)}</span>`;
 }
 
 function makeIcon(group: MarkerGroup): L.DivIcon {
@@ -48,7 +51,7 @@ function makeIcon(group: MarkerGroup): L.DivIcon {
   const badge = pt.kind === 'birth' ? '✦' : '✝';
   const html = `
     <div style="position:relative;width:40px;height:40px;">
-      <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;background:var(--bg-muted);border:3px solid ${ring};box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;text-align:center;">${buildAvatar(pt.person)}</div>
+      <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;background:var(--accent-light);border:3px solid ${ring};box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;text-align:center;">${buildAvatar(pt.person)}</div>
       <div style="position:absolute;bottom:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:${ring};color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg-card);">${badge}</div>
     </div>`;
   return L.divIcon({ html, className: 'suimini-marker', iconSize: [40, 40], iconAnchor: [20, 20], popupAnchor: [0, -20] });
@@ -135,8 +138,8 @@ export default function MapView({ tree, onSelectPerson }: Props) {
                   <Popup>
                     <div style={{ minWidth: '180px', maxHeight: '240px', overflowY: 'auto' }}>
                       {group.points.length > 1 && (
-                        <div style={{ fontWeight: 700, fontSize: '13px', marginBottom: '8px', fontFamily: 'Lato, sans-serif' }}>
-                          📍 {group.points[0].place || 'Ce lieu'} · {group.points.length} événements
+                        <div style={{ fontWeight: 700, fontSize: '13px', marginBottom: '8px', fontFamily: 'Lato, sans-serif', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <MapPin size={13} aria-hidden="true" /> {group.points[0].place || 'Ce lieu'} · {group.points.length} événements
                         </div>
                       )}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -146,17 +149,17 @@ export default function MapView({ tree, onSelectPerson }: Props) {
                             onClick={() => onSelectPerson(pt.person.id)}
                             style={{ display: 'flex', gap: '8px', alignItems: 'center', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', padding: 0, fontFamily: 'Lato, sans-serif' }}
                           >
-                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
+                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, background: '#f0e8da', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, color: '#8b6f47' }}>
                               {pt.person.profilePhoto
                                 ? <img src={pt.person.profilePhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                : (pt.person.gender === 'male' ? '👨' : pt.person.gender === 'female' ? '👩' : '🧑')}
+                                : initialsOf(pt.person)}
                             </div>
                             <div>
                               <div style={{ fontWeight: 700, fontSize: '13px', color: '#1a1612' }}>{getDisplayName(pt.person)}</div>
                               <div style={{ fontSize: '11px', color: '#6b6560' }}>
                                 {pt.kind === 'birth' ? '✦ Naissance' : '✝ Décès'}{pt.year ? ` · ${pt.year}` : ''}
                               </div>
-                              {pt.place && <div style={{ fontSize: '11px', color: '#a09890' }}>📍 {pt.place}</div>}
+                              {pt.place && <div style={{ fontSize: '11px', color: '#a09890', display: 'flex', alignItems: 'center', gap: '4px' }}><MapPin size={11} aria-hidden="true" /> {pt.place}</div>}
                             </div>
                           </button>
                         ))}

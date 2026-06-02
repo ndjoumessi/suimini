@@ -31,6 +31,7 @@ import ImportExportModal from './ImportExportModal';
 import PrintModal from './PrintModal';
 import ShareModal from './ShareModal';
 import ToastStack, { ToastType, ToastItem } from './Toast';
+import { Menu, Search, TreePine, Sprout, Cloud } from 'lucide-react';
 
 const MapView = dynamic(() => import('./MapView'), {
   ssr: false,
@@ -140,8 +141,8 @@ export default function SuiminiApp() {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
         <div style={{ textAlign: 'center' }}>
-          <div className="serif" style={{ fontSize: '2.5rem', color: 'var(--accent)', marginBottom: '8px' }}>🌿 Suimini</div>
-          <div style={{ color: 'var(--text-muted)' }}>Chargement...</div>
+          <div className="serif" style={{ fontSize: '2.5rem', color: 'var(--accent)', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}><TreePine size={30} aria-hidden="true" /> Suimini</div>
+          <div style={{ color: 'var(--text-muted)' }}>Chargement…</div>
         </div>
       </div>
     );
@@ -190,9 +191,9 @@ export default function SuiminiApp() {
         {isDemo && <DemoBanner onCreateAccount={() => openAuth('signup')} onExit={exitDemo} />}
         {/* Mobile header */}
         <div style={{ display: 'none', padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', alignItems: 'center', gap: '12px' }} className="mobile-header">
-          <button onClick={() => setSidebarOpen(true)} className="btn btn-ghost btn-sm">☰</button>
-          <span className="serif" style={{ fontSize: '1.2rem', color: 'var(--accent)' }}>🌿 Suimini</span>
-          <button onClick={() => setShowPalette(true)} className="btn btn-ghost btn-sm" style={{ marginLeft: 'auto' }}>🔍</button>
+          <button onClick={() => setSidebarOpen(true)} className="btn btn-ghost btn-icon btn-sm" aria-label="Ouvrir le menu"><Menu size={18} aria-hidden="true" /></button>
+          <span className="serif" style={{ fontSize: '1.2rem', color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', gap: '7px' }}><TreePine size={18} aria-hidden="true" /> Suimini</span>
+          <button onClick={() => setShowPalette(true)} className="btn btn-ghost btn-icon btn-sm" style={{ marginLeft: 'auto' }} aria-label="Rechercher"><Search size={18} aria-hidden="true" /></button>
           <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{store.activeTree?.name}</span>
         </div>
 
@@ -209,7 +210,7 @@ export default function SuiminiApp() {
               <JournalView
                 tree={store.activeTree}
                 onSelectPerson={handleSelectPerson}
-                onAdd={(entry) => { store.addJournalEntry(entry); showToast('Entrée ajoutée 📖'); }}
+                onAdd={(entry) => { store.addJournalEntry(entry); showToast('Entrée ajoutée'); }}
                 onUpdate={(id, updates) => { store.updateJournalEntry(id, updates); showToast('Entrée mise à jour'); }}
                 onDelete={(id) => { store.deleteJournalEntry(id); showToast('Entrée supprimée', 'info'); }}
               />
@@ -220,7 +221,7 @@ export default function SuiminiApp() {
             {view === 'settings' && (
               <SettingsView
                 themeId={themeId}
-                onSelectTheme={(id) => { setTheme(id); showToast('Thème appliqué 🎨'); }}
+                onSelectTheme={(id) => { setTheme(id); showToast('Thème appliqué'); }}
                 onPreviewTheme={previewTheme}
                 onCancelPreview={cancelPreview}
                 dark={dark}
@@ -311,10 +312,10 @@ export default function SuiminiApp() {
           activeTreeId={store.activeTreeId}
           shared={store.shared}
           onSelect={(id) => { store.switchTree(id); showToast('Arbre changé'); }}
-          onCreate={(name, desc) => { store.createTree(name, desc); showToast(`Arbre "${name}" créé 🌳`); }}
+          onCreate={(name, desc) => { store.createTree(name, desc); showToast(`Arbre « ${name} » créé`); }}
           onDelete={(id) => { store.deleteTree(id); showToast('Arbre supprimé', 'info'); }}
           onRename={(id, meta) => { store.updateTreeMeta(id, meta); showToast('Arbre mis à jour'); }}
-          onDuplicate={(id, newName) => { store.duplicateTree(id, newName); showToast(`Arbre dupliqué « ${newName} » 📋`); }}
+          onDuplicate={(id, newName) => { store.duplicateTree(id, newName); showToast(`Arbre dupliqué « ${newName} »`); }}
           onClose={() => setShowTreeSelector(false)}
         />
       )}
@@ -327,12 +328,12 @@ export default function SuiminiApp() {
       {/* Migration prompt on first login with local data */}
       {store.migrationPending && (
         <div style={{ position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 1500, background: 'var(--bg-card)', border: '1px solid var(--accent)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', padding: '14px 18px', maxWidth: '440px', width: '92%' }}>
-          <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '4px' }}>☁️ Importer vos données locales ?</div>
+          <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '7px' }}><Cloud size={16} style={{ color: 'var(--accent)', flexShrink: 0 }} aria-hidden="true" /> Importer vos données locales ?</div>
           <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px' }}>
             Vous avez des arbres enregistrés sur cet appareil. Voulez-vous les copier vers votre compte pour les synchroniser ?
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={() => { store.runMigration(); showToast('Données importées dans le cloud ☁️'); }} className="btn btn-primary btn-sm">Importer maintenant</button>
+            <button onClick={() => { store.runMigration(); showToast('Données importées dans le cloud'); }} className="btn btn-primary btn-sm">Importer maintenant</button>
             <button onClick={store.dismissMigration} className="btn btn-ghost btn-sm">Plus tard</button>
           </div>
         </div>
@@ -342,7 +343,7 @@ export default function SuiminiApp() {
         <ImportExportModal
           tree={store.activeTree}
           initialTab={importExportTab}
-          onImport={(t) => { store.importTree(t); showToast(`Arbre "${t.name}" importé ✅`); }}
+          onImport={(t) => { store.importTree(t); showToast(`Arbre « ${t.name} » importé`); }}
           onClose={() => setImportExportTab(null)}
         />
       )}
@@ -384,14 +385,14 @@ export default function SuiminiApp() {
 function EmptyState({ onCreateTree }: { onCreateTree: () => void }) {
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '24px', padding: '40px', textAlign: 'center' }}>
-      <div style={{ fontSize: '72px' }}>🌳</div>
+      <TreePine size={72} strokeWidth={1.1} style={{ color: 'var(--accent)' }} aria-hidden="true" />
       <div>
         <h2 style={{ marginBottom: '8px' }}>Commencez votre arbre généalogique</h2>
         <p style={{ color: 'var(--text-muted)', maxWidth: '400px' }}>
           Créez un nouvel arbre ou importez des données GEDCOM pour découvrir et préserver l&apos;histoire de votre famille.
         </p>
       </div>
-      <button onClick={onCreateTree} className="btn btn-primary btn-lg">🌱 Créer mon arbre</button>
+      <button onClick={onCreateTree} className="btn btn-primary btn-lg" style={{ gap: '8px' }}><Sprout size={18} aria-hidden="true" /> Créer mon arbre</button>
     </div>
   );
 }
