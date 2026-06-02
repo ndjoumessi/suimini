@@ -340,7 +340,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Toolbar */}
       <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-        <h2 className="serif" style={{ margin: 0, fontSize: '1.1rem', flex: 1, minWidth: '100px' }}>
+        <h2 className="serif" style={{ margin: 0, fontSize: '1.2rem', flex: 1, minWidth: '100px' }}>
           {tree.name}
         </h2>
 
@@ -460,13 +460,9 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                 {/* Card background (flat at rest — no baked shadow; the generation-coloured border separates nodes) */}
                 <rect width={NODE_W} height={NODE_H} rx={10} ry={10}
                   fill={isSelected ? 'var(--accent-light)' : 'var(--bg-card)'}
-                  stroke={isSelected ? 'var(--accent)' : isRoot ? '#c4a35a' : genCol}
+                  stroke={isSelected ? 'var(--accent)' : isRoot ? 'var(--accent)' : genCol}
                   strokeWidth={isSelected ? 2.5 : isRoot ? 2 : 1.8}
                 />
-                {/* Generation tint overlay (subtle, theme-safe) */}
-                {!isSelected && (
-                  <rect width={NODE_W} height={NODE_H} rx={10} ry={10} fill={genCol} opacity={0.13} />
-                )}
                 {/* Gender bar */}
                 <rect x={0} y={0} width={5} height={NODE_H} rx={10}
                   fill={genderColor(p.gender)} />
@@ -715,7 +711,7 @@ function FanChart({ fan, fanGenColor, r0, ring, selectedPersonId, onSelectPerson
         <g style={{ cursor: 'pointer' }} onClick={() => onSelectPerson(root.person.id)}>
           <circle cx={0} cy={0} r={r0}
             fill={fanGenColor(0)}
-            stroke={root.person.id === selectedPersonId ? 'var(--accent)' : '#c4a35a'}
+            stroke={root.person.id === selectedPersonId ? 'var(--accent)' : 'var(--accent)'}
             strokeWidth={root.person.id === selectedPersonId ? 3 : 2} />
           <text x={0} y={-6} textAnchor="middle" dominantBaseline="central" fontSize={13} fontWeight={700} fontFamily="Lato, sans-serif" fill="#fff" style={{ pointerEvents: 'none' }}>
             {root.person.firstName.length > 12 ? root.person.firstName.slice(0, 11) + '…' : root.person.firstName}

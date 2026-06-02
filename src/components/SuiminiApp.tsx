@@ -227,6 +227,11 @@ export default function SuiminiApp() {
                 dark={dark}
                 mode={themeMode}
                 onSetMode={setThemeMode}
+                userEmail={user?.email || null}
+                displayName={(user?.user_metadata?.display_name as string | undefined) || null}
+                cloud={store.cloud}
+                trees={store.trees}
+                onToast={showToast}
               />
             )}
 

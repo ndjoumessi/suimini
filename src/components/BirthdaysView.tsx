@@ -77,9 +77,10 @@ export default function BirthdaysView({ tree, onSelectPerson }: Props) {
               aria-pressed={filter === f}
               className="btn btn-sm"
               style={{
-                background: filter === f ? 'var(--accent)' : 'var(--bg-muted)',
-                color: filter === f ? 'white' : 'var(--text-muted)',
-                border: '1px solid var(--border)',
+                background: filter === f ? 'var(--accent-light)' : 'var(--bg-muted)',
+                color: filter === f ? 'var(--accent)' : 'var(--text-muted)',
+                border: `1px solid ${filter === f ? 'var(--accent)' : 'var(--border)'}`,
+                fontWeight: filter === f ? 700 : 400,
                 gap: '6px',
               }}
             >
@@ -136,11 +137,7 @@ export default function BirthdaysView({ tree, onSelectPerson }: Props) {
           return (
             <div key={month} style={{ marginBottom: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                <div style={{ 
-                  fontSize: '12px', fontWeight: '700', color: 'var(--text-light)',
-                  letterSpacing: '1.5px', textTransform: 'uppercase',
-                  minWidth: '80px'
-                }}>
+                <div className="label" style={{ fontSize: '12px', color: 'var(--text-light)', minWidth: '80px' }}>
                   {MONTH_NAMES[month]}
                 </div>
                 <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
@@ -188,7 +185,7 @@ function AnniversaryCard({ a, onSelect, typeIcon, typeLabel, typeColor, highligh
         background: 'var(--accent-light)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         overflow: 'hidden',
-        border: `2px solid ${typeColor(a.type)}`,
+        border: '1px solid var(--border)',
       }}>
         {a.person.profilePhoto
           ? <img src={a.person.profilePhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />

@@ -232,10 +232,10 @@ legend { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-sp
 .tab:hover { color: var(--text); }
 .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
 
-.timeline-item { position: relative; padding-left: 28px; padding-bottom: 20px; }
+.timeline-item { position: relative; padding-left: 28px; padding-bottom: 16px; }
 .timeline-item::before { content: ''; position: absolute; left: 8px; top: 8px; bottom: -8px; width: 2px; background: var(--border); }
 .timeline-item:last-child::before { display: none; }
-.timeline-dot { position: absolute; left: 2px; top: 4px; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg-card); box-shadow: 0 0 0 2px var(--accent); }
+.timeline-dot { position: absolute; left: 2px; top: 4px; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg-card); }
 
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(26,22,18,0.6); z-index: var(--z-modal);
@@ -322,6 +322,10 @@ body.modal-open { overflow: hidden; }
 }
 .icon-btn:hover { background: var(--interactive); color: var(--text); }
 @media (pointer: coarse) { .icon-btn { width: 44px; height: 44px; } }
+
+/* ===== Gallery tile (keyboard-accessible hover/focus) ===== */
+.gallery-tile:hover, .gallery-tile:focus-visible { transform: scale(1.02); box-shadow: var(--shadow-lg); }
+.gallery-tile:hover .photo-overlay, .gallery-tile:focus-visible .photo-overlay { opacity: 1; }
 
 /* ===== Leaflet map ===== */
 .leaflet-container { font-family: 'Lato', sans-serif; }

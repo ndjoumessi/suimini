@@ -96,28 +96,19 @@ export default function GalleryView({ tree, onSelectPerson }: Props) {
             gap: '10px',
           }}>
             {photos.map((photo, i) => (
-              <div
+              <button
                 key={i}
+                type="button"
                 onClick={() => setSelected(photo)}
+                aria-label={`Voir la photo de ${getDisplayName(photo.person)}`}
+                className="gallery-tile"
                 style={{
                   borderRadius: 'var(--radius)', overflow: 'hidden',
-                  cursor: 'pointer', position: 'relative',
+                  cursor: 'pointer', position: 'relative', padding: 0,
                   border: '1px solid var(--border)',
                   transition: 'transform var(--t-base) var(--ease-out), box-shadow var(--t-base) var(--ease-out)',
                   aspectRatio: layout === 'grid' ? '1' : undefined,
-                  background: 'var(--bg-muted)',
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.transform = 'scale(1.02)';
-                  e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
-                  const overlay = e.currentTarget.querySelector('.photo-overlay') as HTMLElement;
-                  if (overlay) overlay.style.opacity = '1';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.transform = '';
-                  e.currentTarget.style.boxShadow = '';
-                  const overlay = e.currentTarget.querySelector('.photo-overlay') as HTMLElement;
-                  if (overlay) overlay.style.opacity = '0';
+                  background: 'var(--bg-muted)', display: 'block', width: '100%', textAlign: 'left',
                 }}
               >
                 <img
@@ -152,7 +143,7 @@ export default function GalleryView({ tree, onSelectPerson }: Props) {
                     </div>
                   )}
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         )}

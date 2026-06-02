@@ -1,6 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
-import { BookOpen, Plus, Pencil, Trash2 } from 'lucide-react';
+import { BookOpen, Plus, Pencil, Trash2, Check } from 'lucide-react';
 import { FamilyTree, JournalEntry } from '@/types';
 import { getDisplayName, formatDate, safeHttpUrl } from '@/lib/treeUtils';
 
@@ -125,7 +125,7 @@ export default function JournalView({ tree, onSelectPerson, onAdd, onUpdate, onD
             <div style={{ position: 'absolute', left: '5px', top: '6px', bottom: '6px', width: '2px', background: 'var(--border)' }} />
             {entries.map(entry => (
               <div key={entry.id} style={{ position: 'relative', marginBottom: '18px' }}>
-                <div style={{ position: 'absolute', left: '-19px', top: '6px', width: '12px', height: '12px', borderRadius: '50%', background: 'var(--accent)', border: '2px solid var(--bg-card)', boxShadow: '0 0 0 2px var(--accent)' }} />
+                <div style={{ position: 'absolute', left: '-19px', top: '6px', width: '12px', height: '12px', borderRadius: '50%', background: 'var(--accent)', border: '2px solid var(--bg-card)' }} />
 
                 {editingId === entry.id ? (
                   <EntryEditor tree={tree} draft={draft} setDraft={setDraft} toggleMention={toggleMention} onSave={save} onCancel={cancel} title="Modifier l'entrée" />
@@ -133,7 +133,7 @@ export default function JournalView({ tree, onSelectPerson, onAdd, onUpdate, onD
                   <div className="card" style={{ padding: '14px 16px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        <div className="label" style={{ color: 'var(--accent)' }}>
                           {formatDate(entry.date) || '—'}
                         </div>
                         <h3 className="serif" style={{ margin: '2px 0 0', fontSize: '1.15rem' }}>{entry.title}</h3>
@@ -159,7 +159,7 @@ export default function JournalView({ tree, onSelectPerson, onAdd, onUpdate, onD
                     {entry.mentionedPersonIds && entry.mentionedPersonIds.length > 0 && (
                       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '12px' }}>
                         {entry.mentionedPersonIds.map(id => (
-                          <button key={id} onClick={() => onSelectPerson(id)} className="badge badge-accent" style={{ border: 'none', cursor: 'pointer' }}>
+                          <button key={id} onClick={() => onSelectPerson(id)} className="badge badge-accent" style={{ border: 'none', cursor: 'pointer', textTransform: 'none', letterSpacing: 0 }}>
                             @ {personName(id)}
                           </button>
                         ))}
@@ -211,15 +211,15 @@ function EntryEditor({ tree, draft, setDraft, toggleMention, onSave, onCancel, t
       <textarea value={draft.content} onChange={e => setDraft(d => ({ ...d, content: e.target.value }))} className="input" rows={5} placeholder="Racontez ce moment… (les retours à la ligne sont conservés)" style={{ resize: 'vertical', marginBottom: '8px', width: '100%' }} />
 
       <div style={{ marginBottom: '8px' }}>
-        <div style={{ fontSize: '11px', color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Personnes mentionnées</div>
+        <div className="label" style={{ marginBottom: '6px' }}>Personnes mentionnées</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', maxHeight: '110px', overflowY: 'auto' }}>
           {tree.persons.map(p => {
             const on = draft.mentionedPersonIds.includes(p.id);
             return (
               <button key={p.id} type="button" onClick={() => toggleMention(p.id)}
                 className={`badge ${on ? 'badge-accent' : ''}`}
-                style={{ border: `1px solid ${on ? 'var(--accent)' : 'var(--border)'}`, cursor: 'pointer', background: on ? 'var(--accent-light)' : 'transparent', color: on ? 'var(--accent)' : 'var(--text-muted)' }}>
-                {on ? '✓ ' : ''}{getDisplayName(p)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', border: `1px solid ${on ? 'var(--accent)' : 'var(--border)'}`, cursor: 'pointer', background: on ? 'var(--accent-light)' : 'transparent', color: on ? 'var(--accent)' : 'var(--text-muted)' }}>
+                {on && <Check size={12} aria-hidden="true" />}{getDisplayName(p)}
               </button>
             );
           })}
@@ -229,7 +229,7 @@ function EntryEditor({ tree, draft, setDraft, toggleMention, onSave, onCancel, t
       <textarea value={draft.photosText} onChange={e => setDraft(d => ({ ...d, photosText: e.target.value }))} className="input" rows={2} placeholder="URLs de photos (une par ligne, https://…)" style={{ resize: 'vertical', marginBottom: '10px', width: '100%' }} />
 
       <div style={{ display: 'flex', gap: '6px' }}>
-        <button onClick={onSave} className="btn btn-primary btn-sm" disabled={!draft.title.trim()}>✓ Enregistrer</button>
+        <button onClick={onSave} className="btn btn-primary btn-sm" style={{ gap: '6px' }} disabled={!draft.title.trim()}><Check size={14} aria-hidden="true" /> Enregistrer</button>
         <button onClick={onCancel} className="btn btn-ghost btn-sm">Annuler</button>
       </div>
     </div>

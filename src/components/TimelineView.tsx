@@ -114,9 +114,9 @@ export default function TimelineView({ tree, onSelectPerson }: Props) {
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
         {decades.map(decade => (
-          <div key={decade} style={{ marginBottom: '32px' }}>
+          <div key={decade} style={{ marginBottom: '24px' }}>
             {/* Decade header */}
-            <div style={{ 
+            <div style={{
               display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px'
             }}>
               <div className="label" style={{ fontSize: '13px', color: 'var(--text-light)', minWidth: '60px' }}>
@@ -128,8 +128,8 @@ export default function TimelineView({ tree, onSelectPerson }: Props) {
               </div>
             </div>
 
-            {/* Events */}
-            <div style={{ paddingLeft: '24px', borderLeft: '2px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '0' }}>
+            {/* Events — the single rail is drawn by .timeline-item::before (no redundant container border) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
               {byDecade[decade].map((entry, i) => (
                 <div key={i} className="timeline-item">
                   <div 

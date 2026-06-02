@@ -146,7 +146,7 @@ export default function StatisticsView({ tree }: Props) {
             <h3 className="serif" style={{ margin: '0 0 12px', fontSize: '1rem' }}>Personnes notables</h3>
             {stats.oldestPerson && (
               <div style={{ padding: '10px', background: 'var(--bg-muted)', borderRadius: 'var(--radius)', marginBottom: '8px' }}>
-                <div style={{ fontSize: '11px', color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>Plus âgé(e)</div>
+                <div className="label" style={{ color: 'var(--text-light)', marginBottom: '2px' }}>Plus âgé(e)</div>
                 <div style={{ fontWeight: '700' }}>{getDisplayName(stats.oldestPerson)}</div>
                 <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                   {formatYear(stats.oldestPerson.birthDate)} · {getAge(stats.oldestPerson.birthDate)} ans
@@ -155,7 +155,7 @@ export default function StatisticsView({ tree }: Props) {
             )}
             {stats.youngestPerson && (
               <div style={{ padding: '10px', background: 'var(--bg-muted)', borderRadius: 'var(--radius)', marginBottom: '8px' }}>
-                <div style={{ fontSize: '11px', color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>Plus jeune</div>
+                <div className="label" style={{ color: 'var(--text-light)', marginBottom: '2px' }}>Plus jeune</div>
                 <div style={{ fontWeight: '700' }}>{getDisplayName(stats.youngestPerson)}</div>
                 <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                   {formatYear(stats.youngestPerson.birthDate)} · {getAge(stats.youngestPerson.birthDate)} ans
@@ -164,7 +164,7 @@ export default function StatisticsView({ tree }: Props) {
             )}
             {stats.mostCommonSurname && (
               <div style={{ padding: '10px', background: 'var(--bg-muted)', borderRadius: 'var(--radius)' }}>
-                <div style={{ fontSize: '11px', color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>Nom le plus fréquent</div>
+                <div className="label" style={{ color: 'var(--text-light)', marginBottom: '2px' }}>Nom le plus fréquent</div>
                 <div style={{ fontWeight: '700', fontSize: '1.1rem' }}>{stats.mostCommonSurname}</div>
               </div>
             )}
@@ -174,7 +174,7 @@ export default function StatisticsView({ tree }: Props) {
           <div className="card" style={{ padding: '16px' }}>
             <h3 className="serif" style={{ margin: '0 0 12px', fontSize: '1rem' }}>Naissances par décennie</h3>
             {decadeDist.length > 0
-              ? <BarChart data={decadeDist} maxValue={maxDecade} colorFn={() => 'var(--accent)'} />
+              ? <BarChart data={decadeDist} maxValue={maxDecade} colorFn={() => 'var(--text-muted)'} />
               : <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Aucune donnée</p>
             }
           </div>

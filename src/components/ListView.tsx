@@ -38,7 +38,8 @@ export default function ListView({ tree, onSelectPerson, onAddPerson }: Props) {
             Personnes — {tree.name}
           </h2>
           <button onClick={() => setShowFilters(!showFilters)} className="btn btn-secondary btn-sm" style={{ gap: '6px' }} aria-expanded={showFilters}>
-            <Filter size={14} aria-hidden="true" /> Filtres {Object.keys(filters).filter(k => filters[k as keyof SearchFilters] !== undefined).length > 0 && '●'}
+            <Filter size={14} aria-hidden="true" /> Filtres
+            {(() => { const n = Object.keys(filters).filter(k => filters[k as keyof SearchFilters] !== undefined).length; return n > 0 ? <span className="badge badge-accent" style={{ marginLeft: '2px' }} aria-label={`${n} filtre${n > 1 ? 's' : ''} actif${n > 1 ? 's' : ''}`}>{n}</span> : null; })()}
           </button>
           <select value={sortBy} onChange={e => setSortBy(e.target.value as typeof sortBy)} className="input" style={{ width: 'auto' }}>
             <option value="name">Trier : Nom</option>
@@ -171,7 +172,7 @@ export default function ListView({ tree, onSelectPerson, onAddPerson }: Props) {
                   {/* Badges */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }}>
                     <span className={`badge badge-${person.gender === 'male' ? 'male' : person.gender === 'female' ? 'female' : 'accent'}`}>
-                      {person.gender === 'male' ? '♂' : person.gender === 'female' ? '♀' : '⚧'}
+                      {person.gender === 'male' ? 'Homme' : person.gender === 'female' ? 'Femme' : 'Autre'}
                     </span>
                     <span className={`badge badge-${person.isAlive ? 'alive' : 'deceased'}`}>
                       {person.isAlive ? 'vivant' : 'décédé'}

@@ -48,11 +48,11 @@ function makeIcon(group: MarkerGroup): L.DivIcon {
   }
   const pt = group.points[0];
   const ring = pt.kind === 'birth' ? 'var(--success)' : 'var(--deceased)';
-  const badge = pt.kind === 'birth' ? '✦' : '✝';
+  // Kind is encoded by the ring + corner-dot colour (birth=success, death=deceased); no glyph.
   const html = `
     <div style="position:relative;width:40px;height:40px;">
-      <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;background:var(--accent-light);border:3px solid ${ring};box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;text-align:center;">${buildAvatar(pt.person)}</div>
-      <div style="position:absolute;bottom:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:${ring};color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg-card);">${badge}</div>
+      <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;background:var(--accent-light);border:3px solid ${ring};box-shadow:0 2px 8px rgba(26,22,18,0.3);display:flex;align-items:center;justify-content:center;text-align:center;">${buildAvatar(pt.person)}</div>
+      <div style="position:absolute;bottom:-3px;right:-3px;width:12px;height:12px;border-radius:50%;background:${ring};border:2px solid var(--bg-card);"></div>
     </div>`;
   return L.divIcon({ html, className: 'suimini-marker', iconSize: [40, 40], iconAnchor: [20, 20], popupAnchor: [0, -20] });
 }
@@ -108,9 +108,10 @@ export default function MapView({ tree, onSelectPerson }: Props) {
         <div style={{ display: 'flex', gap: '4px' }}>
           {([['all', 'Tous'], ['birth', 'Naissances'], ['death', 'Décès']] as [typeof filter, string][]).map(([f, label]) => (
             <button key={f} onClick={() => setFilter(f)} aria-pressed={filter === f} className="btn btn-sm" style={{
-              background: filter === f ? 'var(--accent)' : 'var(--bg-muted)',
-              color: filter === f ? '#fff' : 'var(--text-muted)',
-              border: '1px solid var(--border)',
+              background: filter === f ? 'var(--accent-light)' : 'var(--bg-muted)',
+              color: filter === f ? 'var(--accent)' : 'var(--text-muted)',
+              border: `1px solid ${filter === f ? 'var(--accent)' : 'var(--border)'}`,
+              fontWeight: filter === f ? 700 : 400,
             }}>{label}</button>
           ))}
         </div>
@@ -157,7 +158,7 @@ export default function MapView({ tree, onSelectPerson }: Props) {
                             <div>
                               <div style={{ fontWeight: 700, fontSize: '13px', color: '#1a1612' }}>{getDisplayName(pt.person)}</div>
                               <div style={{ fontSize: '11px', color: '#6b6560' }}>
-                                {pt.kind === 'birth' ? '✦ Naissance' : '✝ Décès'}{pt.year ? ` · ${pt.year}` : ''}
+                                {pt.kind === 'birth' ? 'Naissance' : 'Décès'}{pt.year ? ` · ${pt.year}` : ''}
                               </div>
                               {pt.place && <div style={{ fontSize: '11px', color: '#a09890', display: 'flex', alignItems: 'center', gap: '4px' }}><MapPin size={11} aria-hidden="true" /> {pt.place}</div>}
                             </div>
