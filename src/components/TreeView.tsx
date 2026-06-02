@@ -350,8 +350,8 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      {/* Toolbar — compact 44px, grouped with thin separators */}
-      <div style={{ height: '44px', padding: '0 14px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+      {/* Toolbar — compact 44px on desktop; wraps on narrow/mobile so no control is clipped */}
+      <div style={{ minHeight: '44px', padding: '5px 12px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '6px', rowGap: '5px', flexWrap: 'wrap', flexShrink: 0 }}>
         <h2 className="serif" style={{ margin: 0, fontSize: '1rem', color: 'var(--text)', flex: 1, minWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {tree.name}
         </h2>
