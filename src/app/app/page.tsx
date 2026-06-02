@@ -18,7 +18,7 @@ function Loader() {
 /**
  * Client-side guard for /app: accessible only with an active Supabase session
  * OR an active demo (localStorage 'suimini_demo' = 'true'). Otherwise → '/'.
- * (The middleware enforces the same rule server-side.)
+ * (The proxy enforces the same rule server-side.)
  */
 export default function AppPage() {
   const router = useRouter();

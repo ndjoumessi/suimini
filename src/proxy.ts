@@ -2,8 +2,9 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
 /**
- * Server-side navigation guard (note: `@supabase/auth-helpers-nextjs` is deprecated —
- * `@supabase/ssr` is its official replacement, already used across this project).
+ * Server-side navigation guard (Next.js `proxy` convention — the former
+ * `middleware` file convention is deprecated in Next 16; `proxy` always runs on
+ * the Node.js runtime, which suits `@supabase/ssr`).
  *
  *   /app  : requires a Supabase session OR the demo cookie, else → /
  *   /     : redirects signed-in users straight to /app (no landing flash)
@@ -11,7 +12,7 @@ import { createServerClient } from '@supabase/ssr';
  * The demo flag is mirrored to a cookie (`suimini_demo`) so it is readable here;
  * the client guard re-checks demo via localStorage as well.
  */
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   let response = NextResponse.next({ request: req });
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

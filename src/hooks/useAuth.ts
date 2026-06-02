@@ -13,7 +13,7 @@ function origin() {
   return typeof window !== 'undefined' ? window.location.origin : '';
 }
 
-/** Mirror the demo flag into a cookie so the Next middleware can read it server-side. */
+/** Mirror the demo flag into a cookie so the Next proxy can read it server-side. */
 function setDemoCookie(on: boolean) {
   if (typeof document === 'undefined') return;
   document.cookie = on
@@ -118,7 +118,7 @@ export function useAuth() {
   // --- Demo mode (sample data, no cloud sync) ---
   const startDemo = useCallback(() => {
     try {
-      // 1. Mark demo mode (localStorage + cookie for the middleware)
+      // 1. Mark demo mode (localStorage + cookie for the proxy)
       localStorage.setItem(DEMO_KEY, DEMO_VALUE);
       // 2. Always (re)inject the sample data so "Essayer la démo" never lands on an empty/stale tree
       localStorage.setItem(TREES_KEY, JSON.stringify([sampleFamilyTree]));
