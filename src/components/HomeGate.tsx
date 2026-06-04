@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { supabase } from '@/lib/supabase';
 import type { UserStatus } from '@/types';
@@ -44,7 +43,6 @@ interface StatusInfo { status: UserStatus; email?: string | null; reason?: strin
  * migration not yet applied — which keeps the app usable and self-heals once run.
  */
 export default function HomeGate() {
-  const router = useRouter();
   const [view, setView] = useState<'checking' | 'landing' | 'status'>('checking');
   const [info, setInfo] = useState<StatusInfo | null>(null);
   const [expired, setExpired] = useState(false);
@@ -83,20 +81,22 @@ export default function HomeGate() {
         .select('status, rejection_reason').eq('id', data.session.user.id).single();
       if (cancelled) return;
 
-      // Migration not applied (column missing) → behave as before (approved → /app).
-      if (error && error.code === '42703') { router.replace('/app'); return; }
+      // Migration not applied (column missing) → treat as approved → show landing.
+      if (error && error.code === '42703') { setView('landing'); return; }
 
       // Fail closed: anything other than an explicit 'approved' shows a status screen.
+      // Approved users now stay on the landing too — they enter /app manually via
+      // the navbar "Accéder à l'app" button (no automatic redirect).
       const status = (profile as { status?: UserStatus } | null)?.status;
       const reason = (profile as { rejection_reason?: string | null } | null)?.rejection_reason;
-      if (status === 'approved') { router.replace('/app'); return; }
+      if (status === 'approved') { setView('landing'); return; }
       setInfo({ status: status ?? 'pending', email: data.session.user.email, reason });
       setView('status');
     });
     // Don't block on a slow Supabase: fall back to landing after 1.5s.
     const t = setTimeout(() => { if (!cancelled) setView('landing'); }, 1500);
     return () => { cancelled = true; clearTimeout(t); };
-  }, [router]);
+  }, []);
 
   if (view === 'checking') return <Splash />;
 

@@ -7,7 +7,8 @@ import { createServerClient } from '@supabase/ssr';
  * the Node.js runtime, which suits `@supabase/ssr`).
  *
  *   /app  : requires a Supabase session OR the demo cookie, else → /
- *   /     : redirects signed-in users straight to /app (no landing flash)
+ *   /  and  /landing : always public (the landing renders for everyone, incl.
+ *           approved users — they enter /app manually from the navbar).
  *
  * The demo flag is mirrored to a cookie (`suimini_demo`) so it is readable here;
  * the client guard re-checks demo via localStorage as well.
@@ -61,14 +62,12 @@ export async function proxy(req: NextRequest) {
     if (!user && !isDemo) return redirectTo('/');
     // Connected but not yet approved → back to '/', which shows the status screen.
     if (user && !approved) return redirectTo('/');
-  } else if (path === '/') {
-    // Only approved users skip the landing; pending/rejected/suspended stay on '/'.
-    if (user && approved) return redirectTo('/app');
   }
+  // '/' is intentionally NOT guarded: the landing is always public.
 
   return response;
 }
 
 export const config = {
-  matcher: ['/', '/app', '/app/:path*'],
+  matcher: ['/app', '/app/:path*'],
 };

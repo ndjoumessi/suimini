@@ -8,6 +8,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import AuthModal from '@/components/AuthModal';
+import DemoBanner from '@/components/DemoBanner';
 import { BrandLockup } from '@/components/Brand';
 
 /* Atelier palette — landing is a controlled, always-light marketing surface. */
@@ -124,7 +125,11 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 }
 
 export default function Landing() {
-  const { startDemo } = useAuth();
+  const { startDemo, exitDemo, user, isDemo, isApproved } = useAuth();
+  // Approved members (or active demo) get a direct "Accéder à l'app" entry instead
+  // of the sign-in CTAs — the landing stays visible, entry to /app is manual.
+  const canEnterApp = isDemo || (!!user && isApproved);
+  const goToApp = () => { if (typeof window !== 'undefined') window.location.href = '/app'; };
   const [showAuth, setShowAuth] = useState(false);
   const [authTab, setAuthTab] = useState<'login' | 'signup'>('signup');
   const [count, setCount] = useState<number | null>(null);
@@ -159,6 +164,8 @@ export default function Landing() {
 
   return (
     <div className="lp-root">
+      {isDemo && <DemoBanner onCreateAccount={() => openAuth('signup')} onExit={exitDemo} />}
+
       {/* ===================== STICKY NAVBAR ===================== */}
       <nav className="lp-nav">
         <BrandLockup size={26} color={INK} accent={ACCENT} surface={PAPER} fontSize={20} />
@@ -168,8 +175,14 @@ export default function Landing() {
           <a href="#faq">FAQ</a>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <button onClick={() => openAuth('login')} className="lp-btn-ghost">Connexion</button>
-          <button onClick={() => openAuth('signup')} className="lp-btn-primary lp-btn-nav">Commencer <ArrowRight size={15} /></button>
+          {canEnterApp ? (
+            <button onClick={goToApp} className="lp-btn-primary lp-btn-nav">Accéder à l’app <ArrowRight size={15} /></button>
+          ) : (
+            <>
+              <button onClick={() => openAuth('login')} className="lp-btn-ghost">Connexion</button>
+              <button onClick={() => openAuth('signup')} className="lp-btn-primary lp-btn-nav">Commencer <ArrowRight size={15} /></button>
+            </>
+          )}
         </div>
       </nav>
 
