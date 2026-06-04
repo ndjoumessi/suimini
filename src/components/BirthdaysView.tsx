@@ -224,7 +224,7 @@ function AnniversaryCard({ a, onSelect, typeIcon, typeLabel, typeColor, highligh
           <div style={{ color: 'var(--text)', fontWeight: '700', fontSize: '13px' }}>Demain</div>
         ) : (
           <div>
-            <div style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text)', fontFamily: 'Space Grotesk, sans-serif' }}>
+            <div style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text)', fontFamily: 'var(--font-display)' }}>
               {a.daysUntil}
             </div>
             <div style={{ fontSize: '10px', color: 'var(--text-light)' }}>jours</div>

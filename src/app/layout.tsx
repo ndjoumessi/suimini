@@ -1,5 +1,11 @@
 import type { Metadata, Viewport } from "next";
+import { Bricolage_Grotesque, Hanken_Grotesk, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
+
+// Atelier type system — distinctive, self-hosted via next/font (no FOUT, no render-blocking @import).
+const display = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-display", display: "swap" });
+const body = Hanken_Grotesk({ subsets: ["latin"], variable: "--font-body", display: "swap" });
+const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500", "700"], variable: "--font-mono", display: "swap" });
 
 export const metadata: Metadata = {
   title: "Suimini — Arbre Généalogique",
@@ -31,7 +37,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr">
+    <html lang="fr" className={`${display.variable} ${body.variable} ${mono.variable}`}>
       <body>
         {children}
         <script

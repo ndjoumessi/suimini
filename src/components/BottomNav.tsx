@@ -47,7 +47,7 @@ export default function BottomNav({ activeView, onViewChange, onOpenMenu }: Prop
           .bn-item {
             position: relative; flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px;
             background: none; border: none; cursor: pointer; padding: 8px 2px; min-height: 52px;
-            font-family: 'Inter', sans-serif; touch-action: manipulation; transition: color var(--t-fast);
+            font-family: var(--font-body); touch-action: manipulation; transition: color var(--t-fast);
           }
           .bn-label { font-size: 10px; font-weight: 700; letter-spacing: 0.2px; }
           .bn-active { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 30px; height: 3px; background: var(--accent); }

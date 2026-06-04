@@ -114,13 +114,13 @@ export default function PrintModal({ tree, onClose }: Props) {
       <head>
         <meta charset="UTF-8">
         <title>${tree.name} — Suimini</title>
-        <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Hanken+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
         <style>
           * { box-sizing: border-box; margin: 0; padding: 0; }
-          body { font-family: 'Inter', sans-serif; font-size: 11pt; color: #1b1b1b; background: white; padding: 20mm; }
-          h1 { font-family: 'Space Grotesk', sans-serif; font-size: 24pt; color: #bf4b2c; margin-bottom: 6pt; }
-          h2 { font-family: 'Space Grotesk', sans-serif; font-size: 14pt; color: #1b1b1b; margin: 16pt 0 6pt; border-bottom: 1pt solid #d8d2c6; padding-bottom: 4pt; }
-          h3 { font-family: 'Space Grotesk', sans-serif; font-size: 11pt; }
+          body { font-family: 'Hanken Grotesk', sans-serif; font-size: 11pt; color: #1b1b1b; background: white; padding: 20mm; }
+          h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 24pt; color: #bf4b2c; margin-bottom: 6pt; }
+          h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 14pt; color: #1b1b1b; margin: 16pt 0 6pt; border-bottom: 1pt solid #d8d2c6; padding-bottom: 4pt; }
+          h3 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 11pt; }
           .header { text-align: center; margin-bottom: 20pt; padding-bottom: 12pt; border-bottom: 2pt solid #bf4b2c; }
           .subtitle { color: #4a4742; font-size: 10pt; margin-top: 4pt; }
           .stats-row { display: flex; gap: 16pt; justify-content: center; margin-top: 10pt; font-size: 9pt; color: #4a4742; }
@@ -153,10 +153,10 @@ export default function PrintModal({ tree, onClose }: Props) {
           /* Summary */
           .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10pt; margin: 12pt 0; }
           .summary-card { background: #f4f1ea; border-radius: 6pt; padding: 10pt; text-align: center; }
-          .summary-card .val { font-size: 22pt; font-weight: 700; color: #bf4b2c; font-family: 'Space Grotesk', sans-serif; }
+          .summary-card .val { font-size: 22pt; font-weight: 700; color: #bf4b2c; font-family: 'Bricolage Grotesque', sans-serif; }
           .summary-card .lbl { font-size: 8pt; color: #4a4742; text-transform: uppercase; letter-spacing: 0.5pt; }
           
-          .ornament { text-align: center; color: #bf4b2c; font-family: 'Space Grotesk', sans-serif; font-size: 14pt; letter-spacing: 6pt; margin: 12pt 0; }
+          .ornament { text-align: center; color: #bf4b2c; font-family: 'Bricolage Grotesque', sans-serif; font-size: 14pt; letter-spacing: 6pt; margin: 12pt 0; }
           
           @media print {
             body { padding: 10mm; }
@@ -412,9 +412,9 @@ export default function PrintModal({ tree, onClose }: Props) {
                           {p.gender === 'male' ? '👨' : p.gender === 'female' ? '👩' : '🧑'}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', color: '#1b1b1b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.firstName}</div>
-                          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#4a4742', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.lastName}{!p.isAlive ? ' ✝' : ''}</div>
-                          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '9.5px', color: '#6e6a62' }}>
+                          <div style={{ fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: '12px', color: '#1b1b1b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.firstName}</div>
+                          <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: '#4a4742', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.lastName}{!p.isAlive ? ' ✝' : ''}</div>
+                          <div style={{ fontFamily: 'var(--font-body)', fontSize: '9.5px', color: '#6e6a62' }}>
                             {p.birthDate ? `✦ ${formatYear(p.birthDate)}` : ''}
                             {!p.isAlive && p.deathDate ? ` – ${formatYear(p.deathDate)}` : (age !== null && p.isAlive ? ` · ${age} ans` : '')}
                           </div>

@@ -133,7 +133,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
                     padding: '8px 11px', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius)', marginBottom: '2px',
                     background: active ? 'var(--accent-light)' : 'transparent',
                     color: active ? 'var(--accent)' : 'var(--text-muted)',
-                    fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: active ? 700 : 400,
+                    fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: active ? 700 : 400,
                     transition: 'background var(--t-fast), color var(--t-fast)',
                   }}
                   onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'var(--interactive)'; }}
@@ -170,7 +170,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
                   padding: '8px 11px', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius)', marginBottom: '2px',
                   background: active ? 'var(--accent-light)' : 'transparent',
                   color: active ? 'var(--accent)' : 'var(--text-muted)',
-                  fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: active ? 700 : 400,
+                  fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: active ? 700 : 400,
                   transition: 'background var(--t-fast), color var(--t-fast)',
                 }}
                 onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'var(--interactive)'; }}

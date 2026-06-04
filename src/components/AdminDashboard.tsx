@@ -86,7 +86,7 @@ export default function AdminDashboard({ admin, role, onToast }: { admin: AdminD
             const active = tab === t.id;
             return (
               <button key={t.id} role="tab" aria-selected={active} onClick={() => setTab(t.id)}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', whiteSpace: 'nowrap', padding: '9px 14px', border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: active ? 700 : 400, color: active ? 'var(--accent)' : 'var(--text-muted)', borderBottom: `2px solid ${active ? 'var(--accent)' : 'transparent'}` }}>
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', whiteSpace: 'nowrap', padding: '9px 14px', border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: active ? 700 : 400, color: active ? 'var(--accent)' : 'var(--text-muted)', borderBottom: `2px solid ${active ? 'var(--accent)' : 'transparent'}` }}>
                 <t.Icon size={15} aria-hidden="true" /> {t.label}
                 {t.badge ? <span style={{ background: 'var(--danger)', color: '#fff', fontSize: '10px', fontWeight: 700, borderRadius: '100px', padding: '1px 7px' }}>{t.badge}</span> : null}
               </button>
@@ -161,7 +161,7 @@ function PendingTab({ admin, pending, onToast }: { admin: AdminData; pending: Us
           {rejectingId === u.id && (
             <div style={{ marginTop: '12px', borderTop: '1px solid var(--border)', paddingTop: '12px' }}>
               <textarea value={reason} onChange={e => setReason(e.target.value)} rows={2} placeholder="Raison du refus (optionnel)"
-                className="input" style={{ width: '100%', resize: 'vertical', fontFamily: 'Inter, sans-serif' }} autoFocus />
+                className="input" style={{ width: '100%', resize: 'vertical', fontFamily: 'var(--font-body)' }} autoFocus />
               <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', marginTop: '8px' }}>
                 <button onClick={() => { setRejectingId(null); setReason(''); }} className="btn btn-ghost btn-sm">Annuler</button>
                 <button onClick={() => confirmReject(u)} disabled={busy === u.id} className="btn btn-sm" style={{ background: 'var(--danger)', color: '#fff' }}>Confirmer le refus</button>
@@ -257,7 +257,7 @@ function UsersTab({ admin, isSuperAdmin, onToast }: { admin: AdminData; isSuperA
 
 function MenuItem({ Icon, label, onClick }: { Icon: typeof Check; label: string; onClick: () => void }) {
   return (
-    <button onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '8px 10px', border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '13px', color: 'var(--text)', borderRadius: 'var(--radius-sm)', fontFamily: 'Inter, sans-serif' }}
+    <button onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '8px 10px', border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '13px', color: 'var(--text)', borderRadius: 'var(--radius-sm)', fontFamily: 'var(--font-body)' }}
       onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-muted)'}
       onMouseLeave={e => e.currentTarget.style.background = 'none'}>
       <Icon size={14} aria-hidden="true" /> {label}

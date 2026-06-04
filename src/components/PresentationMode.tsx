@@ -78,12 +78,12 @@ export default function PresentationMode({ persons, onClose }: Props) {
         </div>
 
         {/* Name */}
-        <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(2rem, 6vw, 52px)', color: '#f4f1ea', margin: '0 0 14px', fontWeight: 700, lineHeight: 1.02, letterSpacing: '-0.03em' }}>
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 'clamp(2rem, 6vw, 52px)', color: '#f4f1ea', margin: '0 0 14px', fontWeight: 700, lineHeight: 1.02, letterSpacing: '-0.03em' }}>
           {getFullName(person)}
         </h1>
 
         {/* Dates */}
-        <div style={{ fontSize: 'clamp(0.85rem, 1.8vw, 1.05rem)', color: '#b8b2a6', marginBottom: '14px', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '1px', display: 'inline-flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <div style={{ fontSize: 'clamp(0.85rem, 1.8vw, 1.05rem)', color: '#b8b2a6', marginBottom: '14px', fontFamily: "var(--font-mono)", letterSpacing: '1px', display: 'inline-flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
           {person.birthDate ? <span>{formatDate(person.birthDate, person.birthDateApprox)}</span> : null}
           {!person.isAlive && person.deathDate ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>— <Cross size={13} aria-hidden="true" /> {formatDate(person.deathDate, person.deathDateApprox)}</span> : null}
         </div>
@@ -138,5 +138,5 @@ const arrowStyle: React.CSSProperties = {
 };
 const pillStyle: React.CSSProperties = {
   padding: '5px 14px', borderRadius: '2px', background: 'rgba(255,255,255,0.08)',
-  color: '#e8e0d0', fontSize: '0.8rem', fontFamily: "'JetBrains Mono', monospace", border: '1px solid rgba(255,255,255,0.18)',
+  color: '#e8e0d0', fontSize: '0.8rem', fontFamily: "var(--font-mono)", border: '1px solid rgba(255,255,255,0.18)',
 };

@@ -727,7 +727,7 @@ function LifeTimeline({ person }: { person: Person }) {
           {ticks.map(y => (
             <g key={y}>
               <line x1={x(y)} y1={dotY - 4} x2={x(y)} y2={dotY + 4} stroke="var(--border)" strokeWidth={1} />
-              <text x={x(y)} y={dotY + 18} textAnchor="middle" fontSize={9} fill="var(--text-light)" fontFamily="Inter, sans-serif">{y}</text>
+              <text x={x(y)} y={dotY + 18} textAnchor="middle" fontSize={9} fill="var(--text-light)" fontFamily="var(--font-body)">{y}</text>
             </g>
           ))}
 
@@ -745,7 +745,7 @@ function LifeTimeline({ person }: { person: Person }) {
                 {w.end
                   ? <rect x={x0} y={wy} width={Math.max(3, x1 - x0)} height={16} rx={4} fill="var(--deceased)" opacity={0.55} />
                   : <circle cx={x0} cy={wy + 8} r={6} fill="var(--deceased)" opacity={0.7} />}
-                <text x={w.end ? (x0 + x1) / 2 : x0} y={wy + 34} textAnchor="middle" fontSize={9} fill="var(--text-muted)" fontFamily="Inter, sans-serif">
+                <text x={w.end ? (x0 + x1) / 2 : x0} y={wy + 34} textAnchor="middle" fontSize={9} fill="var(--text-muted)" fontFamily="var(--font-body)">
                   {w.icon} {w.label.length > 18 ? w.label.slice(0, 17) + '…' : w.label}
                 </text>
               </g>
@@ -762,7 +762,7 @@ function LifeTimeline({ person }: { person: Person }) {
                 <line x1={px} y1={dotY} x2={px} y2={36} stroke="var(--border)" strokeWidth={1} />
                 <text x={px} y={28} textAnchor="middle" fontSize={14}>{EVENT_ICONS[ev.type] || '📌'}</text>
                 <circle cx={px} cy={dotY} r={5} fill="var(--accent)" stroke="var(--bg-card)" strokeWidth={1.5} />
-                <text x={px} y={48} textAnchor="middle" fontSize={9} fill="var(--text-muted)" fontFamily="Inter, sans-serif">{formatYear(ev.date)}</text>
+                <text x={px} y={48} textAnchor="middle" fontSize={9} fill="var(--text-muted)" fontFamily="var(--font-body)">{formatYear(ev.date)}</text>
               </g>
             );
           })}
@@ -784,7 +784,7 @@ function CompletionDonut({ score, color }: { score: number; color: string }) {
       <circle cx={17} cy={17} r={r} fill="none" stroke={color} strokeWidth={4} strokeLinecap="round"
         strokeDasharray={circ} strokeDashoffset={circ * (1 - score / 100)} transform="rotate(-90 17 17)"
         style={{ transition: 'stroke-dashoffset 0.4s ease' }} />
-      <text x={17} y={18} textAnchor="middle" dominantBaseline="middle" fontSize={9.5} fontWeight={700} fontFamily="Inter, sans-serif" fill="var(--text)">{score}</text>
+      <text x={17} y={18} textAnchor="middle" dominantBaseline="middle" fontSize={9.5} fontWeight={700} fontFamily="var(--font-body)" fill="var(--text)">{score}</text>
     </svg>
   );
 }

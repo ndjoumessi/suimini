@@ -107,7 +107,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
   return (
     <div style={{ borderTop: `1.5px solid ${INK}` }}>
       <button onClick={() => setOpen(o => !o)} aria-expanded={open}
-        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '20px 4px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '17px', fontWeight: 700, color: INK, fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '-0.01em' }}>
+        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '20px 4px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '17px', fontWeight: 700, color: INK, fontFamily: "var(--font-display)", letterSpacing: '-0.01em' }}>
         {q}
         <ChevronDown size={20} style={{ flexShrink: 0, transition: 'transform 0.3s ease', transform: open ? 'rotate(180deg)' : 'none', color: ACCENT }} />
       </button>
@@ -359,12 +359,12 @@ export default function Landing() {
 }
 
 const LANDING_CSS = `
-.lp-root { background: ${BONE}; color: ${INK}; font-family: 'Inter', system-ui, sans-serif; overflow-x: hidden; }
-.lp-root .serif { font-family: 'Space Grotesk', sans-serif; font-weight: 700; letter-spacing: -0.02em; }
-.lp-mono { font-family: 'JetBrains Mono', monospace; }
+.lp-root { background: ${BONE}; color: ${INK}; font-family: var(--font-body); overflow-x: hidden; }
+.lp-root .serif { font-family: var(--font-display); font-weight: 700; letter-spacing: -0.02em; }
+.lp-mono { font-family: var(--font-mono); }
 
 /* Eyebrow */
-.lp-eyebrow { font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 2.5px; font-size: 12px; font-weight: 700; color: ${ACCENT}; }
+.lp-eyebrow { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 2.5px; font-size: 12px; font-weight: 700; color: ${ACCENT}; }
 .lp-eyebrow-center { text-align: center; display: block; margin: 0 auto 14px; }
 
 /* Nav */
@@ -377,7 +377,7 @@ const LANDING_CSS = `
 /* Buttons */
 .lp-btn-primary, .lp-btn-secondary, .lp-btn-outline-light, .lp-btn-ghost {
   display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
-  font-family: 'Inter', sans-serif; font-weight: 700; font-size: 15px;
+  font-family: var(--font-body); font-weight: 700; font-size: 15px;
   border-radius: 2px; padding: 12px 22px; border: 2px solid ${INK};
   transition: transform 0.15s cubic-bezier(0.22,1,0.36,1), box-shadow 0.15s cubic-bezier(0.22,1,0.36,1), background 0.15s; text-decoration: none;
 }
@@ -407,7 +407,7 @@ const LANDING_CSS = `
 .lp-cta-row { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
 .lp-demo-note { margin-top: 14px; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: #6e6a62; }
 .lp-stat { margin-top: 34px; display: inline-flex; align-items: center; gap: 10px; border: 1.5px solid ${INK}; background: ${PAPER}; padding: 8px 16px; box-shadow: 3px 3px 0 ${INK}; }
-.lp-stat strong { color: ${ACCENT}; font-size: 20px; font-family: 'Space Grotesk', sans-serif; }
+.lp-stat strong { color: ${ACCENT}; font-size: 20px; font-family: var(--font-display); }
 .lp-stat .lp-mono { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: ${INK}; }
 .lp-scroll { position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); color: ${ACCENT}; z-index: 2; animation: lpBounce 1.8s ease-in-out infinite; }
 @keyframes lpBounce { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 10px); } }

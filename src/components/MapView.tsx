@@ -139,7 +139,7 @@ export default function MapView({ tree, onSelectPerson }: Props) {
                   <Popup>
                     <div style={{ minWidth: '180px', maxHeight: '240px', overflowY: 'auto' }}>
                       {group.points.length > 1 && (
-                        <div style={{ fontWeight: 700, fontSize: '13px', marginBottom: '8px', fontFamily: 'Inter, sans-serif', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <div style={{ fontWeight: 700, fontSize: '13px', marginBottom: '8px', fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', gap: '5px' }}>
                           <MapPin size={13} aria-hidden="true" /> {group.points[0].place || 'Ce lieu'} · {group.points.length} événements
                         </div>
                       )}
@@ -148,7 +148,7 @@ export default function MapView({ tree, onSelectPerson }: Props) {
                           <button
                             key={i}
                             onClick={() => onSelectPerson(pt.person.id)}
-                            style={{ display: 'flex', gap: '8px', alignItems: 'center', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', padding: 0, fontFamily: 'Inter, sans-serif' }}
+                            style={{ display: 'flex', gap: '8px', alignItems: 'center', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', padding: 0, fontFamily: 'var(--font-body)' }}
                           >
                             <div style={{ width: '36px', height: '36px', borderRadius: 'var(--radius)', overflow: 'hidden', flexShrink: 0, background: 'var(--accent-light)', border: '1.5px solid var(--border-strong)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, color: 'var(--accent)' }}>
                               {pt.person.profilePhoto

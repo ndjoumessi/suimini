@@ -24,7 +24,7 @@ function Splash() {
 /** Expired magic-link banner (shown after /auth/callback redirects with ?auth_error=expired). */
 function ExpiredBanner({ onClose }: { onClose: () => void }) {
   return (
-    <div role="alert" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '13px 16px', background: '#c77d1a', color: '#1b1b1b', fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 700, borderBottom: '1.5px solid #1b1b1b', boxShadow: '0 4px 0 rgba(27,22,18,0.18)' }}>
+    <div role="alert" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '13px 16px', background: '#c77d1a', color: '#1b1b1b', fontFamily: "var(--font-body)", fontSize: '14px', fontWeight: 700, borderBottom: '1.5px solid #1b1b1b', boxShadow: '0 4px 0 rgba(27,22,18,0.18)' }}>
       <AlertTriangle size={16} aria-hidden="true" />
       <span>Le lien de connexion a expiré. Veuillez en demander un nouveau.</span>
       <button onClick={onClose} aria-label="Fermer" style={{ position: 'absolute', right: '12px', background: 'transparent', border: 'none', color: '#1b1b1b', fontSize: '20px', lineHeight: 1, cursor: 'pointer', padding: '2px 6px' }}>×</button>

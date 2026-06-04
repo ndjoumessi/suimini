@@ -175,7 +175,7 @@ export default function CommandPalette({ tree, onClose, onSelectPerson, onNaviga
             onChange={e => { setQuery(e.target.value); setActive(0); }}
             placeholder="Rechercher un membre, une vue, une action…"
             aria-label="Rechercher"
-            style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: '16px', color: 'var(--text)', fontFamily: 'Inter, sans-serif' }}
+            style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: '16px', color: 'var(--text)', fontFamily: 'var(--font-body)' }}
           />
           <kbd style={{ fontSize: '10px', color: 'var(--text-light)', border: '1px solid var(--border)', borderRadius: '4px', padding: '2px 6px' }}>Esc</kbd>
         </div>
@@ -217,7 +217,7 @@ export default function CommandPalette({ tree, onClose, onSelectPerson, onNaviga
                       width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
                       padding: '9px 10px', border: 'none', borderRadius: 'var(--radius)', cursor: 'pointer',
                       background: isActive ? 'var(--accent-light)' : 'transparent',
-                      textAlign: 'left', fontFamily: 'Inter, sans-serif',
+                      textAlign: 'left', fontFamily: 'var(--font-body)',
                     }}
                   >
                     <span style={{ width: '24px', display: 'inline-flex', justifyContent: 'center', flexShrink: 0, color: isActive ? 'var(--accent)' : 'var(--text-muted)' }}>

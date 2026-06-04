@@ -499,21 +499,21 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                       clipPath={`url(#avatar-${p.id})`} preserveAspectRatio="xMidYMid slice" />
                   ) : (
                     <text x={24} y={NODE_H / 2 + 4} textAnchor="middle"
-                      fontFamily="'Space Grotesk', sans-serif" fontSize={13} fontWeight={700} fill="var(--accent)">
+                      fontFamily="var(--font-display)" fontSize={13} fontWeight={700} fill="var(--accent)">
                       {nodeInitials(p)}
                     </text>
                   )}
 
                   {/* First name */}
-                  <text x={48} y={NODE_H / 2 - 9} fontFamily="'Space Grotesk', sans-serif" fontSize={13} fontWeight={600} fill="var(--text)">
+                  <text x={48} y={NODE_H / 2 - 9} fontFamily="var(--font-display)" fontSize={13} fontWeight={600} fill="var(--text)">
                     {p.firstName.length > 14 ? p.firstName.slice(0, 13) + '…' : p.firstName}
                   </text>
                   {/* Last name */}
-                  <text x={48} y={NODE_H / 2 + 5} fontFamily="Inter, sans-serif" fontSize={11} fill="var(--text-muted)">
+                  <text x={48} y={NODE_H / 2 + 5} fontFamily="var(--font-body)" fontSize={11} fill="var(--text-muted)">
                     {p.lastName.length > 16 ? p.lastName.slice(0, 15) + '…' : p.lastName}
                   </text>
                   {/* Dates */}
-                  <text x={48} y={NODE_H / 2 + 19} fontFamily="Inter, sans-serif" fontSize={10} fill="var(--text-light)">
+                  <text x={48} y={NODE_H / 2 + 19} fontFamily="var(--font-body)" fontSize={10} fill="var(--text-light)">
                     {dateLine(p)}
                   </text>
                 </g>
@@ -642,7 +642,7 @@ function FanChart({ fan, fanGenColor, r0, ring, selectedPersonId, onSelectPerson
               stroke={isSel ? 'var(--accent)' : 'var(--bg-card)'} strokeWidth={isSel ? 3 : 1.5} />
             <text x={tx} y={ty} transform={`rotate(${rot.toFixed(1)} ${tx.toFixed(2)} ${ty.toFixed(2)})`}
               textAnchor="middle" dominantBaseline="central" fontSize={fontSize} fontWeight={600}
-              fontFamily="Inter, sans-serif" fill="#fff" style={{ pointerEvents: 'none' }}>
+              fontFamily="var(--font-body)" fill="#fff" style={{ pointerEvents: 'none' }}>
               {label}
             </text>
           </g>
@@ -652,17 +652,17 @@ function FanChart({ fan, fanGenColor, r0, ring, selectedPersonId, onSelectPerson
       {root && (
         <g style={{ cursor: 'pointer' }} onClick={() => onSelectPerson(root.person.id)}>
           <circle cx={0} cy={0} r={r0} fill={fanGenColor(0)} stroke="var(--accent)" strokeWidth={root.person.id === selectedPersonId ? 3 : 2} />
-          <text x={0} y={-6} textAnchor="middle" dominantBaseline="central" fontSize={13} fontWeight={700} fontFamily="'Space Grotesk', sans-serif" fill="#fff" style={{ pointerEvents: 'none' }}>
+          <text x={0} y={-6} textAnchor="middle" dominantBaseline="central" fontSize={13} fontWeight={700} fontFamily="var(--font-display)" fill="#fff" style={{ pointerEvents: 'none' }}>
             {root.person.firstName.length > 12 ? root.person.firstName.slice(0, 11) + '…' : root.person.firstName}
           </text>
-          <text x={0} y={12} textAnchor="middle" dominantBaseline="central" fontSize={10} fontFamily="Inter, sans-serif" fill="#fff" fillOpacity={0.85} style={{ pointerEvents: 'none' }}>
+          <text x={0} y={12} textAnchor="middle" dominantBaseline="central" fontSize={10} fontFamily="var(--font-body)" fill="#fff" fillOpacity={0.85} style={{ pointerEvents: 'none' }}>
             {root.person.lastName.length > 13 ? root.person.lastName.slice(0, 12) + '…' : root.person.lastName}
           </text>
         </g>
       )}
 
       {fan.maxGen === 0 && (
-        <text x={0} y={r0 + 30} textAnchor="middle" fontSize={13} fontFamily="Inter, sans-serif" fill="var(--text-muted)">
+        <text x={0} y={r0 + 30} textAnchor="middle" fontSize={13} fontFamily="var(--font-body)" fill="var(--text-muted)">
           Aucun ancêtre enregistré pour cette racine
         </text>
       )}
