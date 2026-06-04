@@ -34,15 +34,15 @@ interface Props {
 }
 
 // "Album de famille relié" — compact register-card nodes (see DESIGN.md).
-const NODE_W = 172;
-const NODE_H = 80;
+const NODE_W = 190;
+const NODE_H = 88;
 const H_GAP = 24;
 const V_GAP = 64;
 const GRID = 24; // canvas dot-grid spacing
 
 export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAddPerson }: Props) {
   const [rootId, setRootId] = useState(tree.rootPersonId || tree.persons[0]?.id || null);
-  const [scale, setScale] = useState(0.9);
+  const [scale, setScale] = useState(1.1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -235,25 +235,33 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
   const recenter = () => centerOn(rootId);
 
   // Centre on root: the root is fixed at content (0,0), so screen-centre = offset.
-  // Poll until the container has a real size (rAF fallback for the 0-size case).
-  // Depends ONLY on rootId — never on nodes.length / layout timing.
+  // Centre the root once the container has a real size. On a hard refresh the
+  // container can report clientWidth/Height = 0 when this runs, which would pin
+  // the tree at (0,0). ResizeObserver fires as soon as it gets a real size —
+  // more reliable than rAF polling. Root is fixed at content (0,0): place it
+  // horizontally centred and at the upper third so children below have room.
   useEffect(() => {
+    if (!nodes.length || !rootId) return;
+    const root = nodes.find(n => n.person.id === rootId);
+    if (!root) return;
+
     const el = containerRef.current;
     if (!el) return;
-    let raf = 0;
-    const attempt = () => {
+
+    const doCenter = () => {
       const { clientWidth: cw, clientHeight: ch } = el;
-      if (cw > 0 && ch > 0) {
-        // Root is fixed at content (0,0); place it at the upper third so children
-        // below have room (ch*0.35, not ch/2 which pushed the tree too low).
-        setOffset({ x: cw / 2, y: Math.round(ch * 0.35) });
-        return;
-      }
-      raf = requestAnimationFrame(attempt);
+      if (cw === 0 || ch === 0) return false;
+      setOffset({ x: cw / 2, y: Math.round(ch * 0.35) });
+      return true;
     };
-    attempt();
-    return () => cancelAnimationFrame(raf);
-  }, [rootId]);
+
+    if (doCenter()) return;
+
+    const ro = new ResizeObserver(() => { if (doCenter()) ro.disconnect(); });
+    ro.observe(el);
+    return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rootId, nodes.length]);
 
   // Track container size for the minimap viewport rectangle.
   useEffect(() => {
