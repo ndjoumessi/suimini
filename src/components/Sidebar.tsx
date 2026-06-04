@@ -239,7 +239,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
           // Demo mode also lands here: the top DemoBanner already shows the demo
           // status + "Quitter la démo", so the sidebar only offers the sign-in CTA.
           <button onClick={onSignIn} className="btn btn-secondary btn-sm" style={{ width: '100%' }}>
-            <LogIn size={14} /> Se connecter pour sauvegarder
+            <LogIn size={14} /> Se connecter
           </button>
         )}
       </div>

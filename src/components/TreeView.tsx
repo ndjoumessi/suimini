@@ -471,10 +471,10 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                   opacity={p.isAlive ? 1 : 0.72}
                   style={{ cursor: 'pointer' }}
                 >
-                  <clipPath id={`card-${p.id}`}><rect width={NODE_W} height={NODE_H} rx={8} ry={8} /></clipPath>
+                  <clipPath id={`card-${p.id}`}><rect width={NODE_W} height={NODE_H} rx={0} ry={0} /></clipPath>
 
                   {/* Card */}
-                  <rect width={NODE_W} height={NODE_H} rx={8} ry={8}
+                  <rect width={NODE_W} height={NODE_H} rx={0} ry={0}
                     fill={isSelected ? 'var(--accent-light)' : 'var(--bg-card)'}
                     stroke={isSelected ? 'var(--accent)' : 'var(--border)'}
                     strokeWidth={isSelected ? 2 : 1} />
