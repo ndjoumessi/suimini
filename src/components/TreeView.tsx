@@ -9,6 +9,25 @@ function nodeInitials(p: Person): string {
   return (((p.firstName?.[0] || '') + (p.lastName?.[0] || '')).toUpperCase()) || '?';
 }
 
+/** Node avatar: profile photo (square-clipped) with a per-node fallback to
+ *  initials when the image is absent OR fails to load (broken URL/expired). */
+function NodeAvatar({ person, clipId }: { person: Person; clipId: string }) {
+  const [broken, setBroken] = useState(false);
+  if (person.profilePhoto && !broken) {
+    return (
+      <image href={person.profilePhoto} x={8} y={NODE_H / 2 - 16} width={32} height={32}
+        clipPath={`url(#${clipId})`} preserveAspectRatio="xMidYMid slice"
+        onError={() => setBroken(true)} />
+    );
+  }
+  return (
+    <text x={24} y={NODE_H / 2 + 4} textAnchor="middle"
+      fontFamily="var(--font-display)" fontSize={13} fontWeight={700} fill="var(--accent)">
+      {nodeInitials(person)}
+    </text>
+  );
+}
+
 /**
  * Monochrome WARM-NEUTRAL ramp, used ONLY by the fan chart so its concentric
  * ancestor rings stay distinguishable. The vertical tree reads generation by
@@ -502,15 +521,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                   {/* Avatar — square (Atelier) */}
                   <clipPath id={`avatar-${p.id}`}><rect x={8} y={NODE_H / 2 - 16} width={32} height={32} /></clipPath>
                   <rect x={8} y={NODE_H / 2 - 16} width={32} height={32} fill="var(--accent-light)" />
-                  {p.profilePhoto ? (
-                    <image href={p.profilePhoto} x={8} y={NODE_H / 2 - 16} width={32} height={32}
-                      clipPath={`url(#avatar-${p.id})`} preserveAspectRatio="xMidYMid slice" />
-                  ) : (
-                    <text x={24} y={NODE_H / 2 + 4} textAnchor="middle"
-                      fontFamily="var(--font-display)" fontSize={13} fontWeight={700} fill="var(--accent)">
-                      {nodeInitials(p)}
-                    </text>
-                  )}
+                  <NodeAvatar person={p} clipId={`avatar-${p.id}`} />
 
                   {/* First name */}
                   <text x={48} y={NODE_H / 2 - 9} fontFamily="var(--font-display)" fontSize={13} fontWeight={600} fill="var(--text)">

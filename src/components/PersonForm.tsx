@@ -1,7 +1,8 @@
 'use client';
 import { useState, useRef } from 'react';
-import { AlertCircle, FolderOpen, Plus, X, Dna } from 'lucide-react';
+import { AlertCircle, FolderOpen, Plus, X, Dna, ImageUp, Images } from 'lucide-react';
 import { Person, Gender } from '@/types';
+import { uploadAvatar } from '@/lib/uploadImage';
 
 interface Props {
   initial?: Partial<Person>;
@@ -19,22 +20,51 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel = 'E
     () => Object.entries(initial?.customFields || {}).map(([key, value]) => ({ key, value }))
   );
   const [photoError, setPhotoError] = useState('');
+  const [photoNote, setPhotoNote] = useState('');
+  const [photoLoading, setPhotoLoading] = useState(false);
+  const [galleryLoading, setGalleryLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
 
   const set = (field: keyof Person, value: unknown) =>
     setForm(f => ({ ...f, [field]: value }));
 
-  // --- Photo upload (→ base64 data URL) ---
-  const handlePhotoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const personId = (initial?.id as string) || 'new';
+  const photos = form.photos || [];
+
+  // --- Profile photo: compress → Supabase Storage (if signed in) else base64 ---
+  const handlePhotoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
-    setPhotoError('');
+    setPhotoError(''); setPhotoNote('');
     if (!file.type.startsWith('image/')) { setPhotoError('Le fichier doit être une image.'); return; }
-    if (file.size > 2 * 1024 * 1024) { setPhotoError("Image trop volumineuse (max 2 Mo)."); return; }
-    const reader = new FileReader();
-    reader.onload = ev => set('profilePhoto', ev.target?.result as string);
-    reader.readAsDataURL(file);
+    if (file.size > 8 * 1024 * 1024) { setPhotoError('Image trop volumineuse (max 8 Mo).'); return; }
+    setPhotoLoading(true);
+    try {
+      const res = await uploadAvatar(file, personId);
+      set('profilePhoto', res.url);
+      if (res.warning) setPhotoNote(res.warning);
+    } catch {
+      setPhotoError("Échec de l'import de l'image.");
+    } finally {
+      setPhotoLoading(false);
+    }
   };
+
+  // --- Gallery photos (form.photos) ---
+  const handleGalleryFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !file.type.startsWith('image/')) return;
+    setGalleryLoading(true);
+    try {
+      const res = await uploadAvatar(file, personId);
+      set('photos', [...photos, res.url]);
+    } catch { /* ignore */ }
+    finally { setGalleryLoading(false); }
+  };
+  const removePhoto = (i: number) => { const next = photos.filter((_, idx) => idx !== i); set('photos', next.length ? next : undefined); };
 
   // --- Custom fields ---
   const addCf = () => setCfEntries(e => [...e, { key: '', value: '' }]);
@@ -222,20 +252,50 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel = 'E
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', textTransform: 'none', fontWeight: 400 }}>
           {form.profilePhoto && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={form.profilePhoto} alt="" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border)', flexShrink: 0 }} />
+            <img src={form.profilePhoto} alt="" style={{ width: '44px', height: '44px', borderRadius: 'var(--radius)', objectFit: 'cover', border: '1.5px solid var(--border-strong)', flexShrink: 0 }} />
           )}
           <input
-            value={form.profilePhoto || ''}
+            value={form.profilePhoto?.startsWith('data:') ? '' : (form.profilePhoto || '')}
             onChange={e => set('profilePhoto', e.target.value || undefined)}
-            className="input" placeholder="Coller une URL https://… ou importer un fichier"
+            className="input" placeholder={form.profilePhoto?.startsWith('data:') ? 'Image importée' : 'Coller une URL https://… ou importer'}
+            disabled={form.profilePhoto?.startsWith('data:')}
           />
           <input ref={fileRef} type="file" accept="image/*" onChange={handlePhotoFile} style={{ display: 'none' }} />
-          <button type="button" onClick={() => fileRef.current?.click()} className="btn btn-secondary btn-sm" style={{ flexShrink: 0 }}>📷 Importer</button>
+          <button type="button" onClick={() => fileRef.current?.click()} disabled={photoLoading} className="btn btn-secondary btn-sm" style={{ flexShrink: 0 }}>
+            {photoLoading ? <span className="spinner" /> : <ImageUp size={14} />} Importer
+          </button>
           {form.profilePhoto && (
-            <button type="button" onClick={() => set('profilePhoto', undefined)} className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)', flexShrink: 0 }}>✕</button>
+            <button type="button" onClick={() => { set('profilePhoto', undefined); setPhotoNote(''); }} aria-label="Retirer la photo" className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--danger)', flexShrink: 0 }}><X size={14} /></button>
           )}
         </div>
-        {photoError && <span style={{ color: 'var(--danger)', fontSize: '11px', textTransform: 'none', fontWeight: 400 }}>{photoError}</span>}
+        {photoError && <span style={{ color: 'var(--danger)', fontSize: '11px', textTransform: 'none', fontWeight: 400, display: 'flex', alignItems: 'center', gap: '4px' }}><AlertCircle size={11} /> {photoError}</span>}
+        {photoNote && <span style={{ color: 'var(--text-light)', fontSize: '11px', textTransform: 'none', fontWeight: 400 }}>{photoNote}</span>}
+      </div>
+
+      {/* Galerie de photos */}
+      <div style={labelStyle}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Images size={13} aria-hidden="true" /> Galerie de photos</span>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px', textTransform: 'none', fontWeight: 400 }}>
+          {photos.map((url, i) => (
+            <div key={i} style={{ position: 'relative', width: '56px', height: '56px', flexShrink: 0 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', border: '1.5px solid var(--border-strong)', borderRadius: 'var(--radius)' }} />
+              <button type="button" onClick={() => removePhoto(i)} aria-label="Retirer"
+                style={{ position: 'absolute', top: '-8px', right: '-8px', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-card)', color: 'var(--danger)', border: '1.5px solid var(--border-strong)', borderRadius: 'var(--radius)', cursor: 'pointer', padding: 0 }}>
+                <X size={12} />
+              </button>
+            </div>
+          ))}
+          <input ref={galleryRef} type="file" accept="image/*" onChange={handleGalleryFile} style={{ display: 'none' }} />
+          <button type="button" onClick={() => galleryRef.current?.click()} disabled={galleryLoading}
+            style={{ width: '56px', height: '56px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-muted)', border: '1.5px dashed var(--border-strong)', borderRadius: 'var(--radius)', cursor: 'pointer', color: 'var(--text-muted)' }}>
+            {galleryLoading ? <span className="spinner" /> : <Plus size={18} />}
+          </button>
+        </div>
+        <input
+          onKeyDown={e => { const v = (e.target as HTMLInputElement).value.trim(); if (e.key === 'Enter' && v) { e.preventDefault(); set('photos', [...photos, v]); (e.target as HTMLInputElement).value = ''; } }}
+          className="input" placeholder="Coller une URL d’image puis Entrée" style={{ marginTop: '8px', textTransform: 'none', fontWeight: 400 }}
+        />
       </div>
 
       <label style={labelStyle}>

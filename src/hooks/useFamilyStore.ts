@@ -67,14 +67,20 @@ export function useFamilyStore(user: StoreUser | null = null) {
         if (!active) return;
         setShared(sharedMeta);
         const localTrees = localCacheRef.current;
-        if (remote.length === 0 && localTrees.length > 0) {
-          // Cloud empty but we have local data → keep showing it and propose migration.
-          setMigrationPending(true);
-          setSyncStatus('saved');
-        } else {
+        // The store seeds the demo tree ('tree1', Famille Dupont) for everyone, so
+        // don't offer to migrate when the only local data IS that untouched sample —
+        // it caused the "Importer vos données locales ?" popup on every login.
+        const onlySample = localTrees.length === 1 && localTrees[0].id === 'tree1';
+        const hasRealLocal = localTrees.length > 0 && !onlySample;
+        if (remote.length > 0) {
           setMigrationPending(false);
           setTrees(remote);
           setActiveTreeId(prev => (remote.find(t => t.id === prev) ? prev : remote[0]?.id || null));
+          setSyncStatus('saved');
+        } else {
+          // Cloud empty: propose migration ONLY for genuine local data; otherwise keep
+          // local (sample) as-is and let onboarding handle first run.
+          setMigrationPending(hasRealLocal);
           setSyncStatus('saved');
         }
       } catch {

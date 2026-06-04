@@ -191,7 +191,7 @@ export default function Landing() {
         <div className="lp-grid-bg" aria-hidden="true" />
         <div className="lp-hero-inner">
           <Reveal>
-            <div className="lp-eyebrow">Arbre généalogique · Est. 2025</div>
+            <div className="lp-eyebrow">Arbre généalogique · Est. 2026</div>
           </Reveal>
           <Reveal delay={70}>
             <h1 className="serif lp-tagline">Préservez l’histoire<br />de votre famille,<br /><span className="lp-tagline-accent">génération après génération.</span></h1>
@@ -363,7 +363,7 @@ export default function Landing() {
         </div>
         <div className="lp-footer-bottom lp-mono">
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><ShieldCheck size={14} /> Données hébergées en Europe · Chiffrement SSL</span>
-          <span>© 2025 Suimini</span>
+          <span>© 2026 Suimini</span>
         </div>
       </footer>
 

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Person, FamilyTree, Relationship, RelationType, FamilyEvent, EventType, Note, Citation, DnaOrigin } from '@/types';
 import { getParents, getChildren, getSpouses, getSiblings, getAge, formatDate, formatYear, getDisplayName, generateId, safeHttpUrl } from '@/lib/treeUtils';
 import PersonForm from './PersonForm';
-import { X, Pencil, Trash2, User, Clock, Users, Calendar, StickyNote, BookOpen, Lightbulb, Link2, AlertCircle, Dna, FileText } from 'lucide-react';
+import { X, Pencil, Trash2, User, Clock, Users, Calendar, StickyNote, BookOpen, Lightbulb, Link2, AlertCircle, Dna, FileText, Images } from 'lucide-react';
 
 interface Props {
   person: Person;
@@ -22,7 +22,7 @@ const EVENT_ICONS: Record<string, string> = { birth:'✦', death:'†', marriage
 const REL_LABELS: Record<RelationType, string> = { spouse: 'Conjoint(e)', partner: 'Partenaire', parent: 'Parent de', child: 'Enfant de', sibling: 'Frère/Sœur de' };
 
 export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete, onSelectPerson, onAddRelationship, onUpdateRelationship, onDeleteRelationship }: Props) {
-  const [tab, setTab] = useState<'profile'|'life'|'family'|'events'|'notes'|'sources'|'edit'>('profile');
+  const [tab, setTab] = useState<'profile'|'life'|'family'|'events'|'notes'|'sources'|'gallery'|'edit'>('profile');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showAddRel, setShowAddRel] = useState(false);
   const [newRelType, setNewRelType] = useState<RelationType>('spouse');
@@ -229,6 +229,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
           { id:'events', Icon:Calendar, count:person.events?.length },
           { id:'notes', Icon:StickyNote, count:person.notes?.length },
           { id:'sources', Icon:BookOpen, count:person.citations?.length },
+          { id:'gallery', Icon:Images, count:person.photos?.length },
           { id:'edit', Icon:Pencil },
         ] as { id: typeof tab; Icon: typeof User; count?: number }[]).map(({ id, Icon, count }) => (
           <button key={id} onClick={() => setTab(id as typeof tab)} className={`tab ${tab===id?'active':''}`} style={{ display:'inline-flex', alignItems:'center', gap:'5px', padding:'8px 10px', whiteSpace:'nowrap', fontSize:'13px' }} aria-label={id}>
@@ -603,6 +604,26 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                   <button onClick={addCitation} className="btn btn-primary btn-sm" disabled={!newCitation.title?.trim()}>Ajouter</button>
                   <button onClick={()=>{setShowAddCitation(false);setNewCitation({});}} className="btn btn-ghost btn-sm">Annuler</button>
                 </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab==='gallery' && (
+          <div className="animate-fade-in">
+            {(person.photos && person.photos.length > 0) ? (
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(2, 1fr)', gap:'8px' }}>
+                {person.photos.map((url, i) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={i} src={url} alt={`${person.firstName} — photo ${i+1}`}
+                    style={{ width:'100%', aspectRatio:'1', objectFit:'cover', border:'1.5px solid var(--border-strong)', borderRadius:'var(--radius)' }} />
+                ))}
+              </div>
+            ) : (
+              <div style={{ textAlign:'center', padding:'40px 16px', color:'var(--text-muted)', display:'flex', flexDirection:'column', alignItems:'center', gap:'10px' }}>
+                <Images size={40} strokeWidth={1.2} aria-hidden="true" />
+                <p style={{ margin:0, fontSize:'13px' }}>Aucune photo dans la galerie.</p>
+                <button onClick={()=>setTab('edit')} className="btn btn-secondary btn-sm"><Pencil size={13} /> Ajouter des photos</button>
               </div>
             )}
           </div>
