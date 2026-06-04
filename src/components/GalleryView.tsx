@@ -1,12 +1,14 @@
 'use client';
-import { useState, useMemo } from 'react';
-import { Images, LayoutGrid, Rows3, ImageOff, X } from 'lucide-react';
+import { useState, useMemo, useRef } from 'react';
+import { Images, LayoutGrid, Rows3, ImageOff, X, ImageUp, Plus } from 'lucide-react';
 import { FamilyTree, Person } from '@/types';
 import { getDisplayName, formatYear } from '@/lib/treeUtils';
+import { uploadAvatar } from '@/lib/uploadImage';
 
 interface Props {
   tree: FamilyTree;
   onSelectPerson: (id: string) => void;
+  onUpdatePerson?: (personId: string, updates: Partial<Person>) => void;
 }
 
 interface PhotoItem {
@@ -15,10 +17,30 @@ interface PhotoItem {
   isProfile: boolean;
 }
 
-export default function GalleryView({ tree, onSelectPerson }: Props) {
+export default function GalleryView({ tree, onSelectPerson, onUpdatePerson }: Props) {
   const [selected, setSelected] = useState<PhotoItem | null>(null);
   const [filterPersonId, setFilterPersonId] = useState<string>('');
   const [layout, setLayout] = useState<'grid' | 'masonry'>('grid');
+  const [showAdd, setShowAdd] = useState(false);
+  const [addPersonId, setAddPersonId] = useState<string>('');
+  const [uploading, setUploading] = useState(false);
+  const addFileRef = useRef<HTMLInputElement>(null);
+
+  const handleAddFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !addPersonId || !onUpdatePerson) return;
+    if (!file.type.startsWith('image/')) return;
+    setUploading(true);
+    try {
+      const res = await uploadAvatar(file, addPersonId);
+      const person = tree.persons.find(p => p.id === addPersonId);
+      onUpdatePerson(addPersonId, { photos: [...(person?.photos || []), res.url] });
+      setShowAdd(false);
+      setFilterPersonId('');
+    } catch { /* ignore */ }
+    finally { setUploading(false); }
+  };
 
   const photos = useMemo<PhotoItem[]>(() => {
     const items: PhotoItem[] = [];
@@ -69,8 +91,29 @@ export default function GalleryView({ tree, onSelectPerson }: Props) {
               ? <><LayoutGrid size={14} aria-hidden="true" /> Grille</>
               : <><Rows3 size={14} aria-hidden="true" /> Mosaïque</>}
           </button>
+          {onUpdatePerson && tree.persons.length > 0 && (
+            <button onClick={() => { setShowAdd(s => !s); setAddPersonId(''); }} className="btn btn-primary btn-sm" style={{ gap: '6px' }}>
+              <Plus size={14} aria-hidden="true" /> Ajouter une photo
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Add-photo panel */}
+      {showAdd && onUpdatePerson && (
+        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-muted)', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <span className="label" style={{ flexShrink: 0 }}>Associer à</span>
+          <select value={addPersonId} onChange={e => setAddPersonId(e.target.value)} className="input" style={{ width: 'auto', maxWidth: '220px' }}>
+            <option value="">Choisir une personne…</option>
+            {tree.persons.map(p => <option key={p.id} value={p.id}>{getDisplayName(p)}</option>)}
+          </select>
+          <input ref={addFileRef} type="file" accept="image/*" onChange={handleAddFile} style={{ display: 'none' }} />
+          <button onClick={() => addFileRef.current?.click()} disabled={!addPersonId || uploading} className="btn btn-primary btn-sm" style={{ gap: '6px' }}>
+            {uploading ? <span className="spinner" /> : <ImageUp size={14} aria-hidden="true" />} Importer un fichier
+          </button>
+          <button onClick={() => setShowAdd(false)} className="btn btn-ghost btn-sm">Annuler</button>
+        </div>
+      )}
 
       {/* Gallery */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
@@ -83,9 +126,13 @@ export default function GalleryView({ tree, onSelectPerson }: Props) {
                 ? 'Cette personne n\'a pas encore de photo. Ajoutez-en depuis sa fiche.'
                 : 'Ajoutez une photo de profil ou des souvenirs depuis la fiche de chaque personne ; ils apparaîtront ici.'}
             </p>
-            {filterPersonId && (
+            {filterPersonId ? (
               <button className="btn btn-secondary btn-sm" onClick={() => setFilterPersonId('')}>Voir toutes les personnes</button>
-            )}
+            ) : (onUpdatePerson && tree.persons.length > 0 && (
+              <button className="btn btn-primary btn-sm" onClick={() => { setShowAdd(true); setAddPersonId(''); }} style={{ gap: '6px' }}>
+                <Plus size={14} aria-hidden="true" /> Ajouter une photo
+              </button>
+            ))}
           </div>
         ) : (
           <div style={layout === 'grid'

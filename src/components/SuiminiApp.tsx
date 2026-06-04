@@ -139,7 +139,8 @@ export default function SuiminiApp() {
     const person: Person = {
       id: generateId(),
       firstName: data.firstName, lastName: data.lastName, gender: data.gender,
-      isAlive: true, birthDate: data.birthDate, createdAt: now, updatedAt: now,
+      isAlive: true, birthDate: data.birthDate, profilePhoto: data.profilePhoto,
+      createdAt: now, updatedAt: now,
     };
     const tree: FamilyTree = {
       id: '', name: data.treeName, createdAt: now, updatedAt: now,
@@ -254,7 +255,7 @@ export default function SuiminiApp() {
             {view === 'list' && <ListView tree={store.activeTree} onSelectPerson={handleSelectPerson} onAddPerson={() => setShowAddPerson(true)} />}
             {view === 'timeline' && <TimelineView tree={store.activeTree} onSelectPerson={handleSelectPerson} />}
             {view === 'map' && <MapView tree={store.activeTree} onSelectPerson={handleSelectPerson} />}
-            {view === 'gallery' && <GalleryView tree={store.activeTree} onSelectPerson={handleSelectPerson} />}
+            {view === 'gallery' && <GalleryView tree={store.activeTree} onSelectPerson={handleSelectPerson} onUpdatePerson={(id, updates) => { store.updatePerson(id, updates); showToast('Photo ajoutée'); }} />}
             {view === 'journal' && (
               <JournalView
                 tree={store.activeTree}

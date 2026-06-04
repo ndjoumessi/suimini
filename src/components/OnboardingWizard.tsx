@@ -1,7 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Gender } from '@/types';
-import { ArrowRight, Users, UserPlus, Gamepad2, Sparkles } from 'lucide-react';
+import { ArrowRight, Users, UserPlus, Gamepad2, Sparkles, ImageUp, X } from 'lucide-react';
+import { uploadAvatar } from '@/lib/uploadImage';
 
 export interface OnboardingData {
   treeName: string;
@@ -9,6 +10,7 @@ export interface OnboardingData {
   lastName: string;
   birthDate?: string;
   gender: Gender;
+  profilePhoto?: string;
 }
 
 interface Props {
@@ -45,9 +47,24 @@ export default function OnboardingWizard({ onComplete, onSkip }: Props) {
   const [lastName, setLastName] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [gender, setGender] = useState<Gender>('male');
+  const [profilePhoto, setProfilePhoto] = useState('');
+  const [photoLoading, setPhotoLoading] = useState(false);
+  const photoRef = useRef<HTMLInputElement>(null);
 
   const nameOk = treeName.trim().length > 0;
   const personOk = firstName.trim().length > 0 && lastName.trim().length > 0;
+
+  const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !file.type.startsWith('image/')) return;
+    setPhotoLoading(true);
+    try {
+      const res = await uploadAvatar(file, 'new');
+      setProfilePhoto(res.url);
+    } catch { /* ignore */ }
+    finally { setPhotoLoading(false); }
+  };
 
   function finish() {
     onComplete({
@@ -56,6 +73,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: Props) {
       lastName: lastName.trim(),
       birthDate: birthDate || undefined,
       gender,
+      profilePhoto: profilePhoto || undefined,
     });
   }
 
@@ -121,6 +139,23 @@ export default function OnboardingWizard({ onComplete, onSkip }: Props) {
                   </button>
                 );
               })}
+            </div>
+
+            <span className="label" style={{ ...fieldLabel, marginTop: '14px', display: 'block' }}>Photo (optionnel)</span>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <div style={{ width: '48px', height: '48px', flexShrink: 0, border: '1.5px solid var(--border-strong)', borderRadius: 'var(--radius)', background: 'var(--accent-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', color: 'var(--accent)' }}>
+                {profilePhoto
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={profilePhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : <UserPlus size={20} aria-hidden="true" />}
+              </div>
+              <input ref={photoRef} type="file" accept="image/*" onChange={handlePhoto} style={{ display: 'none' }} />
+              <button type="button" onClick={() => photoRef.current?.click()} disabled={photoLoading} className="btn btn-secondary btn-sm">
+                {photoLoading ? <span className="spinner" /> : <ImageUp size={14} />} {profilePhoto ? 'Changer' : 'Importer'}
+              </button>
+              {profilePhoto && (
+                <button type="button" onClick={() => setProfilePhoto('')} aria-label="Retirer la photo" className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--danger)' }}><X size={14} /></button>
+              )}
             </div>
 
             <div style={{ display: 'flex', gap: '8px', marginTop: '24px' }}>
