@@ -10,6 +10,17 @@ import type { UserProfile, UserStatus, UserRole } from '@/types';
 type Tab = 'pending' | 'users' | 'tenants' | 'notifications';
 type Toast = (msg: string, type?: 'success' | 'error' | 'info') => void;
 
+/** Fire-and-forget: ask the server to email the approved user.
+ *  Best-effort — no-ops server-side if RESEND_API_KEY isn't configured. */
+function notifyApproval(email?: string, displayName?: string) {
+  if (!email) return;
+  fetch('/api/send-approval', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, displayName }),
+  }).catch(() => { /* email is non-blocking */ });
+}
+
 function initials(name?: string, email?: string): string {
   const src = (name || email || '?').trim();
   const parts = src.split(/[\s.@_-]+/).filter(Boolean);
@@ -116,6 +127,7 @@ function PendingTab({ admin, pending, onToast }: { admin: AdminData; pending: Us
     setBusy(u.id);
     const { error } = await admin.approveUser(u.id);
     setBusy(null);
+    if (!error) notifyApproval(u.email, u.display_name);
     onToast(error ? `Erreur : ${error}` : 'Compte approuvé', error ? 'error' : 'success');
   }
   async function confirmReject(u: UserProfile) {
@@ -186,9 +198,10 @@ function UsersTab({ admin, isSuperAdmin, onToast }: { admin: AdminData; isSuperA
     return true;
   }), [admin.users, q, filter]);
 
-  async function act(fn: Promise<{ error?: string }>, okMsg: string) {
+  async function act(fn: Promise<{ error?: string }>, okMsg: string, onOk?: () => void) {
     setMenuId(null);
     const { error } = await fn;
+    if (!error) onOk?.();
     onToast(error ? `Erreur : ${error}` : okMsg, error ? 'error' : 'success');
   }
 
@@ -229,7 +242,7 @@ function UsersTab({ admin, isSuperAdmin, onToast }: { admin: AdminData; isSuperA
                   <div onClick={() => setMenuId(null)} style={{ position: 'fixed', inset: 0, zIndex: 90 }} />
                   <div style={{ position: 'absolute', right: 0, top: '100%', zIndex: 100, marginTop: '4px', minWidth: '190px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow-lg)', padding: '4px', display: 'flex', flexDirection: 'column' }}>
                     {(u.status === 'pending' || u.status === 'rejected') && (
-                      <MenuItem Icon={Check} label="Approuver" onClick={() => act(admin.approveUser(u.id), 'Compte approuvé')} />
+                      <MenuItem Icon={Check} label="Approuver" onClick={() => act(admin.approveUser(u.id), 'Compte approuvé', () => notifyApproval(u.email, u.display_name))} />
                     )}
                     {u.status === 'approved' && (
                       <MenuItem Icon={Pause} label="Suspendre" onClick={() => act(admin.setStatus(u.id, 'suspended'), 'Compte suspendu')} />
