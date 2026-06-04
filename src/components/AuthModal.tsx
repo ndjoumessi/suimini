@@ -1,9 +1,10 @@
 'use client';
 import { useState } from 'react';
-import { Mail, Lock, User, Eye, EyeOff, ArrowRight, Gamepad2, Check, X as XIcon, AlertCircle, ArrowLeft, Leaf, Building2 } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, ArrowRight, Gamepad2, Check, X as XIcon, AlertCircle, ArrowLeft, Building2, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useOverlay } from '@/hooks/useOverlay';
 import { passwordChecks, strengthInfo } from '@/lib/password';
+import { BrandLockup } from './Brand';
 
 type Tab = 'login' | 'signup';
 interface Props {
@@ -12,7 +13,7 @@ interface Props {
 }
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-const ACCENT = '#c4935a';
+const ACCENT = 'var(--accent)';
 
 export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
   const { signUp, signIn, resetPassword, startDemo } = useAuth();
@@ -49,7 +50,7 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
       const { error } = await resetPassword(email);
       setLoading(false);
       if (error) setError(error);
-      else setSentMsg('📧 Lien de réinitialisation envoyé. Consultez votre boîte mail.');
+      else setSentMsg('Lien de réinitialisation envoyé. Consultez votre boîte mail.');
       return;
     }
     if (tab === 'login') {
@@ -70,7 +71,7 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
     const { error } = await signUp(email, password, displayName, organization);
     setLoading(false);
     if (error) setError(error);
-    else setSentMsg('✅ Demande envoyée ! Un administrateur va examiner votre inscription.');
+    else setSentMsg('Demande envoyée ! Un administrateur va examiner votre inscription.');
   }
 
   const canSubmit = forgot ? emailValid
@@ -86,19 +87,18 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
 
         {/* Logo + tagline */}
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <Leaf size={24} style={{ color: ACCENT }} aria-hidden="true" />
-            <span className="serif" style={{ fontSize: '26px', color: ACCENT, fontWeight: 700 }}>Suimini</span>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
+            <BrandLockup size={30} color="var(--ink)" accent="var(--accent)" surface="var(--bg-card)" fontSize={24} />
           </div>
-          <p className="serif" style={{ margin: 0, fontSize: '15px', fontStyle: 'italic', color: 'var(--text-muted)' }}>
+          <p className="label" style={{ margin: 0, color: 'var(--text-muted)' }}>
             Votre histoire familiale vous attend
           </p>
         </div>
 
         {sentMsg ? (
           <div className="animate-fade-in" style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '44px', marginBottom: '10px' }}>{sentMsg.slice(0, 2)}</div>
-            <p style={{ fontSize: '14px', lineHeight: 1.6, margin: '0 0 16px' }}>{sentMsg.slice(2).trim()}</p>
+            <CheckCircle2 size={44} style={{ color: 'var(--success)', marginBottom: '10px' }} aria-hidden="true" />
+            <p style={{ fontSize: '14px', lineHeight: 1.6, margin: '0 0 16px' }}>{sentMsg}</p>
             <button onClick={onClose} className="auth-submit">Fermer</button>
           </div>
         ) : forgot ? (
@@ -176,8 +176,8 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
                     <Lock size={18} className="auth-input-icon" />
                     <input id="cpw" type={showConfirm ? 'text' : 'password'} value={confirm} onChange={e => { setConfirm(e.target.value); setError(''); }}
                       placeholder="••••••••" autoComplete="new-password" aria-label="Confirmer le mot de passe" aria-invalid={confirm.length > 0 && !confirmValid}
-                      className="auth-input" style={{ paddingRight: '70px', borderColor: confirm.length > 0 ? (confirmValid ? 'var(--success)' : '#dc2626') : undefined }} />
-                    {confirm.length > 0 && <span style={{ position: 'absolute', right: '44px', top: '50%', transform: 'translateY(-50%)', color: confirmValid ? 'var(--success)' : '#dc2626' }}>{confirmValid ? <Check size={16} /> : <XIcon size={16} />}</span>}
+                      className="auth-input" style={{ paddingRight: '70px', borderColor: confirm.length > 0 ? (confirmValid ? 'var(--success)' : 'var(--danger)') : undefined }} />
+                    {confirm.length > 0 && <span style={{ position: 'absolute', right: '44px', top: '50%', transform: 'translateY(-50%)', color: confirmValid ? 'var(--success)' : 'var(--danger)' }}>{confirmValid ? <Check size={16} /> : <XIcon size={16} />}</span>}
                     <button type="button" onClick={() => setShowConfirm(s => !s)} aria-label={showConfirm ? 'Masquer' : 'Afficher'} className="auth-eye">
                       {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
@@ -221,9 +221,9 @@ function Field({ label, Icon, value, onChange, placeholder, type = 'text', autoC
         <Icon size={18} className="auth-input-icon" />
         <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} autoComplete={autoComplete}
           autoFocus={autoFocus} aria-label={ariaLabel} aria-invalid={valid === false} className="auth-input"
-          style={{ paddingRight: '40px', borderColor: valid === false ? '#dc2626' : valid === true ? 'var(--success)' : undefined }} />
+          style={{ paddingRight: '40px', borderColor: valid === false ? 'var(--danger)' : valid === true ? 'var(--success)' : undefined }} />
         {valid !== undefined && value.length > 0 && (
-          <span style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: valid ? 'var(--success)' : '#dc2626' }}>
+          <span style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: valid ? 'var(--success)' : 'var(--danger)' }}>
             {valid ? <Check size={16} /> : <XIcon size={16} />}
           </span>
         )}
@@ -249,31 +249,31 @@ function SubmitBtn({ loading, disabled, label, style }: { loading: boolean; disa
 }
 
 const AUTH_CSS = `
-.auth-overlay { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.55); backdrop-filter: blur(8px); display: flex; align-items: flex-start; justify-content: center; padding-top: 7vh; overflow-y: auto; }
-.auth-modal { position: relative; width: 92%; max-width: 420px; background: var(--bg-card); border-radius: 20px; box-shadow: 0 24px 64px rgba(0,0,0,0.18); border: 1px solid var(--border); padding: 32px; margin-bottom: 40px; }
-.auth-x { position: absolute; top: 14px; right: 14px; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: none; background: transparent; color: var(--text-muted); border-radius: 8px; cursor: pointer; transition: background 200ms ease, color 200ms ease; }
-.auth-x:hover { background: var(--bg-muted); color: var(--text); }
-.auth-tabs { position: relative; display: flex; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
-.auth-tab { flex: 1; min-height: 44px; padding: 12px 8px; border: none; background: none; cursor: pointer; font-family: 'Lato', sans-serif; font-size: 14px; transition: color 200ms ease; }
-.auth-tab-underline { position: absolute; bottom: -1px; left: 0; width: 50%; height: 2px; background: ${ACCENT}; transition: transform 200ms ease; }
+.auth-overlay { position: fixed; inset: 0; z-index: 2000; background: rgba(27,22,18,0.55); display: flex; align-items: flex-start; justify-content: center; padding-top: 7vh; overflow-y: auto; }
+.auth-modal { position: relative; width: 92%; max-width: 420px; background: var(--bg-card); border-radius: var(--radius-lg); box-shadow: var(--shadow-xl); border: var(--bw) solid var(--border-strong); padding: 32px; margin-bottom: 40px; }
+.auth-x { position: absolute; top: 14px; right: 14px; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: none; background: transparent; color: var(--text-muted); border-radius: var(--radius); cursor: pointer; transition: background 200ms ease, color 200ms ease; }
+.auth-x:hover { background: var(--interactive); color: var(--text); }
+.auth-tabs { position: relative; display: flex; border-bottom: var(--bw) solid var(--border-strong); margin-bottom: 24px; }
+.auth-tab { flex: 1; min-height: 44px; padding: 12px 8px; border: none; background: none; cursor: pointer; font-family: var(--font-body); font-weight: 600; font-size: 14px; transition: color 200ms ease; }
+.auth-tab-underline { position: absolute; bottom: calc(-1 * var(--bw)); left: 0; width: 50%; height: 3px; background: var(--accent); transition: transform 200ms ease; }
 .auth-field { margin-bottom: 16px; }
-.auth-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.auth-label { display: block; font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
 .auth-input-wrap { position: relative; }
 .auth-input-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-light); pointer-events: none; }
-.auth-input { width: 100%; height: 52px; border: 1.5px solid var(--border); border-radius: 10px; padding: 0 16px 0 44px; font-size: 15px; font-family: 'Lato', sans-serif; background: var(--bg-card); color: var(--text); outline: none; transition: border-color 200ms ease, box-shadow 200ms ease; }
-.auth-input:focus { border-color: ${ACCENT}; box-shadow: 0 0 0 3px rgba(196,147,90,0.15); }
-.auth-eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: none; background: transparent; color: var(--text-muted); border-radius: 8px; cursor: pointer; }
-.auth-eye:hover { background: var(--bg-muted); color: var(--text); }
-.auth-forgot { display: block; margin: 8px 0 0 auto; background: none; border: none; color: ${ACCENT}; font-size: 12px; cursor: pointer; text-align: right; padding: 2px; }
+.auth-input { width: 100%; height: 52px; border: var(--bw) solid var(--border-strong); border-radius: var(--radius); padding: 0 16px 0 44px; font-size: 15px; font-family: var(--font-body); background: var(--bg-card); color: var(--text); outline: none; transition: border-color 200ms ease, box-shadow 200ms ease; }
+.auth-input:focus { border-color: var(--accent); box-shadow: 3px 3px 0 var(--accent-light); }
+.auth-eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: none; background: transparent; color: var(--text-muted); border-radius: var(--radius); cursor: pointer; }
+.auth-eye:hover { background: var(--interactive); color: var(--text); }
+.auth-forgot { display: block; margin: 8px 0 0 auto; background: none; border: none; color: var(--accent); font-size: 12px; font-weight: 600; cursor: pointer; text-align: right; padding: 2px; }
 .auth-forgot:hover { text-decoration: underline; }
-.auth-error { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #dc2626; margin: 6px 0 12px; }
-.auth-submit { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 52px; background: linear-gradient(135deg, #c4935a, #a87340); border: none; border-radius: 12px; color: #fff; font-weight: 700; font-size: 15px; font-family: 'Lato', sans-serif; cursor: pointer; transition: transform 200ms ease, box-shadow 200ms ease, opacity 200ms ease; }
-.auth-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(196,147,90,0.35); }
-.auth-submit:active:not(:disabled) { transform: translateY(0) scale(0.99); }
-.auth-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+.auth-error { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--danger); margin: 6px 0 12px; }
+.auth-submit { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 52px; background: var(--accent); border: var(--bw) solid var(--border-strong); border-radius: var(--radius); color: #fff; font-weight: 700; font-size: 15px; font-family: var(--font-body); cursor: pointer; transition: transform 150ms var(--ease-out), box-shadow 150ms var(--ease-out), opacity 200ms ease; }
+.auth-submit:hover:not(:disabled) { transform: translate(-2px,-2px); box-shadow: var(--shadow); background: var(--accent-hover); }
+.auth-submit:active:not(:disabled) { transform: translate(0,0); box-shadow: 1px 1px 0 var(--shadow-color); }
+.auth-submit:disabled { opacity: 0.45; cursor: not-allowed; }
 .auth-or { display: flex; align-items: center; gap: 12px; margin: 20px 0; }
-.auth-or span { flex: 1; height: 1px; background: var(--border); }
-.auth-or small { font-size: 12px; color: var(--text-light); }
-.auth-demo { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 48px; background: var(--bg-muted); border: 1.5px dashed var(--border); border-radius: 12px; color: var(--text-muted); font-size: 14px; font-family: 'Lato', sans-serif; cursor: pointer; transition: background 200ms ease, border-color 200ms ease, color 200ms ease; }
-.auth-demo:hover { background: var(--bg-card); border-color: ${ACCENT}; color: var(--text); }
+.auth-or span { flex: 1; height: var(--bw); background: var(--border-strong); }
+.auth-or small { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-light); }
+.auth-demo { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 48px; background: var(--bg-card); border: var(--bw) solid var(--border-strong); border-radius: var(--radius); color: var(--text); font-weight: 600; font-size: 14px; font-family: var(--font-body); cursor: pointer; transition: transform 150ms var(--ease-out), box-shadow 150ms var(--ease-out); }
+.auth-demo:hover { transform: translate(-2px,-2px); box-shadow: var(--shadow); }
 `;

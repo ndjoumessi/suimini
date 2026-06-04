@@ -8,7 +8,7 @@ export const spacing = {
 } as const;
 
 export const radius = {
-  sm: 4, md: 8, lg: 12, xl: 16, full: 9999,
+  sm: 0, md: 2, lg: 4, xl: 6, full: 9999,
 } as const;
 
 export const fontSize = {
@@ -23,11 +23,12 @@ export const lineHeight = {
   tight: 1.2, snug: 1.4, normal: 1.6, relaxed: 1.8,
 } as const;
 
+/* Hard-offset shadows: flat at rest, the offset answers state (Atelier). */
 export const shadow = {
-  sm: '0 1px 2px rgba(26,22,18,0.06)',
-  md: '0 2px 12px rgba(26,22,18,0.08)',
-  lg: '0 8px 32px rgba(26,22,18,0.12)',
-  xl: '0 16px 48px rgba(26,22,18,0.18)',
+  sm: '2px 2px 0 rgba(27,22,18,0.16)',
+  md: '4px 4px 0 rgba(27,22,18,0.9)',
+  lg: '6px 6px 0 rgba(27,22,18,0.9)',
+  xl: '10px 10px 0 rgba(27,22,18,0.9)',
 } as const;
 
 export const zIndex = {

@@ -172,7 +172,7 @@ export default function GalleryView({ tree, onSelectPerson }: Props) {
               aria-label="Fermer"
               style={{
                 position: 'absolute', top: '-12px', right: '-12px',
-                background: 'white', color: '#1a1612', border: 'none', borderRadius: '50%',
+                background: 'var(--bg-card)', color: 'var(--text)', border: '1.5px solid var(--border-strong)', borderRadius: 'var(--radius)',
                 width: '32px', height: '32px', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.3)',

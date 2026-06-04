@@ -2,6 +2,7 @@
 import { useOverlay } from '@/hooks/useOverlay';
 import { useState } from 'react';
 import { FamilyTree } from '@/types';
+import { TreePine, X, Pencil, Copy, Trash2 } from 'lucide-react';
 
 interface Props {
   trees: FamilyTree[];
@@ -40,8 +41,8 @@ export default function TreeSelectorModal({ trees, activeTreeId, shared = {}, on
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div ref={overlayRef} tabIndex={-1} className="modal" style={{ maxWidth: '520px' }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 className="serif" style={{ margin: 0 }}>🌳 Mes arbres</h2>
-          <button onClick={onClose} className="btn btn-ghost btn-sm">✕</button>
+          <h2 className="serif" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}><TreePine size={20} aria-hidden="true" /> Mes arbres</h2>
+          <button onClick={onClose} aria-label="Fermer" className="btn btn-ghost btn-sm btn-icon"><X size={16} /></button>
         </div>
 
         <div style={{ padding: '16px 24px', maxHeight: '60vh', overflowY: 'auto' }}>
@@ -83,7 +84,7 @@ export default function TreeSelectorModal({ trees, activeTreeId, shared = {}, on
                       <button
                         onClick={() => { if (dupName.trim()) { onDuplicate(tree.id, dupName.trim()); setDupId(null); onClose(); } }}
                         className="btn btn-primary btn-sm" disabled={!dupName.trim()}
-                      >📋 Dupliquer</button>
+                      ><Copy size={14} /> Dupliquer</button>
                       <button onClick={() => setDupId(null)} className="btn btn-ghost btn-sm">Annuler</button>
                     </div>
                   </div>
@@ -94,7 +95,7 @@ export default function TreeSelectorModal({ trees, activeTreeId, shared = {}, on
                       onClick={() => { onSelect(tree.id); onClose(); }}
                       style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0, border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}
                     >
-                      <span style={{ fontSize: '28px' }}>🌳</span>
+                      <span style={{ width: '40px', height: '40px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid var(--border-strong)', borderRadius: 'var(--radius)', background: 'var(--accent-light)', color: 'var(--accent)' }}><TreePine size={20} aria-hidden="true" /></span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: '700', fontSize: '14px' }}>
                           {tree.name}
@@ -122,10 +123,10 @@ export default function TreeSelectorModal({ trees, activeTreeId, shared = {}, on
                       </div>
                     ) : (
                       <div style={{ display: 'flex', gap: '2px', flexShrink: 0 }}>
-                        <button onClick={() => startEdit(tree)} className="btn btn-ghost btn-sm" title="Renommer / modifier" style={{ color: 'var(--text-light)' }}>✏️</button>
-                        <button onClick={() => startDup(tree)} className="btn btn-ghost btn-sm" title="Dupliquer" style={{ color: 'var(--text-light)' }}>📋</button>
+                        <button onClick={() => startEdit(tree)} className="btn btn-ghost btn-sm btn-icon" aria-label="Renommer / modifier" title="Renommer / modifier" style={{ color: 'var(--text-light)' }}><Pencil size={14} /></button>
+                        <button onClick={() => startDup(tree)} className="btn btn-ghost btn-sm btn-icon" aria-label="Dupliquer" title="Dupliquer" style={{ color: 'var(--text-light)' }}><Copy size={14} /></button>
                         {trees.length > 1 && (
-                          <button onClick={() => setDeleteConfirm(tree.id)} className="btn btn-ghost btn-sm" title="Supprimer" style={{ color: 'var(--text-light)' }}>🗑</button>
+                          <button onClick={() => setDeleteConfirm(tree.id)} className="btn btn-ghost btn-sm btn-icon" aria-label="Supprimer" title="Supprimer" style={{ color: 'var(--text-light)' }}><Trash2 size={14} /></button>
                         )}
                       </div>
                     )}

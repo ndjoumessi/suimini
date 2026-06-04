@@ -1,9 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Lock, Eye, EyeOff, Check, X, ArrowRight, AlertCircle } from 'lucide-react';
+import { Lock, Eye, EyeOff, Check, X, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { passwordChecks, passwordScore, strengthLevel } from '@/lib/password';
+import { BrandLockup } from '@/components/Brand';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -42,7 +43,7 @@ export default function ResetPasswordPage() {
     setLoading(false);
     if (error) { setError(error.message); return; }
     setDone(true);
-    try { sessionStorage.setItem('suimini_pending_toast', '✅ Mot de passe mis à jour, vous êtes connecté'); } catch { /* ignore */ }
+    try { sessionStorage.setItem('suimini_pending_toast', 'Mot de passe mis à jour, vous êtes connecté'); } catch { /* ignore */ }
     setTimeout(() => router.push('/app'), 1400);
   }
 
@@ -50,7 +51,9 @@ export default function ResetPasswordPage() {
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', background: 'var(--bg)' }}>
       <div className="card animate-scale-in" style={{ width: '100%', maxWidth: '420px', padding: '28px 24px' }}>
         <div style={{ textAlign: 'center', marginBottom: '18px' }}>
-          <div className="serif" style={{ fontSize: '1.7rem', color: 'var(--accent)' }}>🌿 Suimini</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px' }}>
+            <BrandLockup size={28} color="var(--ink)" accent="var(--accent)" surface="var(--bg-card)" fontSize={22} />
+          </div>
           <h1 className="serif" style={{ fontSize: '1.3rem', margin: '8px 0 0' }}>Nouveau mot de passe</h1>
         </div>
 
@@ -66,7 +69,7 @@ export default function ResetPasswordPage() {
 
         {ready === 'ok' && (done ? (
           <div style={{ textAlign: 'center' }} className="animate-fade-in">
-            <div style={{ fontSize: '40px', marginBottom: '8px' }}>✅</div>
+            <CheckCircle2 size={40} style={{ color: 'var(--success)', marginBottom: '8px' }} aria-hidden="true" />
             <p>Mot de passe mis à jour. Redirection…</p>
           </div>
         ) : (

@@ -2,13 +2,16 @@ import { ColorTheme, ColorThemeId } from '@/types';
 
 export const THEME_STORAGE_KEY = 'suimini_color_theme';
 
+// Atelier palette: each accent is tuned to sit on the bone (#f4f1ea) / ink
+// (#1b1b1b) canvas with hard-offset shadows. `id` values stay stable for
+// localStorage compatibility; the default ('sepia') now carries terracotta.
 export const COLOR_THEMES: ColorTheme[] = [
-  { id: 'sepia',    name: 'Sépia',    emoji: '📜', accent: '#8b6f47', male: '#3b6fa0', female: '#a05070' },
-  { id: 'slate',    name: 'Ardoise',  emoji: '🪨', accent: '#566573', male: '#4a7a9a', female: '#9a6a82' },
-  { id: 'forest',   name: 'Forêt',    emoji: '🌲', accent: '#4a7c59', male: '#3b7a6a', female: '#9c6b4a' },
-  { id: 'bordeaux', name: 'Bordeaux', emoji: '🍷', accent: '#8b3a52', male: '#7a4a6a', female: '#b3556e' },
-  { id: 'marine',   name: 'Marine',   emoji: '⚓', accent: '#2c5f8a', male: '#3b6fa0', female: '#5a7a9a' },
-  { id: 'midnight', name: 'Minuit',   emoji: '🌙', accent: '#6a5acd', male: '#5b6fc0', female: '#9a6ac0' },
+  { id: 'sepia',    name: 'Terracotta', emoji: '🧱', accent: '#bf4b2c', male: '#2c5f8a', female: '#a8456b' },
+  { id: 'slate',    name: 'Ardoise',    emoji: '🪨', accent: '#4a5a66', male: '#3f6f8e', female: '#8e5a72' },
+  { id: 'forest',   name: 'Forêt',      emoji: '🌲', accent: '#2f6e4f', male: '#356b6a', female: '#9c6b4a' },
+  { id: 'bordeaux', name: 'Bordeaux',   emoji: '🍷', accent: '#8e2f44', male: '#7a4a6a', female: '#b3556e' },
+  { id: 'marine',   name: 'Marine',     emoji: '⚓', accent: '#2c5f8a', male: '#3b6fa0', female: '#5a7a9a' },
+  { id: 'midnight', name: 'Indigo',     emoji: '🌙', accent: '#4338ca', male: '#5b6fc0', female: '#9a6ac0' },
 ];
 
 export function getTheme(id: ColorThemeId): ColorTheme {

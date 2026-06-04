@@ -4,6 +4,14 @@ import { useState, useRef } from 'react';
 import { FamilyTree } from '@/types';
 import { getDisplayName, formatDate, formatYear, getAge, computeTreeStats } from '@/lib/treeUtils';
 import { buildTreeLayout, NODE_W, NODE_H } from '@/lib/treeLayout';
+import { List, LayoutGrid, BarChart3, TreePine } from 'lucide-react';
+
+const PRINT_MODE_META = {
+  list: { Icon: List, label: 'Liste' },
+  cards: { Icon: LayoutGrid, label: 'Fiches' },
+  summary: { Icon: BarChart3, label: 'Résumé' },
+  tree: { Icon: TreePine, label: 'Arbre visuel' },
+} as const;
 
 interface Props {
   tree: FamilyTree;
@@ -83,7 +91,7 @@ export default function PrintModal({ tree, onClose }: Props) {
   }
 
   function genderColorHex(g: string) {
-    return g === 'male' ? '#3b6fa0' : g === 'female' ? '#a05070' : '#a09890';
+    return g === 'male' ? '#2c5f8a' : g === 'female' ? '#a8456b' : '#6e6a62';
   }
 
   const stats = computeTreeStats(tree);
@@ -106,49 +114,49 @@ export default function PrintModal({ tree, onClose }: Props) {
       <head>
         <meta charset="UTF-8">
         <title>${tree.name} — Suimini</title>
-        <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
         <style>
           * { box-sizing: border-box; margin: 0; padding: 0; }
-          body { font-family: 'Lato', sans-serif; font-size: 11pt; color: #1a1612; background: white; padding: 20mm; }
-          h1 { font-family: 'Playfair Display', serif; font-size: 24pt; color: #8b6f47; margin-bottom: 6pt; }
-          h2 { font-family: 'Playfair Display', serif; font-size: 14pt; color: #1a1612; margin: 16pt 0 6pt; border-bottom: 1pt solid #e8e2da; padding-bottom: 4pt; }
-          h3 { font-family: 'Playfair Display', serif; font-size: 11pt; }
-          .header { text-align: center; margin-bottom: 20pt; padding-bottom: 12pt; border-bottom: 2pt solid #8b6f47; }
-          .subtitle { color: #6b6560; font-size: 10pt; margin-top: 4pt; }
-          .stats-row { display: flex; gap: 16pt; justify-content: center; margin-top: 10pt; font-size: 9pt; color: #6b6560; }
+          body { font-family: 'Inter', sans-serif; font-size: 11pt; color: #1b1b1b; background: white; padding: 20mm; }
+          h1 { font-family: 'Space Grotesk', sans-serif; font-size: 24pt; color: #bf4b2c; margin-bottom: 6pt; }
+          h2 { font-family: 'Space Grotesk', sans-serif; font-size: 14pt; color: #1b1b1b; margin: 16pt 0 6pt; border-bottom: 1pt solid #d8d2c6; padding-bottom: 4pt; }
+          h3 { font-family: 'Space Grotesk', sans-serif; font-size: 11pt; }
+          .header { text-align: center; margin-bottom: 20pt; padding-bottom: 12pt; border-bottom: 2pt solid #bf4b2c; }
+          .subtitle { color: #4a4742; font-size: 10pt; margin-top: 4pt; }
+          .stats-row { display: flex; gap: 16pt; justify-content: center; margin-top: 10pt; font-size: 9pt; color: #4a4742; }
           .stat { text-align: center; }
-          .stat-val { font-size: 16pt; font-weight: 700; color: #8b6f47; display: block; }
+          .stat-val { font-size: 16pt; font-weight: 700; color: #bf4b2c; display: block; }
           
           /* List mode */
-          .person-row { display: flex; gap: 10pt; align-items: flex-start; padding: 8pt 0; border-bottom: 0.5pt solid #f0ece5; page-break-inside: avoid; }
-          .avatar { width: 36pt; height: 36pt; border-radius: 50%; overflow: hidden; flex-shrink: 0; background: #f4f1ec; display: flex; align-items: center; justify-content: center; font-size: 16pt; border: 1.5pt solid #e8e2da; }
+          .person-row { display: flex; gap: 10pt; align-items: flex-start; padding: 8pt 0; border-bottom: 0.5pt solid #ece7dc; page-break-inside: avoid; }
+          .avatar { width: 36pt; height: 36pt; border-radius: 50%; overflow: hidden; flex-shrink: 0; background: #ece7dc; display: flex; align-items: center; justify-content: center; font-size: 16pt; border: 1.5pt solid #d8d2c6; }
           .avatar img { width: 100%; height: 100%; object-fit: cover; }
           .person-info { flex: 1; }
           .person-name { font-weight: 700; font-size: 11pt; }
-          .person-maiden { font-weight: 400; color: #6b6560; font-size: 9pt; }
-          .person-detail { font-size: 9pt; color: #6b6560; margin-top: 1pt; }
-          .person-bio { font-size: 8.5pt; color: #888; margin-top: 2pt; font-style: italic; }
-          .gender-m { border-left: 3pt solid #3b6fa0; padding-left: 6pt; }
-          .gender-f { border-left: 3pt solid #a05070; padding-left: 6pt; }
+          .person-maiden { font-weight: 400; color: #4a4742; font-size: 9pt; }
+          .person-detail { font-size: 9pt; color: #4a4742; margin-top: 1pt; }
+          .person-bio { font-size: 8.5pt; color: #6e6a62; margin-top: 2pt; font-style: italic; }
+          .gender-m { border-left: 3pt solid #2c5f8a; padding-left: 6pt; }
+          .gender-f { border-left: 3pt solid #a8456b; padding-left: 6pt; }
           .deceased { opacity: 0.75; }
           
           /* Cards mode */
           .cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12pt; }
-          .person-card { border: 1pt solid #e8e2da; border-radius: 6pt; padding: 10pt; page-break-inside: avoid; }
-          .person-card.gender-m { border-top: 3pt solid #3b6fa0; }
-          .person-card.gender-f { border-top: 3pt solid #a05070; }
+          .person-card { border: 1pt solid #d8d2c6; border-radius: 6pt; padding: 10pt; page-break-inside: avoid; }
+          .person-card.gender-m { border-top: 3pt solid #2c5f8a; }
+          .person-card.gender-f { border-top: 3pt solid #a8456b; }
           .card-header { display: flex; gap: 8pt; align-items: center; margin-bottom: 8pt; }
           .card-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 4pt; }
-          .date-block { background: #faf8f5; padding: 4pt 6pt; border-radius: 3pt; font-size: 8.5pt; }
-          .date-label { font-size: 7.5pt; color: #a09890; text-transform: uppercase; letter-spacing: 0.5pt; }
+          .date-block { background: #f4f1ea; padding: 4pt 6pt; border-radius: 3pt; font-size: 8.5pt; }
+          .date-label { font-size: 7.5pt; color: #6e6a62; text-transform: uppercase; letter-spacing: 0.5pt; }
           
           /* Summary */
           .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10pt; margin: 12pt 0; }
-          .summary-card { background: #faf8f5; border-radius: 6pt; padding: 10pt; text-align: center; }
-          .summary-card .val { font-size: 22pt; font-weight: 700; color: #8b6f47; font-family: 'Playfair Display', serif; }
-          .summary-card .lbl { font-size: 8pt; color: #6b6560; text-transform: uppercase; letter-spacing: 0.5pt; }
+          .summary-card { background: #f4f1ea; border-radius: 6pt; padding: 10pt; text-align: center; }
+          .summary-card .val { font-size: 22pt; font-weight: 700; color: #bf4b2c; font-family: 'Space Grotesk', sans-serif; }
+          .summary-card .lbl { font-size: 8pt; color: #4a4742; text-transform: uppercase; letter-spacing: 0.5pt; }
           
-          .ornament { text-align: center; color: #c8b89a; font-family: 'Playfair Display', serif; font-size: 14pt; letter-spacing: 6pt; margin: 12pt 0; }
+          .ornament { text-align: center; color: #bf4b2c; font-family: 'Space Grotesk', sans-serif; font-size: 14pt; letter-spacing: 6pt; margin: 12pt 0; }
           
           @media print {
             body { padding: 10mm; }
@@ -178,15 +186,16 @@ export default function PrintModal({ tree, onClose }: Props) {
         {/* Options */}
         <div style={{ padding: '14px 24px', borderBottom: '1px solid var(--border)', display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center', background: 'var(--bg-muted)' }}>
           <div style={{ display: 'flex', gap: '6px' }}>
-            {(['list','cards','summary','tree'] as PrintMode[]).map(m => (
+            {(['list','cards','summary','tree'] as PrintMode[]).map(m => {
+              const { Icon, label } = PRINT_MODE_META[m];
+              return (
               <button key={m} onClick={() => setMode(m)} className="btn btn-sm" style={{
                 background: mode === m ? 'var(--accent)' : 'var(--bg-card)',
                 color: mode === m ? 'white' : 'var(--text-muted)',
-                border: '1px solid var(--border)',
               }}>
-                {{ list: '📋 Liste', cards: '🗂 Fiches', summary: '📊 Résumé', tree: '🌳 Arbre visuel' }[m]}
+                <Icon size={14} aria-hidden="true" /> {label}
               </button>
-            ))}
+            ); })}
           </div>
           {mode !== 'tree' && (
             <>
@@ -221,10 +230,10 @@ export default function PrintModal({ tree, onClose }: Props) {
         </div>
 
         {/* Print preview */}
-        <div style={{ padding: '20px 24px', maxHeight: 'calc(90vh - 160px)', overflowY: 'auto', background: '#f0ece5' }}>
+        <div style={{ padding: '20px 24px', maxHeight: 'calc(90vh - 160px)', overflowY: 'auto', background: '#ece7dc' }}>
           <div ref={printRef} style={{ background: 'white', padding: '24px', borderRadius: '4px', boxShadow: '0 2px 12px rgba(0,0,0,0.1)', display: mode === 'tree' ? 'none' : 'block' }}>
             {/* Header */}
-            <div className="header" style={{ textAlign: 'center', marginBottom: '20px', paddingBottom: '12px', borderBottom: '2px solid #8b6f47' }}>
+            <div className="header" style={{ textAlign: 'center', marginBottom: '20px', paddingBottom: '12px', borderBottom: '2px solid #bf4b2c' }}>
               <h1 className="serif" style={{ fontSize: '1.8rem', color: 'var(--accent)', margin: '0 0 4px' }}>
                 {tree.name}
               </h1>
@@ -368,7 +377,7 @@ export default function PrintModal({ tree, onClose }: Props) {
           {mode === 'tree' && (
             <div style={{ overflow: 'auto', maxWidth: '100%' }}>
               {treeLayout.nodes.length === 0 ? (
-                <div style={{ background: 'white', padding: '40px', borderRadius: '4px', textAlign: 'center', color: '#6b6560' }}>
+                <div style={{ background: 'white', padding: '40px', borderRadius: '4px', textAlign: 'center', color: '#4a4742' }}>
                   Aucune personne à représenter.
                 </div>
               ) : (
@@ -394,18 +403,18 @@ export default function PrintModal({ tree, onClose }: Props) {
                         position: 'absolute',
                         left: `${node.x - treeLayout.minX}px`, top: `${node.y - treeLayout.minY}px`,
                         width: `${NODE_W}px`, height: `${NODE_H}px`,
-                        background: '#ffffff', border: '1.5px solid #e8e2da', borderRadius: '10px',
+                        background: '#ffffff', border: '1.5px solid #d8d2c6', borderRadius: '10px',
                         boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: '8px',
                         padding: '0 10px 0 12px', overflow: 'hidden',
                       }}>
                         <div style={{ position: 'absolute', left: 0, top: '10px', bottom: '10px', width: '5px', borderRadius: '4px', background: genderColorHex(p.gender) }} />
-                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0, background: p.gender === 'male' ? '#deeaf5' : p.gender === 'female' ? '#f5dde8' : '#f4f1ec', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0, background: p.gender === 'male' ? '#deeaf5' : p.gender === 'female' ? '#f5dde8' : '#ece7dc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
                           {p.gender === 'male' ? '👨' : p.gender === 'female' ? '👩' : '🧑'}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontFamily: 'Lato, sans-serif', fontWeight: 700, fontSize: '12px', color: '#1a1612', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.firstName}</div>
-                          <div style={{ fontFamily: 'Lato, sans-serif', fontSize: '11px', color: '#6b6560', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.lastName}{!p.isAlive ? ' ✝' : ''}</div>
-                          <div style={{ fontFamily: 'Lato, sans-serif', fontSize: '9.5px', color: '#a09890' }}>
+                          <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', color: '#1b1b1b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.firstName}</div>
+                          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#4a4742', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.lastName}{!p.isAlive ? ' ✝' : ''}</div>
+                          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '9.5px', color: '#6e6a62' }}>
                             {p.birthDate ? `✦ ${formatYear(p.birthDate)}` : ''}
                             {!p.isAlive && p.deathDate ? ` – ${formatYear(p.deathDate)}` : (age !== null && p.isAlive ? ` · ${age} ans` : '')}
                           </div>

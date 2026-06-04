@@ -1,10 +1,18 @@
 'use client';
 import { useState, useMemo } from 'react';
 import { FamilyTree, Person } from '@/types';
+import { Search, Link2, Scale, TreePine, Sprout, User, AlertCircle } from 'lucide-react';
 import {
   getDisplayName, formatYear, getAllAncestors, getAllDescendants,
   findCommonAncestors, findRelationPath, describeRelation, getAge
 } from '@/lib/treeUtils';
+
+const MODE_META = {
+  relation: { Icon: Link2, label: 'Lien de parenté' },
+  compare: { Icon: Scale, label: 'Comparer' },
+  ancestors: { Icon: TreePine, label: 'Ancêtres' },
+  descendants: { Icon: Sprout, label: 'Descendants' },
+} as const;
 
 interface Props {
   tree: FamilyTree;
@@ -53,12 +61,14 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)' }}>
-        <h2 className="serif" style={{ margin: '0 0 10px', fontSize: '1.1rem' }}>
-          🔍 Exploration familiale
+        <h2 className="serif" style={{ margin: '0 0 10px', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Search size={18} aria-hidden="true" /> Exploration familiale
         </h2>
         {/* Mode selector */}
-        <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
-          {(['relation','compare','ancestors','descendants'] as const).map(m => (
+        <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', flexWrap: 'wrap' }}>
+          {(['relation','compare','ancestors','descendants'] as const).map(m => {
+            const { Icon, label } = MODE_META[m];
+            return (
             <button
               key={m}
               onClick={() => setMode(m)}
@@ -66,12 +76,11 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
               style={{
                 background: mode === m ? 'var(--accent)' : 'var(--bg-muted)',
                 color: mode === m ? 'white' : 'var(--text-muted)',
-                border: '1px solid var(--border)',
               }}
             >
-              {{ relation: '🔗 Lien de parenté', compare: '⚖️ Comparer', ancestors: '🌲 Ancêtres', descendants: '🌱 Descendants' }[m]}
+              <Icon size={14} aria-hidden="true" /> {label}
             </button>
-          ))}
+          ); })}
         </div>
 
         {/* Inputs */}
@@ -118,11 +127,11 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
                 <div style={{ textAlign: 'center' }}>
                   {relation ? (
                     <>
-                      <div style={{ fontSize: '24px', marginBottom: '4px' }}>🔗</div>
-                      <div style={{ 
+                      <div style={{ marginBottom: '4px', display: 'flex', justifyContent: 'center', color: 'var(--accent)' }}><Link2 size={22} aria-hidden="true" /></div>
+                      <div style={{
                         background: 'var(--accent-light)', color: 'var(--accent)',
-                        padding: '6px 14px', borderRadius: '100px',
-                        fontWeight: '700', fontSize: '14px', border: '1px solid var(--accent)',
+                        padding: '6px 14px', borderRadius: 'var(--radius)',
+                        fontWeight: '700', fontSize: '14px', border: '1.5px solid var(--accent)',
                       }}>
                         {relation}
                       </div>
@@ -133,8 +142,8 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
                       )}
                     </>
                   ) : (
-                    <div style={{ color: 'var(--text-muted)', fontSize: '13px', padding: '8px' }}>
-                      ⚠️ Aucun lien familial trouvé
+                    <div style={{ color: 'var(--text-muted)', fontSize: '13px', padding: '8px', display: 'flex', alignItems: 'center', gap: '5px', justifyContent: 'center' }}>
+                      <AlertCircle size={14} aria-hidden="true" /> Aucun lien familial trouvé
                     </div>
                   )}
                 </div>
@@ -161,7 +170,7 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
                         onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = 'var(--accent-light)'; }}
                         onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg-muted)'; }}
                       >
-                        <span>{p.gender === 'male' ? '👨' : p.gender === 'female' ? '👩' : '🧑'}</span>
+                        <span style={{ display: 'inline-flex', color: p.gender === 'male' ? 'var(--male)' : p.gender === 'female' ? 'var(--female)' : 'var(--text-muted)' }}><User size={14} aria-hidden="true" /></span>
                         <span>{getDisplayName(p)}</span>
                       </button>
                       {i < pathPersons.length - 1 && (
@@ -196,7 +205,7 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
             <div className="card" style={{ padding: '16px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-around', gap: '12px' }}>
               <PersonBubble person={person1} onClick={() => onSelectPerson(person1.id)} />
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '22px', marginBottom: '4px' }}>⚖️</div>
+                <div style={{ marginBottom: '4px', display: 'flex', justifyContent: 'center', color: 'var(--accent)' }}><Scale size={20} aria-hidden="true" /></div>
                 {relation
                   ? <span className="badge badge-accent" style={{ fontSize: '12px' }}>{relation}</span>
                   : <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Aucun lien direct</span>}
@@ -308,8 +317,8 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
 
         {(!person1Id || (dual && !person2Id)) && (
           <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>
-            <div style={{ fontSize: '48px', marginBottom: '12px' }}>
-              {{ relation: '🔗', compare: '⚖️', ancestors: '🌲', descendants: '🌱' }[mode]}
+            <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'center' }}>
+              {(() => { const { Icon } = MODE_META[mode]; return <Icon size={48} strokeWidth={1.2} aria-hidden="true" />; })()}
             </div>
             <p>{!person1Id
               ? 'Sélectionnez une personne pour commencer'
@@ -327,14 +336,14 @@ function PersonBubble({ person, onClick }: { person: Person | null; onClick: () 
     <button onClick={onClick} style={{ border: 'none', background: 'none', cursor: 'pointer', textAlign: 'center' }}>
       <div style={{
         width: '64px', height: '64px', borderRadius: '50%', margin: '0 auto 6px',
-        background: person.gender === 'male' ? '#deeaf5' : person.gender === 'female' ? '#f5dde8' : 'var(--bg-muted)',
+        background: person.gender === 'male' ? 'color-mix(in srgb, var(--male) 16%, var(--bg-card))' : person.gender === 'female' ? 'color-mix(in srgb, var(--female) 16%, var(--bg-card))' : 'var(--bg-muted)',
         display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px',
         overflow: 'hidden',
         border: `3px solid ${person.gender === 'male' ? 'var(--male)' : person.gender === 'female' ? 'var(--female)' : 'var(--border)'}`,
       }}>
         {person.profilePhoto
           ? <img src={person.profilePhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          : person.gender === 'male' ? '👨' : person.gender === 'female' ? '👩' : '🧑'
+          : <User size={22} aria-hidden="true" style={{ color: person.gender === 'male' ? 'var(--male)' : person.gender === 'female' ? 'var(--female)' : 'var(--text-muted)' }} />
         }
       </div>
       <div style={{ fontSize: '12px', fontWeight: '700' }}>{person.firstName}</div>
@@ -361,13 +370,13 @@ function PersonCard({ person, onClick }: { person: Person; onClick: () => void }
     >
       <div style={{
         width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
-        background: person.gender === 'male' ? '#deeaf5' : '#f5dde8',
+        background: person.gender === 'male' ? 'color-mix(in srgb, var(--male) 16%, var(--bg-card))' : 'color-mix(in srgb, var(--female) 16%, var(--bg-card))',
         display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px',
         overflow: 'hidden',
       }}>
         {person.profilePhoto
           ? <img src={person.profilePhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          : person.gender === 'male' ? '👨' : person.gender === 'female' ? '👩' : '🧑'
+          : <User size={22} aria-hidden="true" style={{ color: person.gender === 'male' ? 'var(--male)' : person.gender === 'female' ? 'var(--female)' : 'var(--text-muted)' }} />
         }
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>

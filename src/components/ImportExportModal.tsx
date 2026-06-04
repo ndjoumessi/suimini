@@ -3,6 +3,7 @@ import { useOverlay } from '@/hooks/useOverlay';
 import { useState, useRef } from 'react';
 import { FamilyTree } from '@/types';
 import { exportGEDCOM, importGEDCOM } from '@/lib/treeUtils';
+import { CheckCircle2, AlertCircle, FolderOpen, X } from 'lucide-react';
 
 interface Props {
   tree: FamilyTree;
@@ -15,6 +16,7 @@ export default function ImportExportModal({ tree, onImport, onClose, initialTab 
   const [tab, setTab] = useState<'export' | 'import'>(initialTab);
   const [importing, setImporting] = useState(false);
   const [importMsg, setImportMsg] = useState('');
+  const [importOk, setImportOk] = useState<boolean | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   function downloadFile(content: string, filename: string, mimeType: string) {
@@ -38,6 +40,7 @@ export default function ImportExportModal({ tree, onImport, onClose, initialTab 
     if (!file) return;
     setImporting(true);
     setImportMsg('');
+    setImportOk(null);
 
     const reader = new FileReader();
     reader.onload = (ev) => {
@@ -47,7 +50,8 @@ export default function ImportExportModal({ tree, onImport, onClose, initialTab 
           const imported = JSON.parse(content) as FamilyTree;
           if (!imported.persons || !Array.isArray(imported.persons)) throw new Error('Format invalide');
           onImport(imported);
-          setImportMsg(`✅ Importé : ${imported.persons.length} personnes`);
+          setImportOk(true);
+          setImportMsg(`Importé : ${imported.persons.length} personnes`);
         } else if (file.name.endsWith('.ged') || file.name.endsWith('.gedcom')) {
           const partial = importGEDCOM(content);
           const newTree: FamilyTree = {
@@ -56,12 +60,15 @@ export default function ImportExportModal({ tree, onImport, onClose, initialTab 
             persons: partial.persons || [], relationships: partial.relationships || [],
           };
           onImport(newTree);
-          setImportMsg(`✅ Importé depuis GEDCOM : ${newTree.persons.length} personnes`);
+          setImportOk(true);
+          setImportMsg(`Importé depuis GEDCOM : ${newTree.persons.length} personnes`);
         } else {
-          setImportMsg('❌ Format non supporté (.json, .ged, .gedcom)');
+          setImportOk(false);
+          setImportMsg('Format non supporté (.json, .ged, .gedcom)');
         }
       } catch (err) {
-        setImportMsg(`❌ Erreur : ${err instanceof Error ? err.message : 'Fichier invalide'}`);
+        setImportOk(false);
+        setImportMsg(`Erreur : ${err instanceof Error ? err.message : 'Fichier invalide'}`);
       }
       setImporting(false);
     };
@@ -73,8 +80,8 @@ export default function ImportExportModal({ tree, onImport, onClose, initialTab 
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div ref={overlayRef} tabIndex={-1} className="modal" style={{ maxWidth: '480px' }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 className="serif" style={{ margin: 0 }}>📁 Import / Export</h2>
-          <button onClick={onClose} className="btn btn-ghost btn-sm">✕</button>
+          <h2 className="serif" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}><FolderOpen size={20} aria-hidden="true" /> Import / Export</h2>
+          <button onClick={onClose} aria-label="Fermer" className="btn btn-ghost btn-sm btn-icon"><X size={16} /></button>
         </div>
 
         <div className="tabs" style={{ margin: '0 24px', paddingTop: '4px' }}>
@@ -157,10 +164,12 @@ export default function ImportExportModal({ tree, onImport, onClose, initialTab 
               {importMsg && (
                 <div style={{
                   padding: '12px', borderRadius: 'var(--radius)',
-                  background: importMsg.startsWith('✅') ? '#f0faf4' : '#fdf2f2',
-                  border: `1px solid ${importMsg.startsWith('✅') ? '#a8d8b9' : '#f5c6c6'}`,
-                  fontSize: '14px'
+                  background: 'var(--bg-muted)',
+                  border: `1.5px solid ${importOk ? 'var(--success)' : 'var(--danger)'}`,
+                  fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px',
+                  color: 'var(--text)',
                 }}>
+                  {importOk ? <CheckCircle2 size={16} style={{ color: 'var(--success)', flexShrink: 0 }} aria-hidden="true" /> : <AlertCircle size={16} style={{ color: 'var(--danger)', flexShrink: 0 }} aria-hidden="true" />}
                   {importMsg}
                 </div>
               )}

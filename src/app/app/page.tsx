@@ -3,14 +3,15 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { supabase } from '@/lib/supabase';
+import { BrandLockup } from '@/components/Brand';
 
 const SuiminiApp = dynamic(() => import('@/components/SuiminiApp'), { ssr: false });
 
 function Loader() {
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '14px', background: 'var(--bg, #faf8f5)' }}>
-      <div className="serif" style={{ fontSize: '2rem', color: 'var(--accent, #8b6f47)' }}>🌿 Suimini</div>
-      <span className="spinner" style={{ color: 'var(--accent, #8b6f47)' }} />
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '18px', background: 'var(--bg, #f4f1ea)' }}>
+      <BrandLockup size={34} color="var(--ink, #1b1b1b)" accent="var(--accent, #bf4b2c)" surface="var(--bg-card, #ffffff)" fontSize={26} />
+      <span className="spinner" style={{ color: 'var(--accent, #bf4b2c)' }} />
     </div>
   );
 }

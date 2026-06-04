@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Person, FamilyTree, Relationship, RelationType, FamilyEvent, EventType, Note, Citation, DnaOrigin } from '@/types';
 import { getParents, getChildren, getSpouses, getSiblings, getAge, formatDate, formatYear, getDisplayName, generateId, safeHttpUrl } from '@/lib/treeUtils';
 import PersonForm from './PersonForm';
-import { X, Pencil, Trash2 } from 'lucide-react';
+import { X, Pencil, Trash2, User, Clock, Users, Calendar, StickyNote, BookOpen, Lightbulb, Link2, AlertCircle } from 'lucide-react';
 
 interface Props {
   person: Person;
@@ -57,7 +57,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
   ];
   const completionMissing = completionChecks.filter(c => !c.has);
   const completionScore = Math.round((completionChecks.length - completionMissing.length) / completionChecks.length * 100);
-  const completionColor = completionScore < 40 ? 'var(--danger)' : completionScore < 70 ? '#d08a2a' : 'var(--success)';
+  const completionColor = completionScore < 40 ? 'var(--danger)' : completionScore < 70 ? 'var(--warning)' : 'var(--success)';
 
   const availablePersons = tree.persons.filter(p =>
     p.id !== person.id &&
@@ -162,7 +162,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
         onMouseEnter={e => e.currentTarget.style.background='var(--accent-light)'}
         onMouseLeave={e => e.currentTarget.style.background='var(--bg-muted)'}
       >
-        <span style={{ fontSize:'16px' }}>{p.gender==='male'?'👨':p.gender==='female'?'👩':'🧑'}</span>
+        <span style={{ flexShrink:0, color: p.gender==='male'?'var(--male)':p.gender==='female'?'var(--female)':'var(--text-muted)' }}><User size={16} aria-hidden="true" /></span>
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ fontSize:'13px', fontWeight:'700', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{getDisplayName(p)}</div>
           <div style={{ fontSize:'11px', color:'var(--text-muted)' }}>
@@ -193,7 +193,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
         </div>
         <div style={{ display:'flex', alignItems:'flex-start', gap:'12px' }}>
           <div style={{ width:'56px', height:'56px', borderRadius:'50%', flexShrink:0, overflow:'hidden',
-            background: person.gender==='male'?'#deeaf5':person.gender==='female'?'#f5dde8':'var(--bg-muted)',
+            background: person.gender==='male'?'color-mix(in srgb, var(--male) 16%, var(--bg-card))':person.gender==='female'?'color-mix(in srgb, var(--female) 16%, var(--bg-card))':'var(--bg-muted)',
             display:'flex', alignItems:'center', justifyContent:'center',
             border:`3px solid ${person.gender==='male'?'var(--male)':person.gender==='female'?'var(--female)':'var(--border)'}`,
             fontSize:'18px', fontWeight:700, color: person.gender==='male'?'var(--male)':person.gender==='female'?'var(--female)':'var(--text-muted)'
@@ -222,14 +222,18 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
 
       {/* Tabs */}
       <div className="tabs" style={{ margin:'0 14px', paddingTop:'4px', overflowX:'auto', flexShrink:0 }}>
-        {[
-          ['profile','👤'],['life','🕰'],['family','👨‍👩‍👧'],
-          ['events',`📅${person.events?.length?` ${person.events.length}`:''}` ],
-          ['notes',`📝${person.notes?.length?` ${person.notes.length}`:''}` ],
-          ['sources',`📚${person.citations?.length?` ${person.citations.length}`:''}` ],
-          ['edit','✏️']
-        ].map(([t,label]) => (
-          <button key={t} onClick={() => setTab(t as typeof tab)} className={`tab ${tab===t?'active':''}`} style={{ padding:'8px 10px', whiteSpace:'nowrap', fontSize:'13px' }}>{label}</button>
+        {([
+          { id:'profile', Icon:User },
+          { id:'life', Icon:Clock },
+          { id:'family', Icon:Users },
+          { id:'events', Icon:Calendar, count:person.events?.length },
+          { id:'notes', Icon:StickyNote, count:person.notes?.length },
+          { id:'sources', Icon:BookOpen, count:person.citations?.length },
+          { id:'edit', Icon:Pencil },
+        ] as { id: typeof tab; Icon: typeof User; count?: number }[]).map(({ id, Icon, count }) => (
+          <button key={id} onClick={() => setTab(id as typeof tab)} className={`tab ${tab===id?'active':''}`} style={{ display:'inline-flex', alignItems:'center', gap:'5px', padding:'8px 10px', whiteSpace:'nowrap', fontSize:'13px' }} aria-label={id}>
+            <Icon size={15} aria-hidden="true" />{count?<span className="mono" style={{ fontSize:'11px' }}>{count}</span>:null}
+          </button>
         ))}
       </div>
 
@@ -242,7 +246,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
             {completionMissing.length > 0 && (
               <div style={{ padding:'12px', background:'var(--accent-light)', border:'1px solid var(--border)', borderRadius:'var(--radius)' }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'8px' }}>
-                  <span style={{ fontSize:'13px', fontWeight:700 }}>💡 Suggestions</span>
+                  <span style={{ fontSize:'13px', fontWeight:700, display:'inline-flex', alignItems:'center', gap:'5px' }}><Lightbulb size={14} aria-hidden="true" /> Suggestions</span>
                   <span style={{ fontSize:'13px', fontWeight:700, color:completionColor }}>{completionScore}%</span>
                 </div>
                 <div style={{ height:'7px', background:'var(--bg-muted)', borderRadius:'100px', overflow:'hidden', marginBottom:'10px' }}>
@@ -256,7 +260,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                     </div>
                   ))}
                 </div>
-                <button onClick={()=>setTab('edit')} className="btn btn-primary btn-sm" style={{ marginTop:'10px' }}>✏️ Compléter le profil</button>
+                <button onClick={()=>setTab('edit')} className="btn btn-primary btn-sm" style={{ marginTop:'10px' }}><Pencil size={13} /> Compléter le profil</button>
               </div>
             )}
             <InfoBlock label="Naissance" icon="✦">
@@ -324,10 +328,10 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
 
             {/* Inconsistency warnings */}
             {inconsistencies.length>0 && (
-              <div style={{ padding:'10px 12px', background:'#fdf2f2', border:'1px solid #f5c6c6', borderRadius:'var(--radius)' }}>
-                <div style={{ fontSize:'12px', fontWeight:700, color:'var(--danger)', marginBottom:'4px' }}>⚠️ Relations incohérentes</div>
+              <div style={{ padding:'10px 12px', background:'var(--bg-muted)', border:'1.5px solid var(--danger)', borderRadius:'var(--radius)' }}>
+                <div style={{ fontSize:'12px', fontWeight:700, color:'var(--danger)', marginBottom:'4px', display:'flex', alignItems:'center', gap:'5px' }}><AlertCircle size={13} aria-hidden="true" /> Relations incohérentes</div>
                 {inconsistencies.map((msg,i)=>(
-                  <div key={i} style={{ fontSize:'12px', color:'#1a1612', lineHeight:1.4 }}>• {msg}</div>
+                  <div key={i} style={{ fontSize:'12px', color:'var(--text)', lineHeight:1.4 }}>• {msg}</div>
                 ))}
               </div>
             )}
@@ -345,7 +349,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                     const self = rel.person1Id === rel.person2Id;
                     const dates = [rel.startDate && `dès ${formatDate(rel.startDate)}`, rel.endDate && `jusqu'à ${formatDate(rel.endDate)}`].filter(Boolean).join(' · ');
                     return (
-                      <div key={rel.id} style={{ padding:'10px', background:'var(--bg-muted)', borderRadius:'var(--radius)', border:`1px solid ${self?'#f5c6c6':'var(--border)'}` }}>
+                      <div key={rel.id} style={{ padding:'10px', background:'var(--bg-muted)', borderRadius:'var(--radius)', border:`1px solid ${self?'var(--danger)':'var(--border)'}` }}>
                         {editRelId===rel.id ? (
                           <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
                             <select defaultValue={rel.type} id={`rel-type-${rel.id}`} className="input">
@@ -377,8 +381,8 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                               {dates && <div style={{ fontSize:'11px', color:'var(--text-light)' }}>{dates}</div>}
                               {rel.notes && <div style={{ fontSize:'12px', color:'var(--text-muted)', marginTop:'2px' }}>📝 {rel.notes}</div>}
                             </div>
-                            <button onClick={()=>setEditRelId(rel.id)} className="btn btn-ghost btn-sm" style={{ fontSize:'12px' }}>✏️</button>
-                            <button onClick={()=>onDeleteRelationship(rel.id)} className="btn btn-ghost btn-sm" style={{ fontSize:'12px', color:'var(--danger)' }}>🗑</button>
+                            <button onClick={()=>setEditRelId(rel.id)} className="btn btn-ghost btn-sm" style={{ fontSize:'12px' }}><Pencil size={13} /></button>
+                            <button onClick={()=>onDeleteRelationship(rel.id)} className="btn btn-ghost btn-sm" style={{ fontSize:'12px', color:'var(--danger)' }}><Trash2 size={13} /></button>
                           </div>
                         )}
                       </div>
@@ -469,8 +473,8 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                             </div>
                           </div>
                           <div style={{ display:'flex', gap:'4px', flexShrink:0 }}>
-                            <button onClick={()=>setEditEventId(event.id)} className="btn btn-ghost btn-sm" style={{ fontSize:'12px' }}>✏️</button>
-                            <button onClick={()=>removeEvent(event.id)} className="btn btn-ghost btn-sm" style={{ color:'var(--danger)', fontSize:'12px' }}>🗑</button>
+                            <button onClick={()=>setEditEventId(event.id)} className="btn btn-ghost btn-sm" style={{ fontSize:'12px' }}><Pencil size={13} /></button>
+                            <button onClick={()=>removeEvent(event.id)} className="btn btn-ghost btn-sm" style={{ color:'var(--danger)', fontSize:'12px' }}><Trash2 size={13} /></button>
                           </div>
                         </div>
                       )}
@@ -533,8 +537,8 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                             {new Date(note.updatedAt).toLocaleDateString('fr-FR', {day:'numeric',month:'short',year:'numeric'})}
                           </div>
                           <div style={{ display:'flex', gap:'4px' }}>
-                            <button onClick={()=>setEditNoteId(note.id)} className="btn btn-ghost btn-sm" style={{ fontSize:'11px' }}>✏️</button>
-                            <button onClick={()=>removeNote(note.id)} className="btn btn-ghost btn-sm" style={{ fontSize:'11px', color:'var(--danger)' }}>🗑</button>
+                            <button onClick={()=>setEditNoteId(note.id)} className="btn btn-ghost btn-sm" style={{ fontSize:'11px' }}><Pencil size={13} /></button>
+                            <button onClick={()=>removeNote(note.id)} className="btn btn-ghost btn-sm" style={{ fontSize:'11px', color:'var(--danger)' }}><Trash2 size={13} /></button>
                           </div>
                         </div>
                       </>
@@ -573,12 +577,12 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                         </div>
                         {safeHttpUrl(citation.url) && (
                           <a href={safeHttpUrl(citation.url)} target="_blank" rel="noopener noreferrer"
-                            style={{ fontSize:'12px', color:'var(--accent)', wordBreak:'break-all', display:'inline-block', marginTop:'4px' }}>
-                            🔗 {citation.url}
+                            style={{ fontSize:'12px', color:'var(--accent)', wordBreak:'break-all', display:'inline-flex', alignItems:'center', gap:'5px', marginTop:'4px' }}>
+                            <Link2 size={12} aria-hidden="true" /> {citation.url}
                           </a>
                         )}
                       </div>
-                      <button onClick={()=>removeCitation(citation.id)} className="btn btn-ghost btn-sm" style={{ fontSize:'11px', color:'var(--danger)', flexShrink:0 }}>🗑</button>
+                      <button onClick={()=>removeCitation(citation.id)} className="btn btn-ghost btn-sm" style={{ fontSize:'11px', color:'var(--danger)', flexShrink:0 }}><Trash2 size={13} /></button>
                     </div>
                   </div>
                 ))
@@ -609,14 +613,14 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
             <PersonForm initial={person} onSave={(updates)=>{onUpdate(updates);setTab('profile');}} onCancel={()=>setTab('profile')} />
             <hr className="divider"/>
             {!confirmDelete ? (
-              <button onClick={()=>setConfirmDelete(true)} className="btn btn-danger btn-sm">🗑 Supprimer cette personne</button>
+              <button onClick={()=>setConfirmDelete(true)} className="btn btn-danger btn-sm"><Trash2 size={14} /> Supprimer cette personne</button>
             ) : (
-              <div style={{ padding:'12px', background:'#fdf2f2', border:'1px solid #f5c6c6', borderRadius:'var(--radius)' }}>
-                <p style={{ margin:'0 0 10px', fontSize:'13px', color:'#1a1612' }}>
-                  ⚠️ Supprimer définitivement <strong>{getDisplayName(person)}</strong> ?
+              <div style={{ padding:'12px', background:'var(--bg-muted)', border:'1.5px solid var(--danger)', borderRadius:'var(--radius)' }}>
+                <p style={{ margin:'0 0 10px', fontSize:'13px', color:'var(--text)', display:'flex', alignItems:'flex-start', gap:'6px' }}>
+                  <AlertCircle size={15} style={{ color:'var(--danger)', flexShrink:0, marginTop:'2px' }} aria-hidden="true" /> <span>Supprimer définitivement <strong>{getDisplayName(person)}</strong> ?
                   {relCount > 0
                     ? <> Cela supprimera aussi <strong>{relCount} relation{relCount > 1 ? 's' : ''}</strong> liée{relCount > 1 ? 's' : ''} à cette personne.</>
-                    : <> Cette personne n&apos;a aucune relation enregistrée.</>}
+                    : <> Cette personne n&apos;a aucune relation enregistrée.</>}</span>
                 </p>
                 <div style={{ display:'flex', gap:'8px' }}>
                   <button onClick={onDelete} className="btn btn-danger btn-sm">Oui, supprimer</button>
@@ -723,7 +727,7 @@ function LifeTimeline({ person }: { person: Person }) {
           {ticks.map(y => (
             <g key={y}>
               <line x1={x(y)} y1={dotY - 4} x2={x(y)} y2={dotY + 4} stroke="var(--border)" strokeWidth={1} />
-              <text x={x(y)} y={dotY + 18} textAnchor="middle" fontSize={9} fill="var(--text-light)" fontFamily="Lato, sans-serif">{y}</text>
+              <text x={x(y)} y={dotY + 18} textAnchor="middle" fontSize={9} fill="var(--text-light)" fontFamily="Inter, sans-serif">{y}</text>
             </g>
           ))}
 
@@ -739,9 +743,9 @@ function LifeTimeline({ person }: { person: Person }) {
               <g key={i}>
                 <title>{w.label} ({w.start}{w.end ? `–${w.end}` : ''})</title>
                 {w.end
-                  ? <rect x={x0} y={wy} width={Math.max(3, x1 - x0)} height={16} rx={4} fill="#8a8278" opacity={0.55} />
-                  : <circle cx={x0} cy={wy + 8} r={6} fill="#8a8278" opacity={0.7} />}
-                <text x={w.end ? (x0 + x1) / 2 : x0} y={wy + 34} textAnchor="middle" fontSize={9} fill="var(--text-muted)" fontFamily="Lato, sans-serif">
+                  ? <rect x={x0} y={wy} width={Math.max(3, x1 - x0)} height={16} rx={4} fill="var(--deceased)" opacity={0.55} />
+                  : <circle cx={x0} cy={wy + 8} r={6} fill="var(--deceased)" opacity={0.7} />}
+                <text x={w.end ? (x0 + x1) / 2 : x0} y={wy + 34} textAnchor="middle" fontSize={9} fill="var(--text-muted)" fontFamily="Inter, sans-serif">
                   {w.icon} {w.label.length > 18 ? w.label.slice(0, 17) + '…' : w.label}
                 </text>
               </g>
@@ -758,7 +762,7 @@ function LifeTimeline({ person }: { person: Person }) {
                 <line x1={px} y1={dotY} x2={px} y2={36} stroke="var(--border)" strokeWidth={1} />
                 <text x={px} y={28} textAnchor="middle" fontSize={14}>{EVENT_ICONS[ev.type] || '📌'}</text>
                 <circle cx={px} cy={dotY} r={5} fill="var(--accent)" stroke="var(--bg-card)" strokeWidth={1.5} />
-                <text x={px} y={48} textAnchor="middle" fontSize={9} fill="var(--text-muted)" fontFamily="Lato, sans-serif">{formatYear(ev.date)}</text>
+                <text x={px} y={48} textAnchor="middle" fontSize={9} fill="var(--text-muted)" fontFamily="Inter, sans-serif">{formatYear(ev.date)}</text>
               </g>
             );
           })}
@@ -780,12 +784,12 @@ function CompletionDonut({ score, color }: { score: number; color: string }) {
       <circle cx={17} cy={17} r={r} fill="none" stroke={color} strokeWidth={4} strokeLinecap="round"
         strokeDasharray={circ} strokeDashoffset={circ * (1 - score / 100)} transform="rotate(-90 17 17)"
         style={{ transition: 'stroke-dashoffset 0.4s ease' }} />
-      <text x={17} y={18} textAnchor="middle" dominantBaseline="middle" fontSize={9.5} fontWeight={700} fontFamily="Lato, sans-serif" fill="var(--text)">{score}</text>
+      <text x={17} y={18} textAnchor="middle" dominantBaseline="middle" fontSize={9.5} fontWeight={700} fontFamily="Inter, sans-serif" fill="var(--text)">{score}</text>
     </svg>
   );
 }
 
-const DNA_COLORS = ['#8b6f47','#3b6fa0','#4a7c59','#a05070','#c4935a','#5a6b7a','#9c6b4a','#6a5acd'];
+const DNA_COLORS = ['#bf4b2c','#2c5f8a','#0e6e63','#a8456b','#c77d1a','#4a5a66','#7a4a6a','#4338ca'];
 
 function DnaPie({ origins }: { origins: DnaOrigin[] }) {
   const total = origins.reduce((s, o) => s + (o.percent || 0), 0) || 1;

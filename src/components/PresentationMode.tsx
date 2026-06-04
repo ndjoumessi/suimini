@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Person } from '@/types';
 import { useOverlay } from '@/hooks/useOverlay';
 import { getFullName, formatDate, getAge } from '@/lib/treeUtils';
+import { X, ChevronLeft, ChevronRight, User, MapPin, Cross, Film } from 'lucide-react';
 
 interface Props {
   persons: Person[];
@@ -40,9 +41,9 @@ export default function PresentationMode({ persons, onClose }: Props) {
   if (ordered.length === 0) {
     return (
       <div ref={overlayRef} tabIndex={-1} className="presentation-root" style={rootStyle}>
-        <button onClick={onClose} style={closeStyle}>✕</button>
-        <div style={{ color: '#d8d2c8', textAlign: 'center' }}>
-          <div style={{ fontSize: '48px', marginBottom: '12px' }}>🎬</div>
+        <button onClick={onClose} aria-label="Quitter" style={closeStyle}><X size={20} /></button>
+        <div style={{ color: '#d8d2c8', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+          <Film size={48} strokeWidth={1.2} aria-hidden="true" />
           Aucun membre à présenter.
         </div>
       </div>
@@ -51,45 +52,45 @@ export default function PresentationMode({ persons, onClose }: Props) {
 
   const person = ordered[index];
   const age = getAge(person.birthDate, person.deathDate);
-  const accent = person.gender === 'male' ? 'var(--male)' : person.gender === 'female' ? 'var(--female)' : 'var(--accent)';
+  const accent = person.gender === 'male' ? 'var(--male)' : person.gender === 'female' ? 'var(--female)' : '#e0623e';
 
   return (
     <div ref={overlayRef} tabIndex={-1} className="presentation-root" style={rootStyle}>
-      <button onClick={onClose} style={closeStyle} title="Quitter (Échap)">✕</button>
+      <button onClick={onClose} style={closeStyle} aria-label="Quitter (Échap)" title="Quitter (Échap)"><X size={20} /></button>
 
       {/* Navigation arrows */}
-      <button onClick={() => go(-1)} disabled={index === 0} style={{ ...arrowStyle, left: '24px', opacity: index === 0 ? 0.25 : 1 }} title="Précédent (←)">‹</button>
-      <button onClick={() => go(1)} disabled={index === ordered.length - 1} style={{ ...arrowStyle, right: '24px', opacity: index === ordered.length - 1 ? 0.25 : 1 }} title="Suivant (→)">›</button>
+      <button onClick={() => go(-1)} disabled={index === 0} style={{ ...arrowStyle, left: '24px', opacity: index === 0 ? 0.25 : 1 }} aria-label="Précédent" title="Précédent (←)"><ChevronLeft size={28} /></button>
+      <button onClick={() => go(1)} disabled={index === ordered.length - 1} style={{ ...arrowStyle, right: '24px', opacity: index === ordered.length - 1 ? 0.25 : 1 }} aria-label="Suivant" title="Suivant (→)"><ChevronRight size={28} /></button>
 
       {/* Slide (fade transition on each change, retriggered via key) */}
       <div key={index} className="present-fade"
         style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', maxWidth: '760px', padding: '0 60px' }}
       >
-        {/* Photo */}
+        {/* Photo — square brutalist frame */}
         <div style={{
-          width: 'min(320px, 40vh)', height: 'min(320px, 40vh)', borderRadius: '50%', overflow: 'hidden',
-          border: `5px solid ${accent}`, boxShadow: '0 12px 48px rgba(0,0,0,0.5)', marginBottom: '32px',
-          background: '#2a2620', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '120px',
+          width: 'min(320px, 40vh)', height: 'min(320px, 40vh)', overflow: 'hidden',
+          border: `3px solid ${accent}`, boxShadow: '10px 10px 0 rgba(0,0,0,0.55)', marginBottom: '34px',
+          background: '#2a2620', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6e6a62',
         }}>
           {person.profilePhoto
             ? <img src={person.profilePhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            : (person.gender === 'male' ? '👨' : person.gender === 'female' ? '👩' : '🧑')}
+            : <User size={120} strokeWidth={1} aria-hidden="true" />}
         </div>
 
-        {/* Name — Playfair Display 48px */}
-        <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(2rem, 6vw, 48px)', color: '#f5f0e8', margin: '0 0 12px', fontWeight: 600, lineHeight: 1.1 }}>
+        {/* Name */}
+        <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(2rem, 6vw, 52px)', color: '#f4f1ea', margin: '0 0 14px', fontWeight: 700, lineHeight: 1.02, letterSpacing: '-0.03em' }}>
           {getFullName(person)}
         </h1>
 
         {/* Dates */}
-        <div style={{ fontSize: 'clamp(1rem, 2vw, 1.25rem)', color: '#c4b89a', marginBottom: '8px', fontFamily: "'Playfair Display', serif", fontStyle: 'italic' }}>
-          {person.birthDate ? `✦ ${formatDate(person.birthDate, person.birthDateApprox)}` : ''}
-          {!person.isAlive && person.deathDate ? `  —  ✝ ${formatDate(person.deathDate, person.deathDateApprox)}` : ''}
+        <div style={{ fontSize: 'clamp(0.85rem, 1.8vw, 1.05rem)', color: '#b8b2a6', marginBottom: '14px', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '1px', display: 'inline-flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+          {person.birthDate ? <span>{formatDate(person.birthDate, person.birthDateApprox)}</span> : null}
+          {!person.isAlive && person.deathDate ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>— <Cross size={13} aria-hidden="true" /> {formatDate(person.deathDate, person.deathDateApprox)}</span> : null}
         </div>
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '24px', flexWrap: 'wrap' }}>
-          {age !== null && <span style={pillStyle}>{person.isAlive ? `${age} ans` : `${age} ans`}</span>}
+          {age !== null && <span style={pillStyle}>{age} ans</span>}
           {person.occupation && <span style={pillStyle}>{person.occupation}</span>}
-          {person.birthPlace?.city && <span style={pillStyle}>📍 {person.birthPlace.city}</span>}
+          {person.birthPlace?.city && <span style={{ ...pillStyle, display: 'inline-flex', alignItems: 'center', gap: '5px' }}><MapPin size={12} aria-hidden="true" /> {person.birthPlace.city}</span>}
         </div>
 
         {/* Bio */}
@@ -104,13 +105,13 @@ export default function PresentationMode({ persons, onClose }: Props) {
       <div style={{ position: 'absolute', bottom: '28px', left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '60%' }}>
           {ordered.map((_, i) => (
-            <button key={i} onClick={() => setIndex(i)}
-              style={{ width: i === index ? '22px' : '8px', height: '8px', borderRadius: '100px', border: 'none', cursor: 'pointer', padding: 0, transition: 'all 0.25s', background: i === index ? accent : 'rgba(255,255,255,0.25)' }}
+            <button key={i} onClick={() => setIndex(i)} aria-label={`Diapositive ${i + 1}`}
+              style={{ width: i === index ? '24px' : '9px', height: '9px', border: 'none', cursor: 'pointer', padding: 0, transition: 'all 0.25s', background: i === index ? accent : 'rgba(255,255,255,0.25)' }}
             />
           ))}
         </div>
-        <div style={{ color: '#8a8278', fontSize: '13px', letterSpacing: '0.5px' }}>
-          {index + 1} / {ordered.length} · ← → pour naviguer · Échap pour quitter
+        <div className="mono" style={{ color: '#8a8276', fontSize: '12px', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+          {index + 1} / {ordered.length} · ← → naviguer · Échap quitter
         </div>
       </div>
     </div>
@@ -125,16 +126,17 @@ const rootStyle: React.CSSProperties = {
 };
 const closeStyle: React.CSSProperties = {
   position: 'absolute', top: '20px', right: '24px', zIndex: 10,
-  width: '44px', height: '44px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.2)',
-  background: 'rgba(255,255,255,0.06)', color: '#f5f0e8', fontSize: '18px', cursor: 'pointer',
+  width: '44px', height: '44px', borderRadius: '2px', border: '1.5px solid rgba(244,241,234,0.4)',
+  background: 'rgba(255,255,255,0.06)', color: '#f4f1ea', cursor: 'pointer',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
 };
 const arrowStyle: React.CSSProperties = {
   position: 'absolute', top: '50%', transform: 'translateY(-50%)', zIndex: 10,
-  width: '56px', height: '56px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.15)',
-  background: 'rgba(255,255,255,0.06)', color: '#f5f0e8', fontSize: '32px', cursor: 'pointer',
+  width: '56px', height: '56px', borderRadius: '2px', border: '1.5px solid rgba(244,241,234,0.3)',
+  background: 'rgba(255,255,255,0.06)', color: '#f4f1ea', cursor: 'pointer',
   display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
 };
 const pillStyle: React.CSSProperties = {
-  padding: '5px 14px', borderRadius: '100px', background: 'rgba(255,255,255,0.08)',
-  color: '#e8e0d0', fontSize: '0.85rem', border: '1px solid rgba(255,255,255,0.12)',
+  padding: '5px 14px', borderRadius: '2px', background: 'rgba(255,255,255,0.08)',
+  color: '#e8e0d0', fontSize: '0.8rem', fontFamily: "'JetBrains Mono', monospace", border: '1px solid rgba(255,255,255,0.18)',
 };

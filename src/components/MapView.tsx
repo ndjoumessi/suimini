@@ -37,13 +37,13 @@ function buildAvatar(person: Person): string {
   if (person.profilePhoto) {
     return `<img src="${person.profilePhoto}" alt="" style="width:100%;height:100%;object-fit:cover;" />`;
   }
-  return `<span style="font-size:13px;font-weight:700;color:var(--accent);font-family:Lato,sans-serif;">${initialsOf(person)}</span>`;
+  return `<span style="font-size:13px;font-weight:700;color:var(--accent);font-family:Inter,sans-serif;">${initialsOf(person)}</span>`;
 }
 
 function makeIcon(group: MarkerGroup): L.DivIcon {
   const count = group.points.length;
   if (count > 1) {
-    const html = `<div style="width:42px;height:42px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;border:3px solid var(--bg-card);box-shadow:0 2px 8px rgba(0,0,0,0.3);font-family:Lato,sans-serif;">${count}</div>`;
+    const html = `<div style="width:42px;height:42px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;border:3px solid var(--bg-card);box-shadow:0 2px 8px rgba(0,0,0,0.3);font-family:Inter,sans-serif;">${count}</div>`;
     return L.divIcon({ html, className: 'suimini-marker', iconSize: [42, 42], iconAnchor: [21, 21], popupAnchor: [0, -21] });
   }
   const pt = group.points[0];
@@ -139,7 +139,7 @@ export default function MapView({ tree, onSelectPerson }: Props) {
                   <Popup>
                     <div style={{ minWidth: '180px', maxHeight: '240px', overflowY: 'auto' }}>
                       {group.points.length > 1 && (
-                        <div style={{ fontWeight: 700, fontSize: '13px', marginBottom: '8px', fontFamily: 'Lato, sans-serif', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <div style={{ fontWeight: 700, fontSize: '13px', marginBottom: '8px', fontFamily: 'Inter, sans-serif', display: 'flex', alignItems: 'center', gap: '5px' }}>
                           <MapPin size={13} aria-hidden="true" /> {group.points[0].place || 'Ce lieu'} · {group.points.length} événements
                         </div>
                       )}
@@ -148,15 +148,15 @@ export default function MapView({ tree, onSelectPerson }: Props) {
                           <button
                             key={i}
                             onClick={() => onSelectPerson(pt.person.id)}
-                            style={{ display: 'flex', gap: '8px', alignItems: 'center', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', padding: 0, fontFamily: 'Lato, sans-serif' }}
+                            style={{ display: 'flex', gap: '8px', alignItems: 'center', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', padding: 0, fontFamily: 'Inter, sans-serif' }}
                           >
-                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, background: '#f0e8da', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, color: '#8b6f47' }}>
+                            <div style={{ width: '36px', height: '36px', borderRadius: 'var(--radius)', overflow: 'hidden', flexShrink: 0, background: 'var(--accent-light)', border: '1.5px solid var(--border-strong)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, color: 'var(--accent)' }}>
                               {pt.person.profilePhoto
                                 ? <img src={pt.person.profilePhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 : initialsOf(pt.person)}
                             </div>
                             <div>
-                              <div style={{ fontWeight: 700, fontSize: '13px', color: '#1a1612' }}>{getDisplayName(pt.person)}</div>
+                              <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text)' }}>{getDisplayName(pt.person)}</div>
                               <div style={{ fontSize: '11px', color: '#6b6560' }}>
                                 {pt.kind === 'birth' ? 'Naissance' : 'Décès'}{pt.year ? ` · ${pt.year}` : ''}
                               </div>

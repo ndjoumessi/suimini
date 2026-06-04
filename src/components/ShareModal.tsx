@@ -3,13 +3,25 @@ import { useOverlay } from '@/hooks/useOverlay';
 import { useState, useEffect } from 'react';
 import { FamilyTree } from '@/types';
 import { shareTree, listShares, unshareTree } from '@/lib/supabaseSync';
+import {
+  Share2, X, Cloud, Package, Download, Smartphone, Code2, Lightbulb,
+  Mail, Copy, Check, MessageCircle, TreePine, Pencil, Eye,
+} from 'lucide-react';
 
 interface Props {
   tree: FamilyTree;
   cloud?: boolean;
   onRequireAuth?: () => void;
-  onToast?: (msg: string, icon?: string) => void;
+  onToast?: (msg: string, type?: string) => void;
   onClose: () => void;
+}
+
+function Eyebrow({ Icon, children }: { Icon: typeof Cloud; children: React.ReactNode }) {
+  return (
+    <div className="label" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+      <Icon size={13} aria-hidden="true" /> {children}
+    </div>
+  );
 }
 
 export default function ShareModal({ tree, cloud, onRequireAuth, onToast, onClose }: Props) {
@@ -26,19 +38,19 @@ export default function ShareModal({ tree, cloud, onRequireAuth, onToast, onClos
 
   async function doShare() {
     const email = shareEmail.trim().toLowerCase();
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { onToast?.('E-mail invalide', '⚠️'); return; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { onToast?.('E-mail invalide', 'error'); return; }
     setSharing(true);
     const { error } = await shareTree(tree.id, email, sharePerm);
     setSharing(false);
-    if (error) { onToast?.('Échec du partage', '❌'); return; }
+    if (error) { onToast?.('Échec du partage', 'error'); return; }
     setShareEmail('');
     setShares(await listShares(tree.id));
-    onToast?.(`Invitation envoyée à ${email} ✉️`);
+    onToast?.(`Invitation envoyée à ${email}`, 'success');
   }
   async function removeShare(email: string) {
     await unshareTree(tree.id, email);
     setShares(await listShares(tree.id));
-    onToast?.('Partage retiré', '🗑');
+    onToast?.('Partage retiré', 'info');
   }
 
   // Generate a shareable JSON data URL
@@ -48,13 +60,6 @@ export default function ShareModal({ tree, cloud, onRequireAuth, onToast, onClos
     sharedAt: new Date().toISOString(),
     sharedBy: 'Suimini',
   }, null, 2);
-
-  const base64 = typeof window !== 'undefined'
-    ? btoa(unescape(encodeURIComponent(shareData)))
-    : '';
-  const shareUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}?import=${base64.slice(0, 200)}…`
-    : '';
 
   function copyToClipboard(text: string, key: string) {
     navigator.clipboard.writeText(text).then(() => {
@@ -77,23 +82,21 @@ export default function ShareModal({ tree, cloud, onRequireAuth, onToast, onClos
 
   const stats = `${tree.name} — ${tree.persons.length} personnes, ${tree.relationships.length} relations`;
 
-  const socialText = `🌳 Découvrez l'arbre généalogique de la ${tree.name} sur Suimini !\n${tree.description ? tree.description + '\n' : ''}${stats}`;
+  const socialText = `Découvrez l'arbre généalogique de la ${tree.name} sur Suimini !\n${tree.description ? tree.description + '\n' : ''}${stats}`;
 
   const overlayRef = useOverlay(onClose);
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div ref={overlayRef} tabIndex={-1} className="modal" style={{ maxWidth: '520px' }}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 className="serif" style={{ margin: 0 }}>🔗 Partager l'arbre</h2>
-          <button onClick={onClose} className="btn btn-ghost btn-sm">✕</button>
+        <div style={{ padding: '20px 24px', borderBottom: 'var(--bw) solid var(--border-strong)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h2 className="serif" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}><Share2 size={20} aria-hidden="true" /> Partager l&apos;arbre</h2>
+          <button onClick={onClose} aria-label="Fermer" className="btn btn-ghost btn-sm btn-icon"><X size={16} /></button>
         </div>
 
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {/* Supabase collaboration */}
           <div>
-            <div style={{ fontSize: '11px', color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px', fontWeight: '700' }}>
-              ☁️ Partager avec un compte Supabase
-            </div>
+            <Eyebrow Icon={Cloud}>Partager avec un compte</Eyebrow>
             {!cloud ? (
               <div style={{ padding: '12px', background: 'var(--bg-muted)', borderRadius: 'var(--radius)', fontSize: '13px', color: 'var(--text-muted)' }}>
                 Connectez-vous pour inviter des proches à collaborer en temps réel.
@@ -114,8 +117,8 @@ export default function ShareModal({ tree, cloud, onRequireAuth, onToast, onClos
                     {shares.map(s => (
                       <div key={s.email} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', padding: '6px 8px', background: 'var(--bg-muted)', borderRadius: 'var(--radius)' }}>
                         <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.email}</span>
-                        <span className="badge badge-accent">{s.permission === 'write' ? '✏️ Écriture' : '👁 Lecture'}</span>
-                        <button onClick={() => removeShare(s.email)} className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)', fontSize: '11px' }}>✕</button>
+                        <span className="badge badge-accent" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>{s.permission === 'write' ? <><Pencil size={10} /> Écriture</> : <><Eye size={10} /> Lecture</>}</span>
+                        <button onClick={() => removeShare(s.email)} aria-label="Retirer le partage" className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--danger)' }}><X size={14} /></button>
                       </div>
                     ))}
                   </div>
@@ -128,7 +131,7 @@ export default function ShareModal({ tree, cloud, onRequireAuth, onToast, onClos
 
           {/* Tree info */}
           <div style={{ padding: '12px', background: 'var(--bg-muted)', borderRadius: 'var(--radius)', display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <span style={{ fontSize: '32px' }}>🌳</span>
+            <span style={{ width: '44px', height: '44px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid var(--border-strong)', borderRadius: 'var(--radius)', background: 'var(--accent-light)', color: 'var(--accent)' }}><TreePine size={22} aria-hidden="true" /></span>
             <div>
               <div style={{ fontWeight: '700' }}>{tree.name}</div>
               <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{stats}</div>
@@ -143,84 +146,50 @@ export default function ShareModal({ tree, cloud, onRequireAuth, onToast, onClos
 
           {/* Download JSON */}
           <div>
-            <div style={{ fontSize: '11px', color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px', fontWeight: '700' }}>
-              📦 Fichier exportable
-            </div>
+            <Eyebrow Icon={Package}>Fichier exportable</Eyebrow>
             <button onClick={downloadJSON} className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
-              ⬇ Télécharger {tree.name}.json
+              <Download size={15} /> Télécharger {tree.name}.json
             </button>
             <div style={{ fontSize: '11px', color: 'var(--text-light)', marginTop: '4px' }}>
-              Partageable avec n'importe qui utilisant Suimini via Import/Export
+              Partageable avec n&apos;importe qui utilisant Suimini via Import/Export
             </div>
           </div>
 
           {/* Social share */}
           <div>
-            <div style={{ fontSize: '11px', color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px', fontWeight: '700' }}>
-              📱 Partager sur les réseaux
-            </div>
+            <Eyebrow Icon={Smartphone}>Partager sur les réseaux</Eyebrow>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <a
-                href={`https://wa.me/?text=${encodeURIComponent(socialText)}`}
-                target="_blank" rel="noopener noreferrer"
-                className="btn btn-sm"
-                style={{ background: '#25D366', color: 'white', textDecoration: 'none' }}
-              >
-                💬 WhatsApp
+              <a href={`https://wa.me/?text=${encodeURIComponent(socialText)}`} target="_blank" rel="noopener noreferrer" className="btn btn-sm" style={{ background: '#25D366', color: 'white', textDecoration: 'none' }}>
+                <MessageCircle size={14} /> WhatsApp
               </a>
-              <a
-                href={`https://www.facebook.com/sharer/sharer.php?quote=${encodeURIComponent(socialText)}`}
-                target="_blank" rel="noopener noreferrer"
-                className="btn btn-sm"
-                style={{ background: '#1877F2', color: 'white', textDecoration: 'none' }}
-              >
-                📘 Facebook
+              <a href={`https://www.facebook.com/sharer/sharer.php?quote=${encodeURIComponent(socialText)}`} target="_blank" rel="noopener noreferrer" className="btn btn-sm" style={{ background: '#1877F2', color: 'white', textDecoration: 'none' }}>
+                <Share2 size={14} /> Facebook
               </a>
-              <a
-                href={`mailto:?subject=${encodeURIComponent(`Arbre généalogique : ${tree.name}`)}&body=${encodeURIComponent(socialText + '\n\nFichier joint : téléchargez le fichier .json et importez-le dans Suimini.')}`}
-                className="btn btn-sm"
-                style={{ background: 'var(--bg-muted)', color: 'var(--text)', border: '1px solid var(--border)', textDecoration: 'none' }}
-              >
-                📧 Email
+              <a href={`mailto:?subject=${encodeURIComponent(`Arbre généalogique : ${tree.name}`)}&body=${encodeURIComponent(socialText + '\n\nFichier joint : téléchargez le fichier .json et importez-le dans Suimini.')}`} className="btn btn-sm btn-secondary">
+                <Mail size={14} /> Email
               </a>
-              <button
-                onClick={() => copyToClipboard(socialText, 'social')}
-                className="btn btn-sm"
-                style={{ background: 'var(--bg-muted)', color: 'var(--text)', border: '1px solid var(--border)' }}
-              >
-                {copied === 'social' ? '✅ Copié !' : '📋 Copier le texte'}
+              <button onClick={() => copyToClipboard(socialText, 'social')} className="btn btn-sm btn-secondary">
+                {copied === 'social' ? <><Check size={14} /> Copié !</> : <><Copy size={14} /> Copier le texte</>}
               </button>
             </div>
           </div>
 
           {/* Embed code */}
           <div>
-            <div style={{ fontSize: '11px', color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px', fontWeight: '700' }}>
-              🖥 Code d'intégration (iframe)
-            </div>
+            <Eyebrow Icon={Code2}>Code d&apos;intégration (iframe)</Eyebrow>
             <div style={{ position: 'relative' }}>
-              <textarea
-                readOnly
-                value={embedCode}
-                className="input"
-                rows={2}
-                style={{ resize: 'none', fontSize: '11px', fontFamily: 'monospace', paddingRight: '80px' }}
-              />
-              <button
-                onClick={() => copyToClipboard(embedCode, 'embed')}
-                className="btn btn-sm btn-secondary"
-                style={{ position: 'absolute', right: '6px', top: '6px' }}
-              >
-                {copied === 'embed' ? '✅' : '📋 Copier'}
+              <textarea readOnly value={embedCode} className="input" rows={2} style={{ resize: 'none', fontSize: '11px', fontFamily: 'var(--font-mono)', paddingRight: '92px' }} />
+              <button onClick={() => copyToClipboard(embedCode, 'embed')} className="btn btn-sm btn-secondary" style={{ position: 'absolute', right: '6px', top: '6px' }}>
+                {copied === 'embed' ? <Check size={14} /> : <><Copy size={14} /> Copier</>}
               </button>
             </div>
           </div>
 
-          {/* QR code hint */}
+          {/* Tip */}
           <div style={{ padding: '10px', background: 'var(--bg-muted)', borderRadius: 'var(--radius)', fontSize: '12px', color: 'var(--text-muted)', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-            <span style={{ fontSize: '20px' }}>💡</span>
+            <Lightbulb size={18} style={{ flexShrink: 0, color: 'var(--warning)' }} aria-hidden="true" />
             <span>
-              Pour partager lors d'une réunion de famille : exportez le fichier .json et importez-le sur un autre appareil via <strong>📁 Import/Export</strong>.
+              Pour partager lors d&apos;une réunion de famille : exportez le fichier .json et importez-le sur un autre appareil via <strong>Import/Export</strong>.
             </span>
           </div>
         </div>

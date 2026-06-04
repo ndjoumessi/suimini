@@ -3,6 +3,7 @@ import { useOverlay } from '@/hooks/useOverlay';
 import { useState } from 'react';
 import { Person, Relationship, RelationType, FamilyTree } from '@/types';
 import { getDisplayName } from '@/lib/treeUtils';
+import { Check, Plus, Link2, User } from 'lucide-react';
 import PersonForm from './PersonForm';
 
 interface Props {
@@ -54,8 +55,8 @@ export default function AddPersonModal({ onClose, tree, onAdd }: Props) {
         {/* Header */}
         <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h2 className="serif" style={{ margin: '0 0 2px', fontSize: '1.3rem' }}>
-              {step === 'form' ? '➕ Nouvelle personne' : '🔗 Établir une relation'}
+            <h2 className="serif" style={{ margin: '0 0 2px', fontSize: '1.3rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {step === 'form' ? <><Plus size={20} aria-hidden="true" /> Nouvelle personne</> : <><Link2 size={20} aria-hidden="true" /> Établir une relation</>}
             </h2>
             {/* Step indicator */}
             <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
@@ -90,7 +91,7 @@ export default function AddPersonModal({ onClose, tree, onAdd }: Props) {
             <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {/* Summary of created person */}
               <div style={{ padding: '12px', background: 'var(--accent-light)', border: '1px solid var(--accent)', borderRadius: 'var(--radius)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontSize: '24px' }}>{newPerson.gender === 'male' ? '👨' : newPerson.gender === 'female' ? '👩' : '🧑'}</span>
+                <span style={{ display: 'inline-flex', color: newPerson.gender === 'male' ? 'var(--male)' : newPerson.gender === 'female' ? 'var(--female)' : 'var(--accent)' }}><User size={24} aria-hidden="true" /></span>
                 <div>
                   <div style={{ fontWeight: '700' }}>{newPerson.firstName} {newPerson.lastName}</div>
                   <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
@@ -143,8 +144,8 @@ export default function AddPersonModal({ onClose, tree, onAdd }: Props) {
                         ))}
                     </select>
                     {relPersonId && (
-                      <div style={{ marginTop: '8px', padding: '8px 12px', background: 'var(--bg-muted)', borderRadius: 'var(--radius)', fontSize: '12px', color: 'var(--text-muted)' }}>
-                        ✅ {newPerson.firstName} {newPerson.lastName}{' '}
+                      <div style={{ marginTop: '8px', padding: '8px 12px', background: 'var(--bg-muted)', borderRadius: 'var(--radius)', fontSize: '12px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        <Check size={13} style={{ color: 'var(--success)', flexShrink: 0 }} aria-hidden="true" /> {newPerson.firstName} {newPerson.lastName}{' '}
                         <strong>
                           {relType === 'spouse' ? 'sera marié(e) à' :
                            relType === 'parent' ? 'sera parent de' :

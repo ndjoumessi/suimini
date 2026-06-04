@@ -34,6 +34,7 @@ import ImportExportModal from './ImportExportModal';
 import PrintModal from './PrintModal';
 import ShareModal from './ShareModal';
 import ToastStack, { ToastType, ToastItem } from './Toast';
+import { BrandLockup } from './Brand';
 import { Menu, Search, TreePine, Sprout, Cloud } from 'lucide-react';
 
 const MapView = dynamic(() => import('./MapView'), {
@@ -145,9 +146,9 @@ export default function SuiminiApp() {
   if (!store.loaded) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div className="serif" style={{ fontSize: '2.5rem', color: 'var(--accent)', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}><TreePine size={30} aria-hidden="true" /> Suimini</div>
-          <div style={{ color: 'var(--text-muted)' }}>Chargement…</div>
+        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
+          <BrandLockup size={36} color="var(--ink)" accent="var(--accent)" surface="var(--bg-card)" fontSize={28} />
+          <div className="label" style={{ color: 'var(--text-muted)' }}>Chargement…</div>
         </div>
       </div>
     );
@@ -196,11 +197,11 @@ export default function SuiminiApp() {
       <main className="app-main" style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', minWidth: 0 }}>
         {isDemo && <DemoBanner onCreateAccount={() => openAuth('signup')} onExit={exitDemo} />}
         {/* Mobile header */}
-        <div style={{ display: 'none', padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', alignItems: 'center', gap: '12px' }} className="mobile-header">
+        <div style={{ display: 'none', padding: '10px 16px', borderBottom: 'var(--bw) solid var(--border-strong)', background: 'var(--bg-card)', alignItems: 'center', gap: '12px' }} className="mobile-header">
           <button onClick={() => setSidebarOpen(true)} className="btn btn-ghost btn-icon btn-sm" aria-label="Ouvrir le menu"><Menu size={18} aria-hidden="true" /></button>
-          <span className="serif" style={{ fontSize: '1.2rem', color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', gap: '7px' }}><TreePine size={18} aria-hidden="true" /> Suimini</span>
+          <BrandLockup size={24} color="var(--ink)" accent="var(--accent)" surface="var(--bg-card)" fontSize={18} />
           <button onClick={() => setShowPalette(true)} className="btn btn-ghost btn-icon btn-sm" style={{ marginLeft: 'auto' }} aria-label="Rechercher"><Search size={18} aria-hidden="true" /></button>
-          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{store.activeTree?.name}</span>
+          <span className="label" style={{ color: 'var(--text-muted)', textTransform: 'none' }}>{store.activeTree?.name}</span>
         </div>
 
         {view === 'admin' ? (

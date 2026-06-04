@@ -5,6 +5,7 @@ import {
   Plus, Play, Share2, FolderOpen, Printer, Moon, Sun, ChevronDown, LogOut, LogIn, Cloud,
   Check, CloudOff, Shield,
 } from 'lucide-react';
+import { BrandLockup } from './Brand';
 
 function initials(name?: string | null, email?: string | null): string {
   const src = (name || email || '?').trim();
@@ -76,18 +77,18 @@ function SyncIndicator({ status }: { status: 'idle' | 'saved' | 'syncing' | 'off
 export default function Sidebar({ activeView, onViewChange, activeTree, trees, onShowTreeSelector, onAddPerson, onShowImportExport, onPrint, onShare, onPresent, birthdayAlertCount = 0, dark, onToggleDark, isOpen, onClose, userEmail, displayName, isDemo, cloud, syncStatus = 'idle', presenceCount = 0, onSignIn, onSignOut, isAdmin = false, unreadCount = 0 }: Props) {
 
   return (
-    <aside style={{ width: '224px', flexShrink: 0, background: 'var(--bg-card)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 50 }}
+    <aside style={{ width: '232px', flexShrink: 0, background: 'var(--bg-card)', borderRight: 'var(--bw) solid var(--border-strong)', display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 50 }}
       className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}
     >
       {/* Logo + dark toggle */}
-      <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+      <div style={{ padding: '16px 16px 12px', borderBottom: 'var(--bw) solid var(--border-strong)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
-          <div className="serif" style={{ fontSize: '1.45rem', color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '7px' }}>
-            <TreePine size={20} aria-hidden="true" /> Suimini
-          </div>
+          <BrandLockup size={26} color="var(--ink)" accent="var(--accent)" surface="var(--bg-card)" fontSize={20} />
+          <div style={{ marginTop: '5px' }}>
           {isDemo
-            ? <span className="badge badge-accent" style={{ fontSize: '9px', marginTop: '2px' }}>Mode démo</span>
+            ? <span className="badge badge-accent" style={{ fontSize: '9px' }}>Mode démo</span>
             : <div className="label" style={{ fontSize: '10px', letterSpacing: '1px' }}>Arbre Généalogique</div>}
+          </div>
         </div>
         <button onClick={onToggleDark} className="icon-btn" aria-label={dark ? 'Activer le mode clair' : 'Activer le mode sombre'} title={dark ? 'Mode clair' : 'Mode sombre'}>
           {dark ? <Sun size={17} /> : <Moon size={17} />}
@@ -97,9 +98,9 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
       {/* Active tree selector */}
       <button onClick={onShowTreeSelector}
         aria-label="Changer d'arbre"
-        style={{ margin: '10px 12px', padding: '10px 12px', background: 'var(--accent-light)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', cursor: 'pointer', textAlign: 'left', transition: 'border-color var(--t-fast)' }}
-        onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent)'}
-        onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+        style={{ margin: '10px 12px', padding: '10px 12px', background: 'var(--accent-light)', border: 'var(--bw) solid var(--border-strong)', borderRadius: 'var(--radius)', cursor: 'pointer', textAlign: 'left', transition: 'box-shadow var(--t-fast), transform var(--t-fast)' }}
+        onMouseEnter={e => { e.currentTarget.style.transform = 'translate(-2px,-2px)'; e.currentTarget.style.boxShadow = 'var(--shadow)'; }}
+        onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
       >
         <div className="label" style={{ fontSize: '10px', marginBottom: '2px' }}>Arbre actif</div>
         <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--accent)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -132,7 +133,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
                     padding: '8px 11px', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius)', marginBottom: '2px',
                     background: active ? 'var(--accent-light)' : 'transparent',
                     color: active ? 'var(--accent)' : 'var(--text-muted)',
-                    fontFamily: 'Lato, sans-serif', fontSize: '13px', fontWeight: active ? 700 : 400,
+                    fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: active ? 700 : 400,
                     transition: 'background var(--t-fast), color var(--t-fast)',
                   }}
                   onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'var(--interactive)'; }}
@@ -169,7 +170,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
                   padding: '8px 11px', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius)', marginBottom: '2px',
                   background: active ? 'var(--accent-light)' : 'transparent',
                   color: active ? 'var(--accent)' : 'var(--text-muted)',
-                  fontFamily: 'Lato, sans-serif', fontSize: '13px', fontWeight: active ? 700 : 400,
+                  fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: active ? 700 : 400,
                   transition: 'background var(--t-fast), color var(--t-fast)',
                 }}
                 onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'var(--interactive)'; }}
@@ -218,7 +219,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         {userEmail ? (
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '2px' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, flexShrink: 0 }}>
+              <div className="mono" style={{ width: '36px', height: '36px', borderRadius: 'var(--radius)', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, flexShrink: 0, border: '1.5px solid var(--border-strong)' }}>
                 {initials(displayName, userEmail)}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>

@@ -41,17 +41,16 @@ export default function BottomNav({ activeView, onViewChange, onOpenMenu }: Prop
           .bottom-nav {
             display: flex; position: fixed; left: 0; bottom: 0; z-index: 45;
             width: 100vw; max-width: 100vw; box-sizing: border-box;
-            background: var(--bg-card); border-top: 1px solid var(--border);
+            background: var(--bg-card); border-top: var(--bw) solid var(--border-strong);
             padding: 4px 0 calc(4px + env(safe-area-inset-bottom, 0px));
-            box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
           }
           .bn-item {
             position: relative; flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px;
             background: none; border: none; cursor: pointer; padding: 8px 2px; min-height: 52px;
-            font-family: 'Lato', sans-serif; touch-action: manipulation; transition: color var(--t-fast);
+            font-family: 'Inter', sans-serif; touch-action: manipulation; transition: color var(--t-fast);
           }
-          .bn-label { font-size: 10px; font-weight: 600; }
-          .bn-active { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 28px; height: 3px; border-radius: 0 0 3px 3px; background: var(--accent); }
+          .bn-label { font-size: 10px; font-weight: 700; letter-spacing: 0.2px; }
+          .bn-active { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 30px; height: 3px; background: var(--accent); }
         }
       `}</style>
     </nav>

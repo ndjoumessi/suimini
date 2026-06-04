@@ -1,307 +1,229 @@
 ---
 name: Suimini
-description: Arbre généalogique élégant et chaleureux pour les familles
+description: Arbre généalogique — "Atelier", brutalisme chaleureux contemporain
 colors:
-  accent: "#8b6f47"
-  accent-hover: "#7a5f3a"
-  accent-light: "#f0e8da"
-  neutral-bg: "#faf8f5"
+  accent: "#bf4b2c"
+  accent-hover: "#a53e22"
+  accent-light: "#f6e1d8"
+  bg: "#f4f1ea"
   surface-card: "#ffffff"
-  surface-muted: "#f4f1ec"
-  ink: "#1a1612"
-  ink-muted: "#5f5953"
-  ink-light: "#847c70"
-  border: "#e8e2da"
-  male: "#3b6fa0"
-  female: "#a05070"
-  deceased: "#7a7268"
-  success: "#4a7c59"
-  danger: "#9c3b3b"
-  warning: "#b9772a"
-  info: "#3b6fa0"
+  surface-muted: "#ece7dc"
+  ink: "#1b1b1b"
+  ink-muted: "#4a4742"
+  ink-light: "#6e6a62"
+  border: "#d8d2c6"
+  border-strong: "#1b1b1b"
+  male: "#2c5f8a"
+  female: "#a8456b"
+  deceased: "#6e6a62"
+  success: "#0e6e63"
+  danger: "#9e2b25"
+  warning: "#c77d1a"
+  info: "#2c5f8a"
 typography:
   display:
-    fontFamily: "Playfair Display, Georgia, serif"
-    fontSize: "2rem"
-    fontWeight: 600
-    lineHeight: 1.2
-    letterSpacing: "normal"
+    fontFamily: "Space Grotesk, Inter, sans-serif"
+    fontSize: "2.25rem"
+    fontWeight: 700
+    lineHeight: 1.05
+    letterSpacing: "-0.02em"
   headline:
-    fontFamily: "Playfair Display, Georgia, serif"
-    fontSize: "1.5rem"
-    fontWeight: 600
-    lineHeight: 1.25
+    fontFamily: "Space Grotesk, sans-serif"
+    fontSize: "1.6rem"
+    fontWeight: 700
+    lineHeight: 1.12
   title:
-    fontFamily: "Playfair Display, Georgia, serif"
-    fontSize: "1.2rem"
-    fontWeight: 600
-    lineHeight: 1.3
+    fontFamily: "Space Grotesk, sans-serif"
+    fontSize: "1.25rem"
+    fontWeight: 700
+    lineHeight: 1.2
   body:
-    fontFamily: "Lato, sans-serif"
+    fontFamily: "Inter, system-ui, sans-serif"
     fontSize: "14px"
     fontWeight: 400
     lineHeight: 1.6
   label:
-    fontFamily: "Lato, sans-serif"
+    fontFamily: "JetBrains Mono, monospace"
     fontSize: "11px"
     fontWeight: 700
-    letterSpacing: "0.6px"
+    letterSpacing: "0.8px"
 rounded:
-  sm: "4px"
-  md: "8px"
-  lg: "16px"
-  pill: "100px"
+  sm: "0px"
+  md: "2px"
+  lg: "4px"
+  xl: "6px"
 spacing:
   xs: "4px"
   sm: "8px"
   md: "16px"
   lg: "24px"
+shadow:
+  sm: "2px 2px 0 rgba(27,22,18,0.16)"
+  md: "4px 4px 0 rgba(27,22,18,0.9)"
+  lg: "6px 6px 0 rgba(27,22,18,0.9)"
+  xl: "10px 10px 0 rgba(27,22,18,0.9)"
 components:
   button-primary:
     backgroundColor: "{colors.accent}"
     textColor: "#ffffff"
+    border: "1.5px solid {colors.border-strong}"
     rounded: "{rounded.md}"
     padding: "8px 16px"
-  button-primary-hover:
-    backgroundColor: "{colors.accent-hover}"
   button-secondary:
-    backgroundColor: "{colors.surface-muted}"
+    backgroundColor: "{colors.surface-card}"
     textColor: "{colors.ink}"
-    rounded: "{rounded.md}"
-    padding: "8px 16px"
-  button-ghost:
-    backgroundColor: "transparent"
-    textColor: "{colors.ink-muted}"
-    rounded: "{rounded.md}"
-    padding: "8px 16px"
-  button-danger:
-    backgroundColor: "{colors.danger}"
-    textColor: "#ffffff"
-    rounded: "{rounded.md}"
-    padding: "8px 16px"
+    border: "1.5px solid {colors.border-strong}"
   input:
     backgroundColor: "{colors.surface-card}"
     textColor: "{colors.ink}"
+    border: "1.5px solid {colors.border-strong}"
     rounded: "{rounded.md}"
-    padding: "8px 12px"
   card:
     backgroundColor: "{colors.surface-card}"
-    textColor: "{colors.ink}"
+    border: "1.5px solid {colors.border-strong}"
     rounded: "{rounded.md}"
-    padding: "16px"
   badge:
-    backgroundColor: "{colors.accent-light}"
-    textColor: "{colors.accent}"
-    rounded: "{rounded.pill}"
-    padding: "2px 8px"
+    rounded: "{rounded.md}"
+    fontFamily: "JetBrains Mono, monospace"
 ---
 
-# Design System: Suimini
+# Design System: Suimini — "Atelier"
 
 ## 1. Overview
 
-**Creative North Star: "L'Album de Famille Relié"**
+**Creative North Star: "L'Atelier" — le brutalisme chaleureux.**
 
-Suimini se manipule comme un bel album de famille relié : papier crème chaud, cuir
-taupe en accent, titres en serif gravée. Le système traite de mémoire et de
-filiation, pas de données ; chaque écran doit donner l'impression d'un objet
-patrimonial qu'on transmet, posé et durable, jamais d'un tableau de bord jetable.
-La densité est calme : de l'air, une hiérarchie nette, des tons chauds maîtrisés.
-L'élégance se prouve à l'échelle, quand l'arbre passe de treize à trois cents
-personnes sans jamais devenir illisible.
+Suimini se manipule comme un atelier de construction d'histoire familiale : une
+grande feuille de papier os (bone) quadrillée, des règles d'encre franches, un
+seul accent terre-cuite, et des blocs tactiles qui se soulèvent avec une ombre
+portée nette. Le système est structurel et confiant — la hiérarchie se lit dans
+le tracé épais des bordures, l'échelle des titres et les libellés en monospace,
+pas dans l'ornement. C'est contemporain, un peu brut, mais jamais froid : la
+chaleur vient du papier crème, de la terre-cuite et de la générosité des espaces.
 
-La chaleur vient de la justesse, pas de l'ornement. Une seule famille serif
-(Playfair Display) porte les titres comme une gravure ; une humaniste sobre (Lato)
-porte le corps. L'accent taupe-bronze est rare et précieux : il marque l'action et
-le lien, pas la décoration. Le système rejette explicitement le **SaaS générique
-froid** (bleus corporate, dashboards stériles, gradients tech, cartes
-interchangeables) : rien ne doit sonner « startup ». Il rejette aussi le logiciel
-de généalogie vieillot (interfaces denses et datées), le réseau social ludique
-(couleurs criardes, gamification) et le luxe ostentatoire (or clinquant).
-
-Le code-couleur du genre (bleu masculin, rose féminin) et les sémantiques
-(vivant / défunt, succès / danger) sont des outils de lecture sobres, jamais des
-accents décoratifs : on les pose pour informer, on ne les étale pas.
+Cette identité remplace l'ancien « Album de Famille Relié » (papier crème,
+taupe, Playfair/Lato). On garde l'âme chaleureuse et patrimoniale, on change la
+voix : plus affirmée, plus moderne, plus structurée.
 
 **Key Characteristics:**
-- Papier crème chaud (#faf8f5) + accent cuir taupe (#8b6f47), rare et précieux.
-- Serif gravée (Playfair Display) pour les titres, humaniste calme (Lato) pour le corps.
-- Surfaces plates au repos ; l'élévation répond à l'état (hover, focus).
+- Papier os (#f4f1ea) + encre franche (#1b1b1b) + accent terre-cuite (#bf4b2c), rare.
+- Display géométrique gras (Space Grotesk), corps neutre (Inter), libellés mono (JetBrains Mono, MAJUSCULES).
+- Coins nets (rayon 2px), bordures épaisses (1,5px), **ombres portées dures** (`4px 4px 0`).
+- Plat au repos ; l'ombre dure répond à l'état (hover/sélection/modale).
 - Clair / sombre de plein droit, contrastes tunés ≥ 4.5:1.
-- Chaleur par la retenue ; jamais par l'ornement gratuit.
 
 ## 2. Colors
 
-Une palette de neutres chauds (papier, lin, encre brune) sur laquelle un seul
-accent cuir taupe porte l'action et le lien ; les couleurs de genre et de statut
-sont des signaux de lecture, pas des décors.
+Neutres chauds (os, lin, encre) sur lesquels un seul accent terre-cuite porte
+l'action et le lien ; genre et statut restent des signaux de lecture.
 
 ### Primary
-- **Cuir Taupe** (#8b6f47, hover #7a5f3a) : la voix d'action et de lien. Boutons
-  primaires, onglets actifs, points de timeline, focus ring, liens accentués. En
-  dark il s'éclaircit en bronze (#c4935a) pour tenir le contraste. Rare par
-  principe ; sa rareté fait sa valeur.
-- **Lueur Taupe** (#f0e8da) : halo de focus des champs (`box-shadow 0 0 0 3px`),
-  fond des badges accent, surfaces accentuées discrètes. En dark : #2a2018.
+- **Terre-cuite** (#bf4b2c, hover #a53e22) : action et lien — boutons primaires,
+  onglets actifs, focus, points de timeline, badges accent. En dark → #e0623e.
+  Rare par principe (≤ ~10 % d'un écran).
+- **Lueur terre-cuite** (#f6e1d8) : halo de focus, fond des badges accent. Dark : #2e211b.
 
 ### Neutral
-- **Papier Crème** (#faf8f5) : le fond du corps. Chaud sans être beige-sable
-  décoratif ; c'est l'identité, pas un défaut AI. En dark : encre profonde #12100e.
-- **Vélin Blanc** (#ffffff) : cartes, panneaux, modales, champs. Surface posée sur
-  le papier. En dark : #1c1916.
-- **Lin Sourd** (#f4f1ec) : boutons secondaires, zones inertes, pistes de
-  scrollbar. En dark : #242018.
-- **Encre Brune** (#1a1612) : texte principal. Brun-noir, pas noir pur, pour
-  rester chaud. En dark : #f0ece5.
-- **Encre Estompée** (#5f5953, ≥ 4.5:1) : texte secondaire, libellés. **Encre
-  Claire** (#847c70, ≥ 3:1) : placeholders, méta tertiaire seulement.
-- **Trait de Reliure** (#e8e2da) : bordures, filets, séparateurs. En dark : #3a342c.
+- **Papier os** (#f4f1ea, dark #161412) : fond. **Vélin** (#ffffff, dark #211e1a) :
+  cartes, panneaux, champs. **Lin** (#ece7dc, dark #2a2620) : zones inertes.
+- **Encre** (#1b1b1b, dark #f4f1ea) : texte principal et règles structurelles.
+- **Encre estompée** (#4a4742, ≥ 4.5:1) / **Encre claire** (#6e6a62, ≥ 3:1).
+- **Filet** (#d8d2c6, dark #36312a) : séparateurs discrets. **Filet fort**
+  (#1b1b1b, dark #7b7264) : contours de cartes / boutons / champs.
 
-### Tertiary (signaux de lecture, non décoratifs)
-- **Bleu Filiation** (#3b6fa0) : masculin ; sert aussi d'info. **Rose Filiation**
-  (#a05070) : féminin. **Gris Défunt** (#7a7268) : statut décédé.
-- **Vert Acte** (#4a7c59, succès), **Rouge Acte** (#9c3b3b, danger),
-  **Ocre Acte** (#b9772a, avertissement) : feedback d'état uniquement.
+### Tertiary (signaux, non décoratifs)
+- **Bleu** (#2c5f8a) masculin/info · **Rose** (#a8456b) féminin · **Gris** (#6e6a62) défunt.
+- **Vert** (#0e6e63) succès · **Rouge** (#9e2b25) danger · **Ocre** (#c77d1a) avertissement.
 
 ### Named Rules
-**The Rare Accent Rule.** Le cuir taupe est réservé à l'action et au lien. Il ne
-couvre jamais plus de ~10 % d'un écran. S'il devient un fond large ou un décor, le
-système a échoué : sa rareté est le sujet.
-
-**The Signal-Not-Decor Rule.** Bleu/rose/vert/rouge sont des informations (genre,
-statut, état d'acte). Interdits comme accents esthétiques : on les pose pour dire
-quelque chose, jamais pour « égayer ».
+**The Rare Accent Rule.** La terre-cuite est réservée à l'action et au lien ;
+jamais un fond large ni un décor. **The Two-Border Rule.** Deux niveaux de trait :
+le *filet fort* (encre, 1,5px) cadre les éléments porteurs (cartes, boutons,
+champs) ; le *filet* (discret) ne fait que séparer. **The Signal-Not-Decor
+Rule.** Bleu/rose/vert/rouge informent (genre, statut, état) — jamais pour égayer.
 
 ## 3. Typography
 
-**Display Font:** Playfair Display (with Georgia, serif)
-**Body Font:** Lato (with sans-serif système)
-
-**Character:** Une serif à fort contraste, gravée et patrimoniale, posée sur une
-humaniste calme et lisible. Le contraste serif/sans porte toute la hiérarchie ;
-aucune troisième famille. C'est l'axe « album relié » : titres comme une
-inscription, texte comme une page.
+**Display:** Space Grotesk (700) — géométrique, contemporaine, gravée.
+**Body:** Inter. **Labels:** JetBrains Mono (MAJUSCULES, +0,8px).
 
 ### Hierarchy
-- **Display / H1** (Playfair 600, 2rem, 1.2): titre d'écran, en-tête de fiche.
-- **Headline / H2** (Playfair 600, 1.5rem, 1.25): sections majeures.
-- **Title / H3** (Playfair 600, 1.2rem, 1.3): sous-sections, titres de cartes.
-- **Body** (Lato 400, 14px, 1.6): corps de l'interface. Garder les lignes de
-  prose longue ≤ 65–75ch.
-- **Label** (Lato 700, 11px, +0.6px, MAJUSCULES): éyebrows de champ, légendes,
-  en-têtes de groupe. Réservé aux libellés courts (≤ 4 mots).
+- **H1** (Space Grotesk 700, 2.25rem, 1.05, -0.02em) : titre d'écran.
+- **H2 / H3** (Space Grotesk 700) : sections, titres de cartes.
+- **Body** (Inter 400, 14px, 1.6) : corps ; prose ≤ 65–75ch.
+- **Label / `.label`** (JetBrains Mono 700, 11px, MAJ) : éyebrows, dates, légendes,
+  compteurs, en-têtes de groupe (≤ 4 mots).
 
 ### Named Rules
-**The Two-Voice Rule.** Playfair pour ce qu'on grave (titres, noms), Lato pour ce
-qu'on lit (tout le reste). Jamais une troisième famille ; jamais Playfair en
-corps, jamais Lato en grand titre.
-
-**The Quiet Caps Rule.** Les MAJUSCULES tracées sont réservées au style `.label`
-(11px, ≤ 4 mots). Aucune phrase, aucun corps en capitales.
+**The Mono-Caps Rule.** Les MAJUSCULES tracées appartiennent au monospace
+(`.label`), pas au display ni au corps. **The Display-for-Headings Rule.** Space
+Grotesk pour ce qu'on grave (titres, noms, chiffres clés) ; Inter pour ce qu'on lit.
+La classe legacy `.serif` est conservée mais mappée sur le display Space Grotesk.
 
 ## 4. Elevation
 
-Système **raffiné & retenu** : les surfaces sont plates au repos, l'ombre est une
-réponse à l'état, pas un décor permanent. La profondeur vient d'abord du tracé des
-bordures (#e8e2da) et du léger contraste de tons (papier → vélin) ; l'ombre douce
-ne fait que poser cartes et panneaux sur la page. Au survol, le primaire se
-soulève de 1px avec une ombre teintée ; les modales montent franchement pour
-signaler la prise de focus.
+Système **dur & franc** : surfaces plates au repos, cadrées par le filet fort.
+La profondeur naît de l'**ombre portée dure** (offset net, pas de flou) qui
+n'apparaît qu'en réponse à un état.
 
 ### Shadow Vocabulary
-- **Repos posé** (`box-shadow: 0 2px 12px rgba(26,22,18,0.08)`) : cartes, panneaux.
-- **Détail léger** (`0 1px 2px rgba(26,22,18,0.06)`) : séparations subtiles.
-- **Prise de focus** (`0 8px 32px rgba(26,22,18,0.12)`) : modales, toasts, menus.
-- **Survol primaire** (`0 4px 12px rgba(139,111,71,0.3)`) : seul l'accent teinte
-  son ombre ; réservé au bouton primaire au hover.
-- En dark, les mêmes rôles passent à `rgba(0,0,0,0.3 → 0.7)`.
+- **Repos** : pas d'ombre — seul le filet fort cadre la carte.
+- **Survol / sélection** (`box-shadow: 4px 4px 0 var(--shadow-color)` + `translate(-2px,-2px)`) :
+  boutons, cartes interactives, sélecteur d'arbre.
+- **Prise de focus** (`6px 6px 0`) : menus, toasts. **Modale** (`10px 10px 0`).
+- En dark, l'offset passe sur du noir pur (`rgba(0,0,0,0.85)`).
 
-### Named Rules
-**The Flat-At-Rest Rule.** Tout est plat au repos. L'ombre n'apparaît que pour
-répondre à un état (hover, focus, élévation de modale). Une carte qui « flotte »
-sans raison est trop lourde : c'est le tell du logiciel daté.
+### Named Rule
+**The Flat-At-Rest Rule.** Tout est plat au repos ; l'ombre dure est une réaction
+(hover/focus/modale), jamais un décor permanent.
 
 ## 5. Components
 
-Caractère général : posé, lisible, retenu. Rayon doux (8px) par défaut, transitions
-brèves (150–200ms) sur la courbe `--ease-out` (cubic-bezier(0.22, 1, 0.36, 1)).
+Caractère : franc, tactile, lisible. Rayon 2px par défaut, transitions brèves
+(150ms) sur `--ease-out`.
 
-### Buttons
-- **Shape :** coins doux 8px (`--radius`). Hauteur min 36px, portée à 44px sur
-  écrans tactiles (WCAG 2.5.5).
-- **Primary :** fond cuir taupe (#8b6f47), texte blanc, padding 8px 16px.
-- **Hover / Focus :** primaire → #7a5f3a, `translateY(-1px)`, ombre teintée
-  `0 4px 12px rgba(139,111,71,0.3)`. `:active` → `scale(0.97)`. Focus visible :
-  outline 2px accent, offset 2px (clavier seulement).
-- **Secondary :** lin sourd (#f4f1ec), texte encre, bordure 1px ; hover →
-  surface interactive + bordure plus marquée.
-- **Ghost :** transparent, texte estompé ; hover → fond interactif léger.
-- **Danger :** rouge acte (#9c3b3b), texte blanc ; hover → `brightness(1.08)`.
-- **Icon-only :** carré 36px (44px tactile), fond transparent, hover surface douce.
-
-### Cards / Containers
-- **Corner Style :** 8px (cartes), 16px (`--radius-lg`) pour les modales.
-- **Background :** vélin blanc (#ffffff) sur papier crème.
-- **Shadow Strategy :** « Repos posé » au repos (voir Elevation), pas plus.
-- **Border :** 1px trait de reliure (#e8e2da), toujours pleine ; jamais de filet
-  latéral coloré.
-- **Internal Padding :** 16px (`md`).
-
-### Inputs / Fields
-- **Style :** bordure 1px (#e8e2da), fond vélin, rayon 8px, padding 8px 12px.
-- **Focus :** bordure accent + halo `0 0 0 3px` en lueur taupe (#f0e8da).
-- **Error :** `aria-invalid` → bordure rouge acte, halo `rgba(156,59,59,0.18)`,
-  message `.field-error` 12px avec icône. Placeholder en encre claire.
-
-### Navigation (Tabs)
-- Onglets texte Lato, repos en encre estompée ; hover → encre pleine ; actif →
-  texte accent + soulignement 2px accent + poids 700. Barre basse 2px reliure.
-
-### Badges
-- Pilule 100px, 11px 700 MAJUSCULES tracées. Variantes sémantiques pâles :
-  genre (bleu/rose), statut (vivant vert / défunt gris), accent (taupe sur lueur).
-  Fonds atténués en dark. Usage strictement informatif.
-
-### Toasts (signature)
-- Carte vélin, ombre « prise de focus », **liseré gauche 4px** coloré par type
-  (succès/erreur/info/avertissement) avec icône assortie et barre de progression.
-  C'est la **seule** exception assumée au bord-latéral : un code de statut
-  transitoire, pas un décor de carte permanent.
-
-### Tree node (signature)
-- Le nœud d'arbre est le cœur du produit : transitions `transform` brèves
-  (`--t-fast`), `will-change: transform` sur le SVG, code-couleur de genre en
-  signal de lecture. Lisibilité prioritaire à toute densité.
+- **Boutons** : rayon 2px, bordure encre 1,5px, poids 700. Primaire terre-cuite ;
+  hover → `translate(-2px,-2px)` + ombre dure ; `:active` → retour à plat
+  (`translate(0,0)` + petite ombre). Secondaire vélin ; ghost sans bordure.
+- **Cartes / champs** : vélin, filet fort, coins nets ; champ en focus → bordure
+  accent + halo dur `3px 3px 0` en lueur terre-cuite.
+- **Onglets** : actif = texte accent + soulignement 3px accent + poids 700.
+- **Badges** : rectangulaires (2px), monospace MAJ, bordure 1px. Variantes
+  sémantiques pâles (genre/statut/accent), atténuées en dark.
+- **Toasts (signature)** : carte vélin, filet fort + ombre dure, **liseré gauche
+  6px** coloré par type (succès/erreur/info/avertissement) + icône.
+- **Marque** : `src/components/Brand.tsx` (`BrandMark` / `BrandLockup`) — carré
+  bordé contenant un glyphe d'arbre minimal (un parent, deux enfants). Remplace
+  l'ancienne emoji 🌿.
+- **Tree node (signature)** : carré bordé, barre de couleur de genre en signal,
+  ombre dure au survol/sélection.
 
 ## 6. Do's and Don'ts
 
-### Do:
-- **Do** garder le cuir taupe (#8b6f47) rare : action et lien seulement, ≤ 10 %
-  d'un écran (The Rare Accent Rule).
-- **Do** réserver Playfair Display aux titres et aux noms, Lato à tout le reste
-  (The Two-Voice Rule).
-- **Do** laisser les surfaces plates au repos ; n'élever qu'en réponse à un état
-  (The Flat-At-Rest Rule).
-- **Do** vérifier le contraste : corps ≥ 4.5:1, placeholders compris ; ne jamais
-  descendre le texte courant vers l'encre claire (#847c70).
-- **Do** porter genre et statut comme des signaux d'information sobres, en clair
-  comme en dark.
-- **Do** respecter `prefers-reduced-motion` : crossfade ou transition instantanée
-  en repli ; la motion reste brève et sur `--ease-out`.
+### Do
+- Garder la terre-cuite rare (action/lien, ≤ 10 %).
+- Cadrer cartes/boutons/champs au *filet fort*, séparer au *filet* discret.
+- Laisser plat au repos ; n'élever qu'en réaction (ombre dure).
+- Space Grotesk pour titres/noms/chiffres, Inter pour le corps, mono pour les libellés.
+- Vérifier le contraste (corps ≥ 4.5:1) en clair **et** en dark.
+- Respecter `prefers-reduced-motion` (transitions brèves, repli instantané).
 
-### Don't:
-- **Don't** verser dans le **SaaS générique froid** : pas de bleus corporate en
-  fond, pas de dashboard stérile, pas de gradient tech, pas de cartes
-  interchangeables. (Anti-référence PRODUCT.md, par son nom.)
-- **Don't** utiliser de **gradient text** (`background-clip: text`) ni de texte
-  en dégradé ; l'emphase passe par le poids et la taille, en couleur pleine.
-- **Don't** poser de **filet latéral coloré** (`border-left`/`right` > 1px) sur
-  cartes, listes ou alertes. Seul le toast porte un liseré, comme code de statut.
-- **Don't** empiler les cartes ou imbriquer des cartes ; pas de grille de cartes
-  identiques répétées à l'infini.
-- **Don't** mettre de **glassmorphism** décoratif (le seul flou admis est le
-  voile de fond de modale, fonctionnel).
-- **Don't** étaler les couleurs de genre/statut comme accents esthétiques
-  (The Signal-Not-Decor Rule), ni écrire de phrases en MAJUSCULES.
-- **Don't** dériver vers le luxe ostentatoire (or clinquant) ni le ton réseau
-  social ludique (couleurs criardes, gamification, emojis structurels).
+### Don't
+- Pas de **SaaS générique froid** (bleus corporate en fond, dégradés tech).
+- Pas de **gradient text**, pas de coins très arrondis, pas d'ombres floues douces
+  (l'ombre est dure et portée).
+- Pas d'**emoji comme icône structurelle** : utiliser Lucide (SVG). Quelques
+  glyphes de domaine (marqueurs d'événements ✝/✦…) restent typographiques, jamais en chrome d'UI.
+- Pas d'étalement des couleurs de genre/statut comme accents décoratifs.
+- Pas de phrases en MAJUSCULES (réservées au `.label` mono, ≤ 4 mots).
+
+---
+
+## Implementation notes
+
+- Source de vérité : `src/app/globals.css` (tokens CSS + primitives `.btn .card
+  .input .tab .badge .toast .modal .icon-btn`). Les noms de variables/classes sont
+  stables : le système se propage à toute l'app.
+- Miroir JS : `src/lib/tokens.ts`. Thèmes de couleur (6, terre-cuite par défaut) :
+  `src/lib/themes.ts` — surchargent `--accent/--male/--female`, dark-aware.
+- Build/dev : Node 22 (`nvm use 22`).

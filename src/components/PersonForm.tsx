@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef } from 'react';
+import { AlertCircle, FolderOpen, Plus, X } from 'lucide-react';
 import { Person, Gender } from '@/types';
 
 interface Props {
@@ -174,8 +175,8 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel = 'E
       )}
 
       {dateInvalid && (
-        <div style={{ fontSize: '12px', color: 'var(--danger)' }}>
-          ⚠️ La date de décès doit être postérieure à la date de naissance.
+        <div style={{ fontSize: '12px', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <AlertCircle size={13} aria-hidden="true" /> La date de décès doit être postérieure à la date de naissance.
         </div>
       )}
 
@@ -299,27 +300,27 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel = 'E
 
       {/* Custom fields */}
       <div style={{ borderTop: '1px solid var(--border)', paddingTop: '12px' }}>
-        <span style={{ ...labelStyle, marginBottom: '8px', display: 'block' }}>🗂 Champs personnalisés</span>
+        <span style={{ ...labelStyle, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}><FolderOpen size={13} aria-hidden="true" /> Champs personnalisés</span>
         {cfEntries.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
             {cfEntries.map((c, i) => (
               <div key={i} style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                 <input value={c.key} onChange={e => updateCf(i, 'key', e.target.value)} className="input" placeholder="Clé (ex: Régiment)" style={{ flex: 1 }} />
                 <input value={c.value} onChange={e => updateCf(i, 'value', e.target.value)} className="input" placeholder="Valeur" style={{ flex: 1 }} />
-                <button type="button" onClick={() => removeCf(i)} className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }}>✕</button>
+                <button type="button" onClick={() => removeCf(i)} aria-label="Retirer le champ" className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--danger)' }}><X size={14} /></button>
               </div>
             ))}
           </div>
         )}
-        <button type="button" onClick={addCf} className="btn btn-secondary btn-sm">＋ Ajouter un champ</button>
+        <button type="button" onClick={addCf} className="btn btn-secondary btn-sm"><Plus size={14} /> Ajouter un champ</button>
       </div>
 
       <label style={labelStyle}>
         Confidentialité
         <select value={form.privacy || 'public'} onChange={e => set('privacy', e.target.value as Person['privacy'])} className="input">
-          <option value="public">🌍 Public</option>
-          <option value="family">👨‍👩‍👧 Famille</option>
-          <option value="private">🔒 Privé</option>
+          <option value="public">Public</option>
+          <option value="family">Famille</option>
+          <option value="private">Privé</option>
         </select>
       </label>
 
