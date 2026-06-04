@@ -271,7 +271,7 @@ export default function PrintModal({ tree, onClose }: Props) {
                     <div key={p.id} style={{ breakInside: 'avoid', marginBottom: '4px', fontSize: '12px', padding: '3px 6px', background: p.isAlive ? 'transparent' : 'var(--bg-muted)', borderRadius: '3px' }}>
                       <strong>{p.lastName}</strong>, {p.firstName}
                       {p.birthDate && <span style={{ color: 'var(--text-muted)' }}> · {formatYear(p.birthDate)}</span>}
-                      {!p.isAlive && <span style={{ color: 'var(--deceased)' }}> ✝</span>}
+                      {!p.isAlive && <span style={{ color: 'var(--deceased)' }}> †</span>}
                     </div>
                   ))}
                 </div>
@@ -298,7 +298,7 @@ export default function PrintModal({ tree, onClose }: Props) {
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: '700', fontSize: '14px' }}>
                           {p.firstName} {p.maidenName ? `(${p.maidenName}) ` : ''}{p.lastName}
-                          {!p.isAlive && <span style={{ color: 'var(--deceased)', fontSize: '12px', marginLeft: '6px' }}>✝</span>}
+                          {!p.isAlive && <span style={{ color: 'var(--deceased)', fontSize: '12px', marginLeft: '6px' }}>†</span>}
                         </div>
                         <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
                           {p.occupation && <span>{p.occupation} · </span>}
@@ -413,7 +413,7 @@ export default function PrintModal({ tree, onClose }: Props) {
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: '12px', color: '#1b1b1b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.firstName}</div>
-                          <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: '#4a4742', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.lastName}{!p.isAlive ? ' ✝' : ''}</div>
+                          <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: '#4a4742', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.lastName}{!p.isAlive ? ' †' : ''}</div>
                           <div style={{ fontFamily: 'var(--font-body)', fontSize: '9.5px', color: '#6e6a62' }}>
                             {p.birthDate ? `✦ ${formatYear(p.birthDate)}` : ''}
                             {!p.isAlive && p.deathDate ? ` – ${formatYear(p.deathDate)}` : (age !== null && p.isAlive ? ` · ${age} ans` : '')}

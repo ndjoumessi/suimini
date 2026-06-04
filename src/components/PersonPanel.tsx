@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Person, FamilyTree, Relationship, RelationType, FamilyEvent, EventType, Note, Citation, DnaOrigin } from '@/types';
 import { getParents, getChildren, getSpouses, getSiblings, getAge, formatDate, formatYear, getDisplayName, generateId, safeHttpUrl } from '@/lib/treeUtils';
 import PersonForm from './PersonForm';
-import { X, Pencil, Trash2, User, Clock, Users, Calendar, StickyNote, BookOpen, Lightbulb, Link2, AlertCircle } from 'lucide-react';
+import { X, Pencil, Trash2, User, Clock, Users, Calendar, StickyNote, BookOpen, Lightbulb, Link2, AlertCircle, Dna, FileText } from 'lucide-react';
 
 interface Props {
   person: Person;
@@ -18,7 +18,7 @@ interface Props {
 }
 
 const EVENT_TYPES: EventType[] = ['birth','death','marriage','divorce','baptism','graduation','military','immigration','other'];
-const EVENT_ICONS: Record<string, string> = { birth:'✦', death:'✝', marriage:'💒', divorce:'⚡', baptism:'✟', graduation:'🎓', military:'⚔', immigration:'🌍', other:'📌' };
+const EVENT_ICONS: Record<string, string> = { birth:'✦', death:'†', marriage:'💒', divorce:'⚡', baptism:'✟', graduation:'🎓', military:'⚔', immigration:'🌍', other:'📌' };
 const REL_LABELS: Record<RelationType, string> = { spouse: 'Conjoint(e)', partner: 'Partenaire', parent: 'Parent de', child: 'Enfant de', sibling: 'Frère/Sœur de' };
 
 export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete, onSelectPerson, onAddRelationship, onUpdateRelationship, onDeleteRelationship }: Props) {
@@ -209,7 +209,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
             {person.nickName && <div style={{ fontSize:'12px', color:'var(--text-muted)', marginBottom:'4px', fontStyle:'italic' }}>«&nbsp;{person.nickName}&nbsp;»</div>}
             <div style={{ display:'flex', gap:'5px', flexWrap:'wrap' }}>
               <span className={`badge badge-${person.gender==='male'?'male':person.gender==='female'?'female':'accent'}`}>
-                {person.gender==='male'?'♂':person.gender==='female'?'♀':'⚧'}
+                {person.gender==='male'?'Homme':person.gender==='female'?'Femme':person.gender==='other'?'Autre':'—'}
               </span>
               <span className={`badge badge-${person.isAlive?'alive':'deceased'}`}>
                 {person.isAlive?'Vivant':'Décédé'}
@@ -268,7 +268,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
               {person.birthPlace?.city&&<><br/><small>📍 {[person.birthPlace.city, person.birthPlace.country].filter(Boolean).join(', ')}</small></>}
             </InfoBlock>
             {!person.isAlive&&(
-              <InfoBlock label="Décès" icon="✝">
+              <InfoBlock label="Décès" icon="†">
                 {formatDate(person.deathDate, person.deathDateApprox)||'—'}
                 {person.deathPlace?.city&&<><br/><small>📍 {[person.deathPlace.city, person.deathPlace.country].filter(Boolean).join(', ')}</small></>}
               </InfoBlock>
@@ -292,7 +292,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
             )}
             {person.dnaOrigins&&person.dnaOrigins.length>0&&(
               <div style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)' }}>
-                <div style={{ fontSize:'11px', color:'var(--text-light)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'10px' }}>🧬 Origines &amp; ADN</div>
+                <div style={{ fontSize:'11px', color:'var(--text-light)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'10px', display:'flex', alignItems:'center', gap:'5px' }}><Dna size={12} aria-hidden="true" /> Origines &amp; ADN</div>
                 <DnaPie origins={person.dnaOrigins} />
               </div>
             )}
@@ -379,7 +379,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                                 {REL_LABELS[rel.type]} <span style={{ color:'var(--text-muted)', fontWeight:400 }}>{other?getDisplayName(other):'(personne inconnue)'}</span>
                               </div>
                               {dates && <div style={{ fontSize:'11px', color:'var(--text-light)' }}>{dates}</div>}
-                              {rel.notes && <div style={{ fontSize:'12px', color:'var(--text-muted)', marginTop:'2px' }}>📝 {rel.notes}</div>}
+                              {rel.notes && <div style={{ fontSize:'12px', color:'var(--text-muted)', marginTop:'2px', display:'flex', alignItems:'center', gap:'5px' }}><FileText size={11} aria-hidden="true" /> {rel.notes}</div>}
                             </div>
                             <button onClick={()=>setEditRelId(rel.id)} className="btn btn-ghost btn-sm" style={{ fontSize:'12px' }}><Pencil size={13} /></button>
                             <button onClick={()=>onDeleteRelationship(rel.id)} className="btn btn-ghost btn-sm" style={{ fontSize:'12px', color:'var(--danger)' }}><Trash2 size={13} /></button>
@@ -825,7 +825,7 @@ function DnaPie({ origins }: { origins: DnaOrigin[] }) {
           ))
         )}
         <circle cx={cx} cy={cy} r={24} fill="var(--bg-card)" />
-        <text x={cx} y={cy + 5} textAnchor="middle" fontSize={16}>🧬</text>
+        <Dna x={cx - 9} y={cy - 9} width={18} height={18} color="var(--accent)" aria-hidden="true" />
       </svg>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', flex: 1, minWidth: '140px' }}>
         {origins.map((o, i) => (

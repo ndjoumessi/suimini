@@ -58,9 +58,12 @@ const TESTIMONIALS = [
 ];
 
 const PLANS = [
-  { name: 'Gratuit', price: '0€', period: '', popular: false, features: ['1 arbre', '50 personnes', 'Stockage local (localStorage)', 'Toutes les vues'] },
-  { name: 'Famille', price: '9€', period: '/mois', popular: true, features: ['Arbres illimités', 'Sync cloud multi-appareils', 'Partage & collaboration', 'Export PDF haute qualité'] },
-  { name: 'Pro', price: '19€', period: '/mois', popular: false, features: ['Tout Famille', 'Collaboration temps réel', 'Rapport généalogique IA', 'Support prioritaire'] },
+  { name: 'Gratuit', price: '0€', period: '/mois', popular: false, cta: 'Commencer gratuitement',
+    features: ['1 arbre généalogique', '50 personnes max', 'Import/Export GEDCOM', 'Rapport IA (3/mois)'] },
+  { name: 'Famille', price: '9€', period: '/mois', popular: true, cta: 'Choisir ce plan',
+    features: ['5 arbres', '500 personnes', 'Collaboration famille', 'Rapport IA illimité', 'Galerie photos', 'Sync cloud'] },
+  { name: 'Pro', price: '19€', period: '/mois', popular: false, cta: 'Contacter',
+    features: ['Arbres illimités', 'Personnes illimitées', 'Multi-organisations', 'API access', 'Support prioritaire', 'Export PDF avancé'] },
 ];
 
 const FAQS = [
@@ -161,7 +164,7 @@ export default function Landing() {
         <BrandLockup size={26} color={INK} accent={ACCENT} surface={PAPER} fontSize={20} />
         <div className="lp-nav-links">
           <a href="#features">Fonctions</a>
-          <a href="#pricing">Tarifs</a>
+          <a href="#tarifs">Tarifs</a>
           <a href="#faq">FAQ</a>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -288,8 +291,8 @@ export default function Landing() {
         <Reveal delay={120}><Testimonials /></Reveal>
       </section>
 
-      {/* ===================== PRICING ===================== */}
-      <section id="pricing" className="lp-section">
+      {/* ===================== TARIFS ===================== */}
+      <section id="tarifs" className="lp-section">
         <Reveal><div className="lp-eyebrow lp-eyebrow-center">Les tarifs</div></Reveal>
         <Reveal delay={60}><h2 className="serif lp-h2">Commencez gratuitement, évoluez plus tard</h2></Reveal>
         <div className="lp-pricing">
@@ -300,9 +303,9 @@ export default function Landing() {
                 <h3 className="serif lp-plan-name">{p.name}</h3>
                 <div className="lp-plan-price"><span className="serif">{p.price}</span><small className="lp-mono">{p.period}</small></div>
                 <ul className="lp-plan-features">
-                  {p.features.map(f => <li key={f}><Check size={16} style={{ color: ACCENT, flexShrink: 0 }} /> {f}</li>)}
+                  {p.features.map(f => <li key={f}><Check size={16} style={{ color: p.popular ? '#fff' : ACCENT, flexShrink: 0 }} /> {f}</li>)}
                 </ul>
-                <button onClick={startSignup} className={p.popular ? 'lp-btn-primary' : 'lp-btn-secondary'} style={{ width: '100%', justifyContent: 'center' }}>Commencer</button>
+                <button onClick={startSignup} className={p.popular ? 'lp-btn-secondary' : 'lp-btn-primary'} style={{ width: '100%', justifyContent: 'center' }}>{p.cta}</button>
               </div>
             </Reveal>
           ))}
@@ -447,15 +450,21 @@ const LANDING_CSS = `
 
 /* Pricing */
 .lp-pricing { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; max-width: 1000px; margin: 52px auto 0; align-items: stretch; }
-.lp-plan { position: relative; height: 100%; background: ${PAPER}; border: 1.5px solid ${INK}; padding: 30px 26px; display: flex; flex-direction: column; }
-.lp-plan-popular { border: 2px solid ${INK}; box-shadow: 8px 8px 0 ${ACCENT}; }
-.lp-plan-badge { position: absolute; top: -13px; left: 26px; background: ${ACCENT}; color: #fff; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; padding: 4px 12px; border: 1.5px solid ${INK}; }
+.lp-plan { position: relative; height: 100%; background: ${PAPER}; border: 2px solid ${INK}; box-shadow: 4px 4px 0 ${INK}; padding: 30px 26px; display: flex; flex-direction: column; transition: transform 0.2s cubic-bezier(0.22,1,0.36,1), box-shadow 0.2s cubic-bezier(0.22,1,0.36,1); }
+.lp-plan:hover { transform: translateY(-4px); box-shadow: 6px 8px 0 ${INK}; }
+.lp-plan-popular { background: ${ACCENT}; color: #fff; box-shadow: 6px 6px 0 ${INK}; }
+.lp-plan-popular:hover { box-shadow: 8px 10px 0 ${INK}; }
+.lp-plan-badge { position: absolute; top: -12px; left: 26px; background: ${INK}; color: ${BONE}; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; padding: 4px 12px; border: 1.5px solid ${INK}; }
 .lp-plan-name { font-size: 1.4rem; margin: 0 0 10px; }
 .lp-plan-price { margin-bottom: 20px; display: flex; align-items: baseline; gap: 4px; }
 .lp-plan-price span { font-size: 2.6rem; }
 .lp-plan-price small { color: #6e6a62; font-size: 13px; }
 .lp-plan-features { list-style: none; padding: 0; margin: 0 0 24px; flex: 1; display: flex; flex-direction: column; gap: 11px; border-top: 1.5px solid ${INK}; padding-top: 18px; }
 .lp-plan-features li { display: flex; gap: 9px; align-items: center; font-size: 14px; color: #4a4742; }
+.lp-plan-popular .lp-plan-price span, .lp-plan-popular .lp-plan-name { color: #fff; }
+.lp-plan-popular .lp-plan-price small { color: rgba(255,255,255,0.85); }
+.lp-plan-popular .lp-plan-features { border-top-color: rgba(255,255,255,0.45); }
+.lp-plan-popular .lp-plan-features li { color: #fff; }
 
 /* FAQ */
 .lp-faq { max-width: 800px; margin: 44px auto 0; border-bottom: 1.5px solid ${INK}; }

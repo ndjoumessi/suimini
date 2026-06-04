@@ -1,7 +1,7 @@
 'use client';
 import { useState, useMemo } from 'react';
 import { FamilyTree, Person } from '@/types';
-import { Search, Link2, Scale, TreePine, Sprout, User, AlertCircle } from 'lucide-react';
+import { Search, Link2, Scale, TreePine, Sprout, User, AlertCircle, Dna } from 'lucide-react';
 import {
   getDisplayName, formatYear, getAllAncestors, getAllDescendants,
   findCommonAncestors, findRelationPath, describeRelation, getAge
@@ -238,7 +238,7 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
               );
               return (
                 <div className="card" style={{ padding: '16px', marginBottom: '16px' }}>
-                  <h3 className="serif" style={{ margin: '0 0 12px', fontSize: '1rem' }}>🧬 Origines &amp; ADN</h3>
+                  <h3 className="serif" style={{ margin: '0 0 12px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '7px' }}><Dna size={16} aria-hidden="true" /> Origines &amp; ADN</h3>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignContent: 'flex-start' }}>
                       {(person1.dnaOrigins || []).length === 0 ? <span style={{ fontSize: '12px', color: 'var(--text-light)' }}>—</span>

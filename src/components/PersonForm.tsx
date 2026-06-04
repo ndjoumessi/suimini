@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef } from 'react';
-import { AlertCircle, FolderOpen, Plus, X } from 'lucide-react';
+import { AlertCircle, FolderOpen, Plus, X, Dna } from 'lucide-react';
 import { Person, Gender } from '@/types';
 
 interface Props {
@@ -115,9 +115,9 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel = 'E
       <label style={labelStyle}>
         Sexe
         <select value={form.gender} onChange={e => set('gender', e.target.value as Gender)} className="input">
-          <option value="male">♂ Homme</option>
-          <option value="female">♀ Femme</option>
-          <option value="other">⚧ Autre</option>
+          <option value="male">Homme</option>
+          <option value="female">Femme</option>
+          <option value="other">Autre</option>
           <option value="unknown">Inconnu</option>
         </select>
       </label>
@@ -262,7 +262,7 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel = 'E
       {/* DNA / ethnic origins */}
       <div style={{ borderTop: '1px solid var(--border)', paddingTop: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <span style={{ ...labelStyle, marginBottom: 0 }}>🧬 Origines & ADN</span>
+          <span style={{ ...labelStyle, marginBottom: 0, display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Dna size={13} aria-hidden="true" /> Origines & ADN</span>
           <span style={{ fontSize: '12px', fontWeight: 700, color: dna.length === 0 ? 'var(--text-light)' : dnaInvalid ? 'var(--danger)' : 'var(--success)' }}>
             Total : {Math.round(dnaTotal)}%
           </span>

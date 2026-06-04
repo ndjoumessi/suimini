@@ -8,7 +8,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useAdminData } from '@/hooks/useAdminData';
 import { useBirthdayNotifications } from '@/hooks/useBirthdayNotifications';
 import { supabase } from '@/lib/supabase';
-import { ViewMode } from '@/types';
+import { ViewMode, Person, FamilyTree } from '@/types';
+import { generateId } from '@/lib/treeUtils';
 import Sidebar from './Sidebar';
 import BottomNav from './BottomNav';
 import AuthModal from './AuthModal';
@@ -35,6 +36,7 @@ import PrintModal from './PrintModal';
 import ShareModal from './ShareModal';
 import ToastStack, { ToastType, ToastItem } from './Toast';
 import { BrandLockup } from './Brand';
+import OnboardingWizard, { OnboardingData } from './OnboardingWizard';
 import { Menu, Search, TreePine, Sprout, Cloud } from 'lucide-react';
 
 const MapView = dynamic(() => import('./MapView'), {
@@ -68,6 +70,7 @@ export default function SuiminiApp() {
   const [authTab, setAuthTab] = useState<'login' | 'signup'>('login');
   const openAuth = useCallback((tab: 'login' | 'signup' = 'login') => { setAuthTab(tab); setShowAuth(true); }, []);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [presenceCount, setPresenceCount] = useState(1);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const toastCounter = useRef(0);
@@ -117,6 +120,43 @@ export default function SuiminiApp() {
 
   const handleSelectPerson = useCallback((id: string) => {
     setSelectedPersonId(id);
+  }, []);
+
+  // First-run onboarding: an approved, logged-in user who hasn't onboarded and has
+  // no real tree yet. The store seeds a sample tree ('tree1') for everyone, so we
+  // treat "only the untouched sample" as first access.
+  useEffect(() => {
+    if (!store.loaded || !user || isDemo) return;
+    let onboarded = false;
+    try { onboarded = localStorage.getItem('suimini_onboarded') === 'true'; } catch { /* ignore */ }
+    if (onboarded) return;
+    const onlySample = store.trees.length === 0 || (store.trees.length === 1 && store.trees[0].id === 'tree1');
+    if (onlySample) setShowOnboarding(true);
+  }, [store.loaded, store.trees, user, isDemo]);
+
+  const handleOnboardingComplete = useCallback((data: OnboardingData) => {
+    const now = new Date().toISOString();
+    const person: Person = {
+      id: generateId(),
+      firstName: data.firstName, lastName: data.lastName, gender: data.gender,
+      isAlive: true, birthDate: data.birthDate, createdAt: now, updatedAt: now,
+    };
+    const tree: FamilyTree = {
+      id: '', name: data.treeName, createdAt: now, updatedAt: now,
+      persons: [person], relationships: [], rootPersonId: person.id,
+      settings: { defaultView: 'tree', showPhotos: true, showDates: true, showPlaces: true, colorScheme: 'default', generationsToShow: 5 },
+    };
+    store.importTree(tree); // atomic: appends tree (+ root person), sets it active
+    try { localStorage.setItem('suimini_onboarded', 'true'); } catch { /* ignore */ }
+    setShowOnboarding(false);
+    setView('tree');
+    setSelectedPersonId(person.id);
+    showToast(`Arbre « ${data.treeName} » créé`);
+  }, [store, showToast]);
+
+  const handleOnboardingSkip = useCallback(() => {
+    try { localStorage.setItem('suimini_onboarded', 'true'); } catch { /* ignore */ }
+    setShowOnboarding(false);
   }, []);
 
   // Global keyboard shortcuts: Cmd/Ctrl+K (palette), Cmd/Ctrl+Z (undo), Cmd/Ctrl+Shift+Z (redo)
@@ -380,6 +420,11 @@ export default function SuiminiApp() {
           onToast={showToast}
           onClose={() => setShowShare(false)}
         />
+      )}
+
+      {/* First-run onboarding wizard */}
+      {showOnboarding && (
+        <OnboardingWizard onComplete={handleOnboardingComplete} onSkip={handleOnboardingSkip} />
       )}
 
       {/* Mobile bottom navigation */}
