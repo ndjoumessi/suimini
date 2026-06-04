@@ -491,9 +491,9 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                       fill="var(--accent)" />
                   )}
 
-                  {/* Avatar */}
-                  <clipPath id={`avatar-${p.id}`}><circle cx={24} cy={NODE_H / 2} r={16} /></clipPath>
-                  <circle cx={24} cy={NODE_H / 2} r={16} fill="var(--accent-light)" />
+                  {/* Avatar — square (Atelier) */}
+                  <clipPath id={`avatar-${p.id}`}><rect x={8} y={NODE_H / 2 - 16} width={32} height={32} /></clipPath>
+                  <rect x={8} y={NODE_H / 2 - 16} width={32} height={32} fill="var(--accent-light)" />
                   {p.profilePhoto ? (
                     <image href={p.profilePhoto} x={8} y={NODE_H / 2 - 16} width={32} height={32}
                       clipPath={`url(#avatar-${p.id})`} preserveAspectRatio="xMidYMid slice" />
