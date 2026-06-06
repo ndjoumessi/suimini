@@ -151,10 +151,7 @@ export default function Landing() {
           {canEnterApp ? (
             <button onClick={goToApp} className="lp-btn-primary lp-btn-nav">Accéder à l’app <ArrowRight size={15} /></button>
           ) : (
-            <>
-              <button onClick={() => openAuth('login')} className="lp-btn-ghost">Connexion</button>
-              <button onClick={() => openAuth('signup')} className="lp-btn-primary lp-btn-nav">Commencer <ArrowRight size={15} /></button>
-            </>
+            <button onClick={() => openAuth('login')} className="lp-btn-ghost">Connexion</button>
           )}
         </div>
       </nav>
