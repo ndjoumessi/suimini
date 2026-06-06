@@ -49,9 +49,10 @@ const MapView = dynamic(() => import('./MapView'), {
 });
 
 export default function SuiminiApp() {
-  const { user, signOut, isDemo, exitDemo, isAdmin, role } = useAuth();
+  const { user, signOut, isDemo, exitDemo, isAdmin, role, isLoading } = useAuth();
   const admin = useAdminData({ enabled: isAdmin });
-  const store = useFamilyStore(user ? { id: user.id, email: user.email } : null);
+  // authReady = auth resolved → the store won't seed the demo sample for logged-in users.
+  const store = useFamilyStore(user ? { id: user.id, email: user.email } : null, !isLoading);
   const { dark, toggle: toggleDark, mode: themeMode, setMode: setThemeMode } = useDarkMode();
   const { themeId, setTheme, previewTheme, cancelPreview } = useTheme();
   const birthdayAlertCount = useBirthdayNotifications(store.activeTree);
