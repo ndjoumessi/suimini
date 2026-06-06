@@ -3,10 +3,9 @@ import { useState, useEffect, useRef } from 'react';
 import {
   TreePine, Map, Cloud, Search, BookOpen, Play, BarChart2, Dna,
   ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Check, Mail,
-  KeyRound, UserPlus, Share2, ShieldCheck, FileText, Star, Gamepad2,
+  KeyRound, UserPlus, Share2, ShieldCheck, Star, Gamepad2,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/lib/supabase';
 import AuthModal from '@/components/AuthModal';
 import DemoBanner from '@/components/DemoBanner';
 import { BrandLockup } from '@/components/Brand';
@@ -63,7 +62,7 @@ const PLANS = [
     features: ['1 arbre généalogique', '50 personnes max', 'Import/Export GEDCOM', 'Rapport IA (3/mois)'] },
   { name: 'Famille', price: '9€', period: '/mois', popular: true, cta: 'Choisir ce plan',
     features: ['5 arbres', '500 personnes', 'Collaboration famille', 'Rapport IA illimité', 'Galerie photos', 'Sync cloud'] },
-  { name: 'Pro', price: '19€', period: '/mois', popular: false, cta: 'Contacter',
+  { name: 'Pro', price: '19€', period: '/mois', popular: false, cta: 'Nous contacter',
     features: ['Arbres illimités', 'Personnes illimitées', 'Multi-organisations', 'API access', 'Support prioritaire', 'Export PDF avancé'] },
 ];
 
@@ -132,35 +131,9 @@ export default function Landing() {
   const goToApp = () => { if (typeof window !== 'undefined') window.location.href = '/app'; };
   const [showAuth, setShowAuth] = useState(false);
   const [authTab, setAuthTab] = useState<'login' | 'signup'>('signup');
-  const [count, setCount] = useState<number | null>(null);
 
   const openAuth = (tab: 'login' | 'signup') => { setAuthTab(tab); setShowAuth(true); };
   const startSignup = () => openAuth('signup');
-
-  // Family count (public RPC) with graceful fallback + count-up animation.
-  useEffect(() => {
-    let target = 2400;
-    const animate = () => {
-      const start = performance.now();
-      const from = 0;
-      const tick = (now: number) => {
-        const p = Math.min(1, (now - start) / 1200);
-        const eased = 1 - Math.pow(1 - p, 3);
-        setCount(Math.round(from + (target - from) * eased));
-        if (p < 1) requestAnimationFrame(tick);
-      };
-      requestAnimationFrame(tick);
-    };
-    (async () => {
-      if (supabase) {
-        try {
-          const { data } = await supabase.rpc('family_count');
-          if (typeof data === 'number' && data > 0) target = Math.max(data, 100);
-        } catch { /* fallback */ }
-      }
-      animate();
-    })();
-  }, []);
 
   return (
     <div className="lp-root">
@@ -201,15 +174,23 @@ export default function Landing() {
           </Reveal>
           <Reveal delay={230}>
             <div className="lp-cta-row">
-              <button onClick={startSignup} className="lp-btn-primary lp-btn-hero">Commencer gratuitement <ArrowRight size={18} /></button>
-              <button onClick={startDemo} className="lp-btn-secondary lp-btn-hero"><Gamepad2 size={17} /> Essayer la démo</button>
+              {canEnterApp ? (
+                <button onClick={goToApp} className="lp-btn-primary lp-btn-hero">Accéder à l’app <ArrowRight size={18} /></button>
+              ) : (
+                <button onClick={startSignup} className="lp-btn-primary lp-btn-hero">Commencer gratuitement <ArrowRight size={18} /></button>
+              )}
             </div>
-            <div className="lp-demo-note lp-mono">Aucune inscription requise pour la démo</div>
+            {!canEnterApp && (
+              <div className="lp-hero-login">
+                Déjà un compte ? <button onClick={() => openAuth('login')} className="lp-link">Se connecter</button>
+              </div>
+            )}
           </Reveal>
           <Reveal delay={310}>
-            <div className="lp-stat">
-              <strong>{count !== null ? count.toLocaleString('fr-FR') : '—'}+</strong>
-              <span className="lp-mono">familles déjà préservées</span>
+            <div className="lp-trust">
+              <span><Check size={14} /> Gratuit pour commencer</span>
+              <span><Check size={14} /> Sans carte bancaire</span>
+              <span><ShieldCheck size={14} /> Données hébergées en Europe</span>
             </div>
           </Reveal>
         </div>
@@ -234,6 +215,19 @@ export default function Landing() {
               </div>
             </Reveal>
           ))}
+        </div>
+      </section>
+
+      {/* ===================== SECTION DÉMO ===================== */}
+      <section id="demo" className="lp-section">
+        <div className="lp-demo-panel">
+          <Reveal><div className="lp-eyebrow lp-eyebrow-center">La démo</div></Reveal>
+          <Reveal delay={60}><h2 className="serif lp-h2" style={{ maxWidth: '560px' }}>Essayez sans vous inscrire</h2></Reveal>
+          <Reveal delay={120}><p className="lp-demo-sub">Explorez Suimini avec la famille Dupont, notre arbre de démonstration — toutes les fonctions, aucune donnée à saisir.</p></Reveal>
+          <Reveal delay={170}>
+            <button onClick={startDemo} className="lp-btn-secondary lp-btn-hero"><Gamepad2 size={18} /> Essayer la démo gratuitement <ArrowRight size={18} /></button>
+            <div className="lp-demo-note lp-mono" style={{ marginTop: '14px' }}>Aucune inscription requise</div>
+          </Reveal>
         </div>
       </section>
 
@@ -318,7 +312,11 @@ export default function Landing() {
                 <ul className="lp-plan-features">
                   {p.features.map(f => <li key={f}><Check size={16} style={{ color: p.popular ? '#fff' : ACCENT, flexShrink: 0 }} /> {f}</li>)}
                 </ul>
-                <button onClick={startSignup} className={p.popular ? 'lp-btn-secondary' : 'lp-btn-primary'} style={{ width: '100%', justifyContent: 'center' }}>{p.cta}</button>
+                {p.name === 'Pro' ? (
+                  <a href="mailto:hello@suimini.app?subject=Suimini%20Pro" className={p.popular ? 'lp-btn-secondary' : 'lp-btn-primary'} style={{ width: '100%', justifyContent: 'center' }}>{p.cta}</a>
+                ) : (
+                  <button onClick={startSignup} className={p.popular ? 'lp-btn-secondary' : 'lp-btn-primary'} style={{ width: '100%', justifyContent: 'center' }}>{p.cta}</button>
+                )}
               </div>
             </Reveal>
           ))}
@@ -341,9 +339,17 @@ export default function Landing() {
         <Reveal>
           <h2 className="serif lp-cta-title">Votre histoire mérite<br />d’être préservée.</h2>
           <div className="lp-cta-row" style={{ justifyContent: 'center', marginTop: '28px' }}>
-            <button onClick={startSignup} className="lp-btn-primary lp-btn-hero">Créer mon arbre <ArrowRight size={18} /></button>
-            <button onClick={startDemo} className="lp-btn-outline-light lp-btn-hero"><Gamepad2 size={17} /> Essayer la démo</button>
+            {canEnterApp ? (
+              <button onClick={goToApp} className="lp-btn-primary lp-btn-hero">Accéder à l’app <ArrowRight size={18} /></button>
+            ) : (
+              <button onClick={startSignup} className="lp-btn-primary lp-btn-hero">Créer mon arbre <ArrowRight size={18} /></button>
+            )}
           </div>
+          {!canEnterApp && (
+            <div style={{ marginTop: '18px' }}>
+              <button onClick={startDemo} className="lp-link-light">ou explorer la démo d’abord →</button>
+            </div>
+          )}
         </Reveal>
       </section>
 
@@ -355,15 +361,22 @@ export default function Landing() {
             <p style={{ color: '#b8b2a6', fontSize: '13px', lineHeight: 1.6 }}>L’arbre généalogique moderne — structuré, collaboratif, et toujours avec vous.</p>
           </div>
           <div className="lp-footer-links">
-            <span className="lp-foot-h lp-mono">Produit</span>
+            <span className="lp-foot-h lp-mono">Liens utiles</span>
+            <a href="#features">Fonctions</a>
+            <a href="#tarifs">Tarifs</a>
+            <a href="#faq">FAQ</a>
+            <a href="/confidentialite">Confidentialité</a>
+            <a href="/cgu">CGU</a>
+          </div>
+          <div className="lp-footer-links">
+            <span className="lp-foot-h lp-mono">Suimini</span>
             <a href="/app">Ouvrir l’app</a>
-            <a href="#features"><FileText size={13} /> Documentation</a>
-            <a href="mailto:hello@suimini.app"><Mail size={13} /> Contact</a>
+            <a href="mailto:hello@suimini.app"><Mail size={13} /> hello@suimini.app</a>
           </div>
         </div>
         <div className="lp-footer-bottom lp-mono">
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><ShieldCheck size={14} /> Données hébergées en Europe · Chiffrement SSL</span>
-          <span>© 2026 Suimini</span>
+          <span>© 2026 Suimini — Tous droits réservés</span>
         </div>
       </footer>
 
@@ -409,6 +422,20 @@ const LANDING_CSS = `
 .lp-btn-ghost:hover { color: ${ACCENT}; }
 .lp-btn-nav { padding: 9px 16px; font-size: 14px; box-shadow: 3px 3px 0 ${INK}; }
 .lp-btn-hero { padding: 14px 26px; font-size: 16px; }
+
+/* Text links (secondary actions) */
+.lp-link { background: none; border: none; padding: 0; color: ${ACCENT}; font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; font-family: var(--font-body); font-size: inherit; }
+.lp-link:hover { color: ${INK}; }
+.lp-link-light { background: none; border: none; padding: 0; color: ${BONE}; font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; font-family: var(--font-body); font-size: 15px; opacity: 0.85; }
+.lp-link-light:hover { opacity: 1; color: #fff; }
+.lp-hero-login { margin-top: 18px; font-size: 15px; color: #4a4742; }
+.lp-trust { margin-top: 30px; display: flex; gap: 22px; flex-wrap: wrap; justify-content: center; }
+.lp-trust span { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: #4a4742; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.5px; }
+.lp-trust svg { color: ${ACCENT}; flex-shrink: 0; }
+
+/* Demo panel */
+.lp-demo-panel { max-width: 760px; margin: 0 auto; text-align: center; background: ${PAPER}; border: 2px solid ${INK}; box-shadow: 8px 8px 0 ${ACCENT}; padding: clamp(40px, 6vw, 64px) 28px; }
+.lp-demo-sub { font-size: clamp(1rem, 2vw, 1.15rem); color: #4a4742; max-width: 520px; margin: 14px auto 28px; line-height: 1.6; }
 .lp-icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border: 1.5px solid ${INK}; background: ${PAPER}; color: ${INK}; cursor: pointer; transition: background 0.15s; }
 .lp-icon-btn:hover { background: ${ACCENT}; color: #fff; }
 
@@ -422,9 +449,6 @@ const LANDING_CSS = `
 .lp-subtitle { font-size: clamp(1rem, 2.2vw, 1.25rem); color: #4a4742; max-width: 560px; margin: 0 auto 30px; line-height: 1.6; }
 .lp-cta-row { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
 .lp-demo-note { margin-top: 14px; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: #6e6a62; }
-.lp-stat { margin-top: 34px; display: inline-flex; align-items: center; gap: 10px; border: 1.5px solid ${INK}; background: ${PAPER}; padding: 8px 16px; box-shadow: 3px 3px 0 ${INK}; }
-.lp-stat strong { color: ${ACCENT}; font-size: 20px; font-family: var(--font-display); }
-.lp-stat .lp-mono { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: ${INK}; }
 .lp-scroll { position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); color: ${ACCENT}; z-index: 2; animation: lpBounce 1.8s ease-in-out infinite; }
 @keyframes lpBounce { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 10px); } }
 
