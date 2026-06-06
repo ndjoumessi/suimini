@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import { useFamilyStore } from '@/hooks/useFamilyStore';
@@ -38,7 +38,8 @@ function fmtMonthYear(iso?: string): string {
 
 export default function ProfilPage() {
   const { user, signOut, role } = useAuth();
-  const store = useFamilyStore(user ? { id: user.id, email: user.email } : null);
+  const storeUser = useMemo(() => (user ? { id: user.id, email: user.email } : null), [user?.id, user?.email]);
+  const store = useFamilyStore(storeUser);
 
   const displayName = (user?.user_metadata?.display_name as string | undefined) || '';
   const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;

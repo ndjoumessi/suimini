@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { useFamilyStore } from '@/hooks/useFamilyStore';
 import { useDarkMode } from '@/hooks/useDarkMode';
@@ -51,8 +51,11 @@ const MapView = dynamic(() => import('./MapView'), {
 export default function SuiminiApp() {
   const { user, signOut, isDemo, exitDemo, isAdmin, role, isLoading } = useAuth();
   const admin = useAdminData({ enabled: isAdmin });
+  // Stable reference so useFamilyStore's cloud effect doesn't re-run every render
+  // (which left syncStatus stuck on 'syncing').
+  const storeUser = useMemo(() => (user ? { id: user.id, email: user.email } : null), [user?.id, user?.email]);
   // authReady = auth resolved → the store won't seed the demo sample for logged-in users.
-  const store = useFamilyStore(user ? { id: user.id, email: user.email } : null, !isLoading);
+  const store = useFamilyStore(storeUser, !isLoading);
   const { dark, toggle: toggleDark, mode: themeMode, setMode: setThemeMode } = useDarkMode();
   const { themeId, setTheme, previewTheme, cancelPreview } = useTheme();
   const birthdayAlertCount = useBirthdayNotifications(store.activeTree);

@@ -57,9 +57,12 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
       if (!emailValid || !password) { setError('Veuillez renseigner email et mot de passe.'); return; }
       setLoading(true);
       const { error } = await signIn(email, password);
-      setLoading(false);
-      if (error) setError(error);
-      else onClose();
+      if (error) { setLoading(false); setError(error); return; }
+      // Explicit login → go to the app. Full navigation so the proxy/HomeGate gate
+      // the destination by status (approved → /app ; pending/rejected/suspended →
+      // bounced back to / where the matching status screen is shown).
+      onClose();
+      window.location.href = '/app';
       return;
     }
     // signup

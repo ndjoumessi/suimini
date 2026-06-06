@@ -59,7 +59,7 @@ interface Props {
   displayName?: string | null;
   isDemo?: boolean;
   cloud?: boolean;
-  syncStatus?: 'idle' | 'saved' | 'syncing' | 'offline';
+  syncStatus?: 'idle' | 'saved' | 'syncing' | 'offline' | 'error';
   presenceCount?: number;
   onSignIn?: () => void;
   onSignOut?: () => void;
@@ -67,11 +67,12 @@ interface Props {
   unreadCount?: number;
 }
 
-function SyncIndicator({ status }: { status: 'idle' | 'saved' | 'syncing' | 'offline' }) {
+function SyncIndicator({ status }: { status: 'idle' | 'saved' | 'syncing' | 'offline' | 'error' }) {
   if (status === 'syncing') return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--accent)' }}><span className="spinner" style={{ width: 11, height: 11 }} /> Synchronisation…</span>;
+  if (status === 'error') return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--danger)' }}><CloudOff size={12} /> Erreur sync</span>;
   if (status === 'offline') return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--danger)' }}><CloudOff size={12} /> Hors ligne</span>;
   if (status === 'saved') return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--success)' }}><Check size={12} /> Sauvegardé</span>;
-  return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--text-light)' }}><Cloud size={12} /> Local</span>;
+  return null; // idle → rien (notamment 0 arbre)
 }
 
 export default function Sidebar({ activeView, onViewChange, activeTree, trees, onShowTreeSelector, onAddPerson, onShowImportExport, onPrint, onShare, onPresent, birthdayAlertCount = 0, dark, onToggleDark, isOpen, onClose, userEmail, displayName, isDemo, cloud, syncStatus = 'idle', presenceCount = 0, onSignIn, onSignOut, isAdmin = false, unreadCount = 0 }: Props) {
@@ -235,7 +236,9 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
               </button>
               <button onClick={onSignOut} aria-label="Se déconnecter" title="Se déconnecter" className="sb-logout"><LogOut size={16} /></button>
             </div>
-            <div style={{ fontSize: '10px', marginTop: '5px', textAlign: 'center' }}><SyncIndicator status={cloud ? syncStatus : 'idle'} /></div>
+            {cloud && syncStatus !== 'idle' && (
+              <div style={{ fontSize: '10px', marginTop: '5px', textAlign: 'center' }}><SyncIndicator status={syncStatus} /></div>
+            )}
             {presenceCount > 1 && (
               <div style={{ fontSize: '10px', color: 'var(--accent)', textAlign: 'center', marginTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                 <Users size={11} /> {presenceCount} connectés sur cet arbre

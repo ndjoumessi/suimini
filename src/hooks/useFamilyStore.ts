@@ -10,7 +10,7 @@ const STORAGE_KEY = 'suimini_trees';
 const ACTIVE_TREE_KEY = 'suimini_active_tree';
 const MAX_HISTORY = 50;
 
-export type SyncStatus = 'idle' | 'saved' | 'syncing' | 'offline';
+export type SyncStatus = 'idle' | 'saved' | 'syncing' | 'offline' | 'error';
 export interface StoreUser { id: string; email?: string }
 
 interface HistorySnapshot {
@@ -61,15 +61,19 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
   }, [authReady, cloud]);
 
   // On login: load cloud data (and offer migration of local data when the cloud is empty).
+  // NOTE: callers must pass a STABLE `user` reference (memoized) — otherwise this
+  // effect re-runs every render and `syncStatus` stays stuck on 'syncing'.
   useEffect(() => {
     if (!cloud || !user) { setSyncStatus('idle'); setShared({}); setMigrationPending(false); return; }
     let active = true;
+    setSyncStatus('syncing');
+    // Safety net: never leave the indicator stuck on "syncing" (slow/hung network).
+    const safety = setTimeout(() => { if (active) setSyncStatus(s => (s === 'syncing' ? 'idle' : s)); }, 10000);
+    // The sample tree ('tree1', Famille Dupont) is never genuine user data.
+    const localTrees = localCacheRef.current;
+    const onlySample = localTrees.length === 1 && localTrees[0].id === 'tree1';
+    const hasRealLocal = localTrees.length > 0 && !onlySample;
     (async () => {
-      setSyncStatus('syncing');
-      // The sample tree ('tree1', Famille Dupont) is never genuine user data.
-      const localTrees = localCacheRef.current;
-      const onlySample = localTrees.length === 1 && localTrees[0].id === 'tree1';
-      const hasRealLocal = localTrees.length > 0 && !onlySample;
       try {
         const { trees: remote, shared: sharedMeta } = await loadTreesFromSupabase(user.id);
         if (!active) return;
@@ -78,29 +82,32 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
           setMigrationPending(false);
           setTrees(remote);
           setActiveTreeId(prev => (remote.find(t => t.id === prev) ? prev : remote[0]?.id || null));
+          setSyncStatus('saved');
         } else if (hasRealLocal) {
           // Cloud empty but genuine local data → show it + offer migration (never the sample).
           setMigrationPending(true);
           setTrees(localTrees);
           setActiveTreeId(localTrees[0]?.id || null);
+          setSyncStatus('saved');
         } else {
           // Cloud empty, no real local data → empty state / onboarding (NOT the sample).
+          // Nothing to sync → idle (no "Synchronisation…" forever for a 0-tree account).
           setMigrationPending(false);
           setTrees([]);
           setActiveTreeId(null);
+          setSyncStatus('idle');
         }
-        setSyncStatus('saved');
       } catch {
         if (!active) return;
-        // Offline: fall back to real local data if any, otherwise empty — never the sample.
+        // Failure: fall back to real local data if any, otherwise empty — never the sample.
         if (hasRealLocal) { setTrees(localTrees); setActiveTreeId(localTrees[0]?.id || null); }
         else { setTrees([]); setActiveTreeId(null); }
-        setSyncStatus('offline');
+        setSyncStatus('error');
       } finally {
         if (active) setLoaded(true);
       }
     })();
-    return () => { active = false; };
+    return () => { active = false; clearTimeout(safety); };
   }, [cloud, user]);
 
   // Debounced push of the active tree to the cloud after any change.
@@ -135,7 +142,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
       const isOwner = !shared[activeTree.id];
       saveTreeToSupabase(activeTree, user.id, isOwner)
         .then(() => setSyncStatus('saved'))
-        .catch(() => setSyncStatus('offline'));
+        .catch(() => setSyncStatus('error'));
     }, 700);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
