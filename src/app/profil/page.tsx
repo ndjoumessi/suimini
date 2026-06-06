@@ -1,0 +1,40 @@
+'use client';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
+import { supabase } from '@/lib/supabase';
+import { BrandLockup } from '@/components/Brand';
+
+const ProfilPage = dynamic(() => import('@/components/ProfilPage'), { ssr: false });
+
+function Loader() {
+  return (
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '18px', background: 'var(--bg, #f4f1ea)' }}>
+      <BrandLockup size={34} color="var(--ink, #1b1b1b)" accent="var(--accent, #bf4b2c)" surface="var(--bg-card, #ffffff)" fontSize={26} />
+      <span className="spinner" style={{ color: 'var(--accent, #bf4b2c)' }} />
+    </div>
+  );
+}
+
+/**
+ * Client-side guard for /profil: accessible only with an active Supabase session.
+ * Demo users have no session → redirected to '/'. Otherwise → '/'.
+ */
+export default function ProfilPageRoute() {
+  const router = useRouter();
+  const [state, setState] = useState<'checking' | 'allowed'>('checking');
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!supabase) { router.replace('/'); return; }
+    supabase.auth.getSession().then(({ data }) => {
+      if (cancelled) return;
+      if (data.session) setState('allowed');
+      else router.replace('/');
+    });
+    return () => { cancelled = true; };
+  }, [router]);
+
+  if (state === 'checking') return <Loader />;
+  return <ProfilPage />;
+}

@@ -5,14 +5,17 @@ import { getDisplayName, formatYear, fuzzyMatch } from '@/lib/treeUtils';
 import { useOverlay } from '@/hooks/useOverlay';
 import {
   Search, SearchX, Clock, CornerDownLeft, User, UserPlus, Download, Upload, Play,
-  Printer, Share2, TreePine, Users, Calendar, Map, Images, BookOpen, Cake, BarChart2, Settings, ScrollText,
+  Printer, Share2, TreePine, Users, Calendar, Map as MapIcon, Images, BookOpen, Cake, BarChart2, Settings, ScrollText,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 interface Props {
   tree: FamilyTree | null;
+  trees: FamilyTree[];
+  activeTreeId: string | null;
   onClose: () => void;
-  onSelectPerson: (id: string) => void;
+  /** Open a person, switching trees first if it lives in another tree. */
+  onOpenPerson: (treeId: string, personId: string) => void;
   onNavigate: (v: ViewMode) => void;
   onAddPerson: () => void;
   onImportExport: (tab: 'export' | 'import') => void;
@@ -31,13 +34,14 @@ interface CommandItem {
   Icon: LucideIcon;
   run: () => void;
   searchText: string;
+  treeName?: string; // for grouping cross-tree person results
 }
 
 const VIEW_DEFS: { view: ViewMode; Icon: LucideIcon; label: string }[] = [
   { view: 'tree', Icon: TreePine, label: 'Arbre' },
   { view: 'list', Icon: Users, label: 'Personnes' },
   { view: 'timeline', Icon: Calendar, label: 'Chronologie' },
-  { view: 'map', Icon: Map, label: 'Carte' },
+  { view: 'map', Icon: MapIcon, label: 'Carte' },
   { view: 'gallery', Icon: Images, label: 'Galerie' },
   { view: 'journal', Icon: BookOpen, label: 'Journal' },
   { view: 'birthdays', Icon: Cake, label: 'Anniversaires' },
@@ -67,7 +71,8 @@ function Highlight({ text, query }: { text: string; query: string }) {
   );
 }
 
-export default function CommandPalette({ tree, onClose, onSelectPerson, onNavigate, onAddPerson, onImportExport, onPrint, onShare, onPresent, onTreeSelector, onNarrative }: Props) {
+export default function CommandPalette({ tree, trees, activeTreeId, onClose, onOpenPerson, onNavigate, onAddPerson, onImportExport, onPrint, onShare, onPresent, onTreeSelector, onNarrative }: Props) {
+  const activeTreeName = trees.find(t => t.id === activeTreeId)?.name ?? null;
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
   const [recent, setRecent] = useState<string[]>(() => {
@@ -107,17 +112,30 @@ export default function CommandPalette({ tree, onClose, onSelectPerson, onNaviga
     run: () => { onClose(); onNavigate(v.view); },
   })), [onClose, onNavigate]);
 
+  // Persons across ALL trees, tagged with their tree for grouping.
   const personItems: CommandItem[] = useMemo(() => {
-    if (!tree) return [];
-    return tree.persons.map((p: Person) => ({
-      id: `p-${p.id}`, kind: 'person' as const,
+    return trees.flatMap(t => t.persons.map((p: Person) => ({
+      id: `p-${t.id}-${p.id}`, kind: 'person' as const,
       label: getDisplayName(p),
       sublabel: [p.occupation, formatYear(p.birthDate)].filter(Boolean).join(' · ') || undefined,
       Icon: User,
-      searchText: normalize(`${getDisplayName(p)} ${p.maidenName || ''} ${p.occupation || ''} ${(p.tags || []).join(' ')}`),
-      run: () => { onClose(); onSelectPerson(p.id); },
-    }));
-  }, [tree, onClose, onSelectPerson]);
+      treeName: t.name,
+      searchText: normalize(`${getDisplayName(p)} ${p.maidenName || ''} ${p.occupation || ''} ${(p.tags || []).join(' ')} ${t.name}`),
+      run: () => { onClose(); onOpenPerson(t.id, p.id); },
+    })));
+  }, [trees, onClose, onOpenPerson]);
+
+  // Group person items by tree, active tree first.
+  const groupByTree = (items: CommandItem[]) => {
+    const byTree = new Map<string, CommandItem[]>();
+    for (const it of items) {
+      const k = it.treeName || 'Membres';
+      (byTree.get(k) ?? byTree.set(k, []).get(k)!).push(it);
+    }
+    return [...byTree.entries()]
+      .sort((a, b) => (a[0] === activeTreeName ? -1 : 0) - (b[0] === activeTreeName ? -1 : 0))
+      .map(([title, groupItems]) => ({ title, items: groupItems }));
+  };
 
   const results = useMemo(() => {
     const q = normalize(query.trim());
@@ -125,17 +143,19 @@ export default function CommandPalette({ tree, onClose, onSelectPerson, onNaviga
     if (!q) {
       groups.push({ title: 'Actions', items: actions });
       groups.push({ title: 'Navigation', items: views });
-      groups.push({ title: 'Membres', items: personItems.slice(0, 6) });
+      const activePersons = personItems.filter(i => i.treeName === activeTreeName).slice(0, 6);
+      if (activePersons.length) groups.push({ title: activeTreeName || 'Membres', items: activePersons });
     } else {
-      const persons = personItems.filter(i => i.searchText.includes(q) || fuzzyMatch(i.searchText, query)).slice(0, 8);
-      const acts = actions.filter(i => normalize(i.searchText).includes(q));
+      const persons = personItems.filter(i => i.searchText.includes(q) || fuzzyMatch(i.searchText, query)).slice(0, 30);
+      groups.push(...groupByTree(persons));
       const navs = views.filter(i => normalize(i.searchText).includes(q));
-      if (persons.length) groups.push({ title: 'Membres', items: persons });
+      const acts = actions.filter(i => normalize(i.searchText).includes(q));
       if (navs.length) groups.push({ title: 'Navigation', items: navs });
       if (acts.length) groups.push({ title: 'Actions', items: acts });
     }
     return groups;
-  }, [query, actions, views, personItems]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, actions, views, personItems, activeTreeName]);
 
   const flat = useMemo(() => results.flatMap(g => g.items), [results]);
 

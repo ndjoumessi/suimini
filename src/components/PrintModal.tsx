@@ -2,11 +2,12 @@
 import { useOverlay } from '@/hooks/useOverlay';
 import { useState, useRef } from 'react';
 import { FamilyTree } from '@/types';
-import { getDisplayName, formatDate, formatYear, getAge, computeTreeStats } from '@/lib/treeUtils';
+import { getDisplayName, formatDate, formatYear, getAge, computeTreeStats, getGeneration } from '@/lib/treeUtils';
 import { buildTreeLayout, NODE_W, NODE_H } from '@/lib/treeLayout';
-import { List, LayoutGrid, BarChart3, TreePine } from 'lucide-react';
+import { List, LayoutGrid, BarChart3, TreePine, BookOpen, Printer, X } from 'lucide-react';
 
 const PRINT_MODE_META = {
+  livret: { Icon: BookOpen, label: 'Livret' },
   list: { Icon: List, label: 'Liste' },
   cards: { Icon: LayoutGrid, label: 'Fiches' },
   summary: { Icon: BarChart3, label: 'Résumé' },
@@ -18,10 +19,10 @@ interface Props {
   onClose: () => void;
 }
 
-type PrintMode = 'list' | 'cards' | 'summary' | 'tree';
+type PrintMode = 'livret' | 'list' | 'cards' | 'summary' | 'tree';
 
 export default function PrintModal({ tree, onClose }: Props) {
-  const [mode, setMode] = useState<PrintMode>('list');
+  const [mode, setMode] = useState<PrintMode>('livret');
   const [includePhotos, setIncludePhotos] = useState(true);
   const [includeDeceased, setIncludeDeceased] = useState(true);
   const [includeEvents, setIncludeEvents] = useState(true);
@@ -103,6 +104,22 @@ export default function PrintModal({ tree, onClose }: Props) {
     a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName)
   );
 
+  // Persons grouped by generation (depth from roots) for the "Livret" mode.
+  const genGroups = (() => {
+    const memo = new Map<string, number>();
+    const byGen = new Map<number, typeof persons>();
+    persons.forEach(p => {
+      const g = getGeneration(p.id, tree.relationships, tree.persons, memo);
+      const arr = byGen.get(g) ?? [];
+      arr.push(p);
+      byGen.set(g, arr);
+    });
+    return [...byGen.entries()].sort((a, b) => a[0] - b[0]).map(([gen, people]) => ({
+      gen,
+      people: [...people].sort((a, b) => a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName)),
+    }));
+  })();
+
   function doPrint() {
     if (!printRef.current) return;
     const printWindow = window.open('', '_blank');
@@ -179,14 +196,14 @@ export default function PrintModal({ tree, onClose }: Props) {
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div ref={overlayRef} tabIndex={-1} className="modal" style={{ maxWidth: '760px', maxHeight: '90vh' }}>
         <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 className="serif" style={{ margin: 0 }}>🖨 Préparer l'impression</h2>
-          <button onClick={onClose} className="btn btn-ghost btn-sm">✕</button>
+          <h2 className="serif" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}><Printer size={20} aria-hidden="true" /> Préparer l&apos;impression</h2>
+          <button onClick={onClose} aria-label="Fermer" className="btn btn-ghost btn-sm btn-icon"><X size={16} /></button>
         </div>
 
         {/* Options */}
         <div style={{ padding: '14px 24px', borderBottom: '1px solid var(--border)', display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center', background: 'var(--bg-muted)' }}>
           <div style={{ display: 'flex', gap: '6px' }}>
-            {(['list','cards','summary','tree'] as PrintMode[]).map(m => {
+            {(['livret','list','cards','summary','tree'] as PrintMode[]).map(m => {
               const { Icon, label } = PRINT_MODE_META[m];
               return (
               <button key={m} onClick={() => setMode(m)} className="btn btn-sm" style={{
@@ -220,11 +237,11 @@ export default function PrintModal({ tree, onClose }: Props) {
           )}
           {mode === 'tree' ? (
             <button onClick={exportTreePdf} disabled={exporting || treeLayout.nodes.length === 0} className="btn btn-primary btn-sm" style={{ marginLeft: 'auto' }}>
-              {exporting ? '⏳ Génération…' : '📄 Exporter en PDF (A3)'}
+              {exporting ? <><span className="spinner" /> Génération…</> : <><Printer size={14} /> Exporter en PDF (A3)</>}
             </button>
           ) : (
             <button onClick={doPrint} className="btn btn-primary btn-sm" style={{ marginLeft: 'auto' }}>
-              🖨 Imprimer
+              <Printer size={14} /> Imprimer
             </button>
           )}
         </div>
@@ -232,7 +249,47 @@ export default function PrintModal({ tree, onClose }: Props) {
         {/* Print preview */}
         <div style={{ padding: '20px 24px', maxHeight: 'calc(90vh - 160px)', overflowY: 'auto', background: '#ece7dc' }}>
           <div ref={printRef} style={{ background: 'white', padding: '24px', borderRadius: '4px', boxShadow: '0 2px 12px rgba(0,0,0,0.1)', display: mode === 'tree' ? 'none' : 'block' }}>
-            {/* Header */}
+            {/* Livret de famille : couverture + une section par génération.
+                Styles INLINE + couleurs littérales → rendu correct en aperçu ET
+                dans la fenêtre d'impression (qui n'a ni nos classes ni nos var()). */}
+            {mode === 'livret' && (
+              <div>
+                <div style={{ minHeight: '560px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', border: '3px solid #1b1b1b', padding: '40px', pageBreakAfter: 'always' }}>
+                  <div className="serif" style={{ textTransform: 'uppercase', letterSpacing: '4px', fontSize: '12px', color: '#bf4b2c', marginBottom: '16px' }}>Livret de famille</div>
+                  <h1 className="serif" style={{ fontSize: '40px', color: '#1b1b1b', margin: '0 0 14px', lineHeight: 1.05, border: 'none' }}>{tree.name}</h1>
+                  {tree.description && <div style={{ color: '#4a4742', fontSize: '14px', maxWidth: '70%', margin: '0 auto 24px' }}>{tree.description}</div>}
+                  <div className="serif" style={{ fontSize: '12px', color: '#6e6a62', letterSpacing: '1px' }}>{stats.totalPersons} personnes · {genGroups.length} génération{genGroups.length > 1 ? 's' : ''} · {new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
+                </div>
+                {genGroups.map(({ gen, people }) => (
+                  <div key={gen} style={{ pageBreakBefore: 'always', marginTop: '24px' }}>
+                    <h2 className="serif" style={{ fontSize: '20px', color: '#1b1b1b', borderBottom: '2px solid #bf4b2c', paddingBottom: '4px', margin: '0 0 14px' }}>Génération {gen + 1}</h2>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      {people.map(p => (
+                        <div key={p.id} style={{ display: 'flex', gap: '10px', padding: '10px', border: '1.5px solid #1b1b1b', borderLeft: `4px solid ${p.gender === 'male' ? '#2c5f8a' : p.gender === 'female' ? '#a8456b' : '#1b1b1b'}`, pageBreakInside: 'avoid', opacity: p.isAlive ? 1 : 0.85 }}>
+                          {includePhotos && p.profilePhoto && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={p.profilePhoto} alt="" style={{ width: '56px', height: '56px', flexShrink: 0, objectFit: 'cover', border: '1.5px solid #1b1b1b', background: '#f4f1ea' }} />
+                          )}
+                          <div style={{ minWidth: 0 }}>
+                            <div className="serif" style={{ fontWeight: 700, fontSize: '14px', color: '#1b1b1b' }}>{getDisplayName(p)}{!p.isAlive ? ' †' : ''}</div>
+                            {(p.birthDate || p.birthPlace?.city) && (
+                              <div style={{ fontSize: '11px', color: '#4a4742', marginTop: '2px' }}>
+                                {p.birthDate ? `Né${p.gender === 'female' ? 'e' : ''} le ${formatDate(p.birthDate, p.birthDateApprox)}` : ''}{p.birthPlace?.city ? ` à ${p.birthPlace.city}` : ''}
+                              </div>
+                            )}
+                            {!p.isAlive && p.deathDate && <div style={{ fontSize: '11px', color: '#4a4742', marginTop: '2px' }}>Décédé{p.gender === 'female' ? 'e' : ''} le {formatDate(p.deathDate, p.deathDateApprox)}{p.deathPlace?.city ? ` à ${p.deathPlace.city}` : ''}</div>}
+                            {p.occupation && <div style={{ fontSize: '11px', color: '#4a4742', marginTop: '2px' }}>{p.occupation}</div>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Header (autres modes) */}
+            {mode !== 'livret' && (
             <div className="header" style={{ textAlign: 'center', marginBottom: '20px', paddingBottom: '12px', borderBottom: '2px solid #bf4b2c' }}>
               <h1 className="serif" style={{ fontSize: '1.8rem', color: 'var(--accent)', margin: '0 0 4px' }}>
                 {tree.name}
@@ -246,6 +303,7 @@ export default function PrintModal({ tree, onClose }: Props) {
                 <span>Imprimé le {new Date().toLocaleDateString('fr-FR')}</span>
               </div>
             </div>
+            )}
 
             {mode === 'summary' && (
               <div>

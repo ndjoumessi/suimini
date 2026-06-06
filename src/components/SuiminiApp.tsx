@@ -251,7 +251,7 @@ export default function SuiminiApp() {
           <EmptyState onCreateTree={() => setShowTreeSelector(true)} />
         ) : (
           <>
-            {view === 'tree' && <TreeView tree={store.activeTree} selectedPersonId={selectedPersonId} onSelectPerson={handleSelectPerson} onAddPerson={() => setShowAddPerson(true)} />}
+            {view === 'tree' && <TreeView tree={store.activeTree} selectedPersonId={selectedPersonId} onSelectPerson={handleSelectPerson} onAddPerson={() => setShowAddPerson(true)} onExport={() => setShowPrint(true)} />}
             {view === 'list' && <ListView tree={store.activeTree} onSelectPerson={handleSelectPerson} onAddPerson={() => setShowAddPerson(true)} />}
             {view === 'timeline' && <TimelineView tree={store.activeTree} onSelectPerson={handleSelectPerson} />}
             {view === 'map' && <MapView tree={store.activeTree} onSelectPerson={handleSelectPerson} />}
@@ -320,8 +320,10 @@ export default function SuiminiApp() {
       {showPalette && (
         <CommandPalette
           tree={store.activeTree}
+          trees={store.trees}
+          activeTreeId={store.activeTreeId}
           onClose={() => setShowPalette(false)}
-          onSelectPerson={handleSelectPerson}
+          onOpenPerson={(treeId, personId) => { if (treeId !== store.activeTreeId) store.switchTree(treeId); handleSelectPerson(personId); }}
           onNavigate={setView}
           onAddPerson={() => setShowAddPerson(true)}
           onImportExport={(tab) => setImportExportTab(tab)}

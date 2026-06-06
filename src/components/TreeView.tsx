@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { FamilyTree, Person } from '@/types';
 import { getParents, getChildren, getSpouses, getDisplayName, formatYear, getAge } from '@/lib/treeUtils';
-import { Search, ZoomIn, ZoomOut, Crosshair, Info, Plus, Aperture, Sprout } from 'lucide-react';
+import { Search, ZoomIn, ZoomOut, Crosshair, Info, Plus, Aperture, Sprout, Printer } from 'lucide-react';
 
 /** Two-letter initials for the avatar fallback (same logic as PersonPanel/Sidebar). */
 function nodeInitials(p: Person): string {
@@ -50,6 +50,7 @@ interface Props {
   selectedPersonId: string | null;
   onSelectPerson: (id: string) => void;
   onAddPerson: () => void;
+  onExport?: () => void;
 }
 
 // "Album de famille relié" — compact register-card nodes (see DESIGN.md).
@@ -59,7 +60,7 @@ const H_GAP = 24;
 const V_GAP = 64;
 const GRID = 24; // canvas dot-grid spacing
 
-export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAddPerson }: Props) {
+export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAddPerson, onExport }: Props) {
   const [rootId, setRootId] = useState(tree.rootPersonId || tree.persons[0]?.id || null);
   const [scale, setScale] = useState(1.1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -427,6 +428,9 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
         </button>
 
         {sep}
+        {onExport && (
+          <button onClick={onExport} className="btn btn-secondary btn-sm btn-icon" title="Exporter en PDF" aria-label="Exporter en PDF"><Printer size={14} aria-hidden="true" /></button>
+        )}
         <button onClick={onAddPerson} className="btn btn-primary btn-sm" style={{ gap: '6px' }}><Plus size={14} aria-hidden="true" /> Ajouter</button>
       </div>
 

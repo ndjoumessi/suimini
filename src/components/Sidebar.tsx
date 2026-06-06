@@ -219,13 +219,20 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         {userEmail ? (
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '2px' }}>
-              <div className="mono" style={{ width: '36px', height: '36px', borderRadius: 'var(--radius)', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, flexShrink: 0, border: '1.5px solid var(--border-strong)' }}>
-                {initials(displayName, userEmail)}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '13px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text)' }}>{truncate(displayName || userEmail.split('@')[0], 16)}</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{truncate(userEmail, 22)}</div>
-              </div>
+              <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/profil'; }}
+                aria-label="Mon profil" title="Mon profil"
+                style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '10px', background: 'none', border: 'none', padding: '2px', cursor: 'pointer', textAlign: 'left', borderRadius: 'var(--radius)' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--interactive)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'none'}
+              >
+                <div className="mono" style={{ width: '36px', height: '36px', borderRadius: 'var(--radius)', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, flexShrink: 0, border: '1.5px solid var(--border-strong)' }}>
+                  {initials(displayName, userEmail)}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text)' }}>{truncate(displayName || userEmail.split('@')[0], 16)}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{truncate(userEmail, 22)}</div>
+                </div>
+              </button>
               <button onClick={onSignOut} aria-label="Se déconnecter" title="Se déconnecter" className="sb-logout"><LogOut size={16} /></button>
             </div>
             <div style={{ fontSize: '10px', marginTop: '5px', textAlign: 'center' }}><SyncIndicator status={cloud ? syncStatus : 'idle'} /></div>
