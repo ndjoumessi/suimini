@@ -38,6 +38,7 @@ import ToastStack, { ToastType, ToastItem } from './Toast';
 import { BrandLockup } from './Brand';
 import OnboardingWizard, { OnboardingData } from './OnboardingWizard';
 import { Menu, Search, TreePine, Sprout, Cloud } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 const MapView = dynamic(() => import('./MapView'), {
   ssr: false,
@@ -75,6 +76,7 @@ export default function SuiminiApp() {
   const emptyTree = useMemo<FamilyTree>(() => ({
     id: '', name: '', createdAt: '', updatedAt: '', persons: [], relationships: [],
   }), []);
+  const tc = useTranslations('common');
 
   const [view, setView] = useState<ViewMode>('dashboard');
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
@@ -209,7 +211,7 @@ export default function SuiminiApp() {
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
         <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
           <BrandLockup size={36} color="var(--ink)" accent="var(--accent)" surface="var(--bg-card)" fontSize={28} />
-          <div className="label" style={{ color: 'var(--text-muted)' }}>Chargement…</div>
+          <div className="label" style={{ color: 'var(--text-muted)' }}>{tc('loading')}</div>
         </div>
       </div>
     );
@@ -482,16 +484,17 @@ export default function SuiminiApp() {
 }
 
 function EmptyState({ onCreateTree }: { onCreateTree: () => void }) {
+  const t = useTranslations('tree');
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '24px', padding: '40px', textAlign: 'center' }}>
       <TreePine size={72} strokeWidth={1.1} style={{ color: 'var(--accent)' }} aria-hidden="true" />
       <div>
-        <h2 style={{ marginBottom: '8px' }}>Commencez votre arbre généalogique</h2>
+        <h2 style={{ marginBottom: '8px' }}>{t('emptyTitle')}</h2>
         <p style={{ color: 'var(--text-muted)', maxWidth: '400px' }}>
-          Créez un nouvel arbre ou importez des données GEDCOM pour découvrir et préserver l&apos;histoire de votre famille.
+          {t('emptySubtitle')}
         </p>
       </div>
-      <button onClick={onCreateTree} className="btn btn-primary btn-lg" style={{ gap: '8px' }}><Sprout size={18} aria-hidden="true" /> Créer mon arbre</button>
+      <button onClick={onCreateTree} className="btn btn-primary btn-lg" style={{ gap: '8px' }}><Sprout size={18} aria-hidden="true" /> {t('createButton')}</button>
     </div>
   );
 }

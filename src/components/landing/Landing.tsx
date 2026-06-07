@@ -5,9 +5,11 @@ import {
   ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Check, Mail,
   KeyRound, UserPlus, Share2, ShieldCheck, Star, Gamepad2,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/hooks/useAuth';
 import AuthModal from '@/components/AuthModal';
 import DemoBanner from '@/components/DemoBanner';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { BrandLockup } from '@/components/Brand';
 
 /* Atelier palette — landing is a controlled, always-light marketing surface. */
@@ -125,6 +127,8 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 }
 
 export default function Landing() {
+  const t = useTranslations('landing');
+  const ta = useTranslations('auth');
   const { startDemo, exitDemo, user, isDemo, isApproved } = useAuth();
   // Approved members (or active demo) get a direct "Accéder à l'app" entry instead
   // of the sign-in CTAs — the landing stays visible, entry to /app is manual.
@@ -148,11 +152,12 @@ export default function Landing() {
           <a href="#tarifs">Tarifs</a>
           <a href="#faq">FAQ</a>
         </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <LanguageSwitcher tone="landing" />
           {canEnterApp ? (
             <button onClick={goToApp} className="lp-btn-primary lp-btn-nav">Accéder à l’app <ArrowRight size={15} /></button>
           ) : (
-            <button onClick={() => openAuth('login')} className="lp-btn-ghost">Connexion</button>
+            <button onClick={() => openAuth('login')} className="lp-btn-ghost">{ta('login')}</button>
           )}
         </div>
       </nav>
@@ -165,22 +170,22 @@ export default function Landing() {
             <div className="lp-eyebrow">Arbre généalogique · Est. 2026</div>
           </Reveal>
           <Reveal delay={70}>
-            <h1 className="serif lp-tagline">Préservez l’histoire<br />de votre famille,<br /><span className="lp-tagline-accent">génération après génération.</span></h1>
+            <h1 className="serif lp-tagline">{t('hero.title')}<br /><span className="lp-tagline-accent">{t('hero.titleAccent')}</span></h1>
           </Reveal>
           <Reveal delay={150}>
-            <p className="lp-subtitle">L’arbre généalogique moderne — structuré, collaboratif, et toujours avec vous.</p>
+            <p className="lp-subtitle">{t('hero.subtitle')}</p>
           </Reveal>
           <Reveal delay={230}>
             <div className="lp-cta-row">
               {canEnterApp ? (
                 <button onClick={goToApp} className="lp-btn-primary lp-btn-hero">Accéder à l’app <ArrowRight size={18} /></button>
               ) : (
-                <button onClick={startSignup} className="lp-btn-primary lp-btn-hero">Commencer gratuitement <ArrowRight size={18} /></button>
+                <button onClick={startSignup} className="lp-btn-primary lp-btn-hero">{t('hero.cta')}</button>
               )}
             </div>
             {!canEnterApp && (
               <div className="lp-hero-login">
-                Déjà un compte ? <button onClick={() => openAuth('login')} className="lp-link">Se connecter</button>
+                <button onClick={() => openAuth('login')} className="lp-link">{t('hero.loginLink')}</button>
               </div>
             )}
           </Reveal>
@@ -220,11 +225,11 @@ export default function Landing() {
       <section id="demo" className="lp-section">
         <div className="lp-demo-panel">
           <Reveal><div className="lp-eyebrow lp-eyebrow-center">La démo</div></Reveal>
-          <Reveal delay={60}><h2 className="serif lp-h2" style={{ maxWidth: '560px' }}>Essayez sans vous inscrire</h2></Reveal>
-          <Reveal delay={120}><p className="lp-demo-sub">Explorez Suimini avec la famille Dupont, notre arbre de démonstration — toutes les fonctions, aucune donnée à saisir.</p></Reveal>
+          <Reveal delay={60}><h2 className="serif lp-h2" style={{ maxWidth: '560px' }}>{t('demo.title')}</h2></Reveal>
+          <Reveal delay={120}><p className="lp-demo-sub">{t('demo.subtitle')}</p></Reveal>
           <Reveal delay={170}>
-            <button onClick={startDemo} className="lp-btn-secondary lp-btn-hero"><Gamepad2 size={18} /> Essayer la démo gratuitement <ArrowRight size={18} /></button>
-            <div className="lp-demo-note lp-mono" style={{ marginTop: '14px' }}>Aucune inscription requise</div>
+            <button onClick={startDemo} className="lp-btn-secondary lp-btn-hero"><Gamepad2 size={18} /> {t('demo.cta')}</button>
+            <div className="lp-demo-note lp-mono" style={{ marginTop: '14px' }}>{t('demo.noSignup')}</div>
           </Reveal>
         </div>
       </section>

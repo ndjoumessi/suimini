@@ -1,0 +1,111 @@
+{
+  "nav": {
+    "home": "Accueil",
+    "tree": "Arbre",
+    "persons": "Personnes",
+    "map": "Carte",
+    "timeline": "Chronologie",
+    "journal": "Journal",
+    "birthdays": "Anniversaires",
+    "gallery": "Galerie",
+    "exploration": "Exploration",
+    "statistics": "Statistiques",
+    "settings": "Paramètres",
+    "admin": "Admin",
+    "profile": "Profil"
+  },
+  "auth": {
+    "login": "Connexion",
+    "signup": "Inscription",
+    "logout": "Se déconnecter",
+    "email": "Email",
+    "password": "Mot de passe",
+    "forgotPassword": "Mot de passe oublié ?",
+    "loginButton": "Se connecter",
+    "signupButton": "Créer mon compte",
+    "loginLoading": "Connexion en cours...",
+    "errorInvalidCredentials": "Email ou mot de passe incorrect.",
+    "errorEmailNotConfirmed": "Veuillez confirmer votre email."
+  },
+  "landing": {
+    "hero": {
+      "title": "Préservez l'histoire de votre famille,",
+      "titleAccent": "génération après génération.",
+      "subtitle": "L'arbre généalogique moderne — structuré, collaboratif, et toujours avec vous.",
+      "cta": "Commencer gratuitement →",
+      "loginLink": "Déjà un compte ? Se connecter"
+    },
+    "demo": {
+      "title": "Essayez sans vous inscrire",
+      "subtitle": "Explorez avec la famille Dupont",
+      "cta": "Essayer la démo gratuitement →",
+      "noSignup": "Aucune inscription requise"
+    }
+  },
+  "tree": {
+    "emptyTitle": "Commencez votre arbre généalogique",
+    "emptySubtitle": "Créez un nouvel arbre ou importez des données GEDCOM",
+    "createButton": "Créer mon arbre",
+    "addPerson": "Ajouter une personne",
+    "root": "Racine",
+    "fan": "Fan",
+    "legend": "Légende",
+    "add": "Ajouter",
+    "persons": "personnes"
+  },
+  "person": {
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "birthDate": "Date de naissance",
+    "deathDate": "Date de décès",
+    "birthPlace": "Lieu de naissance",
+    "gender": "Genre",
+    "male": "Homme",
+    "female": "Femme",
+    "other": "Autre",
+    "alive": "Vivant(e)",
+    "deceased": "Décédé(e)",
+    "age": "ans"
+  },
+  "dashboard": {
+    "greeting": "Bonjour, {name}",
+    "date": "Aujourd'hui",
+    "noTree": "Commencez à bâtir votre histoire familiale.",
+    "createFirst": "Créer mon premier arbre",
+    "birthdays": "Anniversaires",
+    "activity": "Dernières modifications",
+    "stats": "Statistiques",
+    "quickAccess": "Accès rapide",
+    "narrative": "Récit familial",
+    "generate": "Générer →"
+  },
+  "common": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "close": "Fermer",
+    "back": "Retour",
+    "loading": "Chargement...",
+    "error": "Une erreur est survenue",
+    "success": "Succès",
+    "confirm": "Confirmer",
+    "search": "Rechercher",
+    "noResults": "Aucun résultat"
+  },
+  "demo": {
+    "banner": "Mode démo — données non sauvegardées",
+    "quit": "Quitter la démo",
+    "createAccount": "Créer un compte"
+  },
+  "sync": {
+    "syncing": "Synchronisation...",
+    "saved": "Sauvegardé",
+    "error": "Erreur sync"
+  },
+  "language": {
+    "label": "Langue",
+    "fr": "FR",
+    "en": "EN"
+  }
+}

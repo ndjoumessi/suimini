@@ -1,5 +1,7 @@
 'use client';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
+import LanguageSwitcher from './LanguageSwitcher';
 import { FamilyTree, ViewMode } from '@/types';
 import {
   Home, TreePine, Users, Calendar, Map, Images, BookOpen, Cake, Search, BarChart2, Settings,
@@ -18,28 +20,29 @@ function truncate(s: string, n: number): string {
 }
 import type { LucideIcon } from 'lucide-react';
 
-interface NavItem { view: ViewMode; Icon: LucideIcon; label: string }
+// `navKey` indexes into the `nav` message namespace (see messages/*.json).
+interface NavItem { view: ViewMode; Icon: LucideIcon; navKey: string }
 const NAV_GROUPS: NavItem[][] = [
   [
-    { view: 'dashboard', Icon: Home, label: 'Accueil' },
+    { view: 'dashboard', Icon: Home, navKey: 'home' },
   ],
   [
-    { view: 'tree', Icon: TreePine, label: 'Arbre' },
-    { view: 'list', Icon: Users, label: 'Personnes' },
-    { view: 'map', Icon: Map, label: 'Carte' },
+    { view: 'tree', Icon: TreePine, navKey: 'tree' },
+    { view: 'list', Icon: Users, navKey: 'persons' },
+    { view: 'map', Icon: Map, navKey: 'map' },
   ],
   [
-    { view: 'timeline', Icon: Calendar, label: 'Chronologie' },
-    { view: 'journal', Icon: BookOpen, label: 'Journal' },
-    { view: 'birthdays', Icon: Cake, label: 'Anniversaires' },
+    { view: 'timeline', Icon: Calendar, navKey: 'timeline' },
+    { view: 'journal', Icon: BookOpen, navKey: 'journal' },
+    { view: 'birthdays', Icon: Cake, navKey: 'birthdays' },
   ],
   [
-    { view: 'gallery', Icon: Images, label: 'Galerie' },
-    { view: 'ancestors', Icon: Search, label: 'Exploration' },
-    { view: 'statistics', Icon: BarChart2, label: 'Statistiques' },
+    { view: 'gallery', Icon: Images, navKey: 'gallery' },
+    { view: 'ancestors', Icon: Search, navKey: 'exploration' },
+    { view: 'statistics', Icon: BarChart2, navKey: 'statistics' },
   ],
   [
-    { view: 'settings', Icon: Settings, label: 'Paramètres' },
+    { view: 'settings', Icon: Settings, navKey: 'settings' },
   ],
 ];
 
@@ -80,6 +83,7 @@ function SyncIndicator({ status }: { status: 'idle' | 'saved' | 'syncing' | 'off
 }
 
 export default function Sidebar({ activeView, onViewChange, activeTree, trees, onShowTreeSelector, onAddPerson, onShowImportExport, onPrint, onShare, onPresent, birthdayAlertCount = 0, dark, onToggleDark, isOpen, onClose, userEmail, displayName, isDemo, cloud, syncStatus = 'idle', presenceCount = 0, onSignIn, onSignOut, isAdmin = false, unreadCount = 0 }: Props) {
+  const t = useTranslations('nav');
 
   return (
     <aside style={{ width: '232px', flexShrink: 0, background: 'var(--bg-card)', borderRight: 'var(--bw) solid var(--border-strong)', display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 50 }}
@@ -95,9 +99,12 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
             : <div className="label" style={{ fontSize: '10px', letterSpacing: '1px' }}>Arbre Généalogique</div>}
           </div>
         </Link>
-        <button onClick={onToggleDark} className="icon-btn" aria-label={dark ? 'Activer le mode clair' : 'Activer le mode sombre'} title={dark ? 'Mode clair' : 'Mode sombre'}>
-          {dark ? <Sun size={17} /> : <Moon size={17} />}
-        </button>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+          <button onClick={onToggleDark} className="icon-btn" aria-label={dark ? 'Activer le mode clair' : 'Activer le mode sombre'} title={dark ? 'Mode clair' : 'Mode sombre'}>
+            {dark ? <Sun size={17} /> : <Moon size={17} />}
+          </button>
+          <LanguageSwitcher tone="app" />
+        </div>
       </div>
 
       {/* Active tree selector */}
@@ -132,7 +139,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
                 <button key={item.view}
                   onClick={() => { onViewChange(item.view); onClose(); }}
                   aria-current={active ? 'page' : undefined}
-                  aria-label={item.label}
+                  aria-label={t(item.navKey)}
                   style={{
                     position: 'relative', width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
                     padding: '8px 11px', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius)', marginBottom: '2px',
@@ -149,7 +156,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
                     <item.Icon size={17} aria-hidden="true" />
                     {showBadge && <span className="birthday-pulse-dot" />}
                   </span>
-                  {item.label}
+                  {t(item.navKey)}
                   {showBadge && (
                     <span className="birthday-badge" style={{ marginLeft: 'auto', background: 'var(--danger)', color: 'white', borderRadius: '100px', padding: '1px 6px', fontSize: '10px', fontWeight: '700' }}>
                       {birthdayAlertCount}
@@ -169,7 +176,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
               <button
                 onClick={() => { onViewChange('admin'); onClose(); }}
                 aria-current={active ? 'page' : undefined}
-                aria-label="Admin"
+                aria-label={t('admin')}
                 style={{
                   position: 'relative', width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
                   padding: '8px 11px', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius)', marginBottom: '2px',
@@ -186,7 +193,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
                   <Shield size={17} aria-hidden="true" />
                   {unreadCount > 0 && <span className="birthday-pulse-dot" />}
                 </span>
-                Admin
+                {t('admin')}
                 {unreadCount > 0 && (
                   <span className="birthday-badge" style={{ marginLeft: 'auto', background: 'var(--danger)', color: 'white', borderRadius: '100px', padding: '1px 6px', fontSize: '10px', fontWeight: 700 }}>
                     {unreadCount}

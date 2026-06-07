@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { FamilyTree, Person } from '@/types';
 import { getParents, getChildren, getSpouses, getDisplayName, formatYear, getAge } from '@/lib/treeUtils';
 import { Search, ZoomIn, ZoomOut, Crosshair, Info, Plus, Aperture, Sprout, Printer } from 'lucide-react';
@@ -63,6 +64,7 @@ const V_GAP = 64;
 const GRID = 24; // canvas dot-grid spacing
 
 export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAddPerson, onExport, readOnly = false }: Props) {
+  const t = useTranslations('tree');
   const [rootId, setRootId] = useState(tree.rootPersonId || tree.persons[0]?.id || null);
   const [scale, setScale] = useState(1.1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -391,7 +393,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
         {/* Change root */}
         <div style={{ position: 'relative' }}>
           <button onClick={() => setShowSearch(!showSearch)} className="btn btn-secondary btn-sm" style={{ gap: '6px' }} aria-label="Changer la racine de l'arbre" aria-expanded={showSearch}>
-            <Search size={14} aria-hidden="true" /> Racine
+            <Search size={14} aria-hidden="true" /> {t('root')}
           </button>
           {showSearch && (
             <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 200, marginTop: '4px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px', width: '240px', boxShadow: 'var(--shadow-lg)' }}>
@@ -423,9 +425,9 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
 
         {sep}
         <button onClick={() => setLayoutMode(m => m === 'fan' ? 'vertical' : 'fan')} className="btn btn-sm" style={{ gap: '6px', background: layoutMode === 'fan' ? 'var(--accent)' : 'var(--bg-muted)', color: layoutMode === 'fan' ? '#fff' : 'var(--text-muted)', border: '1px solid var(--border)' }} title="Basculer en éventail (fan chart)" aria-pressed={layoutMode === 'fan'}>
-          <Aperture size={14} aria-hidden="true" /> Fan
+          <Aperture size={14} aria-hidden="true" /> {t('fan')}
         </button>
-        <button onClick={() => setShowLegend(l => !l)} className="btn btn-secondary btn-sm btn-icon" title="Afficher la légende" aria-label="Légende" aria-pressed={showLegend}>
+        <button onClick={() => setShowLegend(l => !l)} className="btn btn-secondary btn-sm btn-icon" title={t('legend')} aria-label={t('legend')} aria-pressed={showLegend}>
           <Info size={14} aria-hidden="true" />
         </button>
 
@@ -435,7 +437,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
             {onExport && (
               <button onClick={onExport} className="btn btn-secondary btn-sm btn-icon" title="Exporter en PDF" aria-label="Exporter en PDF"><Printer size={14} aria-hidden="true" /></button>
             )}
-            <button onClick={onAddPerson} className="btn btn-primary btn-sm" style={{ gap: '6px' }}><Plus size={14} aria-hidden="true" /> Ajouter</button>
+            <button onClick={onAddPerson} className="btn btn-primary btn-sm" style={{ gap: '6px' }}><Plus size={14} aria-hidden="true" /> {t('add')}</button>
           </>
         )}
       </div>

@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Hanken_Grotesk, IBM_Plex_Mono } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
 
 // Atelier type system — distinctive, self-hosted via next/font (no FOUT, no render-blocking @import).
@@ -63,9 +65,13 @@ const SUPABASE_ORIGIN = (() => {
   catch { return null; }
 })();
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Locale comes from the cookie (no URL routing). Messages are provided to the
+  // whole tree so every client component can call useTranslations().
+  const locale = await getLocale();
+  const messages = await getMessages();
   return (
-    <html lang="fr" className={`${display.variable} ${body.variable} ${mono.variable}`}>
+    <html lang={locale} className={`${display.variable} ${body.variable} ${mono.variable}`}>
       <head>
         {/* next/font self-hosts the fonts, so we only hint at the runtime origins we actually hit. */}
         {SUPABASE_ORIGIN && <link rel="preconnect" href={SUPABASE_ORIGIN} crossOrigin="anonymous" />}
@@ -74,7 +80,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="dns-prefetch" href="https://api.dicebear.com" />
       </head>
       <body>
-        {children}
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          {children}
+        </NextIntlClientProvider>
         <script
           dangerouslySetInnerHTML={{
             __html: `

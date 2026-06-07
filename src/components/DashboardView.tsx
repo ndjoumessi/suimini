@@ -1,7 +1,8 @@
 'use client';
 import { useMemo, type ReactNode } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import {
-  Home, Cake, Clock, Sparkles, Sprout, ArrowRight, User, Smile,
+  Home, Cake, Clock, Sparkles, Sprout, User, Smile,
   TreePine, Users, Map, Calendar, BookOpen, BarChart2,
 } from 'lucide-react';
 import { FamilyTree, ViewMode } from '@/types';
@@ -22,7 +23,6 @@ interface Props {
   onNarrative: () => void;
 }
 
-const DOW = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
 const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 
 /** "il y a 2 jours" — coarse French relative time, past only. */
@@ -79,11 +79,15 @@ function EmptyLine({ children }: { children: ReactNode }) {
 }
 
 export default function DashboardView({ trees, displayName, userEmail, onNavigate, onNewTree, onSelectPerson, onNarrative }: Props) {
+  const t = useTranslations('dashboard');
+  const tn = useTranslations('nav');
+  const locale = useLocale();
   const firstName = firstNameOf(displayName, userEmail);
   const today = useMemo(() => {
     const d = new Date();
-    return `${DOW[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
-  }, []);
+    // Locale-aware full date (FR: "dimanche 7 juin 2026", EN: "Sunday, June 7, 2026").
+    return d.toLocaleDateString(locale === 'en' ? 'en-US' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  }, [locale]);
 
   // Aggregate figures across every tree the user owns.
   const summary = useMemo(() => {
@@ -117,13 +121,13 @@ export default function DashboardView({ trees, displayName, userEmail, onNavigat
 
   const hasTrees = trees.length > 0;
 
-  const QUICK: { view: ViewMode; Icon: typeof Home; label: string }[] = [
-    { view: 'tree', Icon: TreePine, label: 'Arbre' },
-    { view: 'list', Icon: Users, label: 'Personnes' },
-    { view: 'map', Icon: Map, label: 'Carte' },
-    { view: 'timeline', Icon: Calendar, label: 'Chronologie' },
-    { view: 'journal', Icon: BookOpen, label: 'Journal' },
-    { view: 'statistics', Icon: BarChart2, label: 'Statistiques' },
+  const QUICK: { view: ViewMode; Icon: typeof Home; navKey: string }[] = [
+    { view: 'tree', Icon: TreePine, navKey: 'tree' },
+    { view: 'list', Icon: Users, navKey: 'persons' },
+    { view: 'map', Icon: Map, navKey: 'map' },
+    { view: 'timeline', Icon: Calendar, navKey: 'timeline' },
+    { view: 'journal', Icon: BookOpen, navKey: 'journal' },
+    { view: 'statistics', Icon: BarChart2, navKey: 'statistics' },
   ];
 
   return (
@@ -137,26 +141,28 @@ export default function DashboardView({ trees, displayName, userEmail, onNavigat
               <div className="label" style={{ color: 'var(--accent)', marginBottom: '8px' }}>{today}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <h2 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 'clamp(1.6rem, 4vw, 2.4rem)', letterSpacing: '-0.02em', lineHeight: 1.05 }}>
-                  Bonjour, {firstName || 'bienvenue'}
+                  {t('greeting', { name: firstName || (locale === 'en' ? 'welcome' : 'bienvenue') })}
                 </h2>
                 <Smile size={32} strokeWidth={1.75} style={{ color: 'var(--accent)', flexShrink: 0 }} aria-hidden="true" />
               </div>
               <p style={{ margin: '10px 0 0', color: 'var(--text-muted)', fontSize: '15px', maxWidth: '46ch' }}>
                 {hasTrees
-                  ? <>Vous avez <strong style={{ color: 'var(--text)' }}>{summary.totalTrees}</strong> arbre{summary.totalTrees > 1 ? 's' : ''}, <strong style={{ color: 'var(--text)' }}>{summary.totalPersons}</strong> personne{summary.totalPersons > 1 ? 's' : ''} au total.</>
-                  : <>Commencez à bâtir votre histoire familiale. Créez votre premier arbre pour rassembler les vôtres.</>}
+                  ? (locale === 'en'
+                      ? <>You have <strong style={{ color: 'var(--text)' }}>{summary.totalTrees}</strong> tree{summary.totalTrees > 1 ? 's' : ''}, <strong style={{ color: 'var(--text)' }}>{summary.totalPersons}</strong> {summary.totalPersons > 1 ? 'people' : 'person'} in total.</>
+                      : <>Vous avez <strong style={{ color: 'var(--text)' }}>{summary.totalTrees}</strong> arbre{summary.totalTrees > 1 ? 's' : ''}, <strong style={{ color: 'var(--text)' }}>{summary.totalPersons}</strong> personne{summary.totalPersons > 1 ? 's' : ''} au total.</>)
+                  : t('noTree')}
               </p>
             </div>
             {!hasTrees && (
               <button onClick={onNewTree} className="btn btn-primary btn-lg" style={{ gap: '8px' }}>
-                <Sprout size={18} aria-hidden="true" /> Créer mon premier arbre
+                <Sprout size={18} aria-hidden="true" /> {t('createFirst')}
               </button>
             )}
           </div>
         </Card>
 
         {/* B — Anniversaires ce mois-ci */}
-        <Card eyebrow="Ce mois-ci" title="Anniversaires" Icon={Cake} delay={0.1}>
+        <Card eyebrow="Ce mois-ci" title={t('birthdays')} Icon={Cake} delay={0.1}>
           {birthdays.length > 0 ? (
             <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {birthdays.map((a, i) => {
@@ -181,7 +187,7 @@ export default function DashboardView({ trees, displayName, userEmail, onNavigat
         </Card>
 
         {/* C — Dernières modifications */}
-        <Card eyebrow="Activité" title="Dernières modifications" Icon={Clock} delay={0.2}>
+        <Card eyebrow="Activité" title={t('activity')} Icon={Clock} delay={0.2}>
           {recent.length > 0 ? (
             <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
               {recent.map(({ person, treeId, treeName }) => (
@@ -210,7 +216,7 @@ export default function DashboardView({ trees, displayName, userEmail, onNavigat
         </Card>
 
         {/* D — Statistiques rapides */}
-        <Card eyebrow="En un coup d'œil" title="Statistiques" Icon={BarChart2} delay={0.3}>
+        <Card eyebrow="En un coup d'œil" title={t('stats')} Icon={BarChart2} delay={0.3}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '18px 12px' }}>
             <Stat value={summary.totalPersons} label="Personnes" />
             <Stat value={summary.totalTrees} label="Arbres" />
@@ -223,19 +229,19 @@ export default function DashboardView({ trees, displayName, userEmail, onNavigat
         </Card>
 
         {/* E — Accès rapide */}
-        <Card eyebrow="Navigation" title="Accès rapide" Icon={Home} delay={0.4}>
+        <Card eyebrow="Navigation" title={t('quickAccess')} Icon={Home} delay={0.4}>
           <div className="dash-quick" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
             {QUICK.map(q => (
               <button key={q.view} onClick={() => onNavigate(q.view)} className="btn btn-secondary btn-sm" style={{ flexDirection: 'column', gap: '6px', padding: '12px 6px', height: 'auto' }}>
                 <q.Icon size={18} aria-hidden="true" />
-                <span style={{ fontSize: '12px' }}>{q.label}</span>
+                <span style={{ fontSize: '12px' }}>{tn(q.navKey)}</span>
               </button>
             ))}
           </div>
         </Card>
 
         {/* F — Rapport IA */}
-        <Card eyebrow="Intelligence" title="Récit familial" Icon={Sparkles} delay={0.5}>
+        <Card eyebrow="Intelligence" title={t('narrative')} Icon={Sparkles} delay={0.5}>
           <p style={{ margin: '0 0 14px', color: 'var(--text-muted)', fontSize: '13px' }}>
             Laissez l&apos;IA composer le récit de votre famille à partir de vos données.
           </p>
@@ -246,7 +252,7 @@ export default function DashboardView({ trees, displayName, userEmail, onNavigat
             className="btn btn-primary btn-sm"
             style={{ gap: '7px' }}
           >
-            <Sparkles size={15} aria-hidden="true" /> Générer <ArrowRight size={15} aria-hidden="true" />
+            <Sparkles size={15} aria-hidden="true" /> {t('generate')}
           </button>
           {summary.totalPersons === 0 && (
             <p style={{ margin: '8px 0 0', color: 'var(--text-light)', fontSize: '12px' }}>

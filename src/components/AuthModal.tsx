@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Mail, Lock, User, Eye, EyeOff, ArrowRight, Gamepad2, Check, X as XIcon, AlertCircle, ArrowLeft, Building2, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useOverlay } from '@/hooks/useOverlay';
@@ -16,6 +17,7 @@ const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const ACCENT = 'var(--accent)';
 
 export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
+  const tr = useTranslations('auth');
   const { signUp, signIn, resetPassword, startDemo } = useAuth();
   const overlayRef = useOverlay<HTMLDivElement>(onClose);
 
@@ -61,7 +63,15 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
       const safety = setTimeout(() => setLoading(false), 10000);
       try {
         const { error } = await signIn(email, password);
-        if (error) { clearTimeout(safety); setLoading(false); setError(error); return; }
+        if (error) {
+          clearTimeout(safety); setLoading(false);
+          // Localize the two known sign-in errors (useAuth returns French copy).
+          const localized = /incorrect|invalid/i.test(error) ? tr('errorInvalidCredentials')
+            : /confirm/i.test(error) ? tr('errorEmailNotConfirmed')
+            : error;
+          setError(localized);
+          return;
+        }
         // Explicit login → go to the app. Full navigation so the proxy/HomeGate gate
         // the destination by status (approved → /app ; pending/rejected/suspended →
         // bounced back to / where the matching status screen is shown).
@@ -91,7 +101,7 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
     : tab === 'login' ? (emailValid && password.length > 0)
       : (displayName.trim().length > 0 && emailValid && pwValid && confirmValid);
 
-  const submitLabel = forgot ? 'Envoyer le lien' : tab === 'login' ? 'Se connecter' : 'Créer mon compte';
+  const submitLabel = forgot ? 'Envoyer le lien' : tab === 'login' ? tr('loginButton') : tr('signupButton');
 
   return (
     <div className="auth-overlay" onMouseDown={e => e.target === e.currentTarget && onClose()}>
@@ -119,7 +129,7 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
             <button type="button" onClick={() => { setForgot(false); setError(''); }} className="btn btn-ghost btn-sm" style={{ marginBottom: '8px' }}><ArrowLeft size={14} /> Retour</button>
             <h3 className="serif" style={{ margin: '0 0 4px', fontSize: '1.1rem' }}>Mot de passe oublié</h3>
             <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 18px' }}>Saisissez votre email pour recevoir un lien de réinitialisation.</p>
-            <Field label="Email" Icon={Mail} type="email" value={email} onChange={setEmail} placeholder="vous@exemple.com" autoComplete="email" autoFocus valid={email.length > 0 ? emailValid : undefined} ariaLabel="Email" />
+            <Field label={tr('email')} Icon={Mail} type="email" value={email} onChange={setEmail} placeholder="vous@exemple.com" autoComplete="email" autoFocus valid={email.length > 0 ? emailValid : undefined} ariaLabel="Email" />
             {error && <ErrorMsg msg={error} />}
             <SubmitBtn loading={loading} disabled={!canSubmit} label="Envoyer le lien" style={{ marginTop: '16px' }} />
           </form>
@@ -127,7 +137,7 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
           <>
             {/* Tabs (2, 50/50, animated underline) */}
             <div role="tablist" className="auth-tabs">
-              {([['login', 'Connexion'], ['signup', 'Inscription']] as [Tab, string][]).map(([t, lbl]) => (
+              {([['login', tr('login')], ['signup', tr('signup')]] as [Tab, string][]).map(([t, lbl]) => (
                 <button key={t} role="tab" aria-selected={tab === t} onClick={() => switchTab(t)}
                   className="auth-tab" style={{ color: tab === t ? ACCENT : 'var(--text-muted)', fontWeight: tab === t ? 700 : 400 }}>
                   {lbl}
@@ -145,10 +155,10 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
                 <Field label="Organisation / Famille (optionnel)" Icon={Building2} value={organization} onChange={setOrganization} placeholder="Ex: Famille Dupont, Association..." autoComplete="organization" ariaLabel="Organisation ou famille" />
               )}
 
-              <Field label="Email" Icon={Mail} type="email" value={email} onChange={setEmail} placeholder="vous@exemple.com" autoComplete="email" autoFocus={tab !== 'signup'} valid={email.length > 0 ? emailValid : undefined} ariaLabel="Email" />
+              <Field label={tr('email')} Icon={Mail} type="email" value={email} onChange={setEmail} placeholder="vous@exemple.com" autoComplete="email" autoFocus={tab !== 'signup'} valid={email.length > 0 ? emailValid : undefined} ariaLabel="Email" />
 
               <div className="auth-field">
-                <label className="auth-label" htmlFor="pw">Mot de passe</label>
+                <label className="auth-label" htmlFor="pw">{tr('password')}</label>
                 <div className="auth-input-wrap">
                   <Lock size={18} className="auth-input-icon" />
                   <input id="pw" type={showPw ? 'text' : 'password'} value={password} onChange={e => { setPassword(e.target.value); setError(''); }}
@@ -178,7 +188,7 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
                 )}
 
                 {tab === 'login' && (
-                  <button type="button" onClick={() => { setForgot(true); setError(''); }} className="auth-forgot">Mot de passe oublié ?</button>
+                  <button type="button" onClick={() => { setForgot(true); setError(''); }} className="auth-forgot">{tr('forgotPassword')}</button>
                 )}
               </div>
 
@@ -206,7 +216,7 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
 
               {error && <ErrorMsg msg={error} />}
 
-              <SubmitBtn loading={loading} disabled={!canSubmit} label={submitLabel} style={{ marginTop: '4px' }} />
+              <SubmitBtn loading={loading} disabled={!canSubmit} label={submitLabel} loadingLabel={tab === 'login' ? tr('loginLoading') : undefined} style={{ marginTop: '4px' }} />
             </form>
 
             {/* Separator + demo */}
@@ -253,10 +263,10 @@ function ErrorMsg({ msg }: { msg: string }) {
   return <div role="alert" className="auth-error animate-fade-in"><AlertCircle size={14} style={{ flexShrink: 0 }} /> {msg}</div>;
 }
 
-function SubmitBtn({ loading, disabled, label, style }: { loading: boolean; disabled: boolean; label: string; style?: React.CSSProperties }) {
+function SubmitBtn({ loading, disabled, label, loadingLabel, style }: { loading: boolean; disabled: boolean; label: string; loadingLabel?: string; style?: React.CSSProperties }) {
   return (
     <button type="submit" disabled={disabled || loading} className="auth-submit" style={style}>
-      {loading ? <><span className="spinner" style={{ borderColor: 'rgba(255,255,255,0.6)', borderRightColor: 'transparent' }} /> {label === 'Se connecter' ? 'Connexion en cours…' : '…'}</> : <>{label} <ArrowRight size={18} /></>}
+      {loading ? <><span className="spinner" style={{ borderColor: 'rgba(255,255,255,0.6)', borderRightColor: 'transparent' }} /> {loadingLabel || '…'}</> : <>{label} <ArrowRight size={18} /></>}
     </button>
   );
 }

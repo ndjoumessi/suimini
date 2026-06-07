@@ -1,0 +1,111 @@
+{
+  "nav": {
+    "home": "Home",
+    "tree": "Tree",
+    "persons": "People",
+    "map": "Map",
+    "timeline": "Timeline",
+    "journal": "Journal",
+    "birthdays": "Birthdays",
+    "gallery": "Gallery",
+    "exploration": "Exploration",
+    "statistics": "Statistics",
+    "settings": "Settings",
+    "admin": "Admin",
+    "profile": "Profile"
+  },
+  "auth": {
+    "login": "Sign in",
+    "signup": "Sign up",
+    "logout": "Sign out",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot password?",
+    "loginButton": "Sign in",
+    "signupButton": "Create account",
+    "loginLoading": "Signing in...",
+    "errorInvalidCredentials": "Invalid email or password.",
+    "errorEmailNotConfirmed": "Please confirm your email."
+  },
+  "landing": {
+    "hero": {
+      "title": "Preserve your family history,",
+      "titleAccent": "generation after generation.",
+      "subtitle": "The modern family tree — structured, collaborative, and always with you.",
+      "cta": "Get started for free →",
+      "loginLink": "Already have an account? Sign in"
+    },
+    "demo": {
+      "title": "Try without signing up",
+      "subtitle": "Explore with the Dupont family",
+      "cta": "Try the demo for free →",
+      "noSignup": "No registration required"
+    }
+  },
+  "tree": {
+    "emptyTitle": "Start your family tree",
+    "emptySubtitle": "Create a new tree or import GEDCOM data",
+    "createButton": "Create my tree",
+    "addPerson": "Add person",
+    "root": "Root",
+    "fan": "Fan",
+    "legend": "Legend",
+    "add": "Add",
+    "persons": "people"
+  },
+  "person": {
+    "firstName": "First name",
+    "lastName": "Last name",
+    "birthDate": "Date of birth",
+    "deathDate": "Date of death",
+    "birthPlace": "Place of birth",
+    "gender": "Gender",
+    "male": "Male",
+    "female": "Female",
+    "other": "Other",
+    "alive": "Alive",
+    "deceased": "Deceased",
+    "age": "years old"
+  },
+  "dashboard": {
+    "greeting": "Hello, {name}",
+    "date": "Today",
+    "noTree": "Start building your family history.",
+    "createFirst": "Create my first tree",
+    "birthdays": "Birthdays",
+    "activity": "Recent activity",
+    "stats": "Statistics",
+    "quickAccess": "Quick access",
+    "narrative": "Family narrative",
+    "generate": "Generate →"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "success": "Success",
+    "confirm": "Confirm",
+    "search": "Search",
+    "noResults": "No results"
+  },
+  "demo": {
+    "banner": "Demo mode — data not saved",
+    "quit": "Exit demo",
+    "createAccount": "Create account"
+  },
+  "sync": {
+    "syncing": "Syncing...",
+    "saved": "Saved",
+    "error": "Sync error"
+  },
+  "language": {
+    "label": "Language",
+    "fr": "FR",
+    "en": "EN"
+  }
+}
