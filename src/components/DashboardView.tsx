@@ -1,7 +1,7 @@
 'use client';
 import { useMemo, type ReactNode } from 'react';
 import {
-  Home, Cake, Clock, Sparkles, Sprout, ArrowRight, User,
+  Home, Cake, Clock, Sparkles, Sprout, ArrowRight, User, Smile,
   TreePine, Users, Map, Calendar, BookOpen, BarChart2,
 } from 'lucide-react';
 import { FamilyTree, ViewMode } from '@/types';
@@ -135,9 +135,12 @@ export default function DashboardView({ trees, displayName, userEmail, onNavigat
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: '16px' }}>
             <div>
               <div className="label" style={{ color: 'var(--accent)', marginBottom: '8px' }}>{today}</div>
-              <h2 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 'clamp(1.6rem, 4vw, 2.4rem)', letterSpacing: '-0.02em', lineHeight: 1.05 }}>
-                Bonjour, {firstName || 'bienvenue'} <span aria-hidden="true">👋</span>
-              </h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <h2 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 'clamp(1.6rem, 4vw, 2.4rem)', letterSpacing: '-0.02em', lineHeight: 1.05 }}>
+                  Bonjour, {firstName || 'bienvenue'}
+                </h2>
+                <Smile size={32} strokeWidth={1.75} style={{ color: 'var(--accent)', flexShrink: 0 }} aria-hidden="true" />
+              </div>
               <p style={{ margin: '10px 0 0', color: 'var(--text-muted)', fontSize: '15px', maxWidth: '46ch' }}>
                 {hasTrees
                   ? <>Vous avez <strong style={{ color: 'var(--text)' }}>{summary.totalTrees}</strong> arbre{summary.totalTrees > 1 ? 's' : ''}, <strong style={{ color: 'var(--text)' }}>{summary.totalPersons}</strong> personne{summary.totalPersons > 1 ? 's' : ''} au total.</>
@@ -236,9 +239,20 @@ export default function DashboardView({ trees, displayName, userEmail, onNavigat
           <p style={{ margin: '0 0 14px', color: 'var(--text-muted)', fontSize: '13px' }}>
             Laissez l&apos;IA composer le récit de votre famille à partir de vos données.
           </p>
-          <button onClick={onNarrative} disabled={!hasTrees} className="btn btn-primary btn-sm" style={{ gap: '7px' }}>
+          <button
+            onClick={onNarrative}
+            disabled={summary.totalPersons === 0}
+            title={summary.totalPersons === 0 ? "Créez d'abord un arbre pour générer un récit" : undefined}
+            className="btn btn-primary btn-sm"
+            style={{ gap: '7px' }}
+          >
             <Sparkles size={15} aria-hidden="true" /> Générer <ArrowRight size={15} aria-hidden="true" />
           </button>
+          {summary.totalPersons === 0 && (
+            <p style={{ margin: '8px 0 0', color: 'var(--text-light)', fontSize: '12px' }}>
+              Créez d&apos;abord un arbre pour générer un récit.
+            </p>
+          )}
         </Card>
       </div>
 
