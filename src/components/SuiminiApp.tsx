@@ -14,6 +14,7 @@ import Sidebar from './Sidebar';
 import BottomNav from './BottomNav';
 import AuthModal from './AuthModal';
 import DemoBanner from './DemoBanner';
+import DashboardView from './DashboardView';
 import TreeView from './TreeView';
 import ListView from './ListView';
 import TimelineView from './TimelineView';
@@ -60,7 +61,7 @@ export default function SuiminiApp() {
   const { themeId, setTheme, previewTheme, cancelPreview } = useTheme();
   const birthdayAlertCount = useBirthdayNotifications(store.activeTree);
 
-  const [view, setView] = useState<ViewMode>('tree');
+  const [view, setView] = useState<ViewMode>('dashboard');
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
   const [showAddPerson, setShowAddPerson] = useState(false);
   const [showTreeSelector, setShowTreeSelector] = useState(false);
@@ -251,6 +252,16 @@ export default function SuiminiApp() {
 
         {view === 'admin' ? (
           <AdminDashboard admin={admin} role={role} onToast={showToast} />
+        ) : view === 'dashboard' ? (
+          <DashboardView
+            trees={store.trees}
+            displayName={(user?.user_metadata?.display_name as string | undefined) || null}
+            userEmail={user?.email || null}
+            onNavigate={setView}
+            onNewTree={() => setShowTreeSelector(true)}
+            onSelectPerson={(treeId, personId) => { if (treeId !== store.activeTreeId) store.switchTree(treeId); handleSelectPerson(personId); }}
+            onNarrative={() => setShowNarrative(true)}
+          />
         ) : !store.activeTree ? (
           <EmptyState onCreateTree={() => setShowTreeSelector(true)} />
         ) : (

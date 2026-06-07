@@ -163,7 +163,7 @@ export interface TreeStats {
   totalEvents: number;
 }
 
-export type ViewMode = 'tree' | 'list' | 'timeline' | 'map' | 'statistics' | 'gallery' | 'journal' | 'birthdays' | 'ancestors' | 'settings' | 'admin';
+export type ViewMode = 'dashboard' | 'tree' | 'list' | 'timeline' | 'map' | 'statistics' | 'gallery' | 'journal' | 'birthdays' | 'ancestors' | 'settings' | 'admin';
 
 // ----- Multitenant + validation des comptes -----
 export type UserStatus = 'pending' | 'approved' | 'rejected' | 'suspended';

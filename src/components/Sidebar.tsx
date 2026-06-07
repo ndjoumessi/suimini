@@ -1,7 +1,7 @@
 'use client';
 import { FamilyTree, ViewMode } from '@/types';
 import {
-  TreePine, Users, Calendar, Map, Images, BookOpen, Cake, Search, BarChart2, Settings,
+  Home, TreePine, Users, Calendar, Map, Images, BookOpen, Cake, Search, BarChart2, Settings,
   Plus, Play, Share2, FolderOpen, Printer, Moon, Sun, ChevronDown, LogOut, LogIn, Cloud,
   Check, CloudOff, Shield,
 } from 'lucide-react';
@@ -19,6 +19,9 @@ import type { LucideIcon } from 'lucide-react';
 
 interface NavItem { view: ViewMode; Icon: LucideIcon; label: string }
 const NAV_GROUPS: NavItem[][] = [
+  [
+    { view: 'dashboard', Icon: Home, label: 'Accueil' },
+  ],
   [
     { view: 'tree', Icon: TreePine, label: 'Arbre' },
     { view: 'list', Icon: Users, label: 'Personnes' },
