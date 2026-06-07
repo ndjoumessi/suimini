@@ -17,23 +17,31 @@ drop policy if exists trees_public_read on public.trees;
 create policy trees_public_read on public.trees
   for select using (is_public = true);
 
+-- Persons : exposés uniquement si l'arbre est public ET la personne n'est pas
+-- marquée « privé » (les fiches privées ne fuitent jamais via le lien public).
 drop policy if exists persons_public_read on public.persons;
 create policy persons_public_read on public.persons
-  for select using (exists (
-    select 1 from public.trees t where t.id = persons.tree_id and t.is_public = true
-  ));
+  for select using (
+    coalesce(persons.privacy, 'public') <> 'private'
+    and exists (select 1 from public.trees t where t.id = persons.tree_id and t.is_public = true)
+  );
 
+-- Relationships : exposées seulement si l'arbre est public ET aucune des deux
+-- personnes liées n'est privée (sinon on déduirait l'existence d'une fiche privée).
 drop policy if exists relationships_public_read on public.relationships;
 create policy relationships_public_read on public.relationships
-  for select using (exists (
-    select 1 from public.trees t where t.id = relationships.tree_id and t.is_public = true
-  ));
+  for select using (
+    exists (select 1 from public.trees t where t.id = relationships.tree_id and t.is_public = true)
+    and not exists (
+      select 1 from public.persons p
+      where (p.id = relationships.person1_id or p.id = relationships.person2_id)
+        and coalesce(p.privacy, 'public') = 'private'
+    )
+  );
 
+-- Journal : volontairement NON exposé publiquement (contenu narratif sensible).
+-- L'UI publique ne lit pas le journal ; on retire toute policy de lecture publique.
 drop policy if exists journal_public_read on public.journal_entries;
-create policy journal_public_read on public.journal_entries
-  for select using (exists (
-    select 1 from public.trees t where t.id = journal_entries.tree_id and t.is_public = true
-  ));
 
 -- ----------------------------------------------------------------------------
 -- A) Realtime : exposer les tables admin au flux supabase_realtime

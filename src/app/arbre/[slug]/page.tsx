@@ -3,8 +3,10 @@ import { notFound } from 'next/navigation';
 import { loadPublicTree } from '@/lib/supabaseSync';
 import PublicTreeView from '@/components/PublicTreeView';
 
-// ISR: revalidate the public snapshot hourly.
-export const revalidate = 3600;
+// Always render dynamically so RLS / is_public is re-checked on every request:
+// flipping a tree back to private (or rotating its slug) takes effect immediately,
+// with no stale public snapshot lingering in an ISR cache.
+export const dynamic = 'force-dynamic';
 
 interface PageProps { params: Promise<{ slug: string }> }
 

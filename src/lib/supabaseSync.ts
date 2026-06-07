@@ -233,19 +233,29 @@ export async function loadPublicTree(slug: string): Promise<FamilyTree | null> {
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) return null;
   const sb = createClient(url, key, { auth: { persistSession: false } });
-  const { data: t } = await sb.from('trees').select('*').eq('public_slug', slug).eq('is_public', true).maybeSingle();
+  // Explicit column allowlist — never select('*') for anonymous reads (keeps
+  // owner_id and internal flags off the wire).
+  const { data: t } = await sb.from('trees')
+    .select('id, name, description, settings, created_at, updated_at')
+    .eq('public_slug', slug).eq('is_public', true).maybeSingle();
   if (!t) return null;
-  const [persons, rels, journal] = await Promise.all([
+  const [persons, rels] = await Promise.all([
     sb.from('persons').select('*').eq('tree_id', t.id),
     sb.from('relationships').select('*').eq('tree_id', t.id),
-    sb.from('journal_entries').select('*').eq('tree_id', t.id),
   ]);
+  // Defence in depth: even though RLS already hides private fiches, drop any
+  // private person here and any relationship that touches one. The journal is
+  // never exposed publicly.
+  const allPersons = (persons.data || []).map(rowToPerson).filter(p => p.privacy !== 'private');
+  const visibleIds = new Set(allPersons.map(p => p.id));
+  const allRels = (rels.data || []).map(rowToRel)
+    .filter(r => visibleIds.has(r.person1Id) && visibleIds.has(r.person2Id));
   return {
     id: t.id, name: t.name, description: t.description || undefined,
     settings: t.settings || undefined, createdAt: t.created_at, updatedAt: t.updated_at,
     rootPersonId: t.settings?.rootPersonId,
-    persons: (persons.data || []).map(rowToPerson),
-    relationships: (rels.data || []).map(rowToRel),
-    journal: (journal.data || []).map(rowToJournal),
+    persons: allPersons,
+    relationships: allRels,
+    journal: [],
   };
 }

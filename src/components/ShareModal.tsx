@@ -171,7 +171,8 @@ export default function ShareModal({ tree, cloud, onRequireAuth, onToast, onClos
                 <span style={{ flex: 1 }}>
                   <span style={{ display: 'block', fontWeight: 700, fontSize: '13px' }}>Rendre cet arbre public</span>
                   <span style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)' }}>
-                    Toute personne disposant du lien pourra consulter l&apos;arbre, sans pouvoir le modifier.
+                    Toute personne disposant du lien pourra voir les membres (noms, dates, lieux, photos) en lecture seule.
+                    Les fiches marquées «&nbsp;privé&nbsp;» et le journal restent masqués.
                   </span>
                 </span>
               </label>
