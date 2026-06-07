@@ -51,6 +51,8 @@ interface Props {
   onSelectPerson: (id: string) => void;
   onAddPerson: () => void;
   onExport?: () => void;
+  /** Public/read-only mode: hides editing affordances (no add, no selection panel). */
+  readOnly?: boolean;
 }
 
 // "Album de famille relié" — compact register-card nodes (see DESIGN.md).
@@ -60,7 +62,7 @@ const H_GAP = 24;
 const V_GAP = 64;
 const GRID = 24; // canvas dot-grid spacing
 
-export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAddPerson, onExport }: Props) {
+export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAddPerson, onExport, readOnly = false }: Props) {
   const [rootId, setRootId] = useState(tree.rootPersonId || tree.persons[0]?.id || null);
   const [scale, setScale] = useState(1.1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -342,7 +344,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
     }
   };
 
-  const handleNodeClick = (personId: string) => { if (!dragMoved) onSelectPerson(personId); };
+  const handleNodeClick = (personId: string) => { if (!dragMoved && !readOnly) onSelectPerson(personId); };
 
   const genderColor = (g: string) =>
     g === 'male' ? 'var(--male)' : g === 'female' ? 'var(--female)' : 'var(--text-muted)';
@@ -371,7 +373,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
         <Sprout size={52} strokeWidth={1.25} style={{ color: 'var(--text-light)' }} aria-hidden="true" />
         <h3 style={{ margin: 0 }}>Cet arbre est vide</h3>
         <p style={{ color: 'var(--text-muted)', margin: 0 }}>Ajoutez la première personne pour commencer</p>
-        <button onClick={onAddPerson} className="btn btn-primary" style={{ gap: '6px' }}><Plus size={16} aria-hidden="true" /> Première personne</button>
+        {!readOnly && <button onClick={onAddPerson} className="btn btn-primary" style={{ gap: '6px' }}><Plus size={16} aria-hidden="true" /> Première personne</button>}
       </div>
     );
   }
@@ -427,11 +429,15 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
           <Info size={14} aria-hidden="true" />
         </button>
 
-        {sep}
-        {onExport && (
-          <button onClick={onExport} className="btn btn-secondary btn-sm btn-icon" title="Exporter en PDF" aria-label="Exporter en PDF"><Printer size={14} aria-hidden="true" /></button>
+        {!readOnly && (
+          <>
+            {sep}
+            {onExport && (
+              <button onClick={onExport} className="btn btn-secondary btn-sm btn-icon" title="Exporter en PDF" aria-label="Exporter en PDF"><Printer size={14} aria-hidden="true" /></button>
+            )}
+            <button onClick={onAddPerson} className="btn btn-primary btn-sm" style={{ gap: '6px' }}><Plus size={14} aria-hidden="true" /> Ajouter</button>
+          </>
         )}
-        <button onClick={onAddPerson} className="btn btn-primary btn-sm" style={{ gap: '6px' }}><Plus size={14} aria-hidden="true" /> Ajouter</button>
       </div>
 
       {/* Canvas */}

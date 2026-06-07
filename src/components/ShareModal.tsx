@@ -2,11 +2,19 @@
 import { useOverlay } from '@/hooks/useOverlay';
 import { useState, useEffect } from 'react';
 import { FamilyTree } from '@/types';
-import { shareTree, listShares, unshareTree } from '@/lib/supabaseSync';
+import { shareTree, listShares, unshareTree, getPublicShare, setTreePublic } from '@/lib/supabaseSync';
 import {
   Share2, X, Cloud, Package, Download, Smartphone, Code2, Lightbulb,
-  Mail, Copy, Check, MessageCircle, TreePine, Pencil, Eye,
+  Mail, Copy, Check, MessageCircle, TreePine, Pencil, Eye, Globe, ExternalLink,
 } from 'lucide-react';
+
+/** URL-safe slug from the tree name + a short random suffix for uniqueness. */
+function makeSlug(name: string): string {
+  const base = name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'arbre';
+  const rand = Math.random().toString(36).slice(2, 6);
+  return `${base}-${rand}`;
+}
 
 interface Props {
   tree: FamilyTree;
@@ -31,10 +39,30 @@ export default function ShareModal({ tree, cloud, onRequireAuth, onToast, onClos
   const [sharePerm, setSharePerm] = useState<'read' | 'write'>('read');
   const [shares, setShares] = useState<{ email: string; permission: string }[]>([]);
   const [sharing, setSharing] = useState(false);
+  const [isPublic, setIsPublic] = useState(false);
+  const [publicSlug, setPublicSlug] = useState<string | null>(null);
+  const [togglingPublic, setTogglingPublic] = useState(false);
 
   useEffect(() => {
-    if (cloud) listShares(tree.id).then(setShares);
+    if (cloud) {
+      listShares(tree.id).then(setShares);
+      getPublicShare(tree.id).then(({ isPublic, slug }) => { setIsPublic(isPublic); setPublicSlug(slug); });
+    }
   }, [cloud, tree.id]);
+
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://suimini.vercel.app';
+  const publicUrl = publicSlug ? `${origin}/arbre/${publicSlug}` : '';
+
+  async function togglePublic(next: boolean) {
+    setTogglingPublic(true);
+    const slug = next ? (publicSlug || makeSlug(tree.name)) : publicSlug;
+    const { error } = await setTreePublic(tree.id, next, slug);
+    setTogglingPublic(false);
+    if (error) { onToast?.('Échec de la mise à jour du partage public', 'error'); return; }
+    setIsPublic(next);
+    if (next && slug) setPublicSlug(slug);
+    onToast?.(next ? 'Arbre rendu public' : 'Partage public désactivé', next ? 'success' : 'info');
+  }
 
   async function doShare() {
     const email = shareEmail.trim().toLowerCase();
@@ -126,6 +154,39 @@ export default function ShareModal({ tree, cloud, onRequireAuth, onToast, onClos
               </>
             )}
           </div>
+
+          {/* Public read-only link */}
+          {cloud && (
+            <div>
+              <Eyebrow Icon={Globe}>Lien public (lecture seule)</Eyebrow>
+              <label style={{ display: 'flex', gap: '10px', alignItems: 'center', cursor: togglingPublic ? 'wait' : 'pointer', padding: '10px 12px', border: 'var(--bw) solid var(--border-strong)', borderRadius: 'var(--radius)', background: isPublic ? 'var(--accent-light)' : 'var(--bg-card)' }}>
+                <input
+                  type="checkbox"
+                  role="switch"
+                  checked={isPublic}
+                  disabled={togglingPublic}
+                  onChange={e => togglePublic(e.target.checked)}
+                  style={{ width: '18px', height: '18px', accentColor: 'var(--accent)', flexShrink: 0 }}
+                />
+                <span style={{ flex: 1 }}>
+                  <span style={{ display: 'block', fontWeight: 700, fontSize: '13px' }}>Rendre cet arbre public</span>
+                  <span style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)' }}>
+                    Toute personne disposant du lien pourra consulter l&apos;arbre, sans pouvoir le modifier.
+                  </span>
+                </span>
+              </label>
+
+              {isPublic && publicSlug && (
+                <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
+                  <input readOnly value={publicUrl} className="input" style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: '12px' }} onFocus={e => e.currentTarget.select()} />
+                  <button onClick={() => copyToClipboard(publicUrl, 'public')} className="btn btn-secondary btn-sm" style={{ flexShrink: 0 }}>
+                    {copied === 'public' ? <><Check size={14} /> Copié</> : <><Copy size={14} /> Copier</>}
+                  </button>
+                  <a href={publicUrl} target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-sm btn-icon" aria-label="Ouvrir le lien public" title="Ouvrir"><ExternalLink size={14} /></a>
+                </div>
+              )}
+            </div>
+          )}
 
           <hr className="divider" style={{ margin: 0 }} />
 

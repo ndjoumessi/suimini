@@ -19,7 +19,6 @@ import TreeView from './TreeView';
 import ListView from './ListView';
 import TimelineView from './TimelineView';
 import StatisticsView from './StatisticsView';
-import GalleryView from './GalleryView';
 import JournalView from './JournalView';
 import BirthdaysView from './BirthdaysView';
 import AncestorsView from './AncestorsView';
@@ -45,6 +44,15 @@ const MapView = dynamic(() => import('./MapView'), {
   loading: () => (
     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
       Chargement de la carte…
+    </div>
+  ),
+});
+
+// Gallery pulls image-heavy UI; load it on demand to keep the initial app bundle lean.
+const GalleryView = dynamic(() => import('./GalleryView'), {
+  loading: () => (
+    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+      Chargement de la galerie…
     </div>
   ),
 });

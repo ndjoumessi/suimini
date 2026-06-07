@@ -11,10 +11,12 @@ export interface NewTenantInput {
 
 /**
  * Admin data layer: wraps the SECURITY DEFINER RPCs (admin-only, enforced
- * server-side) plus the tenants table. Polls unread notifications every 30s when
- * `enabled` (the admin status of the current user), keeping `unreadCount` fresh
- * for the sidebar badge and the notifications tab. All calls are guarded so a
- * non-admin / pre-migration database never throws.
+ * server-side) plus the tenants table. Subscribes to Supabase Realtime when
+ * `enabled` (the admin status of the current user) so `unreadCount` and the
+ * notifications list stay fresh for the sidebar badge and the notifications tab
+ * without polling. All calls are guarded so a non-admin / pre-migration database
+ * never throws. (Requires the tables to be in the `supabase_realtime`
+ * publication — see supabase/share-public.sql.)
  */
 export function useAdminData({ enabled }: { enabled: boolean }) {
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -89,14 +91,35 @@ export function useAdminData({ enabled }: { enabled: boolean }) {
     return { error: error?.message };
   }, [fetchNotifications]);
 
-  // Poll unread notifications while the current user is an admin. When not an
-  // admin we simply don't poll; the badge/dashboard are hidden anyway, so stale
-  // data is never shown (and we avoid a synchronous setState in the effect body).
+  // Realtime instead of polling. While the current user is an admin we do one
+  // initial fetch, then react live to:
+  //   • new admin_notifications (INSERT) → bump the badge + prepend the row,
+  //   • new pending profiles (INSERT)    → re-fetch (a fresh sign-up awaits review).
+  // When not an admin we don't subscribe; the badge/dashboard are hidden anyway.
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !supabase) return;
+    const sb = supabase;
     fetchNotifications();
-    const t = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(t);
+
+    const notifChannel = sb
+      .channel('admin-notifs')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_notifications' }, (payload) => {
+        setNotifications(n => [payload.new as AdminNotification, ...n]);
+        setUnreadCount(c => c + 1);
+      })
+      .subscribe();
+
+    const pendingChannel = sb
+      .channel('pending-users')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'profiles', filter: 'status=eq.pending' }, () => {
+        fetchNotifications();
+      })
+      .subscribe();
+
+    return () => {
+      sb.removeChannel(notifChannel);
+      sb.removeChannel(pendingChannel);
+    };
   }, [enabled, fetchNotifications]);
 
   return {

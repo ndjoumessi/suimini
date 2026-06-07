@@ -83,6 +83,7 @@ function Testimonials() {
       <div className="lp-fade" key={i}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={`https://api.dicebear.com/7.x/personas/svg?seed=${t.seed}`} alt="" width={72} height={72}
+          loading="lazy" decoding="async"
           style={{ border: `2px solid ${INK}`, background: PAPER, marginBottom: '20px' }} />
         <p className="serif" style={{ fontSize: 'clamp(1.3rem, 3vw, 2rem)', lineHeight: 1.18, letterSpacing: '-0.02em', margin: '0 0 18px' }}>
           « {t.quote} »

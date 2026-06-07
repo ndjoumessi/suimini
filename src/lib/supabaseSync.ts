@@ -1,3 +1,4 @@
+import { createClient } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { FamilyTree, Person, Relationship, JournalEntry } from '@/types';
 
@@ -199,4 +200,52 @@ export async function listShares(treeId: string): Promise<{ email: string; permi
 export async function unshareTree(treeId: string, email: string): Promise<void> {
   if (!supabase) return;
   await supabase.from('tree_shares').delete().eq('tree_id', treeId).eq('shared_with_email', email);
+}
+
+// ---------- Public read-only sharing (is_public + public_slug) ----------
+
+/** Current public state of a tree (owner-only read via RLS). */
+export async function getPublicShare(treeId: string): Promise<{ isPublic: boolean; slug: string | null }> {
+  if (!supabase) return { isPublic: false, slug: null };
+  const { data } = await supabase.from('trees').select('is_public, public_slug').eq('id', treeId).single();
+  return { isPublic: !!data?.is_public, slug: (data?.public_slug as string | null) ?? null };
+}
+
+/**
+ * Toggle public read-only access. When enabling, a slug must be supplied; we keep
+ * it on disable so re-enabling reuses the same shareable link (avoids unique churn).
+ */
+export async function setTreePublic(treeId: string, isPublic: boolean, slug?: string | null): Promise<{ error?: string }> {
+  if (!supabase) return { error: 'Supabase non configuré.' };
+  const patch: Record<string, any> = { is_public: isPublic };
+  if (isPublic && slug) patch.public_slug = slug;
+  const { error } = await supabase.from('trees').update(patch).eq('id', treeId);
+  return { error: error?.message };
+}
+
+/**
+ * Server-safe anonymous load of a public tree by slug. Uses a fresh anon client
+ * (no session) — RLS `*_public_read` policies expose the rows when is_public.
+ * Returns null when not found / not public / Supabase unconfigured.
+ */
+export async function loadPublicTree(slug: string): Promise<FamilyTree | null> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return null;
+  const sb = createClient(url, key, { auth: { persistSession: false } });
+  const { data: t } = await sb.from('trees').select('*').eq('public_slug', slug).eq('is_public', true).maybeSingle();
+  if (!t) return null;
+  const [persons, rels, journal] = await Promise.all([
+    sb.from('persons').select('*').eq('tree_id', t.id),
+    sb.from('relationships').select('*').eq('tree_id', t.id),
+    sb.from('journal_entries').select('*').eq('tree_id', t.id),
+  ]);
+  return {
+    id: t.id, name: t.name, description: t.description || undefined,
+    settings: t.settings || undefined, createdAt: t.created_at, updatedAt: t.updated_at,
+    rootPersonId: t.settings?.rootPersonId,
+    persons: (persons.data || []).map(rowToPerson),
+    relationships: (rels.data || []).map(rowToRel),
+    journal: (journal.data || []).map(rowToJournal),
+  };
 }

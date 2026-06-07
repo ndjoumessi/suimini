@@ -7,10 +7,15 @@ const display = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-disp
 const body = Hanken_Grotesk({ subsets: ["latin"], variable: "--font-body", display: "swap" });
 const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500", "700"], variable: "--font-mono", display: "swap" });
 
+const SITE_URL = "https://suimini.vercel.app";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "Suimini — Arbre Généalogique",
-  description: "Gérez l'histoire de votre famille avec Suimini, l'application d'arbre généalogique élégante et complète.",
-  keywords: "arbre généalogique, famille, ancêtres, histoire familiale, genealogie",
+  description:
+    "Préservez l'histoire de votre famille, génération après génération. Créez votre arbre généalogique en ligne, collaboratif et élégant.",
+  keywords: "arbre généalogique, généalogie, famille, ancêtres, histoire familiale, GEDCOM",
+  authors: [{ name: "Suimini" }],
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -25,6 +30,23 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: "/icon-192.png", sizes: "192x192", type: "image/png" }],
   },
+  openGraph: {
+    title: "Suimini — Arbre Généalogique",
+    description: "Préservez l'histoire de votre famille",
+    url: SITE_URL,
+    siteName: "Suimini",
+    images: [{ url: `${SITE_URL}/og.png`, width: 1200, height: 630, alt: "Suimini — Arbre Généalogique" }],
+    locale: "fr_FR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Suimini — Arbre Généalogique",
+    description: "Préservez l'histoire de votre famille",
+    images: [`${SITE_URL}/og.png`],
+  },
+  robots: { index: true, follow: true },
+  alternates: { canonical: SITE_URL },
 };
 
 export const viewport: Viewport = {
@@ -35,9 +57,22 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
+// Origin of the Supabase project (auth + data), preconnected for faster first call.
+const SUPABASE_ORIGIN = (() => {
+  try { return process.env.NEXT_PUBLIC_SUPABASE_URL ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).origin : null; }
+  catch { return null; }
+})();
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr" className={`${display.variable} ${body.variable} ${mono.variable}`}>
+      <head>
+        {/* next/font self-hosts the fonts, so we only hint at the runtime origins we actually hit. */}
+        {SUPABASE_ORIGIN && <link rel="preconnect" href={SUPABASE_ORIGIN} crossOrigin="anonymous" />}
+        {SUPABASE_ORIGIN && <link rel="dns-prefetch" href={SUPABASE_ORIGIN} />}
+        {/* Avatar/illustration CDN used on the landing & sample data. */}
+        <link rel="dns-prefetch" href="https://api.dicebear.com" />
+      </head>
       <body>
         {children}
         <script
