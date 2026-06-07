@@ -61,6 +61,13 @@ export default function SuiminiApp() {
   const { themeId, setTheme, previewTheme, cancelPreview } = useTheme();
   const birthdayAlertCount = useBirthdayNotifications(store.activeTree);
 
+  // Fallback so non-tree views (stats, journal, settings…) still render when the
+  // user has no active tree, instead of taking over the screen with the tree
+  // empty state. Only the 'tree' view truly requires a real active tree.
+  const emptyTree = useMemo<FamilyTree>(() => ({
+    id: '', name: '', createdAt: '', updatedAt: '', persons: [], relationships: [],
+  }), []);
+
   const [view, setView] = useState<ViewMode>('dashboard');
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
   const [showAddPerson, setShowAddPerson] = useState(false);
@@ -262,27 +269,28 @@ export default function SuiminiApp() {
             onSelectPerson={(treeId, personId) => { if (treeId !== store.activeTreeId) store.switchTree(treeId); handleSelectPerson(personId); }}
             onNarrative={() => setShowNarrative(true)}
           />
-        ) : !store.activeTree ? (
+        ) : view === 'tree' && !store.activeTree ? (
+          // The tree view is the only one that genuinely needs an active tree.
           <EmptyState onCreateTree={() => setShowTreeSelector(true)} />
         ) : (
           <>
-            {view === 'tree' && <TreeView tree={store.activeTree} selectedPersonId={selectedPersonId} onSelectPerson={handleSelectPerson} onAddPerson={() => setShowAddPerson(true)} onExport={() => setShowPrint(true)} />}
-            {view === 'list' && <ListView tree={store.activeTree} onSelectPerson={handleSelectPerson} onAddPerson={() => setShowAddPerson(true)} />}
-            {view === 'timeline' && <TimelineView tree={store.activeTree} onSelectPerson={handleSelectPerson} />}
-            {view === 'map' && <MapView tree={store.activeTree} onSelectPerson={handleSelectPerson} />}
-            {view === 'gallery' && <GalleryView tree={store.activeTree} onSelectPerson={handleSelectPerson} onUpdatePerson={(id, updates) => { store.updatePerson(id, updates); showToast('Photo ajoutée'); }} />}
+            {view === 'tree' && store.activeTree && <TreeView tree={store.activeTree} selectedPersonId={selectedPersonId} onSelectPerson={handleSelectPerson} onAddPerson={() => setShowAddPerson(true)} onExport={() => setShowPrint(true)} />}
+            {view === 'list' && <ListView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} onAddPerson={() => setShowAddPerson(true)} />}
+            {view === 'timeline' && <TimelineView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} />}
+            {view === 'map' && <MapView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} />}
+            {view === 'gallery' && <GalleryView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} onUpdatePerson={(id, updates) => { store.updatePerson(id, updates); showToast('Photo ajoutée'); }} />}
             {view === 'journal' && (
               <JournalView
-                tree={store.activeTree}
+                tree={store.activeTree ?? emptyTree}
                 onSelectPerson={handleSelectPerson}
                 onAdd={(entry) => { store.addJournalEntry(entry); showToast('Entrée ajoutée'); }}
                 onUpdate={(id, updates) => { store.updateJournalEntry(id, updates); showToast('Entrée mise à jour'); }}
                 onDelete={(id) => { store.deleteJournalEntry(id); showToast('Entrée supprimée', 'info'); }}
               />
             )}
-            {view === 'birthdays' && <BirthdaysView tree={store.activeTree} onSelectPerson={handleSelectPerson} />}
-            {view === 'ancestors' && <AncestorsView tree={store.activeTree} onSelectPerson={handleSelectPerson} />}
-            {view === 'statistics' && <StatisticsView tree={store.activeTree} />}
+            {view === 'birthdays' && <BirthdaysView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} />}
+            {view === 'ancestors' && <AncestorsView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} />}
+            {view === 'statistics' && <StatisticsView tree={store.activeTree ?? emptyTree} />}
             {view === 'settings' && (
               <SettingsView
                 themeId={themeId}

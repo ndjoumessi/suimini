@@ -219,7 +219,7 @@ export function computeTreeStats(tree: FamilyTree): TreeStats {
   // Generations
   const memo = new Map<string, number>();
   const gens = persons.map(p => getGeneration(p.id, relationships, persons, memo));
-  const totalGenerations = Math.max(...gens) + 1;
+  const totalGenerations = gens.length ? Math.max(...gens) + 1 : 0;
 
   const totalPhotos = persons.filter(p => p.profilePhoto || (p.photos && p.photos.length > 0)).length;
   const totalEvents = persons.reduce((acc, p) => acc + (p.events?.length || 0), 0);

@@ -1,9 +1,10 @@
 'use client';
+import Link from 'next/link';
 import { FamilyTree, ViewMode } from '@/types';
 import {
   Home, TreePine, Users, Calendar, Map, Images, BookOpen, Cake, Search, BarChart2, Settings,
   Plus, Play, Share2, FolderOpen, Printer, Moon, Sun, ChevronDown, LogOut, LogIn, Cloud,
-  Check, CloudOff, Shield,
+  Check, CloudOff, Shield, ArrowLeft,
 } from 'lucide-react';
 import { BrandLockup } from './Brand';
 
@@ -86,14 +87,14 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
     >
       {/* Logo + dark toggle */}
       <div style={{ padding: '16px 16px 12px', borderBottom: 'var(--bw) solid var(--border-strong)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-        <div>
+        <Link href="/" aria-label="Retour à l'accueil du site" title="Retour au site" style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
           <BrandLockup size={26} color="var(--ink)" accent="var(--accent)" surface="var(--bg-card)" fontSize={20} />
           <div style={{ marginTop: '5px' }}>
           {isDemo
             ? <span className="badge badge-accent" style={{ fontSize: '9px' }}>Mode démo</span>
             : <div className="label" style={{ fontSize: '10px', letterSpacing: '1px' }}>Arbre Généalogique</div>}
           </div>
-        </div>
+        </Link>
         <button onClick={onToggleDark} className="icon-btn" aria-label={dark ? 'Activer le mode clair' : 'Activer le mode sombre'} title={dark ? 'Mode clair' : 'Mode sombre'}>
           {dark ? <Sun size={17} /> : <Moon size={17} />}
         </button>
@@ -218,6 +219,13 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         </button>
       </div>
 
+      {/* Back to the public site */}
+      <div style={{ padding: '6px 10px', borderTop: '1px solid var(--border)' }}>
+        <Link href="/" className="sb-back-link" onClick={onClose}>
+          <ArrowLeft size={14} aria-hidden="true" /> Retour au site
+        </Link>
+      </div>
+
       {/* Account & sync */}
       <div style={{ padding: '8px 10px', borderTop: '1px solid var(--border)', position: 'relative' }}>
         {userEmail ? (
@@ -267,6 +275,8 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
       <style>{`
         .sb-logout { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex-shrink: 0; border: none; background: transparent; color: var(--text-muted); border-radius: 8px; cursor: pointer; transition: background var(--t-fast), color var(--t-fast); }
         .sb-logout:hover { background: var(--bg-muted); color: var(--danger); }
+        .sb-back-link { display: inline-flex; align-items: center; gap: 7px; width: 100%; padding: 6px 8px; font-family: var(--font-body); font-size: 12px; color: var(--text-muted); text-decoration: none; border-radius: var(--radius); transition: background var(--t-fast), color var(--t-fast); }
+        .sb-back-link:hover { background: var(--interactive); color: var(--accent); }
         @media (max-width: 768px) {
           .sidebar { position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-100%); transition: transform 0.3s ease; }
           .sidebar.sidebar-open { transform: translateX(0); box-shadow: var(--shadow-lg); }
