@@ -56,13 +56,23 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
     if (tab === 'login') {
       if (!emailValid || !password) { setError('Veuillez renseigner email et mot de passe.'); return; }
       setLoading(true);
-      const { error } = await signIn(email, password);
-      if (error) { setLoading(false); setError(error); return; }
-      // Explicit login → go to the app. Full navigation so the proxy/HomeGate gate
-      // the destination by status (approved → /app ; pending/rejected/suspended →
-      // bounced back to / where the matching status screen is shown).
-      onClose();
-      window.location.href = '/app';
+      // Safety net: never leave the button stuck on "Connexion en cours…" if the
+      // sign-in promise hangs or navigation is blocked.
+      const safety = setTimeout(() => setLoading(false), 10000);
+      try {
+        const { error } = await signIn(email, password);
+        if (error) { clearTimeout(safety); setLoading(false); setError(error); return; }
+        // Explicit login → go to the app. Full navigation so the proxy/HomeGate gate
+        // the destination by status (approved → /app ; pending/rejected/suspended →
+        // bounced back to / where the matching status screen is shown).
+        clearTimeout(safety);
+        onClose();
+        window.location.href = '/app';
+      } catch {
+        clearTimeout(safety);
+        setLoading(false);
+        setError('Erreur de connexion. Réessayez.');
+      }
       return;
     }
     // signup

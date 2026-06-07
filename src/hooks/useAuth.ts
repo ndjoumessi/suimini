@@ -53,7 +53,13 @@ export function useAuth() {
       setIsLoading(false);
       if (data.session?.user) setUserProfile(await fetchProfile(data.session.user.id));
     });
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, s) => {
+    // IMPORTANT: keep this callback synchronous and never `await` a Supabase call
+    // inside it. It runs while GoTrue holds its auth lock; calling fetchProfile
+    // (another Supabase request) here would try to re-acquire that lock and
+    // DEADLOCK — signInWithPassword would never resolve and the UI stays stuck on
+    // "Connexion en cours…". We defer the profile fetch with setTimeout(0) so the
+    // lock is released first.
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
       setUser(s?.user ?? null);
       setIsLoading(false);
@@ -61,7 +67,8 @@ export function useAuth() {
         try { localStorage.removeItem(DEMO_KEY); } catch { /* ignore */ }
         setDemoCookie(false);
         setDemo(false);
-        setUserProfile(await fetchProfile(s.user.id));
+        const uid = s.user.id;
+        setTimeout(() => { fetchProfile(uid).then(p => { if (active) setUserProfile(p); }); }, 0);
       } else {
         setUserProfile(null);
       }
@@ -107,7 +114,7 @@ export function useAuth() {
         ? 'Email ou mot de passe incorrect.'
         : /email not confirmed/i.test(error.message)
           ? 'Veuillez confirmer votre email avant de vous connecter.'
-          : error.message;
+          : 'Erreur de connexion. Réessayez.';
       return { error: msg };
     }
     return {};
