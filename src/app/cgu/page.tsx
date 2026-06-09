@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
-export const metadata = { title: 'Conditions générales — Suimini' };
+export const metadata = { title: 'Conditions générales | Suimini' };
 
 export default function CguPage() {
   return (
@@ -35,7 +35,7 @@ export default function CguPage() {
           Pour toute question relative aux présentes conditions : <a href="mailto:hello@suimini.app" style={{ color: '#bf4b2c', fontWeight: 600 }}>hello@suimini.app</a>.
         </Section>
 
-        <p style={{ marginTop: '48px', fontSize: '12px', color: '#8a8276', fontFamily: 'var(--font-mono)' }}>© 2026 Suimini — Tous droits réservés</p>
+        <p style={{ marginTop: '48px', fontSize: '12px', color: '#8a8276', fontFamily: 'var(--font-mono)' }}>© 2026 Suimini · Tous droits réservés</p>
       </div>
     </main>
   );

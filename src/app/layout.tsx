@@ -13,7 +13,7 @@ const SITE_URL = "https://suimini.vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "Suimini — Arbre Généalogique",
+  title: "Suimini | Arbre Généalogique",
   description:
     "Préservez l'histoire de votre famille, génération après génération. Créez votre arbre généalogique en ligne, collaboratif et élégant.",
   keywords: "arbre généalogique, généalogie, famille, ancêtres, histoire familiale, GEDCOM",
@@ -33,17 +33,17 @@ export const metadata: Metadata = {
     apple: [{ url: "/icon-192.png", sizes: "192x192", type: "image/png" }],
   },
   openGraph: {
-    title: "Suimini — Arbre Généalogique",
+    title: "Suimini | Arbre Généalogique",
     description: "Préservez l'histoire de votre famille",
     url: SITE_URL,
     siteName: "Suimini",
-    images: [{ url: `${SITE_URL}/og.png`, width: 1200, height: 630, alt: "Suimini — Arbre Généalogique" }],
+    images: [{ url: `${SITE_URL}/og.png`, width: 1200, height: 630, alt: "Suimini, arbre généalogique" }],
     locale: "fr_FR",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Suimini — Arbre Généalogique",
+    title: "Suimini | Arbre Généalogique",
     description: "Préservez l'histoire de votre famille",
     images: [`${SITE_URL}/og.png`],
   },

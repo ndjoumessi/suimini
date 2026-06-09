@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
-export const metadata = { title: 'Confidentialité — Suimini' };
+export const metadata = { title: 'Confidentialité | Suimini' };
 
 export default function ConfidentialitePage() {
   return (
@@ -32,7 +32,7 @@ export default function ConfidentialitePage() {
           Pour toute question relative à vos données : <a href="mailto:hello@suimini.app" style={{ color: '#bf4b2c', fontWeight: 600 }}>hello@suimini.app</a>.
         </Section>
 
-        <p style={{ marginTop: '48px', fontSize: '12px', color: '#8a8276', fontFamily: 'var(--font-mono)' }}>© 2026 Suimini — Tous droits réservés</p>
+        <p style={{ marginTop: '48px', fontSize: '12px', color: '#8a8276', fontFamily: 'var(--font-mono)' }}>© 2026 Suimini · Tous droits réservés</p>
       </div>
     </main>
   );

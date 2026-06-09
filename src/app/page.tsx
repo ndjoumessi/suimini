@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import HomeGate from '@/components/HomeGate';
 
 const SITE = 'https://suimini.vercel.app';
-const TITLE = 'Suimini — Préservez l’histoire de votre famille';
-const DESCRIPTION = "L’arbre généalogique moderne — élégant, collaboratif et toujours avec vous. Créez votre arbre, importez du GEDCOM, explorez vos origines et partagez avec votre famille.";
+const TITLE = 'Suimini | Préservez l’histoire de votre famille';
+const DESCRIPTION = "L’arbre généalogique moderne : élégant, collaboratif et toujours avec vous. Créez votre arbre, importez du GEDCOM, explorez vos origines et partagez avec votre famille.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     siteName: 'Suimini',
     title: TITLE,
     description: DESCRIPTION,
-    images: [{ url: '/og.svg', width: 1200, height: 630, alt: 'Suimini — Arbre généalogique' }],
+    images: [{ url: '/og.svg', width: 1200, height: 630, alt: 'Suimini, arbre généalogique' }],
   },
   twitter: {
     card: 'summary_large_image',

@@ -13,8 +13,8 @@ interface PageProps { params: Promise<{ slug: string }> }
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const tree = await loadPublicTree(slug);
-  if (!tree) return { title: 'Arbre introuvable — Suimini', robots: { index: false, follow: false } };
-  const title = `${tree.name} — Arbre généalogique | Suimini`;
+  if (!tree) return { title: 'Arbre introuvable | Suimini', robots: { index: false, follow: false } };
+  const title = `${tree.name} | Arbre généalogique | Suimini`;
   const description = `Découvrez l'arbre généalogique « ${tree.name} » (${tree.persons.length} personne${tree.persons.length > 1 ? 's' : ''}), partagé via Suimini.`;
   const url = `https://suimini.vercel.app/arbre/${slug}`;
   return {
