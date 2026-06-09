@@ -79,6 +79,8 @@
       "subtitle": "The modern family tree — structured, collaborative, and always with you.",
       "cta": "Get started for free →",
       "enterApp": "Open the app",
+      "welcome": "Welcome back, {name} 👋",
+      "welcomeGeneric": "Welcome back 👋",
       "loginLink": "Already have an account? Sign in",
       "scrollAria": "Scroll down",
       "trust": {

@@ -8,7 +8,6 @@ import {
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/hooks/useAuth';
 import AuthModal from '@/components/AuthModal';
-import DemoBanner from '@/components/DemoBanner';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { BrandLockup } from '@/components/Brand';
 
@@ -129,11 +128,14 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 export default function Landing() {
   const t = useTranslations('landing');
   const ta = useTranslations('auth');
-  const { startDemo, exitDemo, user, isDemo, isApproved } = useAuth();
+  const { startDemo, user, isDemo, isApproved } = useAuth();
   // Approved members (or active demo) get a direct "Accéder à l'app" entry instead
   // of the sign-in CTAs — the landing stays visible, entry to /app is manual.
   const canEnterApp = isDemo || (!!user && isApproved);
   const goToApp = () => { if (typeof window !== 'undefined') window.location.href = '/app'; };
+  // Prénom pour l'accueil discret du hero (vide en démo ou sans nom → message générique).
+  const displayName = ((user?.user_metadata?.display_name as string | undefined) || '').trim();
+  const firstName = displayName ? displayName.split(/\s+/)[0] : '';
   const [showAuth, setShowAuth] = useState(false);
   const [authTab, setAuthTab] = useState<'login' | 'signup'>('signup');
 
@@ -142,7 +144,7 @@ export default function Landing() {
 
   return (
     <div className="lp-root">
-      {isDemo && <DemoBanner onCreateAccount={() => openAuth('signup')} onExit={exitDemo} />}
+      {/* La DemoBanner ne s'affiche que dans /app (rendue par SuiminiApp), pas sur la landing. */}
 
       {/* ===================== STICKY NAVBAR ===================== */}
       <nav className="lp-nav">
@@ -178,7 +180,10 @@ export default function Landing() {
           <Reveal delay={230}>
             <div className="lp-cta-row">
               {canEnterApp ? (
-                <button onClick={goToApp} className="lp-btn-primary lp-btn-hero">Accéder à l’app <ArrowRight size={18} /></button>
+                // Le bouton "Accéder à l'app" vit dans la navbar ; ici, juste un accueil discret.
+                <p className="lp-eyebrow" style={{ margin: 0 }}>
+                  {firstName ? t('hero.welcome', { name: firstName }) : t('hero.welcomeGeneric')}
+                </p>
               ) : (
                 <button onClick={startSignup} className="lp-btn-primary lp-btn-hero">{t('hero.cta')}</button>
               )}

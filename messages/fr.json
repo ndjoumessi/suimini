@@ -79,6 +79,8 @@
       "subtitle": "L'arbre généalogique moderne — structuré, collaboratif, et toujours avec vous.",
       "cta": "Commencer gratuitement →",
       "enterApp": "Accéder à l’app",
+      "welcome": "Bienvenue, {name} 👋",
+      "welcomeGeneric": "Bon retour parmi nous 👋",
       "loginLink": "Déjà un compte ? Se connecter",
       "scrollAria": "Faire défiler",
       "trust": {
