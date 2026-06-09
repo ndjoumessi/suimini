@@ -1,7 +1,7 @@
 'use client';
 import { useState, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
-import { Images, LayoutGrid, Rows3, ImageOff, X, ImageUp, Plus } from 'lucide-react';
+import { Images, LayoutGrid, Rows3, ImageOff, X, ImageUp, Plus, ScanFace } from 'lucide-react';
 import { FamilyTree, Person } from '@/types';
 import { getDisplayName, formatYear } from '@/lib/treeUtils';
 import { uploadAvatar } from '@/lib/uploadImage';
@@ -10,6 +10,8 @@ interface Props {
   tree: FamilyTree;
   onSelectPerson: (id: string) => void;
   onUpdatePerson?: (personId: string, updates: Partial<Person>) => void;
+  /** Open the AI face-recognition analyzer. */
+  onAnalyzePhoto?: () => void;
 }
 
 interface PhotoItem {
@@ -18,8 +20,9 @@ interface PhotoItem {
   isProfile: boolean;
 }
 
-export default function GalleryView({ tree, onSelectPerson, onUpdatePerson }: Props) {
+export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAnalyzePhoto }: Props) {
   const t = useTranslations('gallery');
+  const tp = useTranslations('photoAnalyzer');
   const [selected, setSelected] = useState<PhotoItem | null>(null);
   const [filterPersonId, setFilterPersonId] = useState<string>('');
   const [layout, setLayout] = useState<'grid' | 'masonry'>('grid');
@@ -94,6 +97,11 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson }: Pr
               ? <><LayoutGrid size={14} aria-hidden="true" /> {t('layoutGrid')}</>
               : <><Rows3 size={14} aria-hidden="true" /> {t('layoutMasonry')}</>}
           </button>
+          {onAnalyzePhoto && (
+            <button onClick={onAnalyzePhoto} className="btn btn-secondary btn-sm" style={{ gap: '6px' }}>
+              <ScanFace size={14} aria-hidden="true" /> {tp('galleryButton')}
+            </button>
+          )}
           {onUpdatePerson && tree.persons.length > 0 && (
             <button onClick={() => { setShowAdd(s => !s); setAddPersonId(''); }} className="btn btn-primary btn-sm" style={{ gap: '6px' }}>
               <Plus size={14} aria-hidden="true" /> {t('addPhoto')}

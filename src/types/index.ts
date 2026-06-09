@@ -97,6 +97,18 @@ export interface Person {
   updatedAt: string;
   tags?: string[];
   privacy?: 'public' | 'private' | 'family';
+  /** Faces tagged in photos that point to this person (from AI photo analysis). */
+  photoTags?: PhotoTag[];
+}
+
+/** Links a detected face in a photo to a person, with its position in the image. */
+export interface PhotoTag {
+  photoUrl: string;
+  personId: string;
+  /** Face position as percentages of the image (0–100). */
+  boundingBox?: { x: number; y: number; width: number; height: number };
+  confidence?: number;
+  taggedAt: string;
 }
 
 export interface Relationship {

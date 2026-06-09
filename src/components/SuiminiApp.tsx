@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useAdminData } from '@/hooks/useAdminData';
 import { useBirthdayNotifications } from '@/hooks/useBirthdayNotifications';
 import { supabase } from '@/lib/supabase';
-import { ViewMode, Person, FamilyTree } from '@/types';
+import { ViewMode, Person, FamilyTree, PhotoTag } from '@/types';
 import { generateId } from '@/lib/treeUtils';
 import Sidebar from './Sidebar';
 import BottomNav from './BottomNav';
@@ -29,6 +29,7 @@ import CommandPalette from './CommandPalette';
 import PresentationMode from './PresentationMode';
 import NarrativeModal from './NarrativeModal';
 import AddPersonModal from './AddPersonModal';
+import PhotoAnalyzer, { FaceAssignment } from './PhotoAnalyzer';
 import AdminDashboard from './AdminDashboard';
 import TreeSelectorModal from './TreeSelectorModal';
 import ImportExportModal from './ImportExportModal';
@@ -104,6 +105,46 @@ export default function SuiminiApp() {
     setToasts(prev => [...prev, { id, msg, type: t }].slice(-3)); // queue, max 3
   }, []);
   const dismissToast = useCallback((id: number) => setToasts(prev => prev.filter(t => t.id !== id)), []);
+
+  // --- AI photo analysis (face recognition) ---
+  const tPhoto = useTranslations('photoAnalyzer');
+  const [photoAnalyzer, setPhotoAnalyzer] = useState<{ open: boolean; personId?: string }>({ open: false });
+  const openPhotoAnalyzer = useCallback((personId?: string) => setPhotoAnalyzer({ open: true, personId }), []);
+
+  // Apply the photo + face tags atomically (one tree update; creates "new member" persons as needed).
+  const handlePhotoTags = useCallback((photoUrl: string, assignments: FaceAssignment[]) => {
+    const tree = store.activeTree;
+    if (!tree) return;
+    const now = new Date().toISOString();
+    let persons = [...tree.persons];
+
+    // Resolve each assignment to a concrete personId (creating new members on the fly).
+    const targets = assignments.map(a => {
+      if (a.value === 'new') {
+        const np: Person = {
+          id: generateId(), firstName: '', lastName: '', gender: a.gender, isAlive: true,
+          profilePhoto: photoUrl, photos: [], createdAt: now, updatedAt: now,
+        };
+        persons.push(np);
+        return { personId: np.id, box: a.boundingBox, confidence: a.confidence };
+      }
+      return { personId: a.value, box: a.boundingBox, confidence: a.confidence };
+    });
+
+    const tagged = new Set<string>();
+    for (const tg of targets) {
+      persons = persons.map(p => {
+        if (p.id !== tg.personId) return p;
+        const photos = (p.photos || []).includes(photoUrl) ? (p.photos || []) : [...(p.photos || []), photoUrl];
+        const tag: PhotoTag = { photoUrl, personId: tg.personId, boundingBox: tg.box, confidence: tg.confidence ?? undefined, taggedAt: now };
+        return { ...p, photos, photoTags: [...(p.photoTags || []), tag], updatedAt: now };
+      });
+      tagged.add(tg.personId);
+    }
+
+    store.updateTree({ ...tree, persons });
+    showToast(tagged.size > 0 ? tPhoto('saved', { count: tagged.size }) : tPhoto('savedNone'));
+  }, [store, showToast, tPhoto]);
 
   // Surface a failed magic-link exchange + any pending toast (e.g. after password reset).
   useEffect(() => {
@@ -278,6 +319,7 @@ export default function SuiminiApp() {
             onNewTree={() => setShowTreeSelector(true)}
             onSelectPerson={(treeId, personId) => { if (treeId !== store.activeTreeId) store.switchTree(treeId); handleSelectPerson(personId); }}
             onNarrative={() => setShowNarrative(true)}
+            onAnalyzePhoto={() => openPhotoAnalyzer()}
           />
         ) : view === 'tree' && !store.activeTree ? (
           // The tree view is the only one that genuinely needs an active tree.
@@ -288,7 +330,7 @@ export default function SuiminiApp() {
             {view === 'list' && <ListView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} onAddPerson={() => setShowAddPerson(true)} />}
             {view === 'timeline' && <TimelineView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} />}
             {view === 'map' && <MapView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} />}
-            {view === 'gallery' && <GalleryView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} onUpdatePerson={(id, updates) => { store.updatePerson(id, updates); showToast('Photo ajoutée'); }} />}
+            {view === 'gallery' && <GalleryView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} onUpdatePerson={(id, updates) => { store.updatePerson(id, updates); showToast('Photo ajoutée'); }} onAnalyzePhoto={() => openPhotoAnalyzer()} />}
             {view === 'journal' && (
               <JournalView
                 tree={store.activeTree ?? emptyTree}
@@ -346,6 +388,17 @@ export default function SuiminiApp() {
           onAddRelationship={store.addRelationship}
           onUpdateRelationship={(id, updates) => { store.updateRelationship(id, updates); showToast('Relation mise à jour'); }}
           onDeleteRelationship={(id) => { store.deleteRelationship(id); showToast('Relation supprimée', 'info'); }}
+          onAnalyzePhoto={() => openPhotoAnalyzer(selectedPerson.id)}
+        />
+      )}
+
+      {/* AI face recognition */}
+      {photoAnalyzer.open && store.activeTree && (
+        <PhotoAnalyzer
+          tree={store.activeTree}
+          preselectPersonId={photoAnalyzer.personId}
+          onClose={() => setPhotoAnalyzer({ open: false })}
+          onConfirm={handlePhotoTags}
         />
       )}
 

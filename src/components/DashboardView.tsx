@@ -3,7 +3,7 @@ import { useMemo, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import {
   Home, Cake, Clock, Sparkles, Sprout, User, Smile,
-  TreePine, Users, Map, Calendar, BookOpen, BarChart2,
+  TreePine, Users, Map, Calendar, BookOpen, BarChart2, ScanFace,
 } from 'lucide-react';
 import { FamilyTree, ViewMode } from '@/types';
 import {
@@ -21,6 +21,8 @@ interface Props {
   onSelectPerson: (treeId: string, personId: string) => void;
   /** Open the AI narrative report modal (active tree). */
   onNarrative: () => void;
+  /** Open the AI face-recognition photo analyzer. */
+  onAnalyzePhoto: () => void;
 }
 
 /** Locale-aware coarse relative time (past only), e.g. "2 days ago" / "il y a 2 jours". */
@@ -76,9 +78,10 @@ function EmptyLine({ children }: { children: ReactNode }) {
   return <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: 0 }}>{children}</p>;
 }
 
-export default function DashboardView({ trees, displayName, userEmail, onNavigate, onNewTree, onSelectPerson, onNarrative }: Props) {
+export default function DashboardView({ trees, displayName, userEmail, onNavigate, onNewTree, onSelectPerson, onNarrative, onAnalyzePhoto }: Props) {
   const t = useTranslations('dashboard');
   const tn = useTranslations('nav');
+  const tp = useTranslations('photoAnalyzer');
   const locale = useLocale();
   const firstName = firstNameOf(displayName, userEmail);
   const today = useMemo(() => {
@@ -267,6 +270,16 @@ export default function DashboardView({ trees, displayName, userEmail, onNavigat
               {t('narrativeNeedsTree')}
             </p>
           )}
+        </Card>
+
+        {/* G — Reconnaissance IA */}
+        <Card eyebrow={tp('cardTitle')} title={tp('title')} Icon={ScanFace} delay={0.6}>
+          <p style={{ margin: '0 0 14px', color: 'var(--text-muted)', fontSize: '13px' }}>
+            {tp('subtitle')}
+          </p>
+          <button onClick={onAnalyzePhoto} className="btn btn-primary btn-sm" style={{ gap: '7px' }}>
+            <ScanFace size={15} aria-hidden="true" /> {tp('analyzeAPhoto')}
+          </button>
         </Card>
       </div>
 

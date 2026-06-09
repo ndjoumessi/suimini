@@ -4,7 +4,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Person, FamilyTree, Relationship, RelationType, FamilyEvent, EventType, Note, Citation, DnaOrigin } from '@/types';
 import { getParents, getChildren, getSpouses, getSiblings, getAge, formatDate, formatYear, getDisplayName, generateId, safeHttpUrl } from '@/lib/treeUtils';
 import PersonForm from './PersonForm';
-import { X, Pencil, Trash2, User, Clock, Users, Calendar, StickyNote, BookOpen, Lightbulb, Link2, AlertCircle, Dna, FileText, Images } from 'lucide-react';
+import { X, Pencil, Trash2, User, Clock, Users, Calendar, StickyNote, BookOpen, Lightbulb, Link2, AlertCircle, Dna, FileText, Images, ScanFace } from 'lucide-react';
 
 interface Props {
   person: Person;
@@ -16,6 +16,8 @@ interface Props {
   onAddRelationship: (rel: Omit<Relationship, 'id'>) => Relationship | null;
   onUpdateRelationship: (relId: string, updates: Partial<Relationship>) => void;
   onDeleteRelationship: (relId: string) => void;
+  /** Open the AI face-recognition analyzer, pre-selecting this person. */
+  onAnalyzePhoto?: () => void;
 }
 
 const EVENT_TYPES: EventType[] = ['birth','death','marriage','divorce','baptism','graduation','military','immigration','other'];
@@ -25,8 +27,9 @@ const KNOWN_EVENT_TYPES = new Set<string>(EVENT_TYPES);
 const REL_TYPES: RelationType[] = ['spouse', 'partner', 'parent', 'child', 'sibling'];
 const REL_LABEL_KEYS: Record<RelationType, string> = { spouse: 'relSpouse', partner: 'relPartner', parent: 'relParent', child: 'relChild', sibling: 'relSibling' };
 
-export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete, onSelectPerson, onAddRelationship, onUpdateRelationship, onDeleteRelationship }: Props) {
+export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete, onSelectPerson, onAddRelationship, onUpdateRelationship, onDeleteRelationship, onAnalyzePhoto }: Props) {
   const t = useTranslations('personPanel');
+  const tp = useTranslations('photoAnalyzer');
   const locale = useLocale();
   const relLabel = (type: RelationType) => t(REL_LABEL_KEYS[type]);
   const eventTypeLabel = (type: string) =>
@@ -620,6 +623,11 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
 
         {tab==='gallery' && (
           <div className="animate-fade-in">
+            {onAnalyzePhoto && (
+              <button onClick={onAnalyzePhoto} className="btn btn-secondary btn-sm" style={{ width:'100%', justifyContent:'center', gap:'7px', marginBottom:'12px' }}>
+                <ScanFace size={14} aria-hidden="true" /> {tp('analyzeAPhoto')}
+              </button>
+            )}
             {(person.photos && person.photos.length > 0) ? (
               <div style={{ display:'grid', gridTemplateColumns:'repeat(2, 1fr)', gap:'8px' }}>
                 {person.photos.map((url, i) => (
