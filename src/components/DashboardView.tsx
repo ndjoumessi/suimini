@@ -121,6 +121,15 @@ export default function DashboardView({ trees, displayName, userEmail, onNavigat
 
   const hasTrees = trees.length > 0;
 
+  // Stat captions: locale-aware and singular/plural-correct (avoids "1 ARBRES").
+  const en = locale === 'en';
+  const statLabels = {
+    persons: en ? (summary.totalPersons > 1 ? 'People' : 'Person') : (summary.totalPersons > 1 ? 'Personnes' : 'Personne'),
+    trees: en ? (summary.totalTrees > 1 ? 'Trees' : 'Tree') : (summary.totalTrees > 1 ? 'Arbres' : 'Arbre'),
+    generations: en ? 'Generations' : 'Générations',
+    elder: en ? 'Eldest' : 'Doyen·ne',
+  };
+
   const QUICK: { view: ViewMode; Icon: typeof Home; navKey: string }[] = [
     { view: 'tree', Icon: TreePine, navKey: 'tree' },
     { view: 'list', Icon: Users, navKey: 'persons' },
@@ -141,7 +150,7 @@ export default function DashboardView({ trees, displayName, userEmail, onNavigat
               <div className="label" style={{ color: 'var(--accent)', marginBottom: '8px' }}>{today}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <h2 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 'clamp(1.6rem, 4vw, 2.4rem)', letterSpacing: '-0.02em', lineHeight: 1.05 }}>
-                  {t('greeting', { name: firstName || (locale === 'en' ? 'welcome' : 'bienvenue') })}
+                  {firstName ? t('greeting', { name: firstName }) : t('greetingGeneric')}
                 </h2>
                 <Smile size={32} strokeWidth={1.75} style={{ color: 'var(--accent)', flexShrink: 0 }} aria-hidden="true" />
               </div>
@@ -218,12 +227,13 @@ export default function DashboardView({ trees, displayName, userEmail, onNavigat
         {/* D — Statistiques rapides */}
         <Card eyebrow="En un coup d'œil" title={t('stats')} Icon={BarChart2} delay={0.3}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '18px 12px' }}>
-            <Stat value={summary.totalPersons} label="Personnes" />
-            <Stat value={summary.totalTrees} label="Arbres" />
-            <Stat value={summary.oldestGeneration || '—'} label="Générations" />
+            <Stat value={summary.totalPersons} label={statLabels.persons} />
+            <Stat value={summary.totalTrees} label={statLabels.trees} />
+            <Stat value={summary.oldestGeneration || '—'} label={statLabels.generations} />
             <Stat
               value={summary.oldest ? summary.oldest.age : '—'}
-              label={summary.oldest ? `Doyen·ne · ${summary.oldest.name}` : 'Doyen·ne'}
+              label={statLabels.elder}
+              sublabel={summary.oldest ? summary.oldest.name : undefined}
             />
           </div>
         </Card>
@@ -291,14 +301,22 @@ export default function DashboardView({ trees, displayName, userEmail, onNavigat
   );
 }
 
-/** Big terracotta figure + mono caption. */
-function Stat({ value, label }: { value: string | number; label: string }) {
+/** Big terracotta figure + mono caption, with an optional wrapping sub-label. */
+function Stat({ value, label, sublabel }: { value: string | number; label: string; sublabel?: string }) {
   return (
     <div style={{ minWidth: 0 }}>
       <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 6vw, 3rem)', fontWeight: 700, lineHeight: 1, color: 'var(--accent)' }}>
         {value}
       </div>
       <div className="label" style={{ marginTop: '6px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</div>
+      {sublabel && (
+        <div
+          title={sublabel}
+          style={{ marginTop: '3px', fontSize: '12.5px', color: 'var(--text)', lineHeight: 1.3, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}
+        >
+          {sublabel}
+        </div>
+      )}
     </div>
   );
 }

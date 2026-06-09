@@ -518,6 +518,7 @@
   },
   "dashboard": {
     "greeting": "Bonjour, {name}",
+    "greetingGeneric": "Bonjour !",
     "date": "Aujourd'hui",
     "noTree": "Commencez à bâtir votre histoire familiale.",
     "createFirst": "Créer mon premier arbre",
