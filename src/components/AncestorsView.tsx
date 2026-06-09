@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { FamilyTree, Person } from '@/types';
 import { Search, Link2, Scale, TreePine, Sprout, User, AlertCircle, Dna } from 'lucide-react';
 import {
@@ -8,10 +9,10 @@ import {
 } from '@/lib/treeUtils';
 
 const MODE_META = {
-  relation: { Icon: Link2, label: 'Lien de parenté' },
-  compare: { Icon: Scale, label: 'Comparer' },
-  ancestors: { Icon: TreePine, label: 'Ancêtres' },
-  descendants: { Icon: Sprout, label: 'Descendants' },
+  relation: { Icon: Link2, labelKey: 'modeRelation' },
+  compare: { Icon: Scale, labelKey: 'modeCompare' },
+  ancestors: { Icon: TreePine, labelKey: 'modeAncestors' },
+  descendants: { Icon: Sprout, labelKey: 'modeDescendants' },
 } as const;
 
 interface Props {
@@ -20,6 +21,7 @@ interface Props {
 }
 
 export default function AncestorsView({ tree, onSelectPerson }: Props) {
+  const t = useTranslations('ancestors');
   const [person1Id, setPerson1Id] = useState('');
   const [person2Id, setPerson2Id] = useState('');
   const [mode, setMode] = useState<'relation' | 'compare' | 'ancestors' | 'descendants'>('relation');
@@ -62,12 +64,12 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)' }}>
         <h2 className="serif" style={{ margin: '0 0 10px', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Search size={18} aria-hidden="true" /> Exploration familiale
+          <Search size={18} aria-hidden="true" /> {t('title')}
         </h2>
         {/* Mode selector */}
         <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', flexWrap: 'wrap' }}>
           {(['relation','compare','ancestors','descendants'] as const).map(m => {
-            const { Icon, label } = MODE_META[m];
+            const { Icon, labelKey } = MODE_META[m];
             return (
             <button
               key={m}
@@ -78,7 +80,7 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
                 color: mode === m ? 'white' : 'var(--text-muted)',
               }}
             >
-              <Icon size={14} aria-hidden="true" /> {label}
+              <Icon size={14} aria-hidden="true" /> {t(labelKey)}
             </button>
           ); })}
         </div>
@@ -87,10 +89,10 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: '200px' }}>
             <label style={{ fontSize: '11px', color: 'var(--text-light)', display: 'block', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              {dual ? 'Personne A' : 'Personne'}
+              {dual ? t('personA') : t('person')}
             </label>
             <select value={person1Id} onChange={e => setPerson1Id(e.target.value)} className="input">
-              <option value="">Choisir...</option>
+              <option value="">{t('choosePlaceholder')}</option>
               {tree.persons.map(p => (
                 <option key={p.id} value={p.id}>{getDisplayName(p)} {p.birthDate ? `(${formatYear(p.birthDate)})` : ''}</option>
               ))}
@@ -102,10 +104,10 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
               <div style={{ color: 'var(--text-muted)', fontSize: '20px', paddingTop: '20px' }}>⟷</div>
               <div style={{ flex: 1, minWidth: '200px' }}>
                 <label style={{ fontSize: '11px', color: 'var(--text-light)', display: 'block', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Personne B
+                  {t('personB')}
                 </label>
                 <select value={person2Id} onChange={e => setPerson2Id(e.target.value)} className="input">
-                  <option value="">Choisir...</option>
+                  <option value="">{t('choosePlaceholder')}</option>
                   {tree.persons.filter(p => p.id !== person1Id).map(p => (
                     <option key={p.id} value={p.id}>{getDisplayName(p)} {p.birthDate ? `(${formatYear(p.birthDate)})` : ''}</option>
                   ))}
@@ -137,13 +139,13 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
                       </div>
                       {relationPath && (
                         <div style={{ fontSize: '11px', color: 'var(--text-light)', marginTop: '4px' }}>
-                          {relationPath.length - 1} degré{relationPath.length > 2 ? 's' : ''} de parenté
+                          {t('degrees', { count: relationPath.length - 1 })}
                         </div>
                       )}
                     </>
                   ) : (
                     <div style={{ color: 'var(--text-muted)', fontSize: '13px', padding: '8px', display: 'flex', alignItems: 'center', gap: '5px', justifyContent: 'center' }}>
-                      <AlertCircle size={14} aria-hidden="true" /> Aucun lien familial trouvé
+                      <AlertCircle size={14} aria-hidden="true" /> {t('noFamilyLink')}
                     </div>
                   )}
                 </div>
@@ -154,7 +156,7 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
             {/* Path */}
             {pathPersons.length > 2 && (
               <div className="card" style={{ padding: '16px', marginBottom: '16px' }}>
-                <h3 className="serif" style={{ margin: '0 0 12px', fontSize: '1rem' }}>Chemin de parenté</h3>
+                <h3 className="serif" style={{ margin: '0 0 12px', fontSize: '1rem' }}>{t('kinshipPath')}</h3>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                   {pathPersons.map((p, i) => (
                     <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -186,7 +188,7 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
             {commonAncestors.length > 0 && (
               <div className="card" style={{ padding: '16px' }}>
                 <h3 className="serif" style={{ margin: '0 0 12px', fontSize: '1rem' }}>
-                  Ancêtres communs ({commonAncestors.length})
+                  {t('commonAncestors', { count: commonAncestors.length })}
                 </h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '8px' }}>
                   {commonAncestors.map(p => (
@@ -208,22 +210,22 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
                 <div style={{ marginBottom: '4px', display: 'flex', justifyContent: 'center', color: 'var(--accent)' }}><Scale size={20} aria-hidden="true" /></div>
                 {relation
                   ? <span className="badge badge-accent" style={{ fontSize: '12px' }}>{relation}</span>
-                  : <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Aucun lien direct</span>}
+                  : <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{t('noDirectLink')}</span>}
               </div>
               <PersonBubble person={person2} onClick={() => onSelectPerson(person2.id)} />
             </div>
 
             {/* Attribute comparison */}
             <div className="card" style={{ padding: '16px', marginBottom: '16px' }}>
-              <h3 className="serif" style={{ margin: '0 0 4px', fontSize: '1rem' }}>Comparaison des fiches</h3>
+              <h3 className="serif" style={{ margin: '0 0 4px', fontSize: '1rem' }}>{t('compareFichesTitle')}</h3>
               <div style={{ fontSize: '11px', color: 'var(--text-light)', marginBottom: '12px' }}>
-                <span style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '2px', background: 'var(--success)', verticalAlign: 'middle', marginRight: '4px' }} /> point commun
-                &nbsp;·&nbsp; valeurs différentes en neutre
+                <span style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '2px', background: 'var(--success)', verticalAlign: 'middle', marginRight: '4px' }} /> {t('legendCommon')}
+                &nbsp;·&nbsp; {t('legendDifferent')}
               </div>
               {COMPARE_FIELDS.map(f => {
-                const a = f.get(person1); const b = f.get(person2);
+                const a = f.get(person1, t); const b = f.get(person2, t);
                 const same = !!a && !!b && a.toLowerCase() === b.toLowerCase();
-                return <CompareRow key={f.label} label={f.label} a={a} b={b} same={same} />;
+                return <CompareRow key={f.labelKey} label={t(f.labelKey)} a={a} b={b} same={same} />;
               })}
             </div>
 
@@ -238,7 +240,7 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
               );
               return (
                 <div className="card" style={{ padding: '16px', marginBottom: '16px' }}>
-                  <h3 className="serif" style={{ margin: '0 0 12px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '7px' }}><Dna size={16} aria-hidden="true" /> Origines &amp; ADN</h3>
+                  <h3 className="serif" style={{ margin: '0 0 12px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '7px' }}><Dna size={16} aria-hidden="true" /> {t('originsAndDna')}</h3>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignContent: 'flex-start' }}>
                       {(person1.dnaOrigins || []).length === 0 ? <span style={{ fontSize: '12px', color: 'var(--text-light)' }}>—</span>
@@ -256,10 +258,10 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
             {/* Common ancestors */}
             <div className="card" style={{ padding: '16px' }}>
               <h3 className="serif" style={{ margin: '0 0 12px', fontSize: '1rem' }}>
-                Ancêtres communs ({commonAncestors.length})
+                {t('commonAncestors', { count: commonAncestors.length })}
               </h3>
               {commonAncestors.length === 0 ? (
-                <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Aucun ancêtre commun trouvé.</div>
+                <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{t('noCommonAncestor')}</div>
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '8px' }}>
                   {commonAncestors.map(p => <PersonCard key={p.id} person={p} onClick={() => onSelectPerson(p.id)} />)}
@@ -274,13 +276,16 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
           <div className="animate-fade-in">
             <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
-                <strong>{ancestors.length}</strong> ancêtres trouvés pour{' '}
-                <strong>{getDisplayName(person1!)}</strong>
+                {t.rich('ancestorsFoundFor', {
+                  count: ancestors.length,
+                  name: getDisplayName(person1!),
+                  strong: (chunks) => <strong>{chunks}</strong>,
+                })}
               </div>
             </div>
             {ancestors.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                Aucun ancêtre enregistré
+                {t('noAncestorRecorded')}
               </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '8px' }}>
@@ -297,13 +302,16 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
           <div className="animate-fade-in">
             <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
-                <strong>{descendants.length}</strong> descendant{descendants.length !== 1 ? 's' : ''} trouvé{descendants.length !== 1 ? 's' : ''} pour{' '}
-                <strong>{getDisplayName(person1!)}</strong>
+                {t.rich('descendantsFoundFor', {
+                  count: descendants.length,
+                  name: getDisplayName(person1!),
+                  strong: (chunks) => <strong>{chunks}</strong>,
+                })}
               </div>
             </div>
             {descendants.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                Aucun descendant enregistré
+                {t('noDescendantRecorded')}
               </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '8px' }}>
@@ -321,8 +329,8 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
               {(() => { const { Icon } = MODE_META[mode]; return <Icon size={48} strokeWidth={1.2} aria-hidden="true" />; })()}
             </div>
             <p>{!person1Id
-              ? 'Sélectionnez une personne pour commencer'
-              : 'Sélectionnez une seconde personne à comparer'}</p>
+              ? t('selectFirstPrompt')
+              : t('selectSecondPrompt')}</p>
           </div>
         )}
       </div>
@@ -393,16 +401,17 @@ function PersonCard({ person, onClick }: { person: Person; onClick: () => void }
   );
 }
 
-const COMPARE_FIELDS: { label: string; get: (p: Person) => string }[] = [
-  { label: 'Sexe', get: p => p.gender === 'male' ? 'Homme' : p.gender === 'female' ? 'Femme' : p.gender === 'other' ? 'Autre' : '' },
-  { label: 'Naissance', get: p => formatYear(p.birthDate) },
-  { label: 'Lieu de naissance', get: p => p.birthPlace?.city || '' },
-  { label: 'Statut', get: p => p.isAlive ? 'Vivant' : 'Décédé' },
-  { label: 'Décès', get: p => p.deathDate ? formatYear(p.deathDate) : '' },
-  { label: 'Lieu de décès', get: p => p.deathPlace?.city || '' },
-  { label: 'Profession', get: p => p.occupation || '' },
-  { label: 'Nationalité', get: p => p.nationality || '' },
-  { label: 'Religion', get: p => p.religion || '' },
+type CompareT = (key: string) => string;
+const COMPARE_FIELDS: { labelKey: string; get: (p: Person, t: CompareT) => string }[] = [
+  { labelKey: 'fieldSex', get: (p, t) => p.gender === 'male' ? t('valueMale') : p.gender === 'female' ? t('valueFemale') : p.gender === 'other' ? t('valueOther') : '' },
+  { labelKey: 'fieldBirth', get: p => formatYear(p.birthDate) },
+  { labelKey: 'fieldBirthPlace', get: p => p.birthPlace?.city || '' },
+  { labelKey: 'fieldStatus', get: (p, t) => p.isAlive ? t('valueAlive') : t('valueDeceased') },
+  { labelKey: 'fieldDeath', get: p => p.deathDate ? formatYear(p.deathDate) : '' },
+  { labelKey: 'fieldDeathPlace', get: p => p.deathPlace?.city || '' },
+  { labelKey: 'fieldOccupation', get: p => p.occupation || '' },
+  { labelKey: 'fieldNationality', get: p => p.nationality || '' },
+  { labelKey: 'fieldReligion', get: p => p.religion || '' },
 ];
 
 function CompareRow({ label, a, b, same }: { label: string; a: string; b: string; same: boolean }) {

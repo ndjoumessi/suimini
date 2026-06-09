@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { MapPin } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -69,6 +70,7 @@ function FitBounds({ groups }: { groups: MarkerGroup[] }) {
 
 export default function MapView({ tree, onSelectPerson }: Props) {
   // Rendered client-only (loaded via next/dynamic with ssr:false), so leaflet is safe to use directly.
+  const t = useTranslations('mapView');
   const [filter, setFilter] = useState<'all' | Kind>('all');
 
   const allPoints = useMemo<GeoPoint[]>(() => {
@@ -103,20 +105,20 @@ export default function MapView({ tree, onSelectPerson }: Props) {
       <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
         <h2 className="serif" style={{ margin: 0, fontSize: '1.1rem', flex: 1, minWidth: '120px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <MapPin size={18} style={{ color: 'var(--accent)', flexShrink: 0 }} aria-hidden="true" />
-          Carte des lieux
+          {t('title')}
         </h2>
         <div style={{ display: 'flex', gap: '4px' }}>
-          {([['all', 'Tous'], ['birth', 'Naissances'], ['death', 'Décès']] as [typeof filter, string][]).map(([f, label]) => (
+          {([['all', 'filterAll'], ['birth', 'filterBirth'], ['death', 'filterDeath']] as [typeof filter, string][]).map(([f, labelKey]) => (
             <button key={f} onClick={() => setFilter(f)} aria-pressed={filter === f} className="btn btn-sm" style={{
               background: filter === f ? 'var(--accent-light)' : 'var(--bg-muted)',
               color: filter === f ? 'var(--accent)' : 'var(--text-muted)',
               border: `1px solid ${filter === f ? 'var(--accent)' : 'var(--border)'}`,
               fontWeight: filter === f ? 700 : 400,
-            }}>{label}</button>
+            }}>{t(labelKey)}</button>
           ))}
         </div>
         <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-          {totalLocated} / {tree.persons.length} localisés
+          {t('located', { located: totalLocated, total: tree.persons.length })}
         </span>
       </div>
 
@@ -140,7 +142,7 @@ export default function MapView({ tree, onSelectPerson }: Props) {
                     <div style={{ minWidth: '180px', maxHeight: '240px', overflowY: 'auto' }}>
                       {group.points.length > 1 && (
                         <div style={{ fontWeight: 700, fontSize: '13px', marginBottom: '8px', fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <MapPin size={13} aria-hidden="true" /> {group.points[0].place || 'Ce lieu'} · {group.points.length} événements
+                          <MapPin size={13} aria-hidden="true" /> {group.points[0].place || t('thisPlace')} · {t('events', { count: group.points.length })}
                         </div>
                       )}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -158,7 +160,7 @@ export default function MapView({ tree, onSelectPerson }: Props) {
                             <div>
                               <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text)' }}>{getDisplayName(pt.person)}</div>
                               <div style={{ fontSize: '11px', color: '#6b6560' }}>
-                                {pt.kind === 'birth' ? 'Naissance' : 'Décès'}{pt.year ? ` · ${pt.year}` : ''}
+                                {pt.kind === 'birth' ? t('birth') : t('death')}{pt.year ? ` · ${pt.year}` : ''}
                               </div>
                               {pt.place && <div style={{ fontSize: '11px', color: '#a09890', display: 'flex', alignItems: 'center', gap: '4px' }}><MapPin size={11} aria-hidden="true" /> {pt.place}</div>}
                             </div>
@@ -173,9 +175,9 @@ export default function MapView({ tree, onSelectPerson }: Props) {
           ) : (
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', color: 'var(--text-muted)', padding: '24px' }}>
               <MapPin size={48} strokeWidth={1.25} style={{ color: 'var(--text-light)' }} aria-hidden="true" />
-              <h3 style={{ margin: 0, color: 'var(--text)' }}>Aucun lieu à afficher</h3>
+              <h3 style={{ margin: 0, color: 'var(--text)' }}>{t('emptyTitle')}</h3>
               <p style={{ maxWidth: '360px', textAlign: 'center', margin: 0 }}>
-                Renseignez une ville de naissance ou de décès pour les membres afin de les voir apparaître sur la carte.
+                {t('emptyDescription')}
               </p>
             </div>
         )}

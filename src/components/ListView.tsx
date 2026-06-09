@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { FamilyTree, SearchFilters } from '@/types';
 import { searchPersons, getAge, formatYear, getDisplayName } from '@/lib/treeUtils';
 import { UsersRound, Plus, ChevronDown, Filter, X, MapPin, User } from 'lucide-react';
@@ -13,6 +14,7 @@ interface Props {
 const BATCH = 50;
 
 export default function ListView({ tree, onSelectPerson, onAddPerson }: Props) {
+  const t = useTranslations('list');
   const [filters, setFilters] = useState<SearchFilters>({});
   const [sortBy, setSortBy] = useState<'name' | 'birth' | 'death'>('name');
   const [showFilters, setShowFilters] = useState(false);
@@ -35,24 +37,24 @@ export default function ListView({ tree, onSelectPerson, onAddPerson }: Props) {
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
           <h2 className="serif" style={{ margin: 0, fontSize: '1.1rem', flex: 1 }}>
-            Personnes — {tree.name}
+            {t('title')} — {tree.name}
           </h2>
           <button onClick={() => setShowFilters(!showFilters)} className="btn btn-secondary btn-sm" style={{ gap: '6px' }} aria-expanded={showFilters}>
-            <Filter size={14} aria-hidden="true" /> Filtres
-            {(() => { const n = Object.keys(filters).filter(k => filters[k as keyof SearchFilters] !== undefined).length; return n > 0 ? <span className="badge badge-accent" style={{ marginLeft: '2px' }} aria-label={`${n} filtre${n > 1 ? 's' : ''} actif${n > 1 ? 's' : ''}`}>{n}</span> : null; })()}
+            <Filter size={14} aria-hidden="true" /> {t('filters')}
+            {(() => { const n = Object.keys(filters).filter(k => filters[k as keyof SearchFilters] !== undefined).length; return n > 0 ? <span className="badge badge-accent" style={{ marginLeft: '2px' }} aria-label={t('activeFilters', { count: n })}>{n}</span> : null; })()}
           </button>
           <select value={sortBy} onChange={e => setSortBy(e.target.value as typeof sortBy)} className="input" style={{ width: 'auto' }}>
-            <option value="name">Trier : Nom</option>
-            <option value="birth">Trier : Naissance</option>
-            <option value="death">Trier : Décès</option>
+            <option value="name">{t('sortName')}</option>
+            <option value="birth">{t('sortBirth')}</option>
+            <option value="death">{t('sortDeath')}</option>
           </select>
-          <button onClick={onAddPerson} className="btn btn-primary btn-sm" style={{ gap: '6px' }}><Plus size={14} aria-hidden="true" /> Ajouter</button>
+          <button onClick={onAddPerson} className="btn btn-primary btn-sm" style={{ gap: '6px' }}><Plus size={14} aria-hidden="true" /> {t('add')}</button>
         </div>
 
         <input
           value={filters.query || ''}
           onChange={e => setFilters(f => ({ ...f, query: e.target.value || undefined }))}
-          placeholder="Rechercher par nom, profession, biographie…"
+          placeholder={t('searchPlaceholder')}
           className="input"
         />
 
@@ -63,49 +65,49 @@ export default function ListView({ tree, onSelectPerson, onAddPerson }: Props) {
               onChange={e => setFilters(f => ({ ...f, gender: e.target.value as typeof filters.gender || undefined }))}
               className="input" style={{ width: 'auto' }}
             >
-              <option value="">Tous sexes</option>
-              <option value="male">Hommes</option>
-              <option value="female">Femmes</option>
-              <option value="other">Autre</option>
+              <option value="">{t('allGenders')}</option>
+              <option value="male">{t('males')}</option>
+              <option value="female">{t('females')}</option>
+              <option value="other">{t('genderOther')}</option>
             </select>
             <select
               value={filters.isAlive === undefined ? '' : filters.isAlive ? 'true' : 'false'}
               onChange={e => setFilters(f => ({ ...f, isAlive: e.target.value === '' ? undefined : e.target.value === 'true' }))}
               className="input" style={{ width: 'auto' }}
             >
-              <option value="">Tous</option>
-              <option value="true">Vivants</option>
-              <option value="false">Décédés</option>
+              <option value="">{t('allStatuses')}</option>
+              <option value="true">{t('alivePlural')}</option>
+              <option value="false">{t('deceasedPlural')}</option>
             </select>
             <input
               type="number"
               value={filters.birthYearFrom || ''}
               onChange={e => setFilters(f => ({ ...f, birthYearFrom: e.target.value ? +e.target.value : undefined }))}
-              placeholder="Né après..."
+              placeholder={t('bornAfter')}
               className="input" style={{ width: '120px' }}
             />
             <input
               type="number"
               value={filters.birthYearTo || ''}
               onChange={e => setFilters(f => ({ ...f, birthYearTo: e.target.value ? +e.target.value : undefined }))}
-              placeholder="Né avant..."
+              placeholder={t('bornBefore')}
               className="input" style={{ width: '120px' }}
             />
             <input
               value={filters.birthPlace || ''}
               onChange={e => setFilters(f => ({ ...f, birthPlace: e.target.value || undefined }))}
-              placeholder="Lieu de naissance..."
+              placeholder={t('birthPlacePlaceholder')}
               className="input" style={{ width: '160px' }}
             />
-            <button onClick={() => setFilters({})} className="btn btn-ghost btn-sm" style={{ gap: '6px' }}><X size={14} aria-hidden="true" /> Réinitialiser</button>
+            <button onClick={() => setFilters({})} className="btn btn-ghost btn-sm" style={{ gap: '6px' }}><X size={14} aria-hidden="true" /> {t('reset')}</button>
           </div>
         )}
       </div>
 
       {/* Results count */}
       <div style={{ padding: '8px 16px', background: 'var(--bg-muted)', borderBottom: '1px solid var(--border)', fontSize: '12px', color: 'var(--text-muted)' }}>
-        {sorted.length} personne{sorted.length !== 1 ? 's' : ''} trouvée{sorted.length !== 1 ? 's' : ''}
-        {filtered.length !== tree.persons.length && ` sur ${tree.persons.length}`}
+        {t('found', { count: sorted.length })}
+        {filtered.length !== tree.persons.length && ` ${t('outOf', { total: tree.persons.length })}`}
       </div>
 
       {/* List */}
@@ -114,11 +116,11 @@ export default function ListView({ tree, onSelectPerson, onAddPerson }: Props) {
           <div style={{ textAlign: 'center', padding: '56px 24px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
             <UsersRound size={56} strokeWidth={1.25} style={{ color: 'var(--text-light)' }} aria-hidden="true" />
             <div>
-              <h3 style={{ margin: '0 0 4px' }}>Aucune personne trouvée</h3>
-              <p style={{ margin: 0 }}>{tree.persons.length === 0 ? 'Cet arbre est vide.' : 'Aucun résultat avec ces filtres.'}</p>
+              <h3 style={{ margin: '0 0 4px' }}>{t('emptyTitle')}</h3>
+              <p style={{ margin: 0 }}>{tree.persons.length === 0 ? t('emptyTree') : t('emptyNoResults')}</p>
             </div>
             <button onClick={tree.persons.length === 0 ? onAddPerson : () => setFilters({})} className="btn btn-primary btn-sm">
-              {tree.persons.length === 0 ? <><Plus size={14} /> Ajouter une personne</> : 'Réinitialiser les filtres'}
+              {tree.persons.length === 0 ? <><Plus size={14} /> {t('addPerson')}</> : t('resetFilters')}
             </button>
           </div>
         ) : (
@@ -164,7 +166,7 @@ export default function ListView({ tree, onSelectPerson, onAddPerson }: Props) {
                     <div style={{ fontSize: '11px', color: 'var(--text-light)', display: 'flex', gap: '8px', alignItems: 'center' }}>
                       {person.birthDate && <span>{formatYear(person.birthDate)}</span>}
                       {!person.isAlive && person.deathDate && <span>† {formatYear(person.deathDate)}</span>}
-                      {age !== null && <span>{age} ans</span>}
+                      {age !== null && <span>{t('years', { age })}</span>}
                       {person.birthPlace?.city && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}><MapPin size={11} aria-hidden="true" /> {person.birthPlace.city}</span>}
                     </div>
                   </div>
@@ -172,10 +174,10 @@ export default function ListView({ tree, onSelectPerson, onAddPerson }: Props) {
                   {/* Badges */}
                   <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexShrink: 0 }}>
                     <span className={`badge badge-${person.gender === 'male' ? 'male' : person.gender === 'female' ? 'female' : 'accent'}`}>
-                      {person.gender === 'male' ? 'Homme' : person.gender === 'female' ? 'Femme' : 'Autre'}
+                      {person.gender === 'male' ? t('genderMale') : person.gender === 'female' ? t('genderFemale') : t('genderOther')}
                     </span>
                     <span className={`badge badge-${person.isAlive ? 'alive' : 'deceased'}`}>
-                      {person.isAlive ? 'vivant' : 'décédé'}
+                      {person.isAlive ? t('alive') : t('deceased')}
                     </span>
                   </div>
                 </button>
@@ -186,7 +188,7 @@ export default function ListView({ tree, onSelectPerson, onAddPerson }: Props) {
         {visibleCount < sorted.length && (
           <div style={{ textAlign: 'center', marginTop: '14px' }}>
             <button onClick={() => setVisibleCount(c => c + BATCH)} className="btn btn-secondary btn-sm">
-              <ChevronDown size={14} /> Voir plus ({sorted.length - visibleCount} restantes)
+              <ChevronDown size={14} /> {t('showMore', { remaining: sorted.length - visibleCount })}
             </button>
           </div>
         )}

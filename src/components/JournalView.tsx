@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { BookOpen, Plus, Pencil, Trash2, Check } from 'lucide-react';
 import { FamilyTree, JournalEntry } from '@/types';
 import { getDisplayName, formatDate, safeHttpUrl } from '@/lib/treeUtils';
@@ -23,6 +24,7 @@ interface DraftForm {
 const emptyDraft = (): DraftForm => ({ title: '', date: '', content: '', mentionedPersonIds: [], photosText: '' });
 
 export default function JournalView({ tree, onSelectPerson, onAdd, onUpdate, onDelete }: Props) {
+  const t = useTranslations('journal');
   const [editingId, setEditingId] = useState<string | 'new' | null>(null);
   const [draft, setDraft] = useState<DraftForm>(emptyDraft());
   const [filterPersonId, setFilterPersonId] = useState('');
@@ -30,7 +32,7 @@ export default function JournalView({ tree, onSelectPerson, onAdd, onUpdate, onD
 
   const personName = (id: string) => {
     const p = tree.persons.find(pp => pp.id === id);
-    return p ? getDisplayName(p) : 'Inconnu';
+    return p ? getDisplayName(p) : t('unknownPerson');
   };
 
   const entries = useMemo(() => {
@@ -95,29 +97,29 @@ export default function JournalView({ tree, onSelectPerson, onAdd, onUpdate, onD
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
         <h2 className="serif" style={{ margin: 0, fontSize: '1.1rem', flex: 1, minWidth: '120px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <BookOpen size={18} style={{ color: 'var(--accent)', flexShrink: 0 }} aria-hidden="true" />
-          Journal familial
+          {t('title')}
         </h2>
         <select value={filterPersonId} onChange={e => setFilterPersonId(e.target.value)} className="input" style={{ width: 'auto' }}>
-          <option value="">Toutes les personnes</option>
+          <option value="">{t('allPersons')}</option>
           {tree.persons.map(p => <option key={p.id} value={p.id}>{getDisplayName(p)}</option>)}
         </select>
-        <button onClick={startAdd} className="btn btn-primary btn-sm" style={{ gap: '6px' }}><Plus size={14} aria-hidden="true" /> Nouvelle entrée</button>
+        <button onClick={startAdd} className="btn btn-primary btn-sm" style={{ gap: '6px' }}><Plus size={14} aria-hidden="true" /> {t('newEntry')}</button>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px', maxWidth: '760px', width: '100%', margin: '0 auto' }}>
         {/* Add form */}
         {editingId === 'new' && (
           <div style={{ marginBottom: '20px' }}>
-            <EntryEditor tree={tree} draft={draft} setDraft={setDraft} toggleMention={toggleMention} onSave={save} onCancel={cancel} title="Nouvelle entrée" />
+            <EntryEditor tree={tree} draft={draft} setDraft={setDraft} toggleMention={toggleMention} onSave={save} onCancel={cancel} title={t('newEntry')} />
           </div>
         )}
 
         {entries.length === 0 && editingId !== 'new' ? (
           <div style={{ textAlign: 'center', padding: '50px 20px', maxWidth: '420px', margin: '0 auto' }}>
             <BookOpen size={48} strokeWidth={1.25} style={{ color: 'var(--text-light)', marginBottom: '12px' }} aria-hidden="true" />
-            <h3 style={{ margin: '0 0 6px' }}>Le journal est vide</h3>
-            <p style={{ color: 'var(--text-muted)' }}>{filterPersonId ? 'Aucune entrée ne mentionne cette personne.' : 'Consignez les moments, anecdotes et souvenirs de la famille.'}</p>
-            {!filterPersonId && <button onClick={startAdd} className="btn btn-primary" style={{ marginTop: '12px', gap: '6px' }}><Plus size={16} aria-hidden="true" /> Première entrée</button>}
+            <h3 style={{ margin: '0 0 6px' }}>{t('emptyTitle')}</h3>
+            <p style={{ color: 'var(--text-muted)' }}>{filterPersonId ? t('emptyFiltered') : t('emptyDescription')}</p>
+            {!filterPersonId && <button onClick={startAdd} className="btn btn-primary" style={{ marginTop: '12px', gap: '6px' }}><Plus size={16} aria-hidden="true" /> {t('firstEntry')}</button>}
           </div>
         ) : (
           <div style={{ position: 'relative', paddingLeft: '20px' }}>
@@ -128,7 +130,7 @@ export default function JournalView({ tree, onSelectPerson, onAdd, onUpdate, onD
                 <div style={{ position: 'absolute', left: '-19px', top: '6px', width: '12px', height: '12px', borderRadius: '50%', background: 'var(--accent)', border: '2px solid var(--bg-card)' }} />
 
                 {editingId === entry.id ? (
-                  <EntryEditor tree={tree} draft={draft} setDraft={setDraft} toggleMention={toggleMention} onSave={save} onCancel={cancel} title="Modifier l'entrée" />
+                  <EntryEditor tree={tree} draft={draft} setDraft={setDraft} toggleMention={toggleMention} onSave={save} onCancel={cancel} title={t('editEntry')} />
                 ) : (
                   <div className="card" style={{ padding: '14px 16px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
@@ -139,8 +141,8 @@ export default function JournalView({ tree, onSelectPerson, onAdd, onUpdate, onD
                         <h3 className="serif" style={{ margin: '2px 0 0', fontSize: '1.15rem' }}>{entry.title}</h3>
                       </div>
                       <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
-                        <button onClick={() => startEdit(entry)} className="btn btn-ghost btn-icon btn-sm" aria-label="Modifier l'entrée" title="Modifier"><Pencil size={15} aria-hidden="true" /></button>
-                        <button onClick={() => setConfirmDelete(entry.id)} className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--danger)' }} aria-label="Supprimer l'entrée" title="Supprimer"><Trash2 size={15} aria-hidden="true" /></button>
+                        <button onClick={() => startEdit(entry)} className="btn btn-ghost btn-icon btn-sm" aria-label={t('editEntry')} title={t('edit')}><Pencil size={15} aria-hidden="true" /></button>
+                        <button onClick={() => setConfirmDelete(entry.id)} className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--danger)' }} aria-label={t('deleteEntry')} title={t('delete')}><Trash2 size={15} aria-hidden="true" /></button>
                       </div>
                     </div>
 
@@ -168,10 +170,10 @@ export default function JournalView({ tree, onSelectPerson, onAdd, onUpdate, onD
 
                     {confirmDelete === entry.id && (
                       <div style={{ marginTop: '12px', padding: '10px', background: 'var(--bg-muted)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
-                        <p style={{ margin: '0 0 8px', fontSize: '13px', color: 'var(--text)' }}>Supprimer cette entrée ?</p>
+                        <p style={{ margin: '0 0 8px', fontSize: '13px', color: 'var(--text)' }}>{t('confirmDelete')}</p>
                         <div style={{ display: 'flex', gap: '6px' }}>
-                          <button onClick={() => { onDelete(entry.id); setConfirmDelete(null); }} className="btn btn-danger btn-sm">Oui, supprimer</button>
-                          <button onClick={() => setConfirmDelete(null)} className="btn btn-ghost btn-sm">Annuler</button>
+                          <button onClick={() => { onDelete(entry.id); setConfirmDelete(null); }} className="btn btn-danger btn-sm">{t('confirmDeleteYes')}</button>
+                          <button onClick={() => setConfirmDelete(null)} className="btn btn-ghost btn-sm">{t('cancel')}</button>
                         </div>
                       </div>
                     )}
@@ -184,7 +186,9 @@ export default function JournalView({ tree, onSelectPerson, onAdd, onUpdate, onD
 
         {total > 0 && (
           <div style={{ textAlign: 'center', fontSize: '12px', color: 'var(--text-light)', marginTop: '8px' }}>
-            {entries.length} entrée{entries.length !== 1 ? 's' : ''}{filterPersonId ? ` sur ${total}` : ''}
+            {filterPersonId
+              ? t('countFiltered', { count: entries.length, total })
+              : t('count', { count: entries.length })}
           </div>
         )}
       </div>
@@ -201,17 +205,18 @@ function EntryEditor({ tree, draft, setDraft, toggleMention, onSave, onCancel, t
   onCancel: () => void;
   title: string;
 }) {
+  const t = useTranslations('journal');
   return (
     <div className="card animate-fade-in" style={{ padding: '16px' }}>
       <h3 className="serif" style={{ margin: '0 0 12px', fontSize: '1.1rem' }}>{title}</h3>
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '8px', marginBottom: '8px' }}>
-        <input autoFocus value={draft.title} onChange={e => setDraft(d => ({ ...d, title: e.target.value }))} className="input" placeholder="Titre *" />
+        <input autoFocus value={draft.title} onChange={e => setDraft(d => ({ ...d, title: e.target.value }))} className="input" placeholder={t('titlePlaceholder')} />
         <input type="date" value={draft.date} onChange={e => setDraft(d => ({ ...d, date: e.target.value }))} className="input" />
       </div>
-      <textarea value={draft.content} onChange={e => setDraft(d => ({ ...d, content: e.target.value }))} className="input" rows={5} placeholder="Racontez ce moment… (les retours à la ligne sont conservés)" style={{ resize: 'vertical', marginBottom: '8px', width: '100%' }} />
+      <textarea value={draft.content} onChange={e => setDraft(d => ({ ...d, content: e.target.value }))} className="input" rows={5} placeholder={t('contentPlaceholder')} style={{ resize: 'vertical', marginBottom: '8px', width: '100%' }} />
 
       <div style={{ marginBottom: '8px' }}>
-        <div className="label" style={{ marginBottom: '6px' }}>Personnes mentionnées</div>
+        <div className="label" style={{ marginBottom: '6px' }}>{t('mentionedPersons')}</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', maxHeight: '110px', overflowY: 'auto' }}>
           {tree.persons.map(p => {
             const on = draft.mentionedPersonIds.includes(p.id);
@@ -226,11 +231,11 @@ function EntryEditor({ tree, draft, setDraft, toggleMention, onSave, onCancel, t
         </div>
       </div>
 
-      <textarea value={draft.photosText} onChange={e => setDraft(d => ({ ...d, photosText: e.target.value }))} className="input" rows={2} placeholder="URLs de photos (une par ligne, https://…)" style={{ resize: 'vertical', marginBottom: '10px', width: '100%' }} />
+      <textarea value={draft.photosText} onChange={e => setDraft(d => ({ ...d, photosText: e.target.value }))} className="input" rows={2} placeholder={t('photosPlaceholder')} style={{ resize: 'vertical', marginBottom: '10px', width: '100%' }} />
 
       <div style={{ display: 'flex', gap: '6px' }}>
-        <button onClick={onSave} className="btn btn-primary btn-sm" style={{ gap: '6px' }} disabled={!draft.title.trim()}><Check size={14} aria-hidden="true" /> Enregistrer</button>
-        <button onClick={onCancel} className="btn btn-ghost btn-sm">Annuler</button>
+        <button onClick={onSave} className="btn btn-primary btn-sm" style={{ gap: '6px' }} disabled={!draft.title.trim()}><Check size={14} aria-hidden="true" /> {t('save')}</button>
+        <button onClick={onCancel} className="btn btn-ghost btn-sm">{t('cancel')}</button>
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { Person, FamilyTree, Relationship, RelationType, FamilyEvent, EventType, Note, Citation, DnaOrigin } from '@/types';
 import { getParents, getChildren, getSpouses, getSiblings, getAge, formatDate, formatYear, getDisplayName, generateId, safeHttpUrl } from '@/lib/treeUtils';
 import PersonForm from './PersonForm';
@@ -19,9 +20,17 @@ interface Props {
 
 const EVENT_TYPES: EventType[] = ['birth','death','marriage','divorce','baptism','graduation','military','immigration','other'];
 const EVENT_ICONS: Record<string, string> = { birth:'✦', death:'†', marriage:'💒', divorce:'⚡', baptism:'✟', graduation:'🎓', military:'⚔', immigration:'🌍', other:'📌' };
-const REL_LABELS: Record<RelationType, string> = { spouse: 'Conjoint(e)', partner: 'Partenaire', parent: 'Parent de', child: 'Enfant de', sibling: 'Frère/Sœur de' };
+// Built-in event types we have translated labels for (others fall back to the raw type string).
+const KNOWN_EVENT_TYPES = new Set<string>(EVENT_TYPES);
+const REL_TYPES: RelationType[] = ['spouse', 'partner', 'parent', 'child', 'sibling'];
+const REL_LABEL_KEYS: Record<RelationType, string> = { spouse: 'relSpouse', partner: 'relPartner', parent: 'relParent', child: 'relChild', sibling: 'relSibling' };
 
 export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete, onSelectPerson, onAddRelationship, onUpdateRelationship, onDeleteRelationship }: Props) {
+  const t = useTranslations('personPanel');
+  const locale = useLocale();
+  const relLabel = (type: RelationType) => t(REL_LABEL_KEYS[type]);
+  const eventTypeLabel = (type: string) =>
+    KNOWN_EVENT_TYPES.has(type) ? t(`event_${type}`) : (type.charAt(0).toUpperCase() + type.slice(1));
   const [tab, setTab] = useState<'profile'|'life'|'family'|'events'|'notes'|'sources'|'gallery'|'edit'>('profile');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showAddRel, setShowAddRel] = useState(false);
@@ -48,12 +57,12 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
 
   // --- Profile completeness (smart completion) ---
   const completionChecks = [
-    { label: 'Photo de profil', has: !!person.profilePhoto, impact: 'Galerie, fiches et présentation' },
-    { label: 'Date de naissance', has: !!person.birthDate, impact: 'Âge, frises et statistiques' },
-    { label: 'Lieu de naissance', has: !!person.birthPlace?.city, impact: 'Carte des lieux' },
-    { label: 'Date de décès', has: person.isAlive || !!person.deathDate, impact: 'Espérance de vie, commémorations' },
-    { label: 'Profession', has: !!person.occupation, impact: 'Statistiques des métiers' },
-    { label: 'Biographie', has: !!(person.bio && person.bio.trim()), impact: 'Présentation et impression' },
+    { label: t('completionProfilePhoto'), has: !!person.profilePhoto, impact: t('completionProfilePhotoImpact') },
+    { label: t('completionBirthDate'), has: !!person.birthDate, impact: t('completionBirthDateImpact') },
+    { label: t('completionBirthPlace'), has: !!person.birthPlace?.city, impact: t('completionBirthPlaceImpact') },
+    { label: t('completionDeathDate'), has: person.isAlive || !!person.deathDate, impact: t('completionDeathDateImpact') },
+    { label: t('completionOccupation'), has: !!person.occupation, impact: t('completionOccupationImpact') },
+    { label: t('completionBio'), has: !!(person.bio && person.bio.trim()), impact: t('completionBioImpact') },
   ];
   const completionMissing = completionChecks.filter(c => !c.has);
   const completionScore = Math.round((completionChecks.length - completionMissing.length) / completionChecks.length * 100);
@@ -76,7 +85,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
   const inconsistencies: string[] = [];
   myRelationships.forEach(r => {
     if (r.person1Id === r.person2Id) {
-      inconsistencies.push(`Relation invalide : ${person.firstName} est en relation « ${REL_LABELS[r.type]} » avec elle-même.`);
+      inconsistencies.push(t('inconsistencySelfRel', { name: person.firstName, rel: relLabel(r.type) }));
     }
   });
   // Detect an ancestor cycle (person is its own ancestor) — iterative to stay render-pure.
@@ -92,7 +101,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
     }
     return false;
   })();
-  if (ancestorLoop) inconsistencies.push(`Boucle généalogique détectée : ${person.firstName} est son propre ancêtre.`);
+  if (ancestorLoop) inconsistencies.push(t('inconsistencyAncestorLoop', { name: person.firstName }));
 
   function addEvent() {
     const type = (customEventType.trim() ? customEventType.trim() : newEvent.type) as EventType;
@@ -187,9 +196,9 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
         <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'10px' }}>
           <CompletionDonut score={completionScore} color={completionColor} />
           <div style={{ flex:1 }} />
-          <button onClick={()=>setTab('edit')} className="icon-btn" aria-label="Modifier" title="Modifier"><Pencil size={16} /></button>
-          <button onClick={()=>{ setTab('edit'); setConfirmDelete(true); }} className="icon-btn" aria-label="Supprimer" title="Supprimer" style={{ color:'var(--danger)' }}><Trash2 size={16} /></button>
-          <button onClick={onClose} className="icon-btn" aria-label="Fermer le panneau" title="Fermer"><X size={18} /></button>
+          <button onClick={()=>setTab('edit')} className="icon-btn" aria-label={t('edit')} title={t('edit')}><Pencil size={16} /></button>
+          <button onClick={()=>{ setTab('edit'); setConfirmDelete(true); }} className="icon-btn" aria-label={t('delete')} title={t('delete')} style={{ color:'var(--danger)' }}><Trash2 size={16} /></button>
+          <button onClick={onClose} className="icon-btn" aria-label={t('closePanel')} title={t('close')}><X size={18} /></button>
         </div>
         <div style={{ display:'flex', alignItems:'flex-start', gap:'12px' }}>
           <div style={{ width:'56px', height:'56px', borderRadius:'50%', flexShrink:0, overflow:'hidden',
@@ -199,7 +208,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
             fontSize:'18px', fontWeight:700, color: person.gender==='male'?'var(--male)':person.gender==='female'?'var(--female)':'var(--text-muted)'
           }}>
             {person.profilePhoto
-              ? <img src={person.profilePhoto} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+              ? <img src={person.profilePhoto} alt={t('profilePhotoAlt', { name: getDisplayName(person) })} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
               : `${(person.firstName[0]||'').toUpperCase()}${(person.lastName[0]||'').toUpperCase()}`}
           </div>
           <div style={{ flex:1, minWidth:0 }}>
@@ -209,12 +218,12 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
             {person.nickName && <div style={{ fontSize:'12px', color:'var(--text-muted)', marginBottom:'4px', fontStyle:'italic' }}>«&nbsp;{person.nickName}&nbsp;»</div>}
             <div style={{ display:'flex', gap:'5px', flexWrap:'wrap' }}>
               <span className={`badge badge-${person.gender==='male'?'male':person.gender==='female'?'female':'accent'}`}>
-                {person.gender==='male'?'Homme':person.gender==='female'?'Femme':person.gender==='other'?'Autre':'—'}
+                {person.gender==='male'?t('genderMale'):person.gender==='female'?t('genderFemale'):person.gender==='other'?t('genderOther'):'—'}
               </span>
               <span className={`badge badge-${person.isAlive?'alive':'deceased'}`}>
-                {person.isAlive?'Vivant':'Décédé'}
+                {person.isAlive?t('alive'):t('deceased')}
               </span>
-              {age!==null&&<span className="badge badge-accent">{age} ans</span>}
+              {age!==null&&<span className="badge badge-accent">{t('ageYears', { age })}</span>}
             </div>
           </div>
         </div>
@@ -232,7 +241,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
           { id:'gallery', Icon:Images, count:person.photos?.length },
           { id:'edit', Icon:Pencil },
         ] as { id: typeof tab; Icon: typeof User; count?: number }[]).map(({ id, Icon, count }) => (
-          <button key={id} onClick={() => setTab(id as typeof tab)} className={`tab ${tab===id?'active':''}`} style={{ display:'inline-flex', alignItems:'center', gap:'5px', padding:'8px 10px', whiteSpace:'nowrap', fontSize:'13px' }} aria-label={id}>
+          <button key={id} onClick={() => setTab(id as typeof tab)} className={`tab ${tab===id?'active':''}`} style={{ display:'inline-flex', alignItems:'center', gap:'5px', padding:'8px 10px', whiteSpace:'nowrap', fontSize:'13px' }} aria-label={t(`tab_${id}`)} title={t(`tab_${id}`)}>
             <Icon size={15} aria-hidden="true" />{count?<span className="mono" style={{ fontSize:'11px' }}>{count}</span>:null}
           </button>
         ))}
@@ -247,7 +256,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
             {completionMissing.length > 0 && (
               <div style={{ padding:'12px', background:'var(--accent-light)', border:'1px solid var(--border)', borderRadius:'var(--radius)' }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'8px' }}>
-                  <span style={{ fontSize:'13px', fontWeight:700, display:'inline-flex', alignItems:'center', gap:'5px' }}><Lightbulb size={14} aria-hidden="true" /> Suggestions</span>
+                  <span style={{ fontSize:'13px', fontWeight:700, display:'inline-flex', alignItems:'center', gap:'5px' }}><Lightbulb size={14} aria-hidden="true" /> {t('suggestions')}</span>
                   <span style={{ fontSize:'13px', fontWeight:700, color:completionColor }}>{completionScore}%</span>
                 </div>
                 <div style={{ height:'7px', background:'var(--bg-muted)', borderRadius:'100px', overflow:'hidden', marginBottom:'10px' }}>
@@ -261,28 +270,28 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                     </div>
                   ))}
                 </div>
-                <button onClick={()=>setTab('edit')} className="btn btn-primary btn-sm" style={{ marginTop:'10px' }}><Pencil size={13} /> Compléter le profil</button>
+                <button onClick={()=>setTab('edit')} className="btn btn-primary btn-sm" style={{ marginTop:'10px' }}><Pencil size={13} /> {t('completeProfile')}</button>
               </div>
             )}
-            <InfoBlock label="Naissance" icon="✦">
+            <InfoBlock label={t('birth')} icon="✦">
               {formatDate(person.birthDate, person.birthDateApprox)||'—'}
               {person.birthPlace?.city&&<><br/><small>📍 {[person.birthPlace.city, person.birthPlace.country].filter(Boolean).join(', ')}</small></>}
             </InfoBlock>
             {!person.isAlive&&(
-              <InfoBlock label="Décès" icon="†">
+              <InfoBlock label={t('death')} icon="†">
                 {formatDate(person.deathDate, person.deathDateApprox)||'—'}
                 {person.deathPlace?.city&&<><br/><small>📍 {[person.deathPlace.city, person.deathPlace.country].filter(Boolean).join(', ')}</small></>}
               </InfoBlock>
             )}
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' }}>
-              {person.occupation&&<InfoBlock label="Profession" icon="💼">{person.occupation}</InfoBlock>}
-              {person.nationality&&<InfoBlock label="Nationalité" icon="🌍">{person.nationality}</InfoBlock>}
-              {person.religion&&<InfoBlock label="Religion" icon="✟">{person.religion}</InfoBlock>}
-              {person.education&&<InfoBlock label="Éducation" icon="🎓">{person.education}</InfoBlock>}
+              {person.occupation&&<InfoBlock label={t('occupation')} icon="💼">{person.occupation}</InfoBlock>}
+              {person.nationality&&<InfoBlock label={t('nationality')} icon="🌍">{person.nationality}</InfoBlock>}
+              {person.religion&&<InfoBlock label={t('religion')} icon="✟">{person.religion}</InfoBlock>}
+              {person.education&&<InfoBlock label={t('education')} icon="🎓">{person.education}</InfoBlock>}
             </div>
             {person.bio&&(
               <div style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)', borderLeft:'3px solid var(--accent)' }}>
-                <div style={{ fontSize:'11px', color:'var(--text-light)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'6px' }}>Biographie</div>
+                <div style={{ fontSize:'11px', color:'var(--text-light)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'6px' }}>{t('biography')}</div>
                 <p style={{ margin:0, fontSize:'13px', lineHeight:'1.7' }}>{person.bio}</p>
               </div>
             )}
@@ -293,13 +302,13 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
             )}
             {person.dnaOrigins&&person.dnaOrigins.length>0&&(
               <div style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)' }}>
-                <div style={{ fontSize:'11px', color:'var(--text-light)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'10px', display:'flex', alignItems:'center', gap:'5px' }}><Dna size={12} aria-hidden="true" /> Origines &amp; ADN</div>
+                <div style={{ fontSize:'11px', color:'var(--text-light)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'10px', display:'flex', alignItems:'center', gap:'5px' }}><Dna size={12} aria-hidden="true" /> {t('originsAndDna')}</div>
                 <DnaPie origins={person.dnaOrigins} />
               </div>
             )}
             {person.customFields&&Object.keys(person.customFields).length>0&&(
               <div>
-                <div style={{ fontSize:'11px', color:'var(--text-light)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'6px' }}>Champs personnalisés</div>
+                <div style={{ fontSize:'11px', color:'var(--text-light)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'6px' }}>{t('customFields')}</div>
                 {Object.entries(person.customFields).map(([k,v])=>(
                   <div key={k} style={{ display:'flex', gap:'8px', marginBottom:'4px', fontSize:'13px' }}>
                     <span style={{ fontWeight:'700', minWidth:'100px' }}>{k}:</span>
@@ -319,18 +328,18 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
 
         {tab==='family' && (
           <div className="animate-fade-in" style={{ display:'flex', flexDirection:'column', gap:'16px' }}>
-            {spouses.length>0&&<FamilySection title="Conjoints / Partenaires" items={spouses} PersonLink={PersonLink} />}
-            {parents.length>0&&<FamilySection title="Parents" items={parents} PersonLink={PersonLink} />}
-            {children.length>0&&<FamilySection title="Enfants" items={children} PersonLink={PersonLink} />}
-            {siblings.length>0&&<FamilySection title="Frères & Sœurs" items={siblings} PersonLink={PersonLink} />}
+            {spouses.length>0&&<FamilySection title={t('spousesPartners')} items={spouses} PersonLink={PersonLink} />}
+            {parents.length>0&&<FamilySection title={t('parents')} items={parents} PersonLink={PersonLink} />}
+            {children.length>0&&<FamilySection title={t('childrenSection')} items={children} PersonLink={PersonLink} />}
+            {siblings.length>0&&<FamilySection title={t('siblings')} items={siblings} PersonLink={PersonLink} />}
             {spouses.length===0&&parents.length===0&&children.length===0&&siblings.length===0&&(
-              <div style={{ textAlign:'center', padding:'20px', color:'var(--text-muted)' }}>Aucune relation enregistrée</div>
+              <div style={{ textAlign:'center', padding:'20px', color:'var(--text-muted)' }}>{t('noRelationships')}</div>
             )}
 
             {/* Inconsistency warnings */}
             {inconsistencies.length>0 && (
               <div style={{ padding:'10px 12px', background:'var(--bg-muted)', border:'1.5px solid var(--danger)', borderRadius:'var(--radius)' }}>
-                <div style={{ fontSize:'12px', fontWeight:700, color:'var(--danger)', marginBottom:'4px', display:'flex', alignItems:'center', gap:'5px' }}><AlertCircle size={13} aria-hidden="true" /> Relations incohérentes</div>
+                <div style={{ fontSize:'12px', fontWeight:700, color:'var(--danger)', marginBottom:'4px', display:'flex', alignItems:'center', gap:'5px' }}><AlertCircle size={13} aria-hidden="true" /> {t('inconsistentRelations')}</div>
                 {inconsistencies.map((msg,i)=>(
                   <div key={i} style={{ fontSize:'12px', color:'var(--text)', lineHeight:1.4 }}>• {msg}</div>
                 ))}
@@ -341,26 +350,26 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
             {myRelationships.length>0 && (
               <div>
                 <div style={{ fontSize:'12px', fontWeight:'700', color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'8px' }}>
-                  Gérer les relations ({myRelationships.length})
+                  {t('manageRelations', { count: myRelationships.length })}
                 </div>
                 <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
                   {myRelationships.map(rel => {
                     const otherId = rel.person1Id === person.id ? rel.person2Id : rel.person1Id;
                     const other = personById(otherId);
                     const self = rel.person1Id === rel.person2Id;
-                    const dates = [rel.startDate && `dès ${formatDate(rel.startDate)}`, rel.endDate && `jusqu'à ${formatDate(rel.endDate)}`].filter(Boolean).join(' · ');
+                    const dates = [rel.startDate && t('relSince', { date: formatDate(rel.startDate) }), rel.endDate && t('relUntil', { date: formatDate(rel.endDate) })].filter(Boolean).join(' · ');
                     return (
                       <div key={rel.id} style={{ padding:'10px', background:'var(--bg-muted)', borderRadius:'var(--radius)', border:`1px solid ${self?'var(--danger)':'var(--border)'}` }}>
                         {editRelId===rel.id ? (
                           <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
                             <select defaultValue={rel.type} id={`rel-type-${rel.id}`} className="input">
-                              {(Object.keys(REL_LABELS) as RelationType[]).map(t=><option key={t} value={t}>{REL_LABELS[t]}</option>)}
+                              {REL_TYPES.map(rt=><option key={rt} value={rt}>{relLabel(rt)}</option>)}
                             </select>
                             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'6px' }}>
-                              <input type="date" defaultValue={rel.startDate||''} id={`rel-start-${rel.id}`} className="input" title="Début" />
-                              <input type="date" defaultValue={rel.endDate||''} id={`rel-end-${rel.id}`} className="input" title="Fin" />
+                              <input type="date" defaultValue={rel.startDate||''} id={`rel-start-${rel.id}`} className="input" title={t('start')} />
+                              <input type="date" defaultValue={rel.endDate||''} id={`rel-end-${rel.id}`} className="input" title={t('end')} />
                             </div>
-                            <input defaultValue={rel.notes||''} id={`rel-notes-${rel.id}`} className="input" placeholder="Notes (optionnel)" />
+                            <input defaultValue={rel.notes||''} id={`rel-notes-${rel.id}`} className="input" placeholder={t('notesOptional')} />
                             <div style={{ display:'flex', gap:'6px' }}>
                               <button onClick={()=>{
                                 const type=(document.getElementById(`rel-type-${rel.id}`) as HTMLSelectElement).value as RelationType;
@@ -369,15 +378,15 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                                 const notes=(document.getElementById(`rel-notes-${rel.id}`) as HTMLInputElement).value||undefined;
                                 onUpdateRelationship(rel.id,{type,startDate,endDate,notes});
                                 setEditRelId(null);
-                              }} className="btn btn-primary btn-sm">Sauvegarder</button>
-                              <button onClick={()=>setEditRelId(null)} className="btn btn-ghost btn-sm">Annuler</button>
+                              }} className="btn btn-primary btn-sm">{t('save')}</button>
+                              <button onClick={()=>setEditRelId(null)} className="btn btn-ghost btn-sm">{t('cancel')}</button>
                             </div>
                           </div>
                         ) : (
                           <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
                             <div style={{ flex:1, minWidth:0 }}>
                               <div style={{ fontSize:'13px', fontWeight:700 }}>
-                                {REL_LABELS[rel.type]} <span style={{ color:'var(--text-muted)', fontWeight:400 }}>{other?getDisplayName(other):'(personne inconnue)'}</span>
+                                {relLabel(rel.type)} <span style={{ color:'var(--text-muted)', fontWeight:400 }}>{other?getDisplayName(other):t('unknownPerson')}</span>
                               </div>
                               {dates && <div style={{ fontSize:'11px', color:'var(--text-light)' }}>{dates}</div>}
                               {rel.notes && <div style={{ fontSize:'12px', color:'var(--text-muted)', marginTop:'2px', display:'flex', alignItems:'center', gap:'5px' }}><FileText size={11} aria-hidden="true" /> {rel.notes}</div>}
@@ -394,25 +403,25 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
             )}
 
             {!showAddRel ? (
-              <button onClick={()=>setShowAddRel(true)} className="btn btn-secondary btn-sm" style={{ alignSelf:'flex-start' }}>＋ Ajouter une relation</button>
+              <button onClick={()=>setShowAddRel(true)} className="btn btn-secondary btn-sm" style={{ alignSelf:'flex-start' }}>＋ {t('addRelation')}</button>
             ) : (
               <div style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)' }} className="animate-fade-in">
                 <div style={{ display:'flex', flexDirection:'column', gap:'8px', marginBottom:'8px' }}>
                   <select value={newRelType} onChange={e=>setNewRelType(e.target.value as RelationType)} className="input">
-                    <option value="spouse">Conjoint(e)</option>
-                    <option value="partner">Partenaire</option>
-                    <option value="parent">Est parent de</option>
-                    <option value="child">Est enfant de</option>
-                    <option value="sibling">Frère/Sœur de</option>
+                    <option value="spouse">{t('relSpouse')}</option>
+                    <option value="partner">{t('relPartner')}</option>
+                    <option value="parent">{t('relIsParentOf')}</option>
+                    <option value="child">{t('relIsChildOf')}</option>
+                    <option value="sibling">{t('relSibling')}</option>
                   </select>
                   <select value={newRelPersonId} onChange={e=>setNewRelPersonId(e.target.value)} className="input">
-                    <option value="">Choisir une personne...</option>
+                    <option value="">{t('choosePerson')}</option>
                     {availablePersons.map(p=><option key={p.id} value={p.id}>{getDisplayName(p)}</option>)}
                   </select>
                 </div>
                 <div style={{ display:'flex', gap:'6px' }}>
-                  <button onClick={()=>{ if(newRelPersonId){onAddRelationship({type:newRelType,person1Id:person.id,person2Id:newRelPersonId}); setShowAddRel(false); setNewRelPersonId(''); }}} className="btn btn-primary btn-sm" disabled={!newRelPersonId}>Ajouter</button>
-                  <button onClick={()=>setShowAddRel(false)} className="btn btn-ghost btn-sm">Annuler</button>
+                  <button onClick={()=>{ if(newRelPersonId){onAddRelationship({type:newRelType,person1Id:person.id,person2Id:newRelPersonId}); setShowAddRel(false); setNewRelPersonId(''); }}} className="btn btn-primary btn-sm" disabled={!newRelPersonId}>{t('add')}</button>
+                  <button onClick={()=>setShowAddRel(false)} className="btn btn-ghost btn-sm">{t('cancel')}</button>
                 </div>
               </div>
             )}
@@ -422,12 +431,12 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
         {tab==='events' && (
           <div className="animate-fade-in">
             {(!person.events||person.events.length===0) ? (
-              <div style={{ textAlign:'center', padding:'20px', color:'var(--text-muted)' }}>Aucun événement enregistré</div>
+              <div style={{ textAlign:'center', padding:'20px', color:'var(--text-muted)' }}>{t('noEvents')}</div>
             ) : (
               <>
                 <div style={{ fontSize:'11px', color:'var(--text-light)', marginBottom:'8px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                  <span>↕ Glissez pour réordonner</span>
-                  <button onClick={sortEventsByDate} className="btn btn-ghost btn-sm" style={{ fontSize:'11px' }}>📅 Trier par date</button>
+                  <span>↕ {t('dragToReorder')}</span>
+                  <button onClick={sortEventsByDate} className="btn btn-ghost btn-sm" style={{ fontSize:'11px' }}>📅 {t('sortByDate')}</button>
                 </div>
                 <div style={{ display:'flex', flexDirection:'column', gap:'6px', marginBottom:'12px' }}>
                   {(person.events||[]).map((event, idx)=>(
@@ -441,12 +450,12 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                       {editEventId===event.id ? (
                         <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
                           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'6px' }}>
-                            <input defaultValue={event.type} id={`ev-type-${event.id}`} className="input" placeholder="Type" list="event-types-list" />
+                            <input defaultValue={event.type} id={`ev-type-${event.id}`} className="input" placeholder={t('type')} list="event-types-list" />
                             <input type="date" defaultValue={event.date||''} id={`ev-date-${event.id}`} className="input" />
-                            <input defaultValue={event.place?.city||''} id={`ev-city-${event.id}`} className="input" placeholder="Ville" />
-                            <input defaultValue={event.place?.country||''} id={`ev-country-${event.id}`} className="input" placeholder="Pays" />
+                            <input defaultValue={event.place?.city||''} id={`ev-city-${event.id}`} className="input" placeholder={t('city')} />
+                            <input defaultValue={event.place?.country||''} id={`ev-country-${event.id}`} className="input" placeholder={t('country')} />
                           </div>
-                          <input defaultValue={event.description||''} id={`ev-desc-${event.id}`} className="input" placeholder="Description" />
+                          <input defaultValue={event.description||''} id={`ev-desc-${event.id}`} className="input" placeholder={t('description')} />
                           <div style={{ display:'flex', gap:'6px' }}>
                             <button onClick={()=>{
                               const type=((document.getElementById(`ev-type-${event.id}`) as HTMLInputElement).value.trim()||'other') as EventType;
@@ -456,8 +465,8 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                               const description=(document.getElementById(`ev-desc-${event.id}`) as HTMLInputElement).value||undefined;
                               updateEvent(event.id,{type,date,description,place:(city||country)?{city,country}:undefined});
                               setEditEventId(null);
-                            }} className="btn btn-primary btn-sm">Sauvegarder</button>
-                            <button onClick={()=>setEditEventId(null)} className="btn btn-ghost btn-sm">Annuler</button>
+                            }} className="btn btn-primary btn-sm">{t('save')}</button>
+                            <button onClick={()=>setEditEventId(null)} className="btn btn-ghost btn-sm">{t('cancel')}</button>
                           </div>
                         </div>
                       ) : (
@@ -466,7 +475,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                             <span style={{ cursor:'grab', color:'var(--text-light)', fontSize:'13px', userSelect:'none' }}>⠿</span>
                             <div>
                               <div style={{ fontWeight:'700', fontSize:'13px' }}>
-                                {EVENT_ICONS[event.type]||'📌'} {event.type.charAt(0).toUpperCase()+event.type.slice(1)}
+                                {EVENT_ICONS[event.type]||'📌'} {eventTypeLabel(event.type)}
                               </div>
                               {event.date&&<div style={{ fontSize:'12px', color:'var(--text-muted)' }}>{formatDate(event.date, event.dateApprox)}</div>}
                               {event.place?.city&&<div style={{ fontSize:'12px', color:'var(--text-muted)' }}>📍 {[event.place.city, event.place.country].filter(Boolean).join(', ')}</div>}
@@ -483,31 +492,31 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                   ))}
                 </div>
                 <datalist id="event-types-list">
-                  {EVENT_TYPES.map(t=><option key={t} value={t} />)}
+                  {EVENT_TYPES.map(et=><option key={et} value={et}>{eventTypeLabel(et)}</option>)}
                 </datalist>
               </>
             )}
             {!showAddEvent ? (
-              <button onClick={()=>setShowAddEvent(true)} className="btn btn-secondary btn-sm">＋ Ajouter un événement</button>
+              <button onClick={()=>setShowAddEvent(true)} className="btn btn-secondary btn-sm">＋ {t('addEvent')}</button>
             ) : (
               <div style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)' }} className="animate-fade-in">
-                <h4 style={{ margin:'0 0 10px', fontSize:'13px' }}>Nouvel événement</h4>
+                <h4 style={{ margin:'0 0 10px', fontSize:'13px' }}>{t('newEvent')}</h4>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'8px' }}>
                   <select value={customEventType ? '__custom__' : newEvent.type} onChange={e=>{ if(e.target.value==='__custom__'){ setCustomEventType(' '); } else { setCustomEventType(''); setNewEvent(v=>({...v,type:e.target.value as EventType})); } }} className="input">
-                    {EVENT_TYPES.map(t=><option key={t} value={t}>{EVENT_ICONS[t]} {t}</option>)}
-                    <option value="__custom__">✎ Type personnalisé…</option>
+                    {EVENT_TYPES.map(et=><option key={et} value={et}>{EVENT_ICONS[et]} {eventTypeLabel(et)}</option>)}
+                    <option value="__custom__">✎ {t('customType')}</option>
                   </select>
-                  <input type="date" value={newEvent.date||''} onChange={e=>setNewEvent(v=>({...v,date:e.target.value||undefined}))} className="input" placeholder="Date"/>
-                  <input value={newEvent.place?.city||''} onChange={e=>setNewEvent(v=>({...v,place:{...v.place,city:e.target.value}}))} className="input" placeholder="Ville"/>
-                  <input value={newEvent.place?.country||''} onChange={e=>setNewEvent(v=>({...v,place:{...v.place,country:e.target.value}}))} className="input" placeholder="Pays"/>
+                  <input type="date" value={newEvent.date||''} onChange={e=>setNewEvent(v=>({...v,date:e.target.value||undefined}))} className="input" placeholder={t('dateLabel')}/>
+                  <input value={newEvent.place?.city||''} onChange={e=>setNewEvent(v=>({...v,place:{...v.place,city:e.target.value}}))} className="input" placeholder={t('city')}/>
+                  <input value={newEvent.place?.country||''} onChange={e=>setNewEvent(v=>({...v,place:{...v.place,country:e.target.value}}))} className="input" placeholder={t('country')}/>
                 </div>
                 {customEventType!=='' && (
-                  <input autoFocus value={customEventType.trim()===''?'':customEventType} onChange={e=>setCustomEventType(e.target.value||' ')} className="input" placeholder="Nom du type personnalisé (ex: Décoration)" style={{ marginBottom:'8px', width:'100%' }}/>
+                  <input autoFocus value={customEventType.trim()===''?'':customEventType} onChange={e=>setCustomEventType(e.target.value||' ')} className="input" placeholder={t('customTypePlaceholder')} style={{ marginBottom:'8px', width:'100%' }}/>
                 )}
-                <input value={newEvent.description||''} onChange={e=>setNewEvent(v=>({...v,description:e.target.value}))} className="input" placeholder="Description (optionnel)" style={{ marginBottom:'8px', width:'100%' }}/>
+                <input value={newEvent.description||''} onChange={e=>setNewEvent(v=>({...v,description:e.target.value}))} className="input" placeholder={t('descriptionOptional')} style={{ marginBottom:'8px', width:'100%' }}/>
                 <div style={{ display:'flex', gap:'6px' }}>
-                  <button onClick={addEvent} className="btn btn-primary btn-sm">Ajouter</button>
-                  <button onClick={()=>{setShowAddEvent(false);setCustomEventType('');}} className="btn btn-ghost btn-sm">Annuler</button>
+                  <button onClick={addEvent} className="btn btn-primary btn-sm">{t('add')}</button>
+                  <button onClick={()=>{setShowAddEvent(false);setCustomEventType('');}} className="btn btn-ghost btn-sm">{t('cancel')}</button>
                 </div>
               </div>
             )}
@@ -518,7 +527,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
           <div className="animate-fade-in">
             <div style={{ display:'flex', flexDirection:'column', gap:'10px', marginBottom:'12px' }}>
               {(!person.notes||person.notes.length===0) ? (
-                <div style={{ textAlign:'center', padding:'20px', color:'var(--text-muted)' }}>Aucune note</div>
+                <div style={{ textAlign:'center', padding:'20px', color:'var(--text-muted)' }}>{t('noNotes')}</div>
               ) : (
                 person.notes.map(note=>(
                   <div key={note.id} style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)', border:'1px solid var(--border)' }}>
@@ -526,8 +535,8 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                       <div>
                         <textarea defaultValue={note.content} autoFocus id={`note-edit-${note.id}`} className="input" rows={3} style={{ resize:'vertical', marginBottom:'6px', width:'100%' }} />
                         <div style={{ display:'flex', gap:'6px' }}>
-                          <button onClick={()=>{ const ta = document.getElementById(`note-edit-${note.id}`) as HTMLTextAreaElement; updateNote(note.id, ta.value); }} className="btn btn-primary btn-sm">Sauvegarder</button>
-                          <button onClick={()=>setEditNoteId(null)} className="btn btn-ghost btn-sm">Annuler</button>
+                          <button onClick={()=>{ const ta = document.getElementById(`note-edit-${note.id}`) as HTMLTextAreaElement; updateNote(note.id, ta.value); }} className="btn btn-primary btn-sm">{t('save')}</button>
+                          <button onClick={()=>setEditNoteId(null)} className="btn btn-ghost btn-sm">{t('cancel')}</button>
                         </div>
                       </div>
                     ) : (
@@ -535,7 +544,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                         <p style={{ margin:'0 0 8px', fontSize:'13px', lineHeight:'1.6' }}>{note.content}</p>
                         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                           <div style={{ fontSize:'11px', color:'var(--text-light)' }}>
-                            {new Date(note.updatedAt).toLocaleDateString('fr-FR', {day:'numeric',month:'short',year:'numeric'})}
+                            {new Date(note.updatedAt).toLocaleDateString(locale === 'en' ? 'en-US' : 'fr-FR', {day:'numeric',month:'short',year:'numeric'})}
                           </div>
                           <div style={{ display:'flex', gap:'4px' }}>
                             <button onClick={()=>setEditNoteId(note.id)} className="btn btn-ghost btn-sm" style={{ fontSize:'11px' }}><Pencil size={13} /></button>
@@ -549,13 +558,13 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
               )}
             </div>
             {!showAddNote ? (
-              <button onClick={()=>setShowAddNote(true)} className="btn btn-secondary btn-sm">＋ Ajouter une note</button>
+              <button onClick={()=>setShowAddNote(true)} className="btn btn-secondary btn-sm">＋ {t('addNote')}</button>
             ) : (
               <div style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)' }} className="animate-fade-in">
-                <textarea autoFocus value={newNoteContent} onChange={e=>setNewNoteContent(e.target.value)} className="input" rows={3} style={{ resize:'vertical', marginBottom:'8px', width:'100%' }} placeholder="Écrivez votre note ici..." />
+                <textarea autoFocus value={newNoteContent} onChange={e=>setNewNoteContent(e.target.value)} className="input" rows={3} style={{ resize:'vertical', marginBottom:'8px', width:'100%' }} placeholder={t('noteplaceholder')} />
                 <div style={{ display:'flex', gap:'6px' }}>
-                  <button onClick={addNote} className="btn btn-primary btn-sm" disabled={!newNoteContent.trim()}>Ajouter</button>
-                  <button onClick={()=>{setShowAddNote(false);setNewNoteContent('');}} className="btn btn-ghost btn-sm">Annuler</button>
+                  <button onClick={addNote} className="btn btn-primary btn-sm" disabled={!newNoteContent.trim()}>{t('add')}</button>
+                  <button onClick={()=>{setShowAddNote(false);setNewNoteContent('');}} className="btn btn-ghost btn-sm">{t('cancel')}</button>
                 </div>
               </div>
             )}
@@ -566,7 +575,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
           <div className="animate-fade-in">
             <div style={{ display:'flex', flexDirection:'column', gap:'10px', marginBottom:'12px' }}>
               {(!person.citations||person.citations.length===0) ? (
-                <div style={{ textAlign:'center', padding:'20px', color:'var(--text-muted)' }}>Aucune source ni citation</div>
+                <div style={{ textAlign:'center', padding:'20px', color:'var(--text-muted)' }}>{t('noSources')}</div>
               ) : (
                 person.citations.map(citation=>(
                   <div key={citation.id} style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)', border:'1px solid var(--border)', borderLeft:'3px solid var(--accent)' }}>
@@ -590,19 +599,19 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
               )}
             </div>
             {!showAddCitation ? (
-              <button onClick={()=>setShowAddCitation(true)} className="btn btn-secondary btn-sm">＋ Ajouter une source</button>
+              <button onClick={()=>setShowAddCitation(true)} className="btn btn-secondary btn-sm">＋ {t('addSource')}</button>
             ) : (
               <div style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)' }} className="animate-fade-in">
-                <h4 style={{ margin:'0 0 10px', fontSize:'13px' }}>Nouvelle source / citation</h4>
-                <input autoFocus value={newCitation.title||''} onChange={e=>setNewCitation(v=>({...v,title:e.target.value}))} className="input" placeholder="Titre (ex: Acte de naissance) *" style={{ marginBottom:'8px', width:'100%' }} />
+                <h4 style={{ margin:'0 0 10px', fontSize:'13px' }}>{t('newSource')}</h4>
+                <input autoFocus value={newCitation.title||''} onChange={e=>setNewCitation(v=>({...v,title:e.target.value}))} className="input" placeholder={t('sourceTitlePlaceholder')} style={{ marginBottom:'8px', width:'100%' }} />
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'8px' }}>
-                  <input value={newCitation.author||''} onChange={e=>setNewCitation(v=>({...v,author:e.target.value}))} className="input" placeholder="Auteur / dépôt" />
-                  <input value={newCitation.year||''} onChange={e=>setNewCitation(v=>({...v,year:e.target.value}))} className="input" placeholder="Année" />
+                  <input value={newCitation.author||''} onChange={e=>setNewCitation(v=>({...v,author:e.target.value}))} className="input" placeholder={t('authorRepository')} />
+                  <input value={newCitation.year||''} onChange={e=>setNewCitation(v=>({...v,year:e.target.value}))} className="input" placeholder={t('year')} />
                 </div>
-                <input value={newCitation.url||''} onChange={e=>setNewCitation(v=>({...v,url:e.target.value}))} className="input" placeholder="URL (https://…)" style={{ marginBottom:'8px', width:'100%' }} />
+                <input value={newCitation.url||''} onChange={e=>setNewCitation(v=>({...v,url:e.target.value}))} className="input" placeholder={t('urlPlaceholder')} style={{ marginBottom:'8px', width:'100%' }} />
                 <div style={{ display:'flex', gap:'6px' }}>
-                  <button onClick={addCitation} className="btn btn-primary btn-sm" disabled={!newCitation.title?.trim()}>Ajouter</button>
-                  <button onClick={()=>{setShowAddCitation(false);setNewCitation({});}} className="btn btn-ghost btn-sm">Annuler</button>
+                  <button onClick={addCitation} className="btn btn-primary btn-sm" disabled={!newCitation.title?.trim()}>{t('add')}</button>
+                  <button onClick={()=>{setShowAddCitation(false);setNewCitation({});}} className="btn btn-ghost btn-sm">{t('cancel')}</button>
                 </div>
               </div>
             )}
@@ -615,15 +624,15 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
               <div style={{ display:'grid', gridTemplateColumns:'repeat(2, 1fr)', gap:'8px' }}>
                 {person.photos.map((url, i) => (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img key={i} src={url} alt={`${person.firstName} — photo ${i+1}`}
+                  <img key={i} src={url} alt={t('galleryPhotoAlt', { name: person.firstName, index: i+1 })}
                     style={{ width:'100%', aspectRatio:'1', objectFit:'cover', border:'1.5px solid var(--border-strong)', borderRadius:'var(--radius)' }} />
                 ))}
               </div>
             ) : (
               <div style={{ textAlign:'center', padding:'40px 16px', color:'var(--text-muted)', display:'flex', flexDirection:'column', alignItems:'center', gap:'10px' }}>
                 <Images size={40} strokeWidth={1.2} aria-hidden="true" />
-                <p style={{ margin:0, fontSize:'13px' }}>Aucune photo dans la galerie.</p>
-                <button onClick={()=>setTab('edit')} className="btn btn-secondary btn-sm"><Pencil size={13} /> Ajouter des photos</button>
+                <p style={{ margin:0, fontSize:'13px' }}>{t('noPhotos')}</p>
+                <button onClick={()=>setTab('edit')} className="btn btn-secondary btn-sm"><Pencil size={13} /> {t('addPhotos')}</button>
               </div>
             )}
           </div>
@@ -634,18 +643,18 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
             <PersonForm initial={person} onSave={(updates)=>{onUpdate(updates);setTab('profile');}} onCancel={()=>setTab('profile')} />
             <hr className="divider"/>
             {!confirmDelete ? (
-              <button onClick={()=>setConfirmDelete(true)} className="btn btn-danger btn-sm"><Trash2 size={14} /> Supprimer cette personne</button>
+              <button onClick={()=>setConfirmDelete(true)} className="btn btn-danger btn-sm"><Trash2 size={14} /> {t('deletePerson')}</button>
             ) : (
               <div style={{ padding:'12px', background:'var(--bg-muted)', border:'1.5px solid var(--danger)', borderRadius:'var(--radius)' }}>
                 <p style={{ margin:'0 0 10px', fontSize:'13px', color:'var(--text)', display:'flex', alignItems:'flex-start', gap:'6px' }}>
-                  <AlertCircle size={15} style={{ color:'var(--danger)', flexShrink:0, marginTop:'2px' }} aria-hidden="true" /> <span>Supprimer définitivement <strong>{getDisplayName(person)}</strong> ?
+                  <AlertCircle size={15} style={{ color:'var(--danger)', flexShrink:0, marginTop:'2px' }} aria-hidden="true" /> <span>{t.rich('deleteConfirm', { name: getDisplayName(person), strong: (c) => <strong>{c}</strong> })}
                   {relCount > 0
-                    ? <> Cela supprimera aussi <strong>{relCount} relation{relCount > 1 ? 's' : ''}</strong> liée{relCount > 1 ? 's' : ''} à cette personne.</>
-                    : <> Cette personne n&apos;a aucune relation enregistrée.</>}</span>
+                    ? <> {t.rich('deleteConfirmRelations', { count: relCount, strong: (c) => <strong>{c}</strong> })}</>
+                    : <> {t('deleteConfirmNoRelations')}</>}</span>
                 </p>
                 <div style={{ display:'flex', gap:'8px' }}>
-                  <button onClick={onDelete} className="btn btn-danger btn-sm">Oui, supprimer</button>
-                  <button onClick={()=>setConfirmDelete(false)} className="btn btn-ghost btn-sm">Annuler</button>
+                  <button onClick={onDelete} className="btn btn-danger btn-sm">{t('confirmDelete')}</button>
+                  <button onClick={()=>setConfirmDelete(false)} className="btn btn-ghost btn-sm">{t('cancel')}</button>
                 </div>
               </div>
             )}
@@ -680,17 +689,17 @@ function FamilySection({ title, items, PersonLink }: { title: string; items: Per
   );
 }
 
-interface WorldEvent { label: string; start: number; end?: number; icon: string; }
+interface WorldEvent { labelKey: string; start: number; end?: number; icon: string; }
 const WORLD_EVENTS: WorldEvent[] = [
-  { label: 'Première Guerre mondiale', start: 1914, end: 1918, icon: '⚔️' },
-  { label: 'Grande Dépression', start: 1929, end: 1933, icon: '📉' },
-  { label: 'Seconde Guerre mondiale', start: 1939, end: 1945, icon: '⚔️' },
-  { label: 'Mai 68', start: 1968, icon: '✊' },
-  { label: 'Premier homme sur la Lune', start: 1969, icon: '🚀' },
-  { label: 'Chute du mur de Berlin', start: 1989, icon: '🧱' },
-  { label: 'Web grand public', start: 1991, icon: '🌐' },
-  { label: "Passage à l'euro", start: 2002, icon: '💶' },
-  { label: 'Pandémie de COVID-19', start: 2020, end: 2022, icon: '🦠' },
+  { labelKey: 'world_ww1', start: 1914, end: 1918, icon: '⚔️' },
+  { labelKey: 'world_greatDepression', start: 1929, end: 1933, icon: '📉' },
+  { labelKey: 'world_ww2', start: 1939, end: 1945, icon: '⚔️' },
+  { labelKey: 'world_may68', start: 1968, icon: '✊' },
+  { labelKey: 'world_moonLanding', start: 1969, icon: '🚀' },
+  { labelKey: 'world_berlinWall', start: 1989, icon: '🧱' },
+  { labelKey: 'world_publicWeb', start: 1991, icon: '🌐' },
+  { labelKey: 'world_euro', start: 2002, icon: '💶' },
+  { labelKey: 'world_covid', start: 2020, end: 2022, icon: '🦠' },
 ];
 
 function yearFloat(dateStr?: string): number | null {
@@ -701,6 +710,9 @@ function yearFloat(dateStr?: string): number | null {
 }
 
 function LifeTimeline({ person }: { person: Person }) {
+  const t = useTranslations('personPanel');
+  const eventTypeLabel = (type: string) =>
+    KNOWN_EVENT_TYPES.has(type) ? t(`event_${type}`) : (type.charAt(0).toUpperCase() + type.slice(1));
   const PAD = 46;
   const PX = 26; // pixels per year
   const dotY = 64;
@@ -714,7 +726,7 @@ function LifeTimeline({ person }: { person: Person }) {
     ?? (startYf !== null ? Math.max(startYf, nowYear) : null);
 
   if (startYf === null || endYf === null) {
-    return <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>Renseignez une date de naissance ou des événements pour afficher la ligne de vie.</div>;
+    return <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>{t('timelineEmpty')}</div>;
   }
 
   const startYear = Math.floor(startYf);
@@ -739,8 +751,8 @@ function LifeTimeline({ person }: { person: Person }) {
   return (
     <div>
       <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>
-        🕰 De {startYear} à {!person.isAlive && person.deathDate ? formatYear(person.deathDate) : "aujourd'hui"}
-        {span > 0 && <> · {span} ans</>}
+        🕰 {t('timelineRange', { start: startYear, end: (!person.isAlive && person.deathDate ? formatYear(person.deathDate) : t('today')) })}
+        {span > 0 && <> · {t('ageYears', { age: span })}</>}
       </div>
       <div style={{ overflowX: 'auto', overflowY: 'hidden', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-muted)' }}>
         <svg width={width} height={HEIGHT} style={{ display: 'block' }}>
@@ -762,12 +774,12 @@ function LifeTimeline({ person }: { person: Person }) {
             const wy = 112;
             return (
               <g key={i}>
-                <title>{w.label} ({w.start}{w.end ? `–${w.end}` : ''})</title>
+                <title>{t(w.labelKey)} ({w.start}{w.end ? `–${w.end}` : ''})</title>
                 {w.end
                   ? <rect x={x0} y={wy} width={Math.max(3, x1 - x0)} height={16} rx={4} fill="var(--deceased)" opacity={0.55} />
                   : <circle cx={x0} cy={wy + 8} r={6} fill="var(--deceased)" opacity={0.7} />}
                 <text x={w.end ? (x0 + x1) / 2 : x0} y={wy + 34} textAnchor="middle" fontSize={9} fill="var(--text-muted)" fontFamily="var(--font-body)">
-                  {w.icon} {w.label.length > 18 ? w.label.slice(0, 17) + '…' : w.label}
+                  {w.icon} {t(w.labelKey).length > 18 ? t(w.labelKey).slice(0, 17) + '…' : t(w.labelKey)}
                 </text>
               </g>
             );
@@ -779,7 +791,7 @@ function LifeTimeline({ person }: { person: Person }) {
             const px = x(yf);
             return (
               <g key={ev.id} style={{ cursor: 'default' }}>
-                <title>{`${ev.type.charAt(0).toUpperCase() + ev.type.slice(1)} — ${formatDate(ev.date)}${ev.description ? `\n${ev.description}` : ''}`}</title>
+                <title>{`${eventTypeLabel(ev.type)} — ${formatDate(ev.date)}${ev.description ? `\n${ev.description}` : ''}`}</title>
                 <line x1={px} y1={dotY} x2={px} y2={36} stroke="var(--border)" strokeWidth={1} />
                 <text x={px} y={28} textAnchor="middle" fontSize={14}>{EVENT_ICONS[ev.type] || '📌'}</text>
                 <circle cx={px} cy={dotY} r={5} fill="var(--accent)" stroke="var(--bg-card)" strokeWidth={1.5} />
@@ -790,17 +802,19 @@ function LifeTimeline({ person }: { person: Person }) {
         </svg>
       </div>
       <div style={{ fontSize: '11px', color: 'var(--text-light)', marginTop: '6px', textAlign: 'center' }}>
-        Survolez un point pour le détail · événements mondiaux en gris
+        {t('timelineHint')}
       </div>
     </div>
   );
 }
 
 function CompletionDonut({ score, color }: { score: number; color: string }) {
+  const t = useTranslations('personPanel');
   const r = 13, circ = 2 * Math.PI * r;
+  const label = t('profileCompletion', { score });
   return (
-    <svg width={34} height={34} viewBox="0 0 34 34" role="img" aria-label={`Profil complété à ${score}%`}>
-      <title>{`Profil complété à ${score}%`}</title>
+    <svg width={34} height={34} viewBox="0 0 34 34" role="img" aria-label={label}>
+      <title>{label}</title>
       <circle cx={17} cy={17} r={r} fill="none" stroke="var(--bg-muted)" strokeWidth={4} />
       <circle cx={17} cy={17} r={r} fill="none" stroke={color} strokeWidth={4} strokeLinecap="round"
         strokeDasharray={circ} strokeDashoffset={circ * (1 - score / 100)} transform="rotate(-90 17 17)"

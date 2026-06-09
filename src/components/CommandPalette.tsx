@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { FamilyTree, ViewMode, Person } from '@/types';
 import { getDisplayName, formatYear, fuzzyMatch } from '@/lib/treeUtils';
 import { useOverlay } from '@/hooks/useOverlay';
@@ -37,17 +38,17 @@ interface CommandItem {
   treeName?: string; // for grouping cross-tree person results
 }
 
-const VIEW_DEFS: { view: ViewMode; Icon: LucideIcon; label: string }[] = [
-  { view: 'tree', Icon: TreePine, label: 'Arbre' },
-  { view: 'list', Icon: Users, label: 'Personnes' },
-  { view: 'timeline', Icon: Calendar, label: 'Chronologie' },
-  { view: 'map', Icon: MapIcon, label: 'Carte' },
-  { view: 'gallery', Icon: Images, label: 'Galerie' },
-  { view: 'journal', Icon: BookOpen, label: 'Journal' },
-  { view: 'birthdays', Icon: Cake, label: 'Anniversaires' },
-  { view: 'ancestors', Icon: Search, label: 'Exploration' },
-  { view: 'statistics', Icon: BarChart2, label: 'Statistiques' },
-  { view: 'settings', Icon: Settings, label: 'Paramètres' },
+const VIEW_DEFS: { view: ViewMode; Icon: LucideIcon; labelKey: string }[] = [
+  { view: 'tree', Icon: TreePine, labelKey: 'view.tree' },
+  { view: 'list', Icon: Users, labelKey: 'view.list' },
+  { view: 'timeline', Icon: Calendar, labelKey: 'view.timeline' },
+  { view: 'map', Icon: MapIcon, labelKey: 'view.map' },
+  { view: 'gallery', Icon: Images, labelKey: 'view.gallery' },
+  { view: 'journal', Icon: BookOpen, labelKey: 'view.journal' },
+  { view: 'birthdays', Icon: Cake, labelKey: 'view.birthdays' },
+  { view: 'ancestors', Icon: Search, labelKey: 'view.ancestors' },
+  { view: 'statistics', Icon: BarChart2, labelKey: 'view.statistics' },
+  { view: 'settings', Icon: Settings, labelKey: 'view.settings' },
 ];
 
 const RECENT_KEY = 'suimini_recent_searches';
@@ -72,6 +73,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
 }
 
 export default function CommandPalette({ tree, trees, activeTreeId, onClose, onOpenPerson, onNavigate, onAddPerson, onImportExport, onPrint, onShare, onPresent, onTreeSelector, onNarrative }: Props) {
+  const t = useTranslations('commandPalette');
   const activeTreeName = trees.find(t => t.id === activeTreeId)?.name ?? null;
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
@@ -96,21 +98,24 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
   }
 
   const actions: CommandItem[] = useMemo(() => [
-    { id: 'a-add', kind: 'action', label: 'Ajouter une personne', Icon: UserPlus, searchText: 'ajouter personne nouveau membre add', run: () => { onClose(); onAddPerson(); } },
-    { id: 'a-import', kind: 'action', label: 'Importer des données', sublabel: 'JSON, GEDCOM', Icon: Download, searchText: 'importer import charger gedcom json fichier ouvrir', run: () => { onClose(); onImportExport('import'); } },
-    { id: 'a-export', kind: 'action', label: "Exporter l'arbre", sublabel: 'JSON, GEDCOM', Icon: Upload, searchText: 'exporter export telecharger sauvegarde gedcom json', run: () => { onClose(); onImportExport('export'); } },
-    { id: 'a-narrative', kind: 'action', label: 'Générer le rapport', sublabel: 'Récit IA de la famille', Icon: ScrollText, searchText: 'rapport narratif recit histoire ia genere texte resume biographie', run: () => { onClose(); onNarrative(); } },
-    { id: 'a-present', kind: 'action', label: 'Mode présentation', sublabel: 'Diaporama plein écran', Icon: Play, searchText: 'presentation diaporama plein ecran slideshow', run: () => { onClose(); onPresent(); } },
-    { id: 'a-print', kind: 'action', label: 'Imprimer', Icon: Printer, searchText: 'imprimer print pdf', run: () => { onClose(); onPrint(); } },
-    { id: 'a-share', kind: 'action', label: 'Partager', Icon: Share2, searchText: 'partager share lien', run: () => { onClose(); onShare(); } },
-    { id: 'a-tree', kind: 'action', label: "Changer d'arbre", Icon: TreePine, searchText: 'changer arbre tree selecteur', run: () => { onClose(); onTreeSelector(); } },
-  ], [onClose, onAddPerson, onPresent, onImportExport, onPrint, onShare, onTreeSelector, onNarrative]);
+    { id: 'a-add', kind: 'action', label: t('action.add'), Icon: UserPlus, searchText: 'ajouter personne nouveau membre add', run: () => { onClose(); onAddPerson(); } },
+    { id: 'a-import', kind: 'action', label: t('action.import'), sublabel: 'JSON, GEDCOM', Icon: Download, searchText: 'importer import charger gedcom json fichier ouvrir', run: () => { onClose(); onImportExport('import'); } },
+    { id: 'a-export', kind: 'action', label: t('action.export'), sublabel: 'JSON, GEDCOM', Icon: Upload, searchText: 'exporter export telecharger sauvegarde gedcom json', run: () => { onClose(); onImportExport('export'); } },
+    { id: 'a-narrative', kind: 'action', label: t('action.narrative'), sublabel: t('action.narrativeSub'), Icon: ScrollText, searchText: 'rapport narratif recit histoire ia genere texte resume biographie', run: () => { onClose(); onNarrative(); } },
+    { id: 'a-present', kind: 'action', label: t('action.present'), sublabel: t('action.presentSub'), Icon: Play, searchText: 'presentation diaporama plein ecran slideshow', run: () => { onClose(); onPresent(); } },
+    { id: 'a-print', kind: 'action', label: t('action.print'), Icon: Printer, searchText: 'imprimer print pdf', run: () => { onClose(); onPrint(); } },
+    { id: 'a-share', kind: 'action', label: t('action.share'), Icon: Share2, searchText: 'partager share lien', run: () => { onClose(); onShare(); } },
+    { id: 'a-tree', kind: 'action', label: t('action.switchTree'), Icon: TreePine, searchText: 'changer arbre tree selecteur', run: () => { onClose(); onTreeSelector(); } },
+  ], [t, onClose, onAddPerson, onPresent, onImportExport, onPrint, onShare, onTreeSelector, onNarrative]);
 
-  const views: CommandItem[] = useMemo(() => VIEW_DEFS.map(v => ({
-    id: `v-${v.view}`, kind: 'view' as const, label: `Aller à : ${v.label}`, Icon: v.Icon,
-    searchText: `${v.label} vue navigation aller`,
-    run: () => { onClose(); onNavigate(v.view); },
-  })), [onClose, onNavigate]);
+  const views: CommandItem[] = useMemo(() => VIEW_DEFS.map(v => {
+    const viewLabel = t(v.labelKey);
+    return {
+      id: `v-${v.view}`, kind: 'view' as const, label: t('view.goTo', { view: viewLabel }), Icon: v.Icon,
+      searchText: `${viewLabel} vue navigation aller`,
+      run: () => { onClose(); onNavigate(v.view); },
+    };
+  }), [t, onClose, onNavigate]);
 
   // Persons across ALL trees, tagged with their tree for grouping.
   const personItems: CommandItem[] = useMemo(() => {
@@ -129,7 +134,7 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
   const groupByTree = (items: CommandItem[]) => {
     const byTree = new Map<string, CommandItem[]>();
     for (const it of items) {
-      const k = it.treeName || 'Membres';
+      const k = it.treeName || t('group.members');
       (byTree.get(k) ?? byTree.set(k, []).get(k)!).push(it);
     }
     return [...byTree.entries()]
@@ -141,21 +146,21 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
     const q = normalize(query.trim());
     const groups: { title: string; items: CommandItem[] }[] = [];
     if (!q) {
-      groups.push({ title: 'Actions', items: actions });
-      groups.push({ title: 'Navigation', items: views });
+      groups.push({ title: t('group.actions'), items: actions });
+      groups.push({ title: t('group.navigation'), items: views });
       const activePersons = personItems.filter(i => i.treeName === activeTreeName).slice(0, 6);
-      if (activePersons.length) groups.push({ title: activeTreeName || 'Membres', items: activePersons });
+      if (activePersons.length) groups.push({ title: activeTreeName || t('group.members'), items: activePersons });
     } else {
       const persons = personItems.filter(i => i.searchText.includes(q) || fuzzyMatch(i.searchText, query)).slice(0, 30);
       groups.push(...groupByTree(persons));
       const navs = views.filter(i => normalize(i.searchText).includes(q));
       const acts = actions.filter(i => normalize(i.searchText).includes(q));
-      if (navs.length) groups.push({ title: 'Navigation', items: navs });
-      if (acts.length) groups.push({ title: 'Actions', items: acts });
+      if (navs.length) groups.push({ title: t('group.navigation'), items: navs });
+      if (acts.length) groups.push({ title: t('group.actions'), items: acts });
     }
     return groups;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, actions, views, personItems, activeTreeName]);
+  }, [query, actions, views, personItems, activeTreeName, t]);
 
   const flat = useMemo(() => results.flatMap(g => g.items), [results]);
 
@@ -183,7 +188,7 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
       onMouseDown={e => e.target === e.currentTarget && onClose()}
       style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(26,22,18,0.45)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '12vh' }}
     >
-      <div ref={overlayRef} tabIndex={-1} className="animate-scale-in" onKeyDown={handleKeyDown} role="dialog" aria-modal="true" aria-label="Palette de commandes"
+      <div ref={overlayRef} tabIndex={-1} className="animate-scale-in" onKeyDown={handleKeyDown} role="dialog" aria-modal="true" aria-label={t('dialogLabel')}
         style={{ width: '92%', maxWidth: '560px', background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--border)', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '70vh' }}
       >
         {/* Search input */}
@@ -193,8 +198,8 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
             ref={inputRef}
             value={query}
             onChange={e => { setQuery(e.target.value); setActive(0); }}
-            placeholder="Rechercher un membre, une vue, une action…"
-            aria-label="Rechercher"
+            placeholder={t('searchPlaceholder')}
+            aria-label={t('searchAriaLabel')}
             style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: '16px', color: 'var(--text)', fontFamily: 'var(--font-body)' }}
           />
           <kbd style={{ fontSize: '10px', color: 'var(--text-light)', border: '1px solid var(--border)', borderRadius: '4px', padding: '2px 6px' }}>Esc</kbd>
@@ -217,7 +222,7 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
           {flat.length === 0 && (
             <div style={{ padding: '36px 28px', textAlign: 'center', color: 'var(--text-muted)' }}>
               <SearchX size={40} style={{ color: 'var(--text-light)', marginBottom: '10px' }} aria-hidden="true" />
-              <div style={{ fontSize: '14px' }}>Aucun résultat pour « {query} »</div>
+              <div style={{ fontSize: '14px' }}>{t('noResults', { query })}</div>
             </div>
           )}
           {results.map(group => (
@@ -259,9 +264,9 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
 
         {/* Footer */}
         <div style={{ display: 'flex', gap: '14px', padding: '8px 16px', borderTop: '1px solid var(--border)', fontSize: '11px', color: 'var(--text-light)' }}>
-          <span>↑↓ naviguer</span>
-          <span>↵ ouvrir</span>
-          <span>esc fermer</span>
+          <span>↑↓ {t('hint.navigate')}</span>
+          <span>↵ {t('hint.open')}</span>
+          <span>esc {t('hint.close')}</span>
           <span style={{ marginLeft: 'auto' }}>⌘K</span>
         </div>
       </div>

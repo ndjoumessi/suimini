@@ -23,22 +23,20 @@ interface Props {
   onNarrative: () => void;
 }
 
-const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-
-/** "il y a 2 jours" — coarse French relative time, past only. */
-function relativeTime(iso?: string): string {
+/** Locale-aware coarse relative time (past only), e.g. "2 days ago" / "il y a 2 jours". */
+function relativeTime(iso: string | undefined, locale: string): string {
   if (!iso) return '';
   const then = new Date(iso).getTime();
   if (Number.isNaN(then)) return '';
   const diff = Math.max(0, Date.now() - then);
   const day = 86400000;
   const days = Math.floor(diff / day);
-  if (days <= 0) return "aujourd'hui";
-  if (days === 1) return 'hier';
-  if (days < 7) return `il y a ${days} jours`;
-  if (days < 30) { const w = Math.floor(days / 7); return `il y a ${w} semaine${w > 1 ? 's' : ''}`; }
-  if (days < 365) { const m = Math.floor(days / 30); return `il y a ${m} mois`; }
-  const y = Math.floor(days / 365); return `il y a ${y} an${y > 1 ? 's' : ''}`;
+  const rtf = new Intl.RelativeTimeFormat(locale === 'en' ? 'en' : 'fr', { numeric: 'auto' });
+  if (days <= 0) return rtf.format(0, 'day');
+  if (days < 7) return rtf.format(-days, 'day');
+  if (days < 30) return rtf.format(-Math.floor(days / 7), 'week');
+  if (days < 365) return rtf.format(-Math.floor(days / 30), 'month');
+  return rtf.format(-Math.floor(days / 365), 'year');
 }
 
 function firstNameOf(displayName?: string | null, email?: string | null): string {
@@ -171,32 +169,32 @@ export default function DashboardView({ trees, displayName, userEmail, onNavigat
         </Card>
 
         {/* B — Anniversaires ce mois-ci */}
-        <Card eyebrow="Ce mois-ci" title={t('birthdays')} Icon={Cake} delay={0.1}>
+        <Card eyebrow={t('birthdaysEyebrow')} title={t('birthdays')} Icon={Cake} delay={0.1}>
           {birthdays.length > 0 ? (
             <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {birthdays.map((a, i) => {
                 const d = new Date(a.date);
-                const when = `${d.getDate()} ${MONTHS[d.getMonth()]}`;
+                const when = d.toLocaleDateString(locale === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'long' });
                 return (
                   <li key={`${a.person.id}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ width: '34px', textAlign: 'center', flexShrink: 0 }}>
-                      <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--accent)' }}>{a.daysUntil === 0 ? "Auj." : `J-${a.daysUntil}`}</span>
+                      <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--accent)' }}>{a.daysUntil === 0 ? t('todayShort') : t('daysShort', { days: a.daysUntil })}</span>
                     </span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 700, fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getDisplayName(a.person)}</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{when} · va avoir {a.age} ans</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{when} · {t('birthdayTurning', { age: a.age ?? 0 })}</div>
                     </div>
                   </li>
                 );
               })}
             </ul>
           ) : (
-            <EmptyLine>Aucun anniversaire ce mois.</EmptyLine>
+            <EmptyLine>{t('noBirthdays')}</EmptyLine>
           )}
         </Card>
 
         {/* C — Dernières modifications */}
-        <Card eyebrow="Activité" title={t('activity')} Icon={Clock} delay={0.2}>
+        <Card eyebrow={t('activityEyebrow')} title={t('activity')} Icon={Clock} delay={0.2}>
           {recent.length > 0 ? (
             <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
               {recent.map(({ person, treeId, treeName }) => (
@@ -213,19 +211,19 @@ export default function DashboardView({ trees, displayName, userEmail, onNavigat
                     </span>
                     <span style={{ flex: 1, minWidth: 0 }}>
                       <span style={{ display: 'block', fontWeight: 700, fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getDisplayName(person)}</span>
-                      <span style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{treeName} · {relativeTime(person.updatedAt)}</span>
+                      <span style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{treeName} · {relativeTime(person.updatedAt, locale)}</span>
                     </span>
                   </button>
                 </li>
               ))}
             </ul>
           ) : (
-            <EmptyLine>Aucune personne pour l&apos;instant.</EmptyLine>
+            <EmptyLine>{t('noPersons')}</EmptyLine>
           )}
         </Card>
 
         {/* D — Statistiques rapides */}
-        <Card eyebrow="En un coup d'œil" title={t('stats')} Icon={BarChart2} delay={0.3}>
+        <Card eyebrow={t('statsEyebrow')} title={t('stats')} Icon={BarChart2} delay={0.3}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '18px 12px' }}>
             <Stat value={summary.totalPersons} label={statLabels.persons} />
             <Stat value={summary.totalTrees} label={statLabels.trees} />
@@ -239,7 +237,7 @@ export default function DashboardView({ trees, displayName, userEmail, onNavigat
         </Card>
 
         {/* E — Accès rapide */}
-        <Card eyebrow="Navigation" title={t('quickAccess')} Icon={Home} delay={0.4}>
+        <Card eyebrow={t('quickAccessEyebrow')} title={t('quickAccess')} Icon={Home} delay={0.4}>
           <div className="dash-quick" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
             {QUICK.map(q => (
               <button key={q.view} onClick={() => onNavigate(q.view)} className="btn btn-secondary btn-sm" style={{ flexDirection: 'column', gap: '6px', padding: '12px 6px', height: 'auto' }}>
@@ -251,14 +249,14 @@ export default function DashboardView({ trees, displayName, userEmail, onNavigat
         </Card>
 
         {/* F — Rapport IA */}
-        <Card eyebrow="Intelligence" title={t('narrative')} Icon={Sparkles} delay={0.5}>
+        <Card eyebrow={t('narrativeEyebrow')} title={t('narrative')} Icon={Sparkles} delay={0.5}>
           <p style={{ margin: '0 0 14px', color: 'var(--text-muted)', fontSize: '13px' }}>
-            Laissez l&apos;IA composer le récit de votre famille à partir de vos données.
+            {t('narrativeIntro')}
           </p>
           <button
             onClick={onNarrative}
             disabled={summary.totalPersons === 0}
-            title={summary.totalPersons === 0 ? "Créez d'abord un arbre pour générer un récit" : undefined}
+            title={summary.totalPersons === 0 ? t('narrativeNeedsTree') : undefined}
             className="btn btn-primary btn-sm"
             style={{ gap: '7px' }}
           >
@@ -266,7 +264,7 @@ export default function DashboardView({ trees, displayName, userEmail, onNavigat
           </button>
           {summary.totalPersons === 0 && (
             <p style={{ margin: '8px 0 0', color: 'var(--text-light)', fontSize: '12px' }}>
-              Créez d&apos;abord un arbre pour générer un récit.
+              {t('narrativeNeedsTree')}
             </p>
           )}
         </Card>

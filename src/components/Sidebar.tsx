@@ -75,15 +75,17 @@ interface Props {
 }
 
 function SyncIndicator({ status }: { status: 'idle' | 'saved' | 'syncing' | 'offline' | 'error' }) {
-  if (status === 'syncing') return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--accent)' }}><span className="spinner" style={{ width: 11, height: 11 }} /> Synchronisation…</span>;
-  if (status === 'error') return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--danger)' }}><CloudOff size={12} /> Erreur sync</span>;
-  if (status === 'offline') return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--danger)' }}><CloudOff size={12} /> Hors ligne</span>;
-  if (status === 'saved') return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--success)' }}><Check size={12} /> Sauvegardé</span>;
+  const ts = useTranslations('sidebar');
+  if (status === 'syncing') return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--accent)' }}><span className="spinner" style={{ width: 11, height: 11 }} /> {ts('syncSyncing')}</span>;
+  if (status === 'error') return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--danger)' }}><CloudOff size={12} /> {ts('syncError')}</span>;
+  if (status === 'offline') return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--danger)' }}><CloudOff size={12} /> {ts('syncOffline')}</span>;
+  if (status === 'saved') return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--success)' }}><Check size={12} /> {ts('syncSaved')}</span>;
   return null; // idle → rien (notamment 0 arbre)
 }
 
 export default function Sidebar({ activeView, onViewChange, activeTree, trees, onShowTreeSelector, onAddPerson, onShowImportExport, onPrint, onShare, onPresent, birthdayAlertCount = 0, dark, onToggleDark, isOpen, onClose, userEmail, displayName, isDemo, cloud, syncStatus = 'idle', presenceCount = 0, onSignIn, onSignOut, isAdmin = false, unreadCount = 0 }: Props) {
   const t = useTranslations('nav');
+  const ts = useTranslations('sidebar');
 
   return (
     <aside style={{ width: '232px', flexShrink: 0, background: 'var(--bg-card)', borderRight: 'var(--bw) solid var(--border-strong)', display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 50 }}
@@ -91,16 +93,16 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
     >
       {/* Logo + dark toggle */}
       <div style={{ padding: '16px 16px 12px', borderBottom: 'var(--bw) solid var(--border-strong)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-        <Link href="/" aria-label="Retour à l'accueil du site" title="Retour au site" style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
+        <Link href="/" aria-label={ts('backToSiteAria')} title={ts('backToSiteTitle')} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
           <BrandLockup size={26} color="var(--ink)" accent="var(--accent)" surface="var(--bg-card)" fontSize={20} />
           <div style={{ marginTop: '5px' }}>
           {isDemo
-            ? <span className="badge badge-accent" style={{ fontSize: '9px' }}>Mode démo</span>
-            : <div className="label" style={{ fontSize: '10px', letterSpacing: '1px' }}>Arbre Généalogique</div>}
+            ? <span className="badge badge-accent" style={{ fontSize: '9px' }}>{ts('demoBadge')}</span>
+            : <div className="label" style={{ fontSize: '10px', letterSpacing: '1px' }}>{ts('tagline')}</div>}
           </div>
         </Link>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-          <button onClick={onToggleDark} className="icon-btn" aria-label={dark ? 'Activer le mode clair' : 'Activer le mode sombre'} title={dark ? 'Mode clair' : 'Mode sombre'}>
+          <button onClick={onToggleDark} className="icon-btn" aria-label={dark ? ts('lightModeAria') : ts('darkModeAria')} title={dark ? ts('lightModeTitle') : ts('darkModeTitle')}>
             {dark ? <Sun size={17} /> : <Moon size={17} />}
           </button>
           <LanguageSwitcher tone="app" />
@@ -109,27 +111,27 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
 
       {/* Active tree selector */}
       <button onClick={onShowTreeSelector}
-        aria-label="Changer d'arbre"
+        aria-label={ts('changeTreeAria')}
         style={{ margin: '10px 12px', padding: '10px 12px', background: 'var(--accent-light)', border: 'var(--bw) solid var(--border-strong)', borderRadius: 'var(--radius)', cursor: 'pointer', textAlign: 'left', transition: 'box-shadow var(--t-fast), transform var(--t-fast)' }}
         onMouseEnter={e => { e.currentTarget.style.transform = 'translate(-2px,-2px)'; e.currentTarget.style.boxShadow = 'var(--shadow)'; }}
         onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
       >
-        <div className="label" style={{ fontSize: '10px', marginBottom: '2px' }}>Arbre actif</div>
+        <div className="label" style={{ fontSize: '10px', marginBottom: '2px' }}>{ts('activeTree')}</div>
         <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--accent)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }}>
-            {activeTree?.name || 'Aucun arbre'}
+            {activeTree?.name || ts('noTree')}
           </span>
           <ChevronDown size={14} style={{ opacity: 0.6 }} />
         </div>
         {activeTree && (
           <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px' }}>
-            {activeTree.persons.length} personnes · {activeTree.relationships.length} liens
+            {ts('treeMeta', { persons: activeTree.persons.length, links: activeTree.relationships.length })}
           </div>
         )}
       </button>
 
       {/* Navigation */}
-      <nav style={{ flex: 1, padding: '4px 8px', overflowY: 'auto' }} aria-label="Navigation principale">
+      <nav style={{ flex: 1, padding: '4px 8px', overflowY: 'auto' }} aria-label={ts('navAria')}>
         {NAV_GROUPS.map((group, gi) => (
           <div key={gi} style={{ paddingTop: gi > 0 ? '6px' : 0, marginTop: gi > 0 ? '6px' : 0, borderTop: gi > 0 ? '1px solid var(--border)' : 'none' }}>
             {group.map(item => {
@@ -208,28 +210,28 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
       {/* Actions */}
       <div style={{ padding: '8px 10px', borderTop: '1px solid var(--border)' }}>
         <button onClick={onAddPerson} className="btn btn-primary" style={{ width: '100%', height: '36px', borderRadius: '8px', marginBottom: '6px' }}>
-          <Plus size={16} /> Ajouter une personne
+          <Plus size={16} /> {ts('addPerson')}
         </button>
         <button onClick={onPresent} className="btn btn-secondary btn-sm" style={{ width: '100%', marginBottom: '6px' }}>
-          <Play size={14} /> Mode présentation
+          <Play size={14} /> {ts('presentMode')}
         </button>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px', marginBottom: '5px' }}>
           <button onClick={onShare} className="btn btn-secondary btn-sm">
-            <Share2 size={14} /> Partager
+            <Share2 size={14} /> {ts('share')}
           </button>
           <button onClick={onShowImportExport} className="btn btn-secondary btn-sm">
-            <FolderOpen size={14} /> Import
+            <FolderOpen size={14} /> {ts('import')}
           </button>
         </div>
         <button onClick={onPrint} className="btn btn-secondary btn-sm" style={{ width: '100%' }}>
-          <Printer size={14} /> Imprimer
+          <Printer size={14} /> {ts('print')}
         </button>
       </div>
 
       {/* Back to the public site */}
       <div style={{ padding: '6px 10px', borderTop: '1px solid var(--border)' }}>
         <Link href="/" className="sb-back-link" onClick={onClose}>
-          <ArrowLeft size={14} aria-hidden="true" /> Retour au site
+          <ArrowLeft size={14} aria-hidden="true" /> {ts('backToSite')}
         </Link>
       </div>
 
@@ -239,7 +241,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '2px' }}>
               <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/profil'; }}
-                aria-label="Mon profil" title="Mon profil"
+                aria-label={ts('myProfile')} title={ts('myProfile')}
                 style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '10px', background: 'none', border: 'none', padding: '2px', cursor: 'pointer', textAlign: 'left', borderRadius: 'var(--radius)' }}
                 onMouseEnter={e => e.currentTarget.style.background = 'var(--interactive)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'none'}
@@ -252,14 +254,14 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
                   <div style={{ fontSize: '11px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{truncate(userEmail, 22)}</div>
                 </div>
               </button>
-              <button onClick={onSignOut} aria-label="Se déconnecter" title="Se déconnecter" className="sb-logout"><LogOut size={16} /></button>
+              <button onClick={onSignOut} aria-label={ts('signOut')} title={ts('signOut')} className="sb-logout"><LogOut size={16} /></button>
             </div>
             {cloud && syncStatus !== 'idle' && (
               <div style={{ fontSize: '10px', marginTop: '5px', textAlign: 'center' }}><SyncIndicator status={syncStatus} /></div>
             )}
             {presenceCount > 1 && (
               <div style={{ fontSize: '10px', color: 'var(--accent)', textAlign: 'center', marginTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                <Users size={11} /> {presenceCount} connectés sur cet arbre
+                <Users size={11} /> {ts('presence', { count: presenceCount })}
               </div>
             )}
           </>
@@ -267,7 +269,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
           // Demo mode also lands here: the top DemoBanner already shows the demo
           // status + "Quitter la démo", so the sidebar only offers the sign-in CTA.
           <button onClick={onSignIn} className="btn btn-secondary btn-sm" style={{ width: '100%' }}>
-            <LogIn size={14} /> Se connecter
+            <LogIn size={14} /> {ts('signIn')}
           </button>
         )}
       </div>
@@ -275,7 +277,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
       {/* Footer */}
       <div style={{ padding: '6px 14px', borderTop: '1px solid var(--border)', textAlign: 'center' }}>
         <div style={{ fontSize: '10px', color: 'var(--text-light)' }}>
-          {trees.length} arbre{trees.length > 1 ? 's' : ''} · Suimini v1.5{userEmail ? '' : ' · invité'}
+          {ts('footerTrees', { count: trees.length })} · Suimini v1.5{userEmail ? '' : ` · ${ts('footerGuest')}`}
         </div>
       </div>
 

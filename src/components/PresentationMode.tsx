@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { Person } from '@/types';
 import { useOverlay } from '@/hooks/useOverlay';
 import { getFullName, formatDate, getAge } from '@/lib/treeUtils';
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export default function PresentationMode({ persons, onClose }: Props) {
+  const t = useTranslations('presentation');
   // Chronological order for a coherent family narrative; undated members last.
   const ordered = useMemo(() => {
     return [...persons].sort((a, b) => {
@@ -41,10 +43,10 @@ export default function PresentationMode({ persons, onClose }: Props) {
   if (ordered.length === 0) {
     return (
       <div ref={overlayRef} tabIndex={-1} className="presentation-root" style={rootStyle}>
-        <button onClick={onClose} aria-label="Quitter" style={closeStyle}><X size={20} /></button>
+        <button onClick={onClose} aria-label={t('close')} style={closeStyle}><X size={20} /></button>
         <div style={{ color: '#d8d2c8', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
           <Film size={48} strokeWidth={1.2} aria-hidden="true" />
-          Aucun membre à présenter.
+          {t('empty')}
         </div>
       </div>
     );
@@ -56,11 +58,11 @@ export default function PresentationMode({ persons, onClose }: Props) {
 
   return (
     <div ref={overlayRef} tabIndex={-1} className="presentation-root" style={rootStyle}>
-      <button onClick={onClose} style={closeStyle} aria-label="Quitter (Échap)" title="Quitter (Échap)"><X size={20} /></button>
+      <button onClick={onClose} style={closeStyle} aria-label={t('closeEsc')} title={t('closeEsc')}><X size={20} /></button>
 
       {/* Navigation arrows */}
-      <button onClick={() => go(-1)} disabled={index === 0} style={{ ...arrowStyle, left: '24px', opacity: index === 0 ? 0.25 : 1 }} aria-label="Précédent" title="Précédent (←)"><ChevronLeft size={28} /></button>
-      <button onClick={() => go(1)} disabled={index === ordered.length - 1} style={{ ...arrowStyle, right: '24px', opacity: index === ordered.length - 1 ? 0.25 : 1 }} aria-label="Suivant" title="Suivant (→)"><ChevronRight size={28} /></button>
+      <button onClick={() => go(-1)} disabled={index === 0} style={{ ...arrowStyle, left: '24px', opacity: index === 0 ? 0.25 : 1 }} aria-label={t('previous')} title={t('previousHint')}><ChevronLeft size={28} /></button>
+      <button onClick={() => go(1)} disabled={index === ordered.length - 1} style={{ ...arrowStyle, right: '24px', opacity: index === ordered.length - 1 ? 0.25 : 1 }} aria-label={t('next')} title={t('nextHint')}><ChevronRight size={28} /></button>
 
       {/* Slide (fade transition on each change, retriggered via key) */}
       <div key={index} className="present-fade"
@@ -88,7 +90,7 @@ export default function PresentationMode({ persons, onClose }: Props) {
           {!person.isAlive && person.deathDate ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>— <Cross size={13} aria-hidden="true" /> {formatDate(person.deathDate, person.deathDateApprox)}</span> : null}
         </div>
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '24px', flexWrap: 'wrap' }}>
-          {age !== null && <span style={pillStyle}>{age} ans</span>}
+          {age !== null && <span style={pillStyle}>{t('age', { count: age })}</span>}
           {person.occupation && <span style={pillStyle}>{person.occupation}</span>}
           {person.birthPlace?.city && <span style={{ ...pillStyle, display: 'inline-flex', alignItems: 'center', gap: '5px' }}><MapPin size={12} aria-hidden="true" /> {person.birthPlace.city}</span>}
         </div>
@@ -105,13 +107,13 @@ export default function PresentationMode({ persons, onClose }: Props) {
       <div style={{ position: 'absolute', bottom: '28px', left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '60%' }}>
           {ordered.map((_, i) => (
-            <button key={i} onClick={() => setIndex(i)} aria-label={`Diapositive ${i + 1}`}
+            <button key={i} onClick={() => setIndex(i)} aria-label={t('slide', { number: i + 1 })}
               style={{ width: i === index ? '24px' : '9px', height: '9px', border: 'none', cursor: 'pointer', padding: 0, transition: 'all 0.25s', background: i === index ? accent : 'rgba(255,255,255,0.25)' }}
             />
           ))}
         </div>
         <div className="mono" style={{ color: '#8a8276', fontSize: '12px', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-          {index + 1} / {ordered.length} · ← → naviguer · Échap quitter
+          {t('count', { current: index + 1, total: ordered.length })} · {t('navHint')}
         </div>
       </div>
     </div>
