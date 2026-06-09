@@ -180,9 +180,11 @@ export default function Landing() {
           <Reveal delay={230}>
             <div className="lp-cta-row">
               {canEnterApp ? (
-                // Le bouton "Accéder à l'app" vit dans la navbar ; ici, juste un accueil discret.
-                <p className="lp-eyebrow" style={{ margin: 0 }}>
-                  {firstName ? t('hero.welcome', { name: firstName }) : t('hero.welcomeGeneric')}
+                // Le bouton "Accéder à l'app" vit dans la navbar ; ici, un accueil chaleureux discret.
+                <p className="lp-hero-welcome">
+                  {firstName
+                    ? t.rich('hero.welcome', { name: firstName, hl: (chunks) => <strong>{chunks}</strong> })
+                    : t('hero.welcomeGeneric')}
                 </p>
               ) : (
                 <button onClick={startSignup} className="lp-btn-primary lp-btn-hero">{t('hero.cta')}</button>
@@ -366,7 +368,7 @@ export default function Landing() {
         <div className="lp-footer-grid">
           <div style={{ maxWidth: '280px' }}>
             <BrandLockup size={26} color={BONE} accent={ACCENT} surface="#0f0d0b" fontSize={20} style={{ marginBottom: '12px' }} />
-            <p style={{ color: '#b8b2a6', fontSize: '13px', lineHeight: 1.6 }}>L’arbre généalogique moderne — structuré, collaboratif, et toujours avec vous.</p>
+            <p style={{ color: '#b8b2a6', fontSize: '13px', lineHeight: 1.6 }}>L’arbre généalogique moderne : structuré, collaboratif, et toujours avec vous.</p>
           </div>
           <div className="lp-footer-links">
             <span className="lp-foot-h lp-mono">Liens utiles</span>
@@ -384,7 +386,7 @@ export default function Landing() {
         </div>
         <div className="lp-footer-bottom lp-mono">
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><ShieldCheck size={14} /> Données hébergées en Europe · Chiffrement SSL</span>
-          <span>© 2026 Suimini — Tous droits réservés</span>
+          <span>© 2026 Suimini · Tous droits réservés</span>
         </div>
       </footer>
 
@@ -456,6 +458,8 @@ const LANDING_CSS = `
 .lp-tagline-accent { color: ${ACCENT}; }
 .lp-subtitle { font-size: clamp(1rem, 2.2vw, 1.25rem); color: #4a4742; max-width: 560px; margin: 0 auto 30px; line-height: 1.6; }
 .lp-cta-row { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+.lp-hero-welcome { margin: 0; font-size: clamp(1.05rem, 2.4vw, 1.35rem); line-height: 1.5; color: #4a4742; }
+.lp-hero-welcome strong { font-family: var(--font-display); font-weight: 700; color: ${INK}; letter-spacing: -0.01em; }
 .lp-demo-note { margin-top: 14px; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: #6e6a62; }
 .lp-scroll { position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); color: ${ACCENT}; z-index: 2; animation: lpBounce 1.8s ease-in-out infinite; }
 @keyframes lpBounce { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 10px); } }

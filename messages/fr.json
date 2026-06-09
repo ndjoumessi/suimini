@@ -76,11 +76,11 @@
       "eyebrow": "Arbre généalogique · Est. 2026",
       "title": "Préservez l'histoire de votre famille,",
       "titleAccent": "génération après génération.",
-      "subtitle": "L'arbre généalogique moderne — structuré, collaboratif, et toujours avec vous.",
+      "subtitle": "L'arbre généalogique moderne : structuré, collaboratif, et toujours avec vous.",
       "cta": "Commencer gratuitement →",
       "enterApp": "Accéder à l’app",
-      "welcome": "Bienvenue, {name} 👋",
-      "welcomeGeneric": "Bon retour parmi nous 👋",
+      "welcome": "Bon retour, <hl>{name}</hl>",
+      "welcomeGeneric": "Bon retour parmi nous",
       "loginLink": "Déjà un compte ? Se connecter",
       "scrollAria": "Faire défiler",
       "trust": {
@@ -261,7 +261,7 @@
       "demoLink": "ou explorer la démo d’abord →"
     },
     "footer": {
-      "tagline": "L’arbre généalogique moderne — structuré, collaboratif, et toujours avec vous.",
+      "tagline": "L’arbre généalogique moderne : structuré, collaboratif, et toujours avec vous.",
       "linksTitle": "Liens utiles",
       "features": "Fonctions",
       "pricing": "Tarifs",
@@ -271,7 +271,7 @@
       "brandTitle": "Suimini",
       "openApp": "Ouvrir l’app",
       "hosted": "Données hébergées en Europe · Chiffrement SSL",
-      "copyright": "© 2026 Suimini — Tous droits réservés"
+      "copyright": "© 2026 Suimini · Tous droits réservés"
     }
   },
   "tree": {
@@ -543,7 +543,7 @@
     "noResults": "Aucun résultat"
   },
   "demo": {
-    "banner": "Mode démo — données non sauvegardées",
+    "banner": "Mode démo · données non sauvegardées",
     "quit": "Quitter la démo",
     "createAccount": "Créer un compte"
   },

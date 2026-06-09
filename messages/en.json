@@ -76,11 +76,11 @@
       "eyebrow": "Family tree · Est. 2026",
       "title": "Preserve your family history,",
       "titleAccent": "generation after generation.",
-      "subtitle": "The modern family tree — structured, collaborative, and always with you.",
+      "subtitle": "The modern family tree: structured, collaborative, and always with you.",
       "cta": "Get started for free →",
       "enterApp": "Open the app",
-      "welcome": "Welcome back, {name} 👋",
-      "welcomeGeneric": "Welcome back 👋",
+      "welcome": "Welcome back, <hl>{name}</hl>",
+      "welcomeGeneric": "Welcome back",
       "loginLink": "Already have an account? Sign in",
       "scrollAria": "Scroll down",
       "trust": {
@@ -261,7 +261,7 @@
       "demoLink": "or explore the demo first →"
     },
     "footer": {
-      "tagline": "The modern family tree — structured, collaborative, and always with you.",
+      "tagline": "The modern family tree: structured, collaborative, and always with you.",
       "linksTitle": "Useful links",
       "features": "Features",
       "pricing": "Pricing",
@@ -271,7 +271,7 @@
       "brandTitle": "Suimini",
       "openApp": "Open the app",
       "hosted": "Data hosted in Europe · SSL encryption",
-      "copyright": "© 2026 Suimini — All rights reserved"
+      "copyright": "© 2026 Suimini · All rights reserved"
     }
   },
   "tree": {
@@ -543,7 +543,7 @@
     "noResults": "No results"
   },
   "demo": {
-    "banner": "Demo mode — data not saved",
+    "banner": "Demo mode · data not saved",
     "quit": "Exit demo",
     "createAccount": "Create account"
   },
