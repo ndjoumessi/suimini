@@ -945,7 +945,7 @@
     "navHint": "← → naviguer · Échap quitter"
   },
   "statistics": {
-    "heading": "Statistiques — {tree}",
+    "heading": "Statistiques | {tree}",
     "intro": "Votre famille compte <accent>{persons}</accent> {persons, plural, one {personne} other {personnes}}, sur <accent>{generations}</accent> {generations, plural, one {génération} other {générations}}.",
     "males": "Hommes",
     "females": "Femmes",
@@ -1027,7 +1027,7 @@
     "treeEmpty": "Aucune personne à représenter."
   },
   "timeline": {
-    "heading": "Chronologie — {name}",
+    "heading": "Chronologie | {name}",
     "empty": "La chronologie se remplira dès que vos proches auront des dates de naissance, de décès ou d'autres événements.",
     "eventCount": "{count, plural, =0 {Aucun événement} one {# événement} other {# événements}}",
     "decade": "années {decade}",

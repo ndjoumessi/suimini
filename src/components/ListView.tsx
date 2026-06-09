@@ -37,7 +37,7 @@ export default function ListView({ tree, onSelectPerson, onAddPerson }: Props) {
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
           <h2 className="serif" style={{ margin: 0, fontSize: '1.1rem', flex: 1 }}>
-            {t('title')} — {tree.name}
+            {t('title')} | {tree.name}
           </h2>
           <button onClick={() => setShowFilters(!showFilters)} className="btn btn-secondary btn-sm" style={{ gap: '6px' }} aria-expanded={showFilters}>
             <Filter size={14} aria-hidden="true" /> {t('filters')}

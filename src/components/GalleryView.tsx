@@ -71,7 +71,7 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson }: Pr
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <h2 className="serif" style={{ margin: 0, fontSize: '1.1rem', flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Images size={18} style={{ color: 'var(--accent)', flexShrink: 0 }} aria-hidden="true" />
-            {t('heading')} — {t('photoCount', { count: photos.length })}
+            {t('heading')} | {t('photoCount', { count: photos.length })}
           </h2>
           <select
             value={filterPersonId}

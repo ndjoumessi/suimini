@@ -945,7 +945,7 @@
     "navHint": "← → navigate · Esc to exit"
   },
   "statistics": {
-    "heading": "Statistics — {tree}",
+    "heading": "Statistics | {tree}",
     "intro": "Your family has <accent>{persons}</accent> {persons, plural, one {person} other {people}}, across <accent>{generations}</accent> {generations, plural, one {generation} other {generations}}.",
     "males": "Males",
     "females": "Females",
@@ -1027,7 +1027,7 @@
     "treeEmpty": "No one to display."
   },
   "timeline": {
-    "heading": "Timeline — {name}",
+    "heading": "Timeline | {name}",
     "empty": "The timeline will fill in as soon as your relatives have birth dates, death dates, or other events.",
     "eventCount": "{count, plural, =0 {No events} one {# event} other {# events}}",
     "decade": "{decade}s",
