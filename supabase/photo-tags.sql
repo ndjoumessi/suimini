@@ -3,11 +3,13 @@
 -- The app stays fully functional offline (localStorage) when this isn't applied;
 -- photo tags are also persisted inside the tree JSON via the store.
 
+-- Note: trees.id and persons.id are TEXT in schema.sql (the app generates
+-- base36 string ids, not UUIDs), so tree_id / person_id must be text too.
 CREATE TABLE IF NOT EXISTS public.photo_tags (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  tree_id uuid REFERENCES public.trees(id) ON DELETE CASCADE,
+  tree_id text NOT NULL REFERENCES public.trees(id) ON DELETE CASCADE,
   photo_url text NOT NULL,
-  person_id uuid NOT NULL,
+  person_id text NOT NULL REFERENCES public.persons(id) ON DELETE CASCADE,
   bounding_box jsonb,
   confidence float,
   created_at timestamptz DEFAULT now()
