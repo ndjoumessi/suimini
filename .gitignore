@@ -7,6 +7,14 @@ out/
 *.log
 .DS_Store
 
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
 # Impeccable design tooling (reinstall via `npx impeccable skills install`) + local harness settings
 .claude/
 .impeccable/
+.agents/
+skills-lock.json

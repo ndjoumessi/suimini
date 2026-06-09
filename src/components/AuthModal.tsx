@@ -47,16 +47,16 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
     e.preventDefault();
     setError('');
     if (forgot) {
-      if (!emailValid) { setError('Adresse e-mail invalide.'); return; }
+      if (!emailValid) { setError(tr('errorEmailInvalid')); return; }
       setLoading(true);
       const { error } = await resetPassword(email);
       setLoading(false);
       if (error) setError(error);
-      else setSentMsg('Lien de réinitialisation envoyé. Consultez votre boîte mail.');
+      else setSentMsg(tr('successResetSent'));
       return;
     }
     if (tab === 'login') {
-      if (!emailValid || !password) { setError('Veuillez renseigner email et mot de passe.'); return; }
+      if (!emailValid || !password) { setError(tr('errorMissingCredentials')); return; }
       setLoading(true);
       // Safety net: never leave the button stuck on "Connexion en cours…" if the
       // sign-in promise hangs or navigation is blocked.
@@ -81,32 +81,32 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
       } catch {
         clearTimeout(safety);
         setLoading(false);
-        setError('Erreur de connexion. Réessayez.');
+        setError(tr('errorConnection'));
       }
       return;
     }
     // signup
-    if (!displayName.trim()) { setError('Veuillez indiquer un nom d’affichage.'); return; }
-    if (!emailValid) { setError('Adresse e-mail invalide.'); return; }
-    if (!pwValid) { setError('Le mot de passe doit faire au moins 8 caractères.'); return; }
-    if (!confirmValid) { setError('Les mots de passe ne correspondent pas.'); return; }
+    if (!displayName.trim()) { setError(tr('errorMissingName')); return; }
+    if (!emailValid) { setError(tr('errorEmailInvalid')); return; }
+    if (!pwValid) { setError(tr('errorPasswordTooShort')); return; }
+    if (!confirmValid) { setError(tr('errorPasswordMismatch')); return; }
     setLoading(true);
     const { error } = await signUp(email, password, displayName, organization);
     setLoading(false);
     if (error) setError(error);
-    else setSentMsg('Demande envoyée ! Un administrateur va examiner votre inscription.');
+    else setSentMsg(tr('successSignupSent'));
   }
 
   const canSubmit = forgot ? emailValid
     : tab === 'login' ? (emailValid && password.length > 0)
       : (displayName.trim().length > 0 && emailValid && pwValid && confirmValid);
 
-  const submitLabel = forgot ? 'Envoyer le lien' : tab === 'login' ? tr('loginButton') : tr('signupButton');
+  const submitLabel = forgot ? tr('sendLink') : tab === 'login' ? tr('loginButton') : tr('signupButton');
 
   return (
     <div className="auth-overlay" onMouseDown={e => e.target === e.currentTarget && onClose()}>
-      <div ref={overlayRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Authentification" className="auth-modal animate-scale-in">
-        <button onClick={onClose} aria-label="Fermer" className="auth-x"><XIcon size={18} /></button>
+      <div ref={overlayRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={tr('modalAria')} className="auth-modal animate-scale-in">
+        <button onClick={onClose} aria-label={tr('close')} className="auth-x"><XIcon size={18} /></button>
 
         {/* Logo + tagline */}
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
@@ -114,7 +114,7 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
             <BrandLockup size={30} color="var(--ink)" accent="var(--accent)" surface="var(--bg-card)" fontSize={24} />
           </div>
           <p className="label" style={{ margin: 0, color: 'var(--text-muted)' }}>
-            Votre histoire familiale vous attend
+            {tr('tagline')}
           </p>
         </div>
 
@@ -122,16 +122,16 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
           <div className="animate-fade-in" style={{ textAlign: 'center' }}>
             <CheckCircle2 size={44} style={{ color: 'var(--success)', marginBottom: '10px' }} aria-hidden="true" />
             <p style={{ fontSize: '14px', lineHeight: 1.6, margin: '0 0 16px' }}>{sentMsg}</p>
-            <button onClick={onClose} className="auth-submit">Fermer</button>
+            <button onClick={onClose} className="auth-submit">{tr('close')}</button>
           </div>
         ) : forgot ? (
           <form onSubmit={handleSubmit}>
-            <button type="button" onClick={() => { setForgot(false); setError(''); }} className="btn btn-ghost btn-sm" style={{ marginBottom: '8px' }}><ArrowLeft size={14} /> Retour</button>
-            <h3 className="serif" style={{ margin: '0 0 4px', fontSize: '1.1rem' }}>Mot de passe oublié</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 18px' }}>Saisissez votre email pour recevoir un lien de réinitialisation.</p>
-            <Field label={tr('email')} Icon={Mail} type="email" value={email} onChange={setEmail} placeholder="vous@exemple.com" autoComplete="email" autoFocus valid={email.length > 0 ? emailValid : undefined} ariaLabel="Email" />
+            <button type="button" onClick={() => { setForgot(false); setError(''); }} className="btn btn-ghost btn-sm" style={{ marginBottom: '8px' }}><ArrowLeft size={14} /> {tr('back')}</button>
+            <h3 className="serif" style={{ margin: '0 0 4px', fontSize: '1.1rem' }}>{tr('forgotTitle')}</h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 18px' }}>{tr('forgotDesc')}</p>
+            <Field label={tr('email')} Icon={Mail} type="email" value={email} onChange={setEmail} placeholder={tr('emailPlaceholder')} autoComplete="email" autoFocus valid={email.length > 0 ? emailValid : undefined} ariaLabel="Email" />
             {error && <ErrorMsg msg={error} />}
-            <SubmitBtn loading={loading} disabled={!canSubmit} label="Envoyer le lien" style={{ marginTop: '16px' }} />
+            <SubmitBtn loading={loading} disabled={!canSubmit} label={tr('sendLink')} style={{ marginTop: '16px' }} />
           </form>
         ) : (
           <>
@@ -148,23 +148,23 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
 
             <form onSubmit={handleSubmit}>
               {tab === 'signup' && (
-                <Field label="Nom d’affichage" Icon={User} value={displayName} onChange={setDisplayName} placeholder="Marie Dupont" autoComplete="name" autoFocus valid={displayName.trim().length > 0 ? true : undefined} ariaLabel="Nom d’affichage" />
+                <Field label={tr('displayName')} Icon={User} value={displayName} onChange={setDisplayName} placeholder={tr('displayNamePlaceholder')} autoComplete="name" autoFocus valid={displayName.trim().length > 0 ? true : undefined} ariaLabel={tr('displayName')} />
               )}
 
               {tab === 'signup' && (
-                <Field label="Organisation / Famille (optionnel)" Icon={Building2} value={organization} onChange={setOrganization} placeholder="Ex: Famille Dupont, Association..." autoComplete="organization" ariaLabel="Organisation ou famille" />
+                <Field label={tr('organization')} Icon={Building2} value={organization} onChange={setOrganization} placeholder={tr('organizationPlaceholder')} autoComplete="organization" ariaLabel={tr('organizationAria')} />
               )}
 
-              <Field label={tr('email')} Icon={Mail} type="email" value={email} onChange={setEmail} placeholder="vous@exemple.com" autoComplete="email" autoFocus={tab !== 'signup'} valid={email.length > 0 ? emailValid : undefined} ariaLabel="Email" />
+              <Field label={tr('email')} Icon={Mail} type="email" value={email} onChange={setEmail} placeholder={tr('emailPlaceholder')} autoComplete="email" autoFocus={tab !== 'signup'} valid={email.length > 0 ? emailValid : undefined} ariaLabel="Email" />
 
               <div className="auth-field">
                 <label className="auth-label" htmlFor="pw">{tr('password')}</label>
                 <div className="auth-input-wrap">
                   <Lock size={18} className="auth-input-icon" />
                   <input id="pw" type={showPw ? 'text' : 'password'} value={password} onChange={e => { setPassword(e.target.value); setError(''); }}
-                    placeholder={tab === 'signup' ? 'Min. 8 caractères' : '••••••••'} autoComplete={tab === 'signup' ? 'new-password' : 'current-password'}
-                    aria-label="Mot de passe" className="auth-input" style={{ paddingRight: '44px' }} />
-                  <button type="button" onClick={() => setShowPw(s => !s)} aria-label={showPw ? 'Masquer le mot de passe' : 'Afficher le mot de passe'} className="auth-eye">
+                    placeholder={tab === 'signup' ? tr('passwordPlaceholderSignup') : '••••••••'} autoComplete={tab === 'signup' ? 'new-password' : 'current-password'}
+                    aria-label={tr('passwordAria')} className="auth-input" style={{ paddingRight: '44px' }} />
+                  <button type="button" onClick={() => setShowPw(s => !s)} aria-label={showPw ? tr('hidePassword') : tr('showPassword')} className="auth-eye">
                     {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
@@ -177,12 +177,12 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
                           <div key={i} style={{ flex: 1, height: '3px', borderRadius: '2px', background: i < strength.filled ? strength.color : 'var(--bg-muted)', transition: 'background 300ms ease, width 300ms ease' }} />
                         ))}
                       </div>
-                      <span style={{ fontSize: '11px', fontWeight: 600, color: strength.color }}>{strength.label}</span>
+                      <span style={{ fontSize: '11px', fontWeight: 600, color: strength.color }}>{strength.labelKey ? tr(strength.labelKey) : ''}</span>
                     </div>
                     <div style={{ display: 'flex', gap: '12px', fontSize: '11px' }}>
-                      <Crit ok={pwChecks.length} label="8 cars" />
-                      <Crit ok={pwChecks.upper} label="Majuscule" />
-                      <Crit ok={pwChecks.digit} label="Chiffre" />
+                      <Crit ok={pwChecks.length} label={tr('critLength')} />
+                      <Crit ok={pwChecks.upper} label={tr('critUpper')} />
+                      <Crit ok={pwChecks.digit} label={tr('critDigit')} />
                     </div>
                   </div>
                 )}
@@ -194,14 +194,14 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
 
               {tab === 'signup' && (
                 <div className="auth-field">
-                  <label className="auth-label" htmlFor="cpw">Confirmer le mot de passe</label>
+                  <label className="auth-label" htmlFor="cpw">{tr('confirmPassword')}</label>
                   <div className="auth-input-wrap">
                     <Lock size={18} className="auth-input-icon" />
                     <input id="cpw" type={showConfirm ? 'text' : 'password'} value={confirm} onChange={e => { setConfirm(e.target.value); setError(''); }}
-                      placeholder="••••••••" autoComplete="new-password" aria-label="Confirmer le mot de passe" aria-invalid={confirm.length > 0 && !confirmValid}
+                      placeholder="••••••••" autoComplete="new-password" aria-label={tr('confirmPassword')} aria-invalid={confirm.length > 0 && !confirmValid}
                       className="auth-input" style={{ paddingRight: '70px', borderColor: confirm.length > 0 ? (confirmValid ? 'var(--success)' : 'var(--danger)') : undefined }} />
                     {confirm.length > 0 && <span style={{ position: 'absolute', right: '44px', top: '50%', transform: 'translateY(-50%)', color: confirmValid ? 'var(--success)' : 'var(--danger)' }}>{confirmValid ? <Check size={16} /> : <XIcon size={16} />}</span>}
-                    <button type="button" onClick={() => setShowConfirm(s => !s)} aria-label={showConfirm ? 'Masquer' : 'Afficher'} className="auth-eye">
+                    <button type="button" onClick={() => setShowConfirm(s => !s)} aria-label={showConfirm ? tr('hide') : tr('show')} className="auth-eye">
                       {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
@@ -210,7 +210,7 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
 
               {tab === 'login' && (
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '14px', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} style={{ width: '16px', height: '16px' }} /> Rester connecté
+                  <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} style={{ width: '16px', height: '16px' }} /> {tr('rememberMe')}
                 </label>
               )}
 
@@ -220,9 +220,9 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
             </form>
 
             {/* Separator + demo */}
-            <div className="auth-or"><span /><small>ou</small><span /></div>
+            <div className="auth-or"><span /><small>{tr('orSeparator')}</small><span /></div>
             <button type="button" onClick={startDemo} className="auth-demo">
-              <Gamepad2 size={16} /> Essayer sans compte
+              <Gamepad2 size={16} /> {tr('tryDemo')}
             </button>
           </>
         )}

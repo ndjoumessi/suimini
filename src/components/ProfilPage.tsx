@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import { useFamilyStore } from '@/hooks/useFamilyStore';
@@ -10,12 +11,6 @@ function initials(name?: string | null, email?: string | null): string {
   const src = (name || email || '?').trim();
   const parts = src.split(/[\s.@_-]+/).filter(Boolean);
   return ((parts[0]?.[0] || '?') + (parts[1]?.[0] || '')).toUpperCase().slice(0, 2);
-}
-
-function roleLabel(role?: string): string {
-  if (role === 'superadmin') return 'Super-admin';
-  if (role === 'admin') return 'Admin';
-  return 'Membre';
 }
 
 function fmtDate(iso?: string): string {
@@ -37,7 +32,9 @@ function fmtMonthYear(iso?: string): string {
 }
 
 export default function ProfilPage() {
+  const t = useTranslations('profile');
   const { user, signOut, role } = useAuth();
+  const roleLabel = role === 'superadmin' ? t('roleSuperadmin') : role === 'admin' ? t('roleAdmin') : t('roleMember');
   const storeUser = useMemo(() => (user ? { id: user.id, email: user.email } : null), [user?.id, user?.email]);
   const store = useFamilyStore(storeUser);
 
@@ -61,8 +58,8 @@ export default function ProfilPage() {
     const { error } = await supabase.auth.updateUser({ data: { display_name: name.trim() } });
     setSavingName(false);
     setNameNote(error
-      ? { msg: 'Échec de la mise à jour du nom.', type: 'error' }
-      : { msg: 'Nom mis à jour.', type: 'success' });
+      ? { msg: t('toastNameFailed'), type: 'error' }
+      : { msg: t('toastNameUpdated'), type: 'success' });
   }
 
   async function changePassword() {
@@ -72,8 +69,8 @@ export default function ProfilPage() {
       redirectTo: `${window.location.origin}/auth/callback?next=/auth/reset-password`,
     });
     setPwdNote(error
-      ? { msg: "Échec de l'envoi de l'email.", type: 'error' }
-      : { msg: 'Email envoyé.', type: 'success' });
+      ? { msg: t('toastEmailFailed'), type: 'error' }
+      : { msg: t('toastEmailSent'), type: 'success' });
   }
 
   async function handleSignOut() {
@@ -109,16 +106,16 @@ export default function ProfilPage() {
           style={{ gap: '6px' }}
           onClick={() => { window.location.href = '/app'; }}
         >
-          <ArrowLeft size={16} aria-hidden="true" /> Retour à l&apos;app
+          <ArrowLeft size={16} aria-hidden="true" /> {t('backToApp')}
         </button>
       </header>
 
       <div style={{ maxWidth: '760px', margin: '0 auto', padding: '32px 24px 64px' }} className="animate-fade-in">
-        <h1 className="serif" style={{ margin: '0 0 24px', fontSize: '2rem', letterSpacing: '-0.02em' }}>Profil</h1>
+        <h1 className="serif" style={{ margin: '0 0 24px', fontSize: '2rem', letterSpacing: '-0.02em' }}>{t('title')}</h1>
 
         {/* 1) HEADER card */}
         <section className="card" style={{ padding: '24px', marginBottom: '20px' }}>
-          <div className="label" style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>Identité</div>
+          <div className="label" style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>{t('identity')}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '18px', flexWrap: 'wrap' }}>
             {avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -147,20 +144,20 @@ export default function ProfilPage() {
                 {displayName || email.split('@')[0]}
               </h2>
               <div style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '10px', wordBreak: 'break-word' }}>{email}</div>
-              <span className="badge badge-accent">{roleLabel(role)}</span>
+              <span className="badge badge-accent">{roleLabel}</span>
             </div>
           </div>
         </section>
 
         {/* 2) MES ARBRES */}
         <section className="card" style={{ padding: '24px', marginBottom: '20px' }}>
-          <div className="label" style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>Mes arbres</div>
+          <div className="label" style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>{t('myTrees')}</div>
           {!store.loaded ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-muted)', fontSize: '14px' }}>
-              <span className="spinner" style={{ color: 'var(--accent)' }} /> Chargement…
+              <span className="spinner" style={{ color: 'var(--accent)' }} /> {t('loading')}
             </div>
           ) : store.trees.length === 0 ? (
-            <div style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Aucun arbre pour le moment.</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '14px' }}>{t('noTrees')}</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {store.trees.map(tree => (
@@ -178,12 +175,12 @@ export default function ProfilPage() {
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontWeight: 700, fontSize: '14px', wordBreak: 'break-word' }}>{tree.name}</div>
                       <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                        {tree.persons?.length || 0} personnes · {tree.relationships?.length || 0} liens · créé le {fmtDate(tree.createdAt)}
+                        {t('treeMeta', { persons: tree.persons?.length || 0, links: tree.relationships?.length || 0, date: fmtDate(tree.createdAt) })}
                       </div>
                     </div>
                   </div>
                   <button className="btn btn-secondary btn-sm" style={{ gap: '6px' }} onClick={() => openTree(tree.id)}>
-                    Ouvrir <ArrowRight size={14} aria-hidden="true" />
+                    {t('open')} <ArrowRight size={14} aria-hidden="true" />
                   </button>
                 </div>
               ))}
@@ -193,12 +190,12 @@ export default function ProfilPage() {
 
         {/* 3) STATISTIQUES */}
         <section className="card" style={{ padding: '24px', marginBottom: '20px' }}>
-          <div className="label" style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>Statistiques</div>
+          <div className="label" style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>{t('statistics')}</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
             {[
-              { value: String(totalPersons), label: 'Total personnes' },
-              { value: String(store.trees.length), label: 'Total arbres' },
-              { value: fmtMonthYear(user.created_at), label: 'Membre depuis' },
+              { value: String(totalPersons), label: t('statPersons') },
+              { value: String(store.trees.length), label: t('statTrees') },
+              { value: fmtMonthYear(user.created_at), label: t('statMemberSince') },
             ].map(stat => (
               <div
                 key={stat.label}
@@ -218,11 +215,11 @@ export default function ProfilPage() {
 
         {/* 4) COMPTE */}
         <section className="card" style={{ padding: '24px' }}>
-          <div className="label" style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>Compte</div>
+          <div className="label" style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>{t('account')}</div>
 
           {/* Display name */}
           <div style={{ marginBottom: '24px' }}>
-            <label className="label" htmlFor="profil-display-name" style={{ display: 'block', marginBottom: '8px' }}>Nom affiché</label>
+            <label className="label" htmlFor="profil-display-name" style={{ display: 'block', marginBottom: '8px' }}>{t('displayName')}</label>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <input
                 id="profil-display-name"
@@ -230,7 +227,7 @@ export default function ProfilPage() {
                 style={{ flex: 1, minWidth: '200px' }}
                 value={name}
                 onChange={e => setName(e.target.value)}
-                placeholder="Votre nom"
+                placeholder={t('displayNamePlaceholder')}
               />
               <button
                 className="btn btn-secondary btn-sm"
@@ -238,7 +235,7 @@ export default function ProfilPage() {
                 onClick={saveName}
                 disabled={savingName || name.trim() === displayName.trim() || name.trim() === ''}
               >
-                <Save size={14} aria-hidden="true" /> {savingName ? 'Enregistrement…' : 'Enregistrer'}
+                <Save size={14} aria-hidden="true" /> {savingName ? t('saving') : t('save')}
               </button>
             </div>
             {nameNote && <div style={noteStyle(nameNote.type)}>{nameNote.msg}</div>}
@@ -246,18 +243,18 @@ export default function ProfilPage() {
 
           {/* Change password */}
           <div style={{ marginBottom: '24px' }}>
-            <label className="label" style={{ display: 'block', marginBottom: '8px' }}>Mot de passe</label>
+            <label className="label" style={{ display: 'block', marginBottom: '8px' }}>{t('password')}</label>
             <button className="btn btn-secondary btn-sm" style={{ gap: '6px' }} onClick={changePassword}>
-              <KeyRound size={14} aria-hidden="true" /> Changer le mot de passe
+              <KeyRound size={14} aria-hidden="true" /> {t('changePassword')}
             </button>
             {pwdNote && <div style={noteStyle(pwdNote.type)}>{pwdNote.msg}</div>}
           </div>
 
           {/* Sign out */}
           <div>
-            <label className="label" style={{ display: 'block', marginBottom: '8px' }}>Session</label>
+            <label className="label" style={{ display: 'block', marginBottom: '8px' }}>{t('session')}</label>
             <button className="btn btn-danger btn-sm" style={{ gap: '6px' }} onClick={handleSignOut}>
-              <LogOut size={14} aria-hidden="true" /> Se déconnecter
+              <LogOut size={14} aria-hidden="true" /> {t('signOut')}
             </button>
           </div>
         </section>

@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { ColorThemeId, FamilyTree } from '@/types';
 import { COLOR_THEMES } from '@/lib/themes';
 import { ThemeMode } from '@/hooks/useDarkMode';
@@ -21,10 +22,10 @@ interface Props {
   onToast?: (msg: string, type?: string) => void;
 }
 
-const MODE_OPTS: { id: ThemeMode; label: string; Icon: typeof Sun }[] = [
-  { id: 'light', label: 'Clair', Icon: Sun },
-  { id: 'dark', label: 'Sombre', Icon: Moon },
-  { id: 'system', label: 'Système', Icon: Monitor },
+const MODE_OPTS: { id: ThemeMode; labelKey: 'modeLight' | 'modeDark' | 'modeSystem'; Icon: typeof Sun }[] = [
+  { id: 'light', labelKey: 'modeLight', Icon: Sun },
+  { id: 'dark', labelKey: 'modeDark', Icon: Moon },
+  { id: 'system', labelKey: 'modeSystem', Icon: Monitor },
 ];
 
 function clearLocalSuimini() {
@@ -46,21 +47,22 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [confirmText, setConfirmText] = useState('');
   const [busy, setBusy] = useState(false);
-  const toast = (m: string, t?: string) => onToast?.(m, t);
+  const t = useTranslations('settings');
+  const toast = (m: string, type?: string) => onToast?.(m, type);
 
   async function saveName() {
     if (!supabase) return;
     setSavingName(true);
     const { error } = await supabase.auth.updateUser({ data: { display_name: name.trim() } });
     setSavingName(false);
-    toast(error ? 'Échec de la mise à jour du nom.' : 'Nom mis à jour.', error ? 'error' : 'success');
+    toast(error ? t('toastNameFailed') : t('toastNameUpdated'), error ? 'error' : 'success');
   }
   async function changePassword() {
     if (!supabase || !userEmail) return;
     const { error } = await supabase.auth.resetPasswordForEmail(userEmail, {
       redirectTo: `${window.location.origin}/auth/callback?next=/auth/reset-password`,
     });
-    toast(error ? "Échec de l'envoi de l'email." : 'Email de modification du mot de passe envoyé.', error ? 'error' : 'success');
+    toast(error ? t('toastPasswordFailed') : t('toastPasswordSent'), error ? 'error' : 'success');
   }
   async function signOutAll() {
     if (!supabase) return;
@@ -76,15 +78,15 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
     a.download = `suimini-export-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    toast('Données exportées.');
+    toast(t('toastExported'));
   }
   function clearCache() {
-    if (!window.confirm('Vider le cache local ? Les arbres non synchronisés sur un compte seront définitivement perdus.')) return;
+    if (!window.confirm(t('confirmClearCache'))) return;
     clearLocalSuimini();
     window.location.href = '/';
   }
   async function deleteAccount() {
-    if (confirmText !== 'SUPPRIMER') return;
+    if (confirmText.trim() !== t('deleteConfirmPlaceholder').trim()) return;
     setBusy(true);
     try { await supabase?.rpc('delete_account'); } catch { /* server fn may not exist; proceed best-effort */ }
     try { await supabase?.auth.signOut({ scope: 'global' }); } catch { /* ignore */ }
@@ -97,17 +99,17 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
       <div style={{ maxWidth: '720px', margin: '0 auto' }} className="animate-fade-in">
         <h2 className="serif" style={{ margin: '0 0 4px', fontSize: '1.6rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <SettingsIcon size={22} style={{ color: 'var(--accent)', flexShrink: 0 }} aria-hidden="true" />
-          Paramètres
+          {t('title')}
         </h2>
         <p style={{ color: 'var(--text-muted)', marginBottom: '28px' }}>
-          Apparence, compte et données de Suimini. Vos préférences d&apos;affichage sont enregistrées sur cet appareil.
+          {t('subtitle')}
         </p>
 
         {/* Theme picker */}
         <section style={{ marginBottom: '32px' }}>
-          <h3 className="serif" style={{ fontSize: '1.15rem', marginBottom: '4px' }}>Thème de couleurs</h3>
+          <h3 className="serif" style={{ fontSize: '1.15rem', marginBottom: '4px' }}>{t('colorTheme')}</h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '16px' }}>
-            Survolez un thème pour l&apos;aperçu en temps réel, cliquez pour l&apos;appliquer.
+            {t('colorThemeHint')}
           </p>
           <div
             style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px' }}
@@ -134,17 +136,17 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
                     <span aria-hidden="true" style={{ width: '16px', height: '16px', borderRadius: '50%', background: theme.accent, border: '1px solid var(--border)', flexShrink: 0 }} />
                     <span style={{ fontWeight: 700, fontSize: '14px' }}>{theme.name}</span>
                     {active && (
-                      <span style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: 700, color: theme.accent, display: 'inline-flex', alignItems: 'center', gap: '3px' }}><Check size={12} aria-hidden="true" /> Actif</span>
+                      <span style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: 700, color: theme.accent, display: 'inline-flex', alignItems: 'center', gap: '3px' }}><Check size={12} aria-hidden="true" /> {t('active')}</span>
                     )}
                   </div>
                   {/* Swatches */}
                   <div style={{ display: 'flex', gap: '6px' }}>
                     {[
-                      { c: theme.accent, l: 'Accent' },
-                      { c: theme.male, l: 'Homme' },
-                      { c: theme.female, l: 'Femme' },
+                      { c: theme.accent, k: 'accent', l: t('swatchAccent') },
+                      { c: theme.male, k: 'male', l: t('swatchMale') },
+                      { c: theme.female, k: 'female', l: t('swatchFemale') },
                     ].map(s => (
-                      <div key={s.l} style={{ flex: 1 }}>
+                      <div key={s.k} style={{ flex: 1 }}>
                         <div style={{ height: '28px', borderRadius: '6px', background: s.c, marginBottom: '4px' }} />
                         <div style={{ fontSize: '10px', color: 'var(--text-muted)', textAlign: 'center' }}>{s.l}</div>
                       </div>
@@ -158,13 +160,13 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
 
         {/* Appearance */}
         <section>
-          <h3 className="serif" style={{ fontSize: '1.15rem', marginBottom: '12px' }}>Apparence</h3>
+          <h3 className="serif" style={{ fontSize: '1.15rem', marginBottom: '12px' }}>{t('appearance')}</h3>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', padding: '14px 16px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
             <div>
-              <div style={{ fontWeight: 700, fontSize: '14px' }}>Thème d&apos;affichage</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>« Système » suit automatiquement les réglages de votre appareil.</div>
+              <div style={{ fontWeight: 700, fontSize: '14px' }}>{t('displayTheme')}</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{t('displayThemeHint')}</div>
             </div>
-            <div role="radiogroup" aria-label="Thème d'affichage" style={{ display: 'inline-flex', background: 'var(--bg-muted)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '3px', gap: '2px' }}>
+            <div role="radiogroup" aria-label={t('displayTheme')} style={{ display: 'inline-flex', background: 'var(--bg-muted)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '3px', gap: '2px' }}>
               {MODE_OPTS.map(opt => {
                 const active = mode === opt.id;
                 return (
@@ -174,7 +176,7 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
                       color: active ? '#fff' : 'var(--text-muted)',
                       boxShadow: 'none', minHeight: '32px',
                     }}>
-                    <opt.Icon size={14} /> {opt.label}
+                    <opt.Icon size={14} /> {t(opt.labelKey)}
                   </button>
                 );
               })}
@@ -185,7 +187,7 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
         {/* Account (signed-in only) */}
         {userEmail && (
           <section style={{ marginTop: '32px' }}>
-            <h3 className="serif" style={{ fontSize: '1.15rem', marginBottom: '12px' }}>Compte</h3>
+            <h3 className="serif" style={{ fontSize: '1.15rem', marginBottom: '12px' }}>{t('account')}</h3>
             <div className="card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div aria-hidden="true" style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'var(--accent-light)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '15px', flexShrink: 0 }}>
@@ -198,21 +200,21 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
               </div>
 
               <div>
-                <label className="label" htmlFor="settings-display-name" style={{ display: 'block', marginBottom: '6px' }}>Nom affiché</label>
+                <label className="label" htmlFor="settings-display-name" style={{ display: 'block', marginBottom: '6px' }}>{t('displayName')}</label>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  <input id="settings-display-name" className="input" style={{ flex: 1, minWidth: '180px' }} value={name} onChange={e => setName(e.target.value)} placeholder="Votre nom" />
+                  <input id="settings-display-name" className="input" style={{ flex: 1, minWidth: '180px' }} value={name} onChange={e => setName(e.target.value)} placeholder={t('displayNamePlaceholder')} />
                   <button className="btn btn-secondary btn-sm" style={{ gap: '6px' }} onClick={saveName} disabled={savingName || name.trim() === (displayName || '').trim()}>
-                    <Save size={14} aria-hidden="true" /> {savingName ? 'Enregistrement…' : 'Enregistrer'}
+                    <Save size={14} aria-hidden="true" /> {savingName ? t('saving') : t('save')}
                   </button>
                 </div>
               </div>
 
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 <button className="btn btn-secondary btn-sm" style={{ gap: '6px' }} onClick={changePassword}>
-                  <KeyRound size={14} aria-hidden="true" /> Modifier le mot de passe
+                  <KeyRound size={14} aria-hidden="true" /> {t('changePassword')}
                 </button>
                 <button className="btn btn-secondary btn-sm" style={{ gap: '6px' }} onClick={signOutAll}>
-                  <LogOut size={14} aria-hidden="true" /> Se déconnecter de tous les appareils
+                  <LogOut size={14} aria-hidden="true" /> {t('signOutAll')}
                 </button>
               </div>
             </div>
@@ -221,16 +223,16 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
 
         {/* Data */}
         <section style={{ marginTop: '32px' }}>
-          <h3 className="serif" style={{ fontSize: '1.15rem', marginBottom: '4px' }}>Données</h3>
+          <h3 className="serif" style={{ fontSize: '1.15rem', marginBottom: '4px' }}>{t('data')}</h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '12px' }}>
-            Vos arbres restent les vôtres : emportez-les, ou repartez de zéro sur cet appareil.
+            {t('dataHint')}
           </p>
           <div className="card" style={{ padding: '16px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             <button className="btn btn-secondary btn-sm" style={{ gap: '6px' }} onClick={exportData} disabled={trees.length === 0}>
-              <Download size={14} aria-hidden="true" /> Exporter toutes mes données{trees.length ? ` (${trees.length})` : ''}
+              <Download size={14} aria-hidden="true" /> {t('exportAll')}{trees.length ? ` (${trees.length})` : ''}
             </button>
             <button className="btn btn-secondary btn-sm" style={{ gap: '6px' }} onClick={clearCache}>
-              <Trash2 size={14} aria-hidden="true" /> Vider le cache local
+              <Trash2 size={14} aria-hidden="true" /> {t('clearCache')}
             </button>
           </div>
         </section>
@@ -238,26 +240,26 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
         {/* Danger zone (signed-in only) */}
         {userEmail && (
           <section style={{ marginTop: '32px' }}>
-            <h3 className="serif" style={{ fontSize: '1.15rem', marginBottom: '4px', color: 'var(--danger)' }}>Zone de danger</h3>
+            <h3 className="serif" style={{ fontSize: '1.15rem', marginBottom: '4px', color: 'var(--danger)' }}>{t('dangerZone')}</h3>
             <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '12px' }}>
-              La suppression du compte est définitive et efface vos données.
+              {t('dangerHint')}
             </p>
             <div className="card" style={{ padding: '16px', border: '1px solid var(--danger)' }}>
               {!deleteOpen ? (
                 <button className="btn btn-danger btn-sm" style={{ gap: '6px' }} onClick={() => setDeleteOpen(true)}>
-                  <ShieldAlert size={14} aria-hidden="true" /> Supprimer mon compte
+                  <ShieldAlert size={14} aria-hidden="true" /> {t('deleteAccount')}
                 </button>
               ) : (
                 <div className="animate-fade-in">
                   <p style={{ fontSize: '13px', margin: '0 0 8px' }}>
-                    Action irréversible. Tapez <strong>SUPPRIMER</strong> pour confirmer.
+                    {t.rich('deleteIrreversible', { keyword: () => <strong>{t('deleteConfirmPlaceholder')}</strong> })}
                   </p>
-                  <input className="input" value={confirmText} onChange={e => setConfirmText(e.target.value)} placeholder="SUPPRIMER" aria-label="Tapez SUPPRIMER pour confirmer" style={{ marginBottom: '10px', maxWidth: '260px' }} />
+                  <input className="input" value={confirmText} onChange={e => setConfirmText(e.target.value)} placeholder={t('deleteConfirmPlaceholder')} aria-label={t('deleteConfirmAria')} style={{ marginBottom: '10px', maxWidth: '260px' }} />
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    <button className="btn btn-danger btn-sm" onClick={deleteAccount} disabled={confirmText !== 'SUPPRIMER' || busy}>
-                      {busy ? 'Suppression…' : 'Supprimer définitivement'}
+                    <button className="btn btn-danger btn-sm" onClick={deleteAccount} disabled={confirmText.trim() !== t('deleteConfirmPlaceholder').trim() || busy}>
+                      {busy ? t('deleting') : t('deletePermanent')}
                     </button>
-                    <button className="btn btn-ghost btn-sm" onClick={() => { setDeleteOpen(false); setConfirmText(''); }}>Annuler</button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => { setDeleteOpen(false); setConfirmText(''); }}>{t('cancel')}</button>
                   </div>
                 </div>
               )}

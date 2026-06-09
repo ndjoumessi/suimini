@@ -21,14 +21,14 @@ export function strengthLevel(score: number): 0 | 1 | 2 {
   return score <= 2 ? 0 : score <= 3 ? 1 : 2;
 }
 
-export interface StrengthInfo { filled: number; color: string; label: string }
+export interface StrengthInfo { filled: number; color: string; labelKey: '' | 'strengthWeak' | 'strengthMedium' | 'strengthGood' | 'strengthStrong' }
 
 /** 4-segment strength meter: Faible (rouge) / Moyen (orange) / Bon (bleu) / Fort (vert). */
 export function strengthInfo(pw: string): StrengthInfo {
   const s = passwordScore(pw);
-  if (s === 0) return { filled: 0, color: 'var(--border)', label: '' };
-  if (s <= 2) return { filled: 1, color: '#dc2626', label: 'Faible' };
-  if (s === 3) return { filled: 2, color: '#f59e0b', label: 'Moyen' };
-  if (s === 4) return { filled: 3, color: '#3b82f6', label: 'Bon' };
-  return { filled: 4, color: '#16a34a', label: 'Fort' };
+  if (s === 0) return { filled: 0, color: 'var(--border)', labelKey: '' };
+  if (s <= 2) return { filled: 1, color: '#dc2626', labelKey: 'strengthWeak' };
+  if (s === 3) return { filled: 2, color: '#f59e0b', labelKey: 'strengthMedium' };
+  if (s === 4) return { filled: 3, color: '#3b82f6', labelKey: 'strengthGood' };
+  return { filled: 4, color: '#16a34a', labelKey: 'strengthStrong' };
 }

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { AlertCircle, FolderOpen, Plus, X, Dna, ImageUp, Images } from 'lucide-react';
 import { Person, Gender } from '@/types';
 import { uploadAvatar } from '@/lib/uploadImage';
@@ -11,7 +12,8 @@ interface Props {
   submitLabel?: string;
 }
 
-export default function PersonForm({ initial, onSave, onCancel, submitLabel = 'Enregistrer' }: Props) {
+export default function PersonForm({ initial, onSave, onCancel, submitLabel }: Props) {
+  const t = useTranslations('personForm');
   const [form, setForm] = useState<Partial<Person>>({
     firstName: '', lastName: '', gender: 'unknown', isAlive: true,
     ...initial
@@ -38,15 +40,15 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel = 'E
     e.target.value = '';
     if (!file) return;
     setPhotoError(''); setPhotoNote('');
-    if (!file.type.startsWith('image/')) { setPhotoError('Le fichier doit être une image.'); return; }
-    if (file.size > 8 * 1024 * 1024) { setPhotoError('Image trop volumineuse (max 8 Mo).'); return; }
+    if (!file.type.startsWith('image/')) { setPhotoError(t('photoNotImage')); return; }
+    if (file.size > 8 * 1024 * 1024) { setPhotoError(t('photoTooLarge')); return; }
     setPhotoLoading(true);
     try {
       const res = await uploadAvatar(file, personId);
       set('profilePhoto', res.url);
       if (res.warning) setPhotoNote(res.warning);
     } catch {
-      setPhotoError("Échec de l'import de l'image.");
+      setPhotoError(t('photoUploadFailed'));
     } finally {
       setPhotoLoading(false);
     }
@@ -106,55 +108,55 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel = 'E
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
         <label style={labelStyle}>
-          Prénom *
+          {t('firstName')} *
           <input
             value={form.firstName || ''}
             onChange={e => set('firstName', e.target.value)}
-            className="input" placeholder="Ex: Marie" required
+            className="input" placeholder={t('firstNamePlaceholder')} required
           />
         </label>
         <label style={labelStyle}>
-          Nom *
+          {t('lastName')} *
           <input
             value={form.lastName || ''}
             onChange={e => set('lastName', e.target.value)}
-            className="input" placeholder="Ex: Dupont" required
+            className="input" placeholder={t('lastNamePlaceholder')} required
           />
         </label>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
         <label style={labelStyle}>
-          Nom de jeune fille
+          {t('maidenName')}
           <input
             value={form.maidenName || ''}
             onChange={e => set('maidenName', e.target.value)}
-            className="input" placeholder="Nom de naissance"
+            className="input" placeholder={t('maidenNamePlaceholder')}
           />
         </label>
         <label style={labelStyle}>
-          Surnom
+          {t('nickName')}
           <input
             value={form.nickName || ''}
             onChange={e => set('nickName', e.target.value)}
-            className="input" placeholder="Diminutif, surnom..."
+            className="input" placeholder={t('nickNamePlaceholder')}
           />
         </label>
       </div>
 
       <label style={labelStyle}>
-        Sexe
+        {t('gender')}
         <select value={form.gender} onChange={e => set('gender', e.target.value as Gender)} className="input">
-          <option value="male">Homme</option>
-          <option value="female">Femme</option>
-          <option value="other">Autre</option>
-          <option value="unknown">Inconnu</option>
+          <option value="male">{t('genderMale')}</option>
+          <option value="female">{t('genderFemale')}</option>
+          <option value="other">{t('genderOther')}</option>
+          <option value="unknown">{t('genderUnknown')}</option>
         </select>
       </label>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
         <label style={labelStyle}>
-          Date de naissance
+          {t('birthDate')}
           <input
             type="date"
             value={form.birthDate || ''}
@@ -163,11 +165,11 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel = 'E
           />
         </label>
         <label style={labelStyle}>
-          Lieu de naissance
+          {t('birthPlace')}
           <input
             value={form.birthPlace?.city || ''}
             onChange={e => set('birthPlace', e.target.value ? { ...(form.birthPlace || {}), city: e.target.value } : undefined)}
-            className="input" placeholder="Ville"
+            className="input" placeholder={t('cityPlaceholder')}
           />
         </label>
       </div>
@@ -179,13 +181,13 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel = 'E
           onChange={e => set('isAlive', e.target.checked)}
           style={{ width: 'auto', cursor: 'pointer' }}
         />
-        <span style={{ fontSize: '14px' }}>Encore en vie</span>
+        <span style={{ fontSize: '14px' }}>{t('isAlive')}</span>
       </label>
 
       {!form.isAlive && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
           <label style={labelStyle}>
-            Date de décès
+            {t('deathDate')}
             <input
               type="date"
               value={form.deathDate || ''}
@@ -194,11 +196,11 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel = 'E
             />
           </label>
           <label style={labelStyle}>
-            Lieu de décès
+            {t('deathPlace')}
             <input
               value={form.deathPlace?.city || ''}
               onChange={e => set('deathPlace', e.target.value ? { ...(form.deathPlace || {}), city: e.target.value } : undefined)}
-              className="input" placeholder="Ville"
+              className="input" placeholder={t('cityPlaceholder')}
             />
           </label>
         </div>
@@ -206,49 +208,49 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel = 'E
 
       {dateInvalid && (
         <div style={{ fontSize: '12px', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <AlertCircle size={13} aria-hidden="true" /> La date de décès doit être postérieure à la date de naissance.
+          <AlertCircle size={13} aria-hidden="true" /> {t('dateError')}
         </div>
       )}
 
       <label style={labelStyle}>
-        Profession
+        {t('occupation')}
         <input
           value={form.occupation || ''}
           onChange={e => set('occupation', e.target.value)}
-          className="input" placeholder="Ex: Médecin, Ingénieur..."
+          className="input" placeholder={t('occupationPlaceholder')}
         />
       </label>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
         <label style={labelStyle}>
-          Nationalité
+          {t('nationality')}
           <input
             value={form.nationality || ''}
             onChange={e => set('nationality', e.target.value)}
-            className="input" placeholder="Ex: Française"
+            className="input" placeholder={t('nationalityPlaceholder')}
           />
         </label>
         <label style={labelStyle}>
-          Religion
+          {t('religion')}
           <input
             value={form.religion || ''}
             onChange={e => set('religion', e.target.value)}
-            className="input" placeholder="Ex: Catholique"
+            className="input" placeholder={t('religionPlaceholder')}
           />
         </label>
       </div>
 
       <label style={labelStyle}>
-        Éducation
+        {t('education')}
         <input
           value={form.education || ''}
           onChange={e => set('education', e.target.value)}
-          className="input" placeholder="Ex: Bac+5, Polytechnique..."
+          className="input" placeholder={t('educationPlaceholder')}
         />
       </label>
 
       <div style={labelStyle}>
-        Photo de profil
+        {t('profilePhoto')}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', textTransform: 'none', fontWeight: 400 }}>
           {form.profilePhoto && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -257,15 +259,15 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel = 'E
           <input
             value={form.profilePhoto?.startsWith('data:') ? '' : (form.profilePhoto || '')}
             onChange={e => set('profilePhoto', e.target.value || undefined)}
-            className="input" placeholder={form.profilePhoto?.startsWith('data:') ? 'Image importée' : 'Coller une URL https://… ou importer'}
+            className="input" placeholder={form.profilePhoto?.startsWith('data:') ? t('photoImported') : t('photoUrlPlaceholder')}
             disabled={form.profilePhoto?.startsWith('data:')}
           />
           <input ref={fileRef} type="file" accept="image/*" onChange={handlePhotoFile} style={{ display: 'none' }} />
           <button type="button" onClick={() => fileRef.current?.click()} disabled={photoLoading} className="btn btn-secondary btn-sm" style={{ flexShrink: 0 }}>
-            {photoLoading ? <span className="spinner" /> : <ImageUp size={14} />} Importer
+            {photoLoading ? <span className="spinner" /> : <ImageUp size={14} />} {t('import')}
           </button>
           {form.profilePhoto && (
-            <button type="button" onClick={() => { set('profilePhoto', undefined); setPhotoNote(''); }} aria-label="Retirer la photo" className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--danger)', flexShrink: 0 }}><X size={14} /></button>
+            <button type="button" onClick={() => { set('profilePhoto', undefined); setPhotoNote(''); }} aria-label={t('removePhoto')} className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--danger)', flexShrink: 0 }}><X size={14} /></button>
           )}
         </div>
         {photoError && <span style={{ color: 'var(--danger)', fontSize: '11px', textTransform: 'none', fontWeight: 400, display: 'flex', alignItems: 'center', gap: '4px' }}><AlertCircle size={11} /> {photoError}</span>}
@@ -274,13 +276,13 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel = 'E
 
       {/* Galerie de photos */}
       <div style={labelStyle}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Images size={13} aria-hidden="true" /> Galerie de photos</span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Images size={13} aria-hidden="true" /> {t('gallery')}</span>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px', textTransform: 'none', fontWeight: 400 }}>
           {photos.map((url, i) => (
             <div key={i} style={{ position: 'relative', width: '56px', height: '56px', flexShrink: 0 }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', border: '1.5px solid var(--border-strong)', borderRadius: 'var(--radius)' }} />
-              <button type="button" onClick={() => removePhoto(i)} aria-label="Retirer"
+              <button type="button" onClick={() => removePhoto(i)} aria-label={t('remove')}
                 style={{ position: 'absolute', top: '-8px', right: '-8px', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-card)', color: 'var(--danger)', border: '1.5px solid var(--border-strong)', borderRadius: 'var(--radius)', cursor: 'pointer', padding: 0 }}>
                 <X size={12} />
               </button>
@@ -294,37 +296,37 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel = 'E
         </div>
         <input
           onKeyDown={e => { const v = (e.target as HTMLInputElement).value.trim(); if (e.key === 'Enter' && v) { e.preventDefault(); set('photos', [...photos, v]); (e.target as HTMLInputElement).value = ''; } }}
-          className="input" placeholder="Coller une URL d’image puis Entrée" style={{ marginTop: '8px', textTransform: 'none', fontWeight: 400 }}
+          className="input" placeholder={t('galleryUrlPlaceholder')} style={{ marginTop: '8px', textTransform: 'none', fontWeight: 400 }}
         />
       </div>
 
       <label style={labelStyle}>
-        Biographie
+        {t('bio')}
         <textarea
           value={form.bio || ''}
           onChange={e => set('bio', e.target.value)}
           className="input"
           rows={3}
-          placeholder="Histoire, anecdotes, souvenirs..."
+          placeholder={t('bioPlaceholder')}
           style={{ resize: 'vertical' }}
         />
       </label>
 
       <label style={labelStyle}>
-        Tags (séparés par des virgules)
+        {t('tags')}
         <input
           value={form.tags?.join(', ') || ''}
-          onChange={e => set('tags', e.target.value ? e.target.value.split(',').map(t => t.trim()).filter(Boolean) : undefined)}
-          className="input" placeholder="Ex: fondateur, médecin, sportif"
+          onChange={e => set('tags', e.target.value ? e.target.value.split(',').map(tag => tag.trim()).filter(Boolean) : undefined)}
+          className="input" placeholder={t('tagsPlaceholder')}
         />
       </label>
 
       {/* DNA / ethnic origins */}
       <div style={{ borderTop: '1px solid var(--border)', paddingTop: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <span style={{ ...labelStyle, marginBottom: 0, display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Dna size={13} aria-hidden="true" /> Origines & ADN</span>
+          <span style={{ ...labelStyle, marginBottom: 0, display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Dna size={13} aria-hidden="true" /> {t('dnaTitle')}</span>
           <span style={{ fontSize: '12px', fontWeight: 700, color: dna.length === 0 ? 'var(--text-light)' : dnaInvalid ? 'var(--danger)' : 'var(--success)' }}>
-            Total : {Math.round(dnaTotal)}%
+            {t('dnaTotal', { total: Math.round(dnaTotal) })}
           </span>
         </div>
         {dna.length > 0 && (
@@ -334,7 +336,7 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel = 'E
                 <input
                   value={d.region}
                   onChange={e => updateDna(i, 'region', e.target.value)}
-                  className="input" placeholder="Ex: Europe de l'Ouest" style={{ flex: 1 }}
+                  className="input" placeholder={t('dnaRegionPlaceholder')} style={{ flex: 1 }}
                 />
                 <input
                   type="number" min={0} max={100}
@@ -350,48 +352,48 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel = 'E
         )}
         {dnaInvalid && (
           <div style={{ fontSize: '12px', color: 'var(--danger)', marginBottom: '8px' }}>
-            La somme des pourcentages doit faire exactement 100% pour enregistrer.
+            {t('dnaSumError')}
           </div>
         )}
         <button type="button" onClick={addDna} disabled={dna.length >= 8} className="btn btn-secondary btn-sm" style={{ opacity: dna.length >= 8 ? 0.5 : 1 }}>
-          ＋ Ajouter une origine {dna.length >= 8 && '(max 8)'}
+          {t('dnaAdd')} {dna.length >= 8 && t('dnaMax')}
         </button>
       </div>
 
       {/* Custom fields */}
       <div style={{ borderTop: '1px solid var(--border)', paddingTop: '12px' }}>
-        <span style={{ ...labelStyle, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}><FolderOpen size={13} aria-hidden="true" /> Champs personnalisés</span>
+        <span style={{ ...labelStyle, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}><FolderOpen size={13} aria-hidden="true" /> {t('customFields')}</span>
         {cfEntries.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
             {cfEntries.map((c, i) => (
               <div key={i} style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                <input value={c.key} onChange={e => updateCf(i, 'key', e.target.value)} className="input" placeholder="Clé (ex: Régiment)" style={{ flex: 1 }} />
-                <input value={c.value} onChange={e => updateCf(i, 'value', e.target.value)} className="input" placeholder="Valeur" style={{ flex: 1 }} />
-                <button type="button" onClick={() => removeCf(i)} aria-label="Retirer le champ" className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--danger)' }}><X size={14} /></button>
+                <input value={c.key} onChange={e => updateCf(i, 'key', e.target.value)} className="input" placeholder={t('customKeyPlaceholder')} style={{ flex: 1 }} />
+                <input value={c.value} onChange={e => updateCf(i, 'value', e.target.value)} className="input" placeholder={t('customValuePlaceholder')} style={{ flex: 1 }} />
+                <button type="button" onClick={() => removeCf(i)} aria-label={t('removeField')} className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--danger)' }}><X size={14} /></button>
               </div>
             ))}
           </div>
         )}
-        <button type="button" onClick={addCf} className="btn btn-secondary btn-sm"><Plus size={14} /> Ajouter un champ</button>
+        <button type="button" onClick={addCf} className="btn btn-secondary btn-sm"><Plus size={14} /> {t('addField')}</button>
       </div>
 
       <label style={labelStyle}>
-        Confidentialité
+        {t('privacy')}
         <select value={form.privacy || 'public'} onChange={e => set('privacy', e.target.value as Person['privacy'])} className="input">
-          <option value="public">Public</option>
-          <option value="family">Famille</option>
-          <option value="private">Privé</option>
+          <option value="public">{t('privacyPublic')}</option>
+          <option value="family">{t('privacyFamily')}</option>
+          <option value="private">{t('privacyPrivate')}</option>
         </select>
       </label>
 
       <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '4px' }}>
         {onCancel && (
           <button type="button" onClick={onCancel} className="btn btn-secondary">
-            Annuler
+            {t('cancel')}
           </button>
         )}
         <button type="submit" className="btn btn-primary" disabled={blocked} style={{ opacity: blocked ? 0.5 : 1 }}>
-          ✓ {submitLabel}
+          ✓ {submitLabel ?? t('save')}
         </button>
       </div>
     </form>

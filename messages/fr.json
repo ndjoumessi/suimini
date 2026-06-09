@@ -25,21 +25,251 @@
     "signupButton": "Créer mon compte",
     "loginLoading": "Connexion en cours...",
     "errorInvalidCredentials": "Email ou mot de passe incorrect.",
-    "errorEmailNotConfirmed": "Veuillez confirmer votre email."
+    "errorEmailNotConfirmed": "Veuillez confirmer votre email.",
+    "tagline": "Votre histoire familiale vous attend",
+    "modalAria": "Authentification",
+    "close": "Fermer",
+    "back": "Retour",
+    "forgotTitle": "Mot de passe oublié",
+    "forgotDesc": "Saisissez votre email pour recevoir un lien de réinitialisation.",
+    "sendLink": "Envoyer le lien",
+    "emailPlaceholder": "vous@exemple.com",
+    "displayName": "Nom d’affichage",
+    "displayNamePlaceholder": "Marie Dupont",
+    "organization": "Organisation / Famille (optionnel)",
+    "organizationAria": "Organisation ou famille",
+    "organizationPlaceholder": "Ex: Famille Dupont, Association...",
+    "passwordPlaceholderSignup": "Min. 8 caractères",
+    "passwordAria": "Mot de passe",
+    "showPassword": "Afficher le mot de passe",
+    "hidePassword": "Masquer le mot de passe",
+    "show": "Afficher",
+    "hide": "Masquer",
+    "strengthWeak": "Faible",
+    "strengthMedium": "Moyen",
+    "strengthGood": "Bon",
+    "strengthStrong": "Fort",
+    "critLength": "8 cars",
+    "critUpper": "Majuscule",
+    "critDigit": "Chiffre",
+    "confirmPassword": "Confirmer le mot de passe",
+    "rememberMe": "Rester connecté",
+    "orSeparator": "ou",
+    "tryDemo": "Essayer sans compte",
+    "errorEmailInvalid": "Adresse e-mail invalide.",
+    "errorMissingCredentials": "Veuillez renseigner email et mot de passe.",
+    "errorConnection": "Erreur de connexion. Réessayez.",
+    "errorMissingName": "Veuillez indiquer un nom d’affichage.",
+    "errorPasswordTooShort": "Le mot de passe doit faire au moins 8 caractères.",
+    "errorPasswordMismatch": "Les mots de passe ne correspondent pas.",
+    "successResetSent": "Lien de réinitialisation envoyé. Consultez votre boîte mail.",
+    "successSignupSent": "Demande envoyée ! Un administrateur va examiner votre inscription."
   },
   "landing": {
+    "nav": {
+      "features": "Fonctions",
+      "pricing": "Tarifs",
+      "faq": "FAQ",
+      "enterApp": "Accéder à l’app"
+    },
     "hero": {
+      "eyebrow": "Arbre généalogique · Est. 2026",
       "title": "Préservez l'histoire de votre famille,",
       "titleAccent": "génération après génération.",
       "subtitle": "L'arbre généalogique moderne — structuré, collaboratif, et toujours avec vous.",
       "cta": "Commencer gratuitement →",
-      "loginLink": "Déjà un compte ? Se connecter"
+      "enterApp": "Accéder à l’app",
+      "loginLink": "Déjà un compte ? Se connecter",
+      "scrollAria": "Faire défiler",
+      "trust": {
+        "free": "Gratuit pour commencer",
+        "noCard": "Sans carte bancaire",
+        "europe": "Données hébergées en Europe"
+      }
     },
     "demo": {
       "title": "Essayez sans vous inscrire",
       "subtitle": "Explorez avec la famille Dupont",
       "cta": "Essayer la démo gratuitement →",
-      "noSignup": "Aucune inscription requise"
+      "noSignup": "Aucune inscription requise",
+      "eyebrow": "La démo"
+    },
+    "features": {
+      "eyebrow": "Les fonctions",
+      "title": "Tout ce qu’il faut pour votre histoire familiale",
+      "badgeNew": "Nouveau",
+      "items": [
+        {
+          "title": "Arbre interactif",
+          "desc": "Visualisez 5 générations d’un seul coup d’œil."
+        },
+        {
+          "title": "Carte des origines",
+          "desc": "Découvrez d’où vient votre famille."
+        },
+        {
+          "title": "Sync cloud",
+          "desc": "Accessible sur tous vos appareils, toujours sauvegardé."
+        },
+        {
+          "title": "Exploration",
+          "desc": "Trouvez les liens entre n’importe quels membres."
+        },
+        {
+          "title": "Journal familial",
+          "desc": "Racontez l’histoire en mots et en photos."
+        },
+        {
+          "title": "Mode présentation",
+          "desc": "Partagez lors des réunions de famille."
+        },
+        {
+          "title": "Statistiques",
+          "desc": "Analysez les tendances de votre lignée."
+        },
+        {
+          "title": "Profil ADN",
+          "desc": "Visualisez vos origines ethniques."
+        }
+      ]
+    },
+    "mockup": {
+      "eyebrow": "L’interface",
+      "title": "Une interface qui donne vie à votre lignée",
+      "alt": "Aperçu de l’arbre généalogique"
+    },
+    "steps": {
+      "eyebrow": "La méthode",
+      "title": "Commencez en trois étapes",
+      "items": [
+        {
+          "title": "Créez votre compte",
+          "desc": "Magic link par e-mail, sans mot de passe."
+        },
+        {
+          "title": "Ajoutez vos ancêtres",
+          "desc": "Formulaire simple ou import GEDCOM."
+        },
+        {
+          "title": "Partagez avec la famille",
+          "desc": "Lien, export PDF, collaboration temps réel."
+        }
+      ]
+    },
+    "testimonials": {
+      "eyebrow": "Témoignages",
+      "title": "Ils ont retrouvé leurs racines",
+      "prev": "Témoignage précédent",
+      "next": "Témoignage suivant",
+      "goto": "Aller au témoignage {n}",
+      "items": [
+        {
+          "name": "Awa Diallo",
+          "loc": "Dakar → Lyon",
+          "quote": "J’ai retrouvé le village de mon arrière-grand-père et relié quatre générations. Émouvant."
+        },
+        {
+          "name": "Mathieu Lefèvre",
+          "loc": "Nantes",
+          "quote": "Enfin un outil élégant. Toute la famille collabore sur le même arbre, en temps réel."
+        },
+        {
+          "name": "Sofia Romano",
+          "loc": "Milan → Bruxelles",
+          "quote": "La carte des origines m’a fait découvrir des branches italiennes que j’ignorais totalement."
+        }
+      ]
+    },
+    "pricing": {
+      "eyebrow": "Les tarifs",
+      "title": "Commencez gratuitement, évoluez plus tard",
+      "popular": "Populaire",
+      "period": "/mois",
+      "plans": [
+        {
+          "name": "Gratuit",
+          "cta": "Commencer gratuitement",
+          "features": [
+            "1 arbre généalogique",
+            "50 personnes max",
+            "Import/Export GEDCOM",
+            "Rapport IA (3/mois)"
+          ]
+        },
+        {
+          "name": "Famille",
+          "cta": "Choisir ce plan",
+          "features": [
+            "5 arbres",
+            "500 personnes",
+            "Collaboration famille",
+            "Rapport IA illimité",
+            "Galerie photos",
+            "Sync cloud"
+          ]
+        },
+        {
+          "name": "Pro",
+          "cta": "Nous contacter",
+          "features": [
+            "Arbres illimités",
+            "Personnes illimitées",
+            "Multi-organisations",
+            "API access",
+            "Support prioritaire",
+            "Export PDF avancé"
+          ]
+        }
+      ]
+    },
+    "faq": {
+      "eyebrow": "Questions fréquentes",
+      "title": "Tout ce que vous voulez savoir",
+      "items": [
+        {
+          "q": "Mes données sont-elles en sécurité ?",
+          "a": "Vos données sont chiffrées en transit (SSL) et hébergées en Europe (Supabase, Stockholm). En mode invité, tout reste sur votre appareil. Vous restez propriétaire de vos données et pouvez les exporter à tout moment."
+        },
+        {
+          "q": "Puis-je importer un fichier GEDCOM ?",
+          "a": "Oui. Suimini importe les fichiers GEDCOM (.ged) standards : individus, familles, relations parent-enfant et mariages sont reconstruits automatiquement."
+        },
+        {
+          "q": "Comment fonctionne la collaboration ?",
+          "a": "Invitez des proches par e-mail avec un accès en lecture ou écriture. Les modifications se synchronisent en temps réel et chacun voit qui est connecté sur l’arbre."
+        },
+        {
+          "q": "Ai-je besoin d’un compte pour essayer ?",
+          "a": "Non. Le mode invité fonctionne entièrement hors-ligne avec des données d’exemple. Créez un compte uniquement lorsque vous souhaitez sauvegarder dans le cloud."
+        },
+        {
+          "q": "Puis-je exporter mon arbre ?",
+          "a": "Oui : export JSON (sauvegarde complète), GEDCOM (standard universel) et PDF (liste, fiches, résumé ou arbre visuel A3)."
+        },
+        {
+          "q": "Suimini est-il payant ?",
+          "a": "Le plan Gratuit suffit pour démarrer. Les plans Famille et Pro débloquent la synchronisation cloud, le partage et la collaboration temps réel."
+        }
+      ]
+    },
+    "ctaBanner": {
+      "title": "Votre histoire mérite",
+      "titleAccent": "d’être préservée.",
+      "createTree": "Créer mon arbre",
+      "demoLink": "ou explorer la démo d’abord →"
+    },
+    "footer": {
+      "tagline": "L’arbre généalogique moderne — structuré, collaboratif, et toujours avec vous.",
+      "linksTitle": "Liens utiles",
+      "features": "Fonctions",
+      "pricing": "Tarifs",
+      "faq": "FAQ",
+      "privacy": "Confidentialité",
+      "terms": "CGU",
+      "brandTitle": "Suimini",
+      "openApp": "Ouvrir l’app",
+      "hosted": "Données hébergées en Europe · Chiffrement SSL",
+      "copyright": "© 2026 Suimini — Tous droits réservés"
     }
   },
   "tree": {
@@ -66,6 +296,223 @@
     "alive": "Vivant(e)",
     "deceased": "Décédé(e)",
     "age": "ans"
+  },
+  "personForm": {
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "firstNamePlaceholder": "Ex: Marie",
+    "lastNamePlaceholder": "Ex: Dupont",
+    "maidenName": "Nom de jeune fille",
+    "maidenNamePlaceholder": "Nom de naissance",
+    "nickName": "Surnom",
+    "nickNamePlaceholder": "Diminutif, surnom...",
+    "gender": "Sexe",
+    "genderMale": "Homme",
+    "genderFemale": "Femme",
+    "genderOther": "Autre",
+    "genderUnknown": "Inconnu",
+    "birthDate": "Date de naissance",
+    "birthPlace": "Lieu de naissance",
+    "deathDate": "Date de décès",
+    "deathPlace": "Lieu de décès",
+    "cityPlaceholder": "Ville",
+    "isAlive": "Encore en vie",
+    "dateError": "La date de décès doit être postérieure à la date de naissance.",
+    "occupation": "Profession",
+    "occupationPlaceholder": "Ex: Médecin, Ingénieur...",
+    "nationality": "Nationalité",
+    "nationalityPlaceholder": "Ex: Française",
+    "religion": "Religion",
+    "religionPlaceholder": "Ex: Catholique",
+    "education": "Éducation",
+    "educationPlaceholder": "Ex: Bac+5, Polytechnique...",
+    "profilePhoto": "Photo de profil",
+    "photoImported": "Image importée",
+    "photoUrlPlaceholder": "Coller une URL https://… ou importer",
+    "import": "Importer",
+    "removePhoto": "Retirer la photo",
+    "photoNotImage": "Le fichier doit être une image.",
+    "photoTooLarge": "Image trop volumineuse (max 8 Mo).",
+    "photoUploadFailed": "Échec de l'import de l'image.",
+    "gallery": "Galerie de photos",
+    "remove": "Retirer",
+    "galleryUrlPlaceholder": "Coller une URL d’image puis Entrée",
+    "bio": "Biographie",
+    "bioPlaceholder": "Histoire, anecdotes, souvenirs...",
+    "tags": "Tags (séparés par des virgules)",
+    "tagsPlaceholder": "Ex: fondateur, médecin, sportif",
+    "dnaTitle": "Origines & ADN",
+    "dnaTotal": "Total : {total}%",
+    "dnaRegionPlaceholder": "Ex: Europe de l'Ouest",
+    "dnaSumError": "La somme des pourcentages doit faire exactement 100% pour enregistrer.",
+    "dnaAdd": "＋ Ajouter une origine",
+    "dnaMax": "(max 8)",
+    "customFields": "Champs personnalisés",
+    "customKeyPlaceholder": "Clé (ex: Régiment)",
+    "customValuePlaceholder": "Valeur",
+    "removeField": "Retirer le champ",
+    "addField": "Ajouter un champ",
+    "privacy": "Confidentialité",
+    "privacyPublic": "Public",
+    "privacyFamily": "Famille",
+    "privacyPrivate": "Privé",
+    "cancel": "Annuler",
+    "save": "Enregistrer"
+  },
+  "addPerson": {
+    "newPerson": "Nouvelle personne",
+    "establishRelation": "Établir une relation",
+    "stepInfo": "Informations",
+    "stepRelation": "Relation",
+    "submitNext": "Suivant : Établir une relation →",
+    "submitCreate": "Créer la personne",
+    "created": "Créé(e)",
+    "bornYear": "né(e) {year}",
+    "relationQuestion": "Quelle est sa relation avec un membre existant ?",
+    "relSpouse": "Conjoint(e)",
+    "relSpouseDesc": "Mari, femme, partenaire",
+    "relParent": "Parent de",
+    "relParentDesc": "Est parent de quelqu’un dans l’arbre",
+    "relChild": "Enfant de",
+    "relChildDesc": "Est l’enfant de quelqu’un dans l’arbre",
+    "relSibling": "Frère / Sœur",
+    "relSiblingDesc": "Fratrie",
+    "selectSpouse": "💒 Conjoint(e) de...",
+    "selectParent": "👴 Est parent de...",
+    "selectChild": "👶 Est enfant de...",
+    "selectSibling": "👫 Frère/Sœur de...",
+    "choosePerson": "Choisir une personne dans l’arbre...",
+    "willBeSpouse": "sera marié(e) à",
+    "willBeParent": "sera parent de",
+    "willBeChild": "sera enfant de",
+    "willBeSibling": "sera frère/sœur de",
+    "back": "Retour",
+    "createWithoutRelation": "Créer sans relation",
+    "createWithRelation": "Créer avec la relation"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "subtitle": "Apparence, compte et données de Suimini. Vos préférences d’affichage sont enregistrées sur cet appareil.",
+    "colorTheme": "Thème de couleurs",
+    "colorThemeHint": "Survolez un thème pour l’aperçu en temps réel, cliquez pour l’appliquer.",
+    "active": "Actif",
+    "swatchAccent": "Accent",
+    "swatchMale": "Homme",
+    "swatchFemale": "Femme",
+    "appearance": "Apparence",
+    "displayTheme": "Thème d’affichage",
+    "displayThemeHint": "« Système » suit automatiquement les réglages de votre appareil.",
+    "modeLight": "Clair",
+    "modeDark": "Sombre",
+    "modeSystem": "Système",
+    "account": "Compte",
+    "displayName": "Nom affiché",
+    "displayNamePlaceholder": "Votre nom",
+    "saving": "Enregistrement…",
+    "save": "Enregistrer",
+    "changePassword": "Modifier le mot de passe",
+    "signOutAll": "Se déconnecter de tous les appareils",
+    "data": "Données",
+    "dataHint": "Vos arbres restent les vôtres : emportez-les, ou repartez de zéro sur cet appareil.",
+    "exportAll": "Exporter toutes mes données",
+    "clearCache": "Vider le cache local",
+    "dangerZone": "Zone de danger",
+    "dangerHint": "La suppression du compte est définitive et efface vos données.",
+    "deleteAccount": "Supprimer mon compte",
+    "deleteIrreversible": "Action irréversible. Tapez {keyword} pour confirmer.",
+    "deleteConfirmPlaceholder": "SUPPRIMER",
+    "deleteConfirmAria": "Tapez SUPPRIMER pour confirmer",
+    "deleting": "Suppression…",
+    "deletePermanent": "Supprimer définitivement",
+    "cancel": "Annuler",
+    "toastNameUpdated": "Nom mis à jour.",
+    "toastNameFailed": "Échec de la mise à jour du nom.",
+    "toastPasswordSent": "Email de modification du mot de passe envoyé.",
+    "toastPasswordFailed": "Échec de l'envoi de l'email.",
+    "toastExported": "Données exportées.",
+    "confirmClearCache": "Vider le cache local ? Les arbres non synchronisés sur un compte seront définitivement perdus."
+  },
+  "admin": {
+    "title": "Administration",
+    "tabPending": "Demandes en attente",
+    "tabUsers": "Utilisateurs",
+    "tabTenants": "Organisations",
+    "tabNotifications": "Notifications",
+    "statusPending": "En attente",
+    "statusApproved": "Actif",
+    "statusRejected": "Refusé",
+    "statusSuspended": "Suspendu",
+    "approve": "Approuver",
+    "reject": "Refuser",
+    "confirmReject": "Confirmer le refus",
+    "rejectReasonPlaceholder": "Raison du refus (optionnel)",
+    "cancel": "Annuler",
+    "noPending": "Aucune demande en attente",
+    "toastApproved": "Compte approuvé",
+    "toastRejected": "Compte refusé",
+    "toastError": "Erreur : {error}",
+    "searchPlaceholder": "Rechercher nom ou email…",
+    "allStatuses": "Tous les statuts",
+    "noUsers": "Aucun utilisateur",
+    "actions": "Actions",
+    "suspend": "Suspendre",
+    "reactivate": "Réactiver",
+    "promoteAdmin": "Promouvoir admin",
+    "demoteUser": "Rétrograder user",
+    "toastSuspended": "Compte suspendu",
+    "toastReactivated": "Compte réactivé",
+    "toastPromoted": "Promu admin",
+    "toastDemoted": "Rétrogradé user",
+    "newTenant": "Nouvelle organisation",
+    "tenantNamePlaceholder": "Nom (ex: Famille Dupont)",
+    "slugPlaceholder": "slug",
+    "create": "Créer",
+    "noTenants": "Aucune organisation",
+    "membersMax": "{count} membres max",
+    "tenantActive": "Actif",
+    "tenantInactive": "Inactif",
+    "toastTenantNameSlug": "Nom et slug requis",
+    "toastTenantCreated": "Organisation créée",
+    "notifUnread": "{count} non lue",
+    "notifUnreadPlural": "{count} non lues",
+    "markAllRead": "Tout marquer comme lu",
+    "noNotifications": "Aucune notification",
+    "toastNotifsRead": "Notifications marquées comme lues",
+    "newSignup": "Nouvelle inscription",
+    "relInstant": "à l'instant",
+    "relMinutes": "il y a {m} min",
+    "relHours": "il y a {h} h",
+    "relDays": "il y a {d} j"
+  },
+  "profile": {
+    "backToApp": "Retour à l’app",
+    "title": "Profil",
+    "identity": "Identité",
+    "roleSuperadmin": "Super-admin",
+    "roleAdmin": "Admin",
+    "roleMember": "Membre",
+    "myTrees": "Mes arbres",
+    "loading": "Chargement…",
+    "noTrees": "Aucun arbre pour le moment.",
+    "treeMeta": "{persons} personnes · {links} liens · créé le {date}",
+    "open": "Ouvrir",
+    "statistics": "Statistiques",
+    "statPersons": "Total personnes",
+    "statTrees": "Total arbres",
+    "statMemberSince": "Membre depuis",
+    "account": "Compte",
+    "displayName": "Nom affiché",
+    "displayNamePlaceholder": "Votre nom",
+    "saving": "Enregistrement…",
+    "save": "Enregistrer",
+    "toastNameUpdated": "Nom mis à jour.",
+    "toastNameFailed": "Échec de la mise à jour du nom.",
+    "password": "Mot de passe",
+    "changePassword": "Changer le mot de passe",
+    "toastEmailSent": "Email envoyé.",
+    "toastEmailFailed": "Échec de l'envoi de l'email.",
+    "session": "Session",
+    "signOut": "Se déconnecter"
   },
   "dashboard": {
     "greeting": "Bonjour, {name}",
