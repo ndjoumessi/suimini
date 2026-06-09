@@ -1,7 +1,21 @@
 import { Person, Relationship, FamilyTree, TreeStats, SearchFilters } from '@/types';
+import { LOCALE_COOKIE, DEFAULT_LOCALE, isLocale, type Locale } from '@/i18n/config';
 
 export function generateId(): string {
   return Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+}
+
+/**
+ * Current UI locale, read from the NEXT_LOCALE cookie on the client.
+ * Falls back to the default locale on the server (these display helpers are
+ * only used inside client-rendered /app views, so the cookie is available at
+ * paint time — no hydration mismatch). Callers may also pass `locale` explicitly.
+ */
+function currentLocale(): Locale {
+  if (typeof document === 'undefined') return DEFAULT_LOCALE;
+  const m = document.cookie.match(new RegExp('(?:^|;\\s*)' + LOCALE_COOKIE + '=([^;]+)'));
+  const value = m ? decodeURIComponent(m[1]) : '';
+  return isLocale(value) ? value : DEFAULT_LOCALE;
 }
 
 // ===== Fuzzy / phonetic search =====
@@ -103,11 +117,20 @@ export function getAge(birthDate?: string, deathDate?: string): number | null {
   return age >= 0 ? age : null;
 }
 
-export function formatDate(dateStr?: string, approx?: boolean): string {
+export function formatDate(dateStr?: string, approx?: boolean, locale?: Locale): string {
   if (!dateStr) return '';
+  const loc = locale ?? currentLocale();
   const date = new Date(dateStr);
-  const formatted = date.toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' });
-  return approx ? `vers ${formatted}` : formatted;
+  const formatted = date.toLocaleDateString(loc === 'en' ? 'en-US' : 'fr-FR', { year: 'numeric', month: 'long', day: 'numeric' });
+  if (!approx) return formatted;
+  return loc === 'en' ? `circa ${formatted}` : `vers ${formatted}`;
+}
+
+/** Locale-aware age label: "34 ans" / "34 years old". Empty string for a null age. */
+export function formatAge(age: number | null, locale?: Locale): string {
+  if (age == null) return '';
+  const loc = locale ?? currentLocale();
+  return loc === 'en' ? `${age} years old` : `${age} ans`;
 }
 
 export function formatYear(dateStr?: string): string {
@@ -602,28 +625,29 @@ export function findRelationPath(fromId: string, toId: string, relationships: Re
   return null;
 }
 
-export function describeRelation(fromId: string, toId: string, path: string[], relationships: Relationship[], persons: Person[]): string {
-  if (path.length < 2) return 'Même personne';
+export function describeRelation(fromId: string, toId: string, path: string[], relationships: Relationship[], persons: Person[], locale?: Locale): string {
+  const en = (locale ?? currentLocale()) === 'en';
+  if (path.length < 2) return en ? 'Same person' : 'Même personne';
   if (path.length === 2) {
     const parents = getParents(fromId, relationships, persons);
     const children = getChildren(fromId, relationships, persons);
     const spouses = getSpouses(fromId, relationships, persons);
     const siblings = getSiblings(fromId, relationships, persons);
-    
-    if (parents.some(p => p.id === toId)) return 'Parent';
-    if (children.some(c => c.id === toId)) return 'Enfant';
-    if (spouses.some(s => s.id === toId)) return 'Conjoint(e)';
-    if (siblings.some(s => s.id === toId)) return 'Frère / Sœur';
+
+    if (parents.some(p => p.id === toId)) return en ? 'Parent' : 'Parent';
+    if (children.some(c => c.id === toId)) return en ? 'Child' : 'Enfant';
+    if (spouses.some(s => s.id === toId)) return en ? 'Spouse' : 'Conjoint(e)';
+    if (siblings.some(s => s.id === toId)) return en ? 'Sibling' : 'Frère / Sœur';
   }
   if (path.length === 3) {
     const grandparents = getParents(path[1], relationships, persons);
-    if (grandparents.some(p => p.id === toId)) return 'Grand-parent';
+    if (grandparents.some(p => p.id === toId)) return en ? 'Grandparent' : 'Grand-parent';
     const grandchildren = getChildren(path[1], relationships, persons);
-    if (grandchildren.some(c => c.id === toId)) return 'Petit-enfant';
-    return 'Cousin(e) / Oncle / Tante';
+    if (grandchildren.some(c => c.id === toId)) return en ? 'Grandchild' : 'Petit-enfant';
+    return en ? 'Cousin / Uncle / Aunt' : 'Cousin(e) / Oncle / Tante';
   }
-  if (path.length === 4) return 'Arrière-grand-parent ou cousin(e) éloigné(e)';
-  return `Lien familial (${path.length - 1} degrés)`;
+  if (path.length === 4) return en ? 'Great-grandparent or distant cousin' : 'Arrière-grand-parent ou cousin(e) éloigné(e)';
+  return en ? `Family link (${path.length - 1} degrees)` : `Lien familial (${path.length - 1} degrés)`;
 }
 
 // --- Anniversaries ---
