@@ -1,5 +1,6 @@
 'use client';
 import { useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { CalendarDays, MapPin } from 'lucide-react';
 import { FamilyTree, EventType } from '@/types';
 import { getDisplayName, formatDate } from '@/lib/treeUtils';
@@ -33,12 +34,14 @@ interface Props {
 }
 
 export default function TimelineView({ tree, onSelectPerson }: Props) {
+  const t = useTranslations('timeline');
+
   const entries = useMemo<TimelineEntry[]>(() => {
     const list: TimelineEntry[] = [];
 
     tree.persons.forEach(person => {
       const name = getDisplayName(person);
-      
+
       if (person.birthDate) {
         list.push({
           date: person.birthDate,
@@ -46,7 +49,7 @@ export default function TimelineView({ tree, onSelectPerson }: Props) {
           type: 'birth',
           personId: person.id,
           personName: name,
-          description: `Naissance de ${name}`,
+          description: t('eventBirth', { name }),
           place: person.birthPlace?.city,
         });
       }
@@ -58,7 +61,7 @@ export default function TimelineView({ tree, onSelectPerson }: Props) {
           type: 'death',
           personId: person.id,
           personName: name,
-          description: `Décès de ${name}`,
+          description: t('eventDeath', { name }),
           place: person.deathPlace?.city,
         });
       }
@@ -71,7 +74,7 @@ export default function TimelineView({ tree, onSelectPerson }: Props) {
             type: event.type,
             personId: person.id,
             personName: name,
-            description: event.description || `${event.type} de ${name}`,
+            description: event.description || t('eventGeneric', { type: t(`type_${event.type}`), name }),
             place: event.place?.city,
           });
         }
@@ -79,7 +82,7 @@ export default function TimelineView({ tree, onSelectPerson }: Props) {
     });
 
     return list.sort((a, b) => a.date.localeCompare(b.date));
-  }, [tree]);
+  }, [tree, t]);
 
   // Group by decade
   const byDecade = useMemo(() => {
@@ -99,7 +102,7 @@ export default function TimelineView({ tree, onSelectPerson }: Props) {
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '12px', padding: '24px', textAlign: 'center' }}>
         <CalendarDays size={44} strokeWidth={1.25} style={{ color: 'var(--text-light)' }} aria-hidden="true" />
         <p style={{ color: 'var(--text-muted)', margin: 0, maxWidth: '32ch' }}>
-          La chronologie se remplira dès que vos proches auront des dates de naissance, de décès ou d'autres événements.
+          {t('empty')}
         </p>
       </div>
     );
@@ -108,8 +111,8 @@ export default function TimelineView({ tree, onSelectPerson }: Props) {
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <h2 className="serif" style={{ margin: 0, fontSize: '1.1rem', flex: 1 }}>Chronologie — {tree.name}</h2>
-        <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{entries.length} événements</span>
+        <h2 className="serif" style={{ margin: 0, fontSize: '1.1rem', flex: 1 }}>{t('heading', { name: tree.name })}</h2>
+        <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{t('eventCount', { count: entries.length })}</span>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
@@ -120,11 +123,11 @@ export default function TimelineView({ tree, onSelectPerson }: Props) {
               display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px'
             }}>
               <div className="label" style={{ fontSize: '13px', color: 'var(--text-light)', minWidth: '60px' }}>
-                {decade}s
+                {t('decade', { decade })}
               </div>
               <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
               <div style={{ fontSize: '11px', color: 'var(--text-light)' }}>
-                {byDecade[decade].length} événements
+                {t('eventCount', { count: byDecade[decade].length })}
               </div>
             </div>
 

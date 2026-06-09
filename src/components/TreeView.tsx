@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { FamilyTree, Person } from '@/types';
-import { getParents, getChildren, getSpouses, getDisplayName, formatYear, getAge } from '@/lib/treeUtils';
+import { getParents, getChildren, getSpouses, getDisplayName, formatYear, getAge, formatAge } from '@/lib/treeUtils';
 import { Search, ZoomIn, ZoomOut, Crosshair, Info, Plus, Aperture, Sprout, Printer } from 'lucide-react';
 
 /** Two-letter initials for the avatar fallback (same logic as PersonPanel/Sidebar). */
@@ -358,7 +358,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
   function dateLine(p: Person): string {
     const birth = formatYear(p.birthDate);
     const death = formatYear(p.deathDate);
-    const prefix = p.gender === 'female' ? 'née' : 'né';
+    const prefix = p.gender === 'female' ? t('bornF') : t('bornM');
     if (!p.isAlive) {
       if (birth && death) return `${birth} – ${death}`;
       if (death) return `† ${death}`;
@@ -366,16 +366,16 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
     }
     if (!birth) return '';
     const age = getAge(p.birthDate, p.deathDate);
-    return age !== null ? `${prefix} ${birth} · ${age} ans` : `${prefix} ${birth}`;
+    return age !== null ? `${prefix} ${birth} · ${formatAge(age)}` : `${prefix} ${birth}`;
   }
 
   if (tree.persons.length === 0) {
     return (
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '20px', padding: '24px', textAlign: 'center' }}>
         <Sprout size={52} strokeWidth={1.25} style={{ color: 'var(--text-light)' }} aria-hidden="true" />
-        <h3 style={{ margin: 0 }}>Cet arbre est vide</h3>
-        <p style={{ color: 'var(--text-muted)', margin: 0 }}>Ajoutez la première personne pour commencer</p>
-        {!readOnly && <button onClick={onAddPerson} className="btn btn-primary" style={{ gap: '6px' }}><Plus size={16} aria-hidden="true" /> Première personne</button>}
+        <h3 style={{ margin: 0 }}>{t('emptyTreeTitle')}</h3>
+        <p style={{ color: 'var(--text-muted)', margin: 0 }}>{t('emptyTreeSubtitle')}</p>
+        {!readOnly && <button onClick={onAddPerson} className="btn btn-primary" style={{ gap: '6px' }}><Plus size={16} aria-hidden="true" /> {t('firstPerson')}</button>}
       </div>
     );
   }
@@ -392,12 +392,12 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
 
         {/* Change root */}
         <div style={{ position: 'relative' }}>
-          <button onClick={() => setShowSearch(!showSearch)} className="btn btn-secondary btn-sm" style={{ gap: '6px' }} aria-label="Changer la racine de l'arbre" aria-expanded={showSearch}>
+          <button onClick={() => setShowSearch(!showSearch)} className="btn btn-secondary btn-sm" style={{ gap: '6px' }} aria-label={t('changeRoot')} aria-expanded={showSearch}>
             <Search size={14} aria-hidden="true" /> {t('root')}
           </button>
           {showSearch && (
             <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 200, marginTop: '4px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px', width: '240px', boxShadow: 'var(--shadow-lg)' }}>
-              <input autoFocus value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Nom de la personne..." className="input" style={{ marginBottom: '6px' }} />
+              <input autoFocus value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder={t('personNamePlaceholder')} className="input" style={{ marginBottom: '6px' }} />
               <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
                 {(searchQ ? filteredPersons : tree.persons.slice(0, 20)).map(p => (
                   <button key={p.id} onClick={() => { setRootId(p.id); setShowSearch(false); setSearchQ(''); setTimeout(() => centerOn(p.id), 120); }}
@@ -417,14 +417,14 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
 
         {layoutMode === 'vertical' && <>
           {sep}
-          <button onClick={recenter} className="btn btn-secondary btn-sm btn-icon" title="Centrer sur la racine" aria-label="Centrer"><Crosshair size={14} aria-hidden="true" /></button>
-          <button onClick={() => setScale(s => Math.max(0.25, s * 0.8))} className="btn btn-secondary btn-sm btn-icon" title="Zoom arrière" aria-label="Zoom arrière"><ZoomOut size={14} aria-hidden="true" /></button>
-          <button onClick={() => setScale(1)} className="btn btn-secondary btn-sm" style={{ minWidth: '46px' }} title="Réinitialiser le zoom" aria-label="Réinitialiser le zoom">{Math.round(scale * 100)}%</button>
-          <button onClick={() => setScale(s => Math.min(2.5, s * 1.2))} className="btn btn-secondary btn-sm btn-icon" title="Zoom avant" aria-label="Zoom avant"><ZoomIn size={14} aria-hidden="true" /></button>
+          <button onClick={recenter} className="btn btn-secondary btn-sm btn-icon" title={t('centerOnRoot')} aria-label={t('center')}><Crosshair size={14} aria-hidden="true" /></button>
+          <button onClick={() => setScale(s => Math.max(0.25, s * 0.8))} className="btn btn-secondary btn-sm btn-icon" title={t('zoomOut')} aria-label={t('zoomOut')}><ZoomOut size={14} aria-hidden="true" /></button>
+          <button onClick={() => setScale(1)} className="btn btn-secondary btn-sm" style={{ minWidth: '46px' }} title={t('resetZoom')} aria-label={t('resetZoom')}>{Math.round(scale * 100)}%</button>
+          <button onClick={() => setScale(s => Math.min(2.5, s * 1.2))} className="btn btn-secondary btn-sm btn-icon" title={t('zoomIn')} aria-label={t('zoomIn')}><ZoomIn size={14} aria-hidden="true" /></button>
         </>}
 
         {sep}
-        <button onClick={() => setLayoutMode(m => m === 'fan' ? 'vertical' : 'fan')} className="btn btn-sm" style={{ gap: '6px', background: layoutMode === 'fan' ? 'var(--accent)' : 'var(--bg-muted)', color: layoutMode === 'fan' ? '#fff' : 'var(--text-muted)', border: '1px solid var(--border)' }} title="Basculer en éventail (fan chart)" aria-pressed={layoutMode === 'fan'}>
+        <button onClick={() => setLayoutMode(m => m === 'fan' ? 'vertical' : 'fan')} className="btn btn-sm" style={{ gap: '6px', background: layoutMode === 'fan' ? 'var(--accent)' : 'var(--bg-muted)', color: layoutMode === 'fan' ? '#fff' : 'var(--text-muted)', border: '1px solid var(--border)' }} title={t('toggleFan')} aria-pressed={layoutMode === 'fan'}>
           <Aperture size={14} aria-hidden="true" /> {t('fan')}
         </button>
         <button onClick={() => setShowLegend(l => !l)} className="btn btn-secondary btn-sm btn-icon" title={t('legend')} aria-label={t('legend')} aria-pressed={showLegend}>
@@ -435,7 +435,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
           <>
             {sep}
             {onExport && (
-              <button onClick={onExport} className="btn btn-secondary btn-sm btn-icon" title="Exporter en PDF" aria-label="Exporter en PDF"><Printer size={14} aria-hidden="true" /></button>
+              <button onClick={onExport} className="btn btn-secondary btn-sm btn-icon" title={t('exportPdf')} aria-label={t('exportPdf')}><Printer size={14} aria-hidden="true" /></button>
             )}
             <button onClick={onAddPerson} className="btn btn-primary btn-sm" style={{ gap: '6px' }}><Plus size={14} aria-hidden="true" /> {t('add')}</button>
           </>
@@ -495,7 +495,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
               const p = node.person;
               const isSelected = p.id === selectedPersonId;
               const isRoot = p.id === rootId;
-              const ariaLabel = `${getDisplayName(p)}${p.birthDate ? `, ${p.gender === 'female' ? 'née' : 'né'} en ${formatYear(p.birthDate)}` : ''}`;
+              const ariaLabel = `${getDisplayName(p)}${p.birthDate ? `, ${p.gender === 'female' ? t('bornF') : t('bornM')} ${t('inYear')} ${formatYear(p.birthDate)}` : ''}`;
 
               return (
                 <g key={p.id}
@@ -557,19 +557,19 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
         {/* Legend — minimalist, hidden by default */}
         {showLegend && (
           <div style={{ position: 'absolute', bottom: '12px', left: '12px', maxWidth: '140px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '10px', fontSize: '11px', color: 'var(--text-muted)', boxShadow: 'var(--shadow)' }}>
-            <div className="label" style={{ marginBottom: '8px', color: 'var(--text)' }}>Légende</div>
+            <div className="label" style={{ marginBottom: '8px', color: 'var(--text)' }}>{t('legend')}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '4px', height: '14px', background: 'var(--male)', borderRadius: '2px', flexShrink: 0 }} /> Homme
+                <span style={{ width: '4px', height: '14px', background: 'var(--male)', borderRadius: '2px', flexShrink: 0 }} /> {t('male')}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '4px', height: '14px', background: 'var(--female)', borderRadius: '2px', flexShrink: 0 }} /> Femme
+                <span style={{ width: '4px', height: '14px', background: 'var(--female)', borderRadius: '2px', flexShrink: 0 }} /> {t('female')}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <svg width="26" height="8" style={{ flexShrink: 0 }}><line x1="0" y1="4" x2="26" y2="4" stroke="var(--border)" strokeWidth="1.2" /></svg> Filiation
+                <svg width="26" height="8" style={{ flexShrink: 0 }}><line x1="0" y1="4" x2="26" y2="4" stroke="var(--border)" strokeWidth="1.2" /></svg> {t('filiation')}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <svg width="26" height="8" style={{ flexShrink: 0 }}><line x1="0" y1="4" x2="26" y2="4" stroke="var(--accent)" strokeWidth="1.5" strokeDasharray="4,3" opacity="0.35" /></svg> Conjoint(e)
+                <svg width="26" height="8" style={{ flexShrink: 0 }}><line x1="0" y1="4" x2="26" y2="4" stroke="var(--accent)" strokeWidth="1.5" strokeDasharray="4,3" opacity="0.35" /></svg> {t('spouse')}
               </div>
             </div>
           </div>
@@ -577,7 +577,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
 
         {/* Node count */}
         <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '100px', padding: '4px 12px', fontSize: '11px', color: 'var(--text-muted)' }}>
-          {nodes.length} / {tree.persons.length} personnes
+          {nodes.length} / {tree.persons.length} {t('persons')}
         </div>
 
         {/* Minimap */}
@@ -599,7 +599,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
             setOffset({ x: cw / 2 - scale * cx, y: ch / 2 - scale * cy });
           };
           return (
-            <div onMouseDown={e => e.stopPropagation()} onClick={navigate} title="Cliquez pour naviguer"
+            <div onMouseDown={e => e.stopPropagation()} onClick={navigate} title={t('clickToNavigate')}
               style={{ position: 'absolute', bottom: '12px', right: '12px', width: `${MM_W}px`, height: `${MM_H}px`, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)', overflow: 'hidden', cursor: 'pointer' }}>
               <svg width={MM_W} height={MM_H} style={{ display: 'block' }}>
                 {nodes.map(n => {
@@ -633,6 +633,7 @@ function FanChart({ fan, fanGenColor, r0, ring, selectedPersonId, onSelectPerson
   selectedPersonId: string | null;
   onSelectPerson: (id: string) => void;
 }) {
+  const t = useTranslations('tree');
   const pad = 32;
   const view = fan.R + pad;
   const ang = (a: number) => -Math.PI / 2 + a;
@@ -694,7 +695,7 @@ function FanChart({ fan, fanGenColor, r0, ring, selectedPersonId, onSelectPerson
 
       {fan.maxGen === 0 && (
         <text x={0} y={r0 + 30} textAnchor="middle" fontSize={13} fontFamily="var(--font-body)" fill="var(--text-muted)">
-          Aucun ancêtre enregistré pour cette racine
+          {t('noAncestors')}
         </text>
       )}
     </svg>

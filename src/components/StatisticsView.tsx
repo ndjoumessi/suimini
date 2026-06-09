@@ -1,7 +1,8 @@
 'use client';
 import { useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { FamilyTree, Person } from '@/types';
-import { computeTreeStats, getAge, getDisplayName, formatYear, getGeneration } from '@/lib/treeUtils';
+import { computeTreeStats, getAge, formatAge, getDisplayName, formatYear, getGeneration } from '@/lib/treeUtils';
 
 interface Props {
   tree: FamilyTree;
@@ -51,7 +52,7 @@ function BarChart({ data, maxValue, colorFn }: { data: { label: string; value: n
 }
 
 /** Quiet empty-state line, used inside every advanced section. */
-function EmptyState({ text = 'Données insuffisantes' }: { text?: string }) {
+function EmptyState({ text }: { text: string }) {
   return <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: '4px 0 0' }}>{text}</p>;
 }
 
@@ -88,7 +89,7 @@ interface DecadeBucket {
 // ---------- inline-SVG charts (no external libs) ----------
 
 /** Vertical bars: average lifespan per group, count labelled under each bar. */
-function LifespanChart({ groups }: { groups: LifespanGroup[] }) {
+function LifespanChart({ groups, ariaLabel, yearsLabel, personsLabel }: { groups: LifespanGroup[]; ariaLabel: string; yearsLabel: string; personsLabel: (n: number) => string }) {
   const W = 720, H = 260;
   const padL = 40, padR = 16, padT = 24, padB = 48;
   const plotW = W - padL - padR;
@@ -102,7 +103,7 @@ function LifespanChart({ groups }: { groups: LifespanGroup[] }) {
   const yTicks = [0, axisMax / 2, axisMax];
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Espérance de vie moyenne par groupe" style={{ display: 'block' }}>
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={ariaLabel} style={{ display: 'block' }}>
       {/* y gridlines + labels */}
       {yTicks.map((t, i) => {
         const y = padT + plotH - (t / axisMax) * plotH;
@@ -125,13 +126,13 @@ function LifespanChart({ groups }: { groups: LifespanGroup[] }) {
             {/* group label */}
             <text x={cx} y={H - padB + 16} textAnchor="middle" fontSize={11} fill="var(--text-muted)">{g.key}</text>
             {/* count */}
-            <text x={cx} y={H - padB + 30} textAnchor="middle" fontSize={10} fill="var(--text-light)" fontFamily="var(--font-mono, monospace)">{g.count} pers.</text>
+            <text x={cx} y={H - padB + 30} textAnchor="middle" fontSize={10} fill="var(--text-light)" fontFamily="var(--font-mono, monospace)">{personsLabel(g.count)}</text>
           </g>
         );
       })}
       {/* axis line */}
       <line x1={padL} y1={padT + plotH} x2={W - padR} y2={padT + plotH} stroke="var(--border-strong)" strokeWidth={1.5} />
-      <text x={padL} y={14} fontSize={10} fill="var(--text-light)" fontFamily="var(--font-mono, monospace)">ANS</text>
+      <text x={padL} y={14} fontSize={10} fill="var(--text-light)" fontFamily="var(--font-mono, monospace)">{yearsLabel}</text>
     </svg>
   );
 }
@@ -176,7 +177,7 @@ function WordCloud({ entries }: { entries: NameEntry[] }) {
 }
 
 /** Vertical bar timeline of births per decade; peak decade highlighted in terracotta. */
-function DecadeTimeline({ buckets }: { buckets: DecadeBucket[] }) {
+function DecadeTimeline({ buckets, ariaLabel }: { buckets: DecadeBucket[]; ariaLabel: string }) {
   const W = 720, H = 240;
   const padL = 32, padR = 16, padT = 24, padB = 40;
   const plotW = W - padL - padR;
@@ -188,7 +189,7 @@ function DecadeTimeline({ buckets }: { buckets: DecadeBucket[] }) {
   const barW = Math.min(slot * 0.62, 48);
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Naissances par décennie" style={{ display: 'block' }}>
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={ariaLabel} style={{ display: 'block' }}>
       {buckets.map((b, i) => {
         const cx = padL + slot * i + slot / 2;
         const h = (b.count / maxCount) * plotH;
@@ -210,6 +211,7 @@ function DecadeTimeline({ buckets }: { buckets: DecadeBucket[] }) {
 }
 
 export default function StatisticsView({ tree }: Props) {
+  const t = useTranslations('statistics');
   const stats = useMemo(() => computeTreeStats(tree), [tree]);
 
   // Generation index per person (0 = founders, increasing downward), via parent links.
@@ -245,7 +247,7 @@ export default function StatisticsView({ tree }: Props) {
       const groups: LifespanGroup[] = [...genBuckets.entries()]
         .sort((a, b) => a[0] - b[0])
         .map(([g, ages]) => ({
-          key: `Gén. ${g + 1}`,
+          key: t('genLabel', { n: g + 1 }),
           avg: Math.round(ages.reduce((s, a) => s + a, 0) / ages.length),
           count: ages.length,
         }));
@@ -268,7 +270,7 @@ export default function StatisticsView({ tree }: Props) {
         count: ages.length,
       }));
     return { groups, mode: 'decade' };
-  }, [tree, generationByPerson]);
+  }, [tree, generationByPerson, t]);
 
   // --- 2) Top prénoms + nuage de mots ---
   const topNames = useMemo<NameEntry[]>(() => {
@@ -335,29 +337,29 @@ export default function StatisticsView({ tree }: Props) {
   return (
     <div style={{ flex: 1, overflowY: 'auto' }}>
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)' }}>
-        <h2 className="serif" style={{ margin: 0, fontSize: '1.1rem' }}>Statistiques — {tree.name}</h2>
+        <h2 className="serif" style={{ margin: 0, fontSize: '1.1rem' }}>{t('heading', { tree: tree.name })}</h2>
       </div>
 
       <div style={{ padding: '20px', maxWidth: '1000px' }}>
         {/* Overview — a narrative line, then a quiet row of secondary figures. */}
         <div style={{ marginBottom: '28px' }}>
           <p className="serif" style={{ margin: '0 0 18px', fontSize: '1.5rem', lineHeight: 1.35, maxWidth: '34ch', textWrap: 'balance' }}>
-            Votre famille compte{' '}
-            <span style={{ color: 'var(--accent)' }}>{stats.totalPersons}</span>
-            {stats.totalPersons > 1 ? ' personnes' : ' personne'}, sur{' '}
-            <span style={{ color: 'var(--accent)' }}>{stats.totalGenerations}</span>
-            {stats.totalGenerations > 1 ? ' générations' : ' génération'}.
+            {t.rich('intro', {
+              persons: stats.totalPersons,
+              generations: stats.totalGenerations,
+              accent: (chunks) => <span style={{ color: 'var(--accent)' }}>{chunks}</span>,
+            })}
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '28px 32px' }}>
-            <Figure label="Hommes" value={stats.totalMales} color="var(--male)" />
-            <Figure label="Femmes" value={stats.totalFemales} color="var(--female)" />
-            <Figure label="Vivants" value={stats.totalAlive} color="var(--success)" />
-            <Figure label="Défunts" value={stats.totalDeceased} color="var(--deceased)" />
-            <Figure label="Relations" value={stats.totalRelationships} />
-            <Figure label="Avec photo" value={stats.totalPhotos} />
-            <Figure label="Événements" value={stats.totalEvents} />
+            <Figure label={t('males')} value={stats.totalMales} color="var(--male)" />
+            <Figure label={t('females')} value={stats.totalFemales} color="var(--female)" />
+            <Figure label={t('alive')} value={stats.totalAlive} color="var(--success)" />
+            <Figure label={t('deceased')} value={stats.totalDeceased} color="var(--deceased)" />
+            <Figure label={t('relationships')} value={stats.totalRelationships} />
+            <Figure label={t('withPhoto')} value={stats.totalPhotos} />
+            <Figure label={t('events')} value={stats.totalEvents} />
             {stats.averageLifespan && (
-              <Figure label="Durée de vie moy." value={stats.averageLifespan} sub="ans" />
+              <Figure label={t('avgLifespan')} value={stats.averageLifespan} sub={t('yearsUnit')} />
             )}
           </div>
         </div>
@@ -365,24 +367,29 @@ export default function StatisticsView({ tree }: Props) {
         {/* ===== 1) ESPÉRANCE DE VIE ===== */}
         <div className="card" style={{ padding: '20px', marginBottom: '16px' }}>
           <SectionHead
-            eyebrow="Longévité"
-            title={lifespan.mode === 'generation' ? 'Espérance de vie par génération' : 'Espérance de vie par décennie de naissance'}
+            eyebrow={t('longevityEyebrow')}
+            title={lifespan.mode === 'generation' ? t('longevityByGeneration') : t('longevityByDecade')}
           />
           {lifespan.groups.length > 0 ? (
             <>
-              <LifespanChart groups={lifespan.groups} />
+              <LifespanChart
+                groups={lifespan.groups}
+                ariaLabel={t('longevityChartAria')}
+                yearsLabel={t('yearsAxis')}
+                personsLabel={(n) => t('personsCount', { n })}
+              />
               <p style={{ fontSize: '12px', color: 'var(--text-light)', margin: '8px 0 0' }}>
-                Moyenne d&apos;âge au décès (défunts avec date de naissance et de décès).
+                {t('longevityCaption')}
               </p>
             </>
           ) : (
-            <EmptyState />
+            <EmptyState text={t('insufficientData')} />
           )}
         </div>
 
         {/* ===== 2) TOP PRÉNOMS + NUAGE DE MOTS ===== */}
         <div className="card" style={{ padding: '20px', marginBottom: '16px' }}>
-          <SectionHead eyebrow="Onomastique" title="Prénoms les plus portés" />
+          <SectionHead eyebrow={t('onomasticsEyebrow')} title={t('topFirstNames')} />
           {topNames.length > 0 ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(180px, 280px) 1fr', gap: '24px', alignItems: 'center' }}>
               {/* Ranked list */}
@@ -405,76 +412,76 @@ export default function StatisticsView({ tree }: Props) {
               </div>
             </div>
           ) : (
-            <EmptyState />
+            <EmptyState text={t('insufficientData')} />
           )}
         </div>
 
         {/* ===== 3) TIMELINE DES NAISSANCES PAR DÉCENNIE ===== */}
         <div className="card" style={{ padding: '20px', marginBottom: '16px' }}>
-          <SectionHead eyebrow="Chronologie" title="Naissances par décennie" />
+          <SectionHead eyebrow={t('chronologyEyebrow')} title={t('birthsByDecade')} />
           {decadeTimeline.length > 0 ? (
             <>
-              <DecadeTimeline buckets={decadeTimeline} />
+              <DecadeTimeline buckets={decadeTimeline} ariaLabel={t('birthsByDecade')} />
               <div style={{ display: 'flex', gap: '16px', fontSize: '11px', color: 'var(--text-light)', marginTop: '8px' }}>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ width: '10px', height: '10px', background: 'var(--accent)', display: 'inline-block' }} /> Pic de natalité
+                  <span style={{ width: '10px', height: '10px', background: 'var(--accent)', display: 'inline-block' }} /> {t('birthPeak')}
                 </span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ width: '10px', height: '10px', background: 'var(--text-muted)', display: 'inline-block' }} /> Autres décennies
+                  <span style={{ width: '10px', height: '10px', background: 'var(--text-muted)', display: 'inline-block' }} /> {t('otherDecades')}
                 </span>
               </div>
             </>
           ) : (
-            <EmptyState />
+            <EmptyState text={t('insufficientData')} />
           )}
         </div>
 
         {/* ===== Optional: répartition géographique ===== */}
         {geoDist.length > 0 && (
           <div className="card" style={{ padding: '20px', marginBottom: '16px' }}>
-            <SectionHead eyebrow="Géographie" title="Origines de naissance" />
+            <SectionHead eyebrow={t('geographyEyebrow')} title={t('birthOrigins')} />
             <BarChart data={geoDist} maxValue={maxGeo} colorFn={() => 'var(--text-muted)'} />
           </div>
         )}
 
         {/* ===== Existing: notable persons ===== */}
         <div className="card" style={{ padding: '20px', marginBottom: '16px' }}>
-          <SectionHead eyebrow="Repères" title="Personnes notables" />
+          <SectionHead eyebrow={t('landmarksEyebrow')} title={t('notablePersons')} />
           {(stats.oldestPerson || stats.youngestPerson || stats.mostCommonSurname) ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
               {stats.oldestPerson && (
                 <div style={{ padding: '10px', background: 'var(--bg-muted)', borderRadius: 'var(--radius)' }}>
-                  <div className="label" style={{ color: 'var(--text-light)', marginBottom: '2px' }}>Plus âgé(e)</div>
+                  <div className="label" style={{ color: 'var(--text-light)', marginBottom: '2px' }}>{t('oldest')}</div>
                   <div style={{ fontWeight: '700' }}>{getDisplayName(stats.oldestPerson)}</div>
                   <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                    {formatYear(stats.oldestPerson.birthDate)} · {getAge(stats.oldestPerson.birthDate)} ans
+                    {formatYear(stats.oldestPerson.birthDate)} · {formatAge(getAge(stats.oldestPerson.birthDate))}
                   </div>
                 </div>
               )}
               {stats.youngestPerson && (
                 <div style={{ padding: '10px', background: 'var(--bg-muted)', borderRadius: 'var(--radius)' }}>
-                  <div className="label" style={{ color: 'var(--text-light)', marginBottom: '2px' }}>Plus jeune</div>
+                  <div className="label" style={{ color: 'var(--text-light)', marginBottom: '2px' }}>{t('youngest')}</div>
                   <div style={{ fontWeight: '700' }}>{getDisplayName(stats.youngestPerson)}</div>
                   <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                    {formatYear(stats.youngestPerson.birthDate)} · {getAge(stats.youngestPerson.birthDate)} ans
+                    {formatYear(stats.youngestPerson.birthDate)} · {formatAge(getAge(stats.youngestPerson.birthDate))}
                   </div>
                 </div>
               )}
               {stats.mostCommonSurname && (
                 <div style={{ padding: '10px', background: 'var(--bg-muted)', borderRadius: 'var(--radius)' }}>
-                  <div className="label" style={{ color: 'var(--text-light)', marginBottom: '2px' }}>Nom le plus fréquent</div>
+                  <div className="label" style={{ color: 'var(--text-light)', marginBottom: '2px' }}>{t('mostCommonSurname')}</div>
                   <div style={{ fontWeight: '700', fontSize: '1.1rem' }}>{stats.mostCommonSurname}</div>
                 </div>
               )}
             </div>
           ) : (
-            <EmptyState />
+            <EmptyState text={t('insufficientData')} />
           )}
         </div>
 
         {/* ===== Existing: gender ratio visual ===== */}
         <div className="card" style={{ padding: '20px' }}>
-          <SectionHead eyebrow="Démographie" title="Répartition hommes / femmes" />
+          <SectionHead eyebrow={t('demographyEyebrow')} title={t('genderRatio')} />
           {stats.totalPersons > 0 ? (
             <div>
               <div style={{ display: 'flex', height: '32px', borderRadius: '100px', overflow: 'hidden', marginBottom: '8px' }}>
@@ -500,12 +507,12 @@ export default function StatisticsView({ tree }: Props) {
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: 'var(--text-muted)' }}>
-                <span style={{ color: 'var(--male)' }}>{Math.round((stats.totalMales / stats.totalPersons) * 100)}% hommes</span>
-                <span style={{ color: 'var(--female)' }}>{Math.round((stats.totalFemales / stats.totalPersons) * 100)}% femmes</span>
+                <span style={{ color: 'var(--male)' }}>{t('percentMales', { pct: Math.round((stats.totalMales / stats.totalPersons) * 100) })}</span>
+                <span style={{ color: 'var(--female)' }}>{t('percentFemales', { pct: Math.round((stats.totalFemales / stats.totalPersons) * 100) })}</span>
               </div>
             </div>
           ) : (
-            <EmptyState />
+            <EmptyState text={t('insufficientData')} />
           )}
         </div>
       </div>

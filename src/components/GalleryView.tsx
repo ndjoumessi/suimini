@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { Images, LayoutGrid, Rows3, ImageOff, X, ImageUp, Plus } from 'lucide-react';
 import { FamilyTree, Person } from '@/types';
 import { getDisplayName, formatYear } from '@/lib/treeUtils';
@@ -18,6 +19,7 @@ interface PhotoItem {
 }
 
 export default function GalleryView({ tree, onSelectPerson, onUpdatePerson }: Props) {
+  const t = useTranslations('gallery');
   const [selected, setSelected] = useState<PhotoItem | null>(null);
   const [filterPersonId, setFilterPersonId] = useState<string>('');
   const [layout, setLayout] = useState<'grid' | 'masonry'>('grid');
@@ -69,14 +71,15 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson }: Pr
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <h2 className="serif" style={{ margin: 0, fontSize: '1.1rem', flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Images size={18} style={{ color: 'var(--accent)', flexShrink: 0 }} aria-hidden="true" />
-            Galerie — {photos.length} photo{photos.length !== 1 ? 's' : ''}
+            {t('heading')} — {t('photoCount', { count: photos.length })}
           </h2>
           <select
             value={filterPersonId}
             onChange={e => setFilterPersonId(e.target.value)}
             className="input" style={{ width: 'auto', maxWidth: '200px' }}
+            aria-label={t('filterByPersonLabel')}
           >
-            <option value="">Toutes les personnes</option>
+            <option value="">{t('allPeople')}</option>
             {personsWithPhotos.map(p => (
               <option key={p.id} value={p.id}>{getDisplayName(p)}</option>
             ))}
@@ -85,15 +88,15 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson }: Pr
             onClick={() => setLayout(l => l === 'grid' ? 'masonry' : 'grid')}
             className="btn btn-secondary btn-sm"
             style={{ gap: '6px' }}
-            aria-label={layout === 'grid' ? 'Passer en disposition mosaïque' : 'Passer en disposition grille'}
+            aria-label={layout === 'grid' ? t('switchToMasonry') : t('switchToGrid')}
           >
             {layout === 'grid'
-              ? <><LayoutGrid size={14} aria-hidden="true" /> Grille</>
-              : <><Rows3 size={14} aria-hidden="true" /> Mosaïque</>}
+              ? <><LayoutGrid size={14} aria-hidden="true" /> {t('layoutGrid')}</>
+              : <><Rows3 size={14} aria-hidden="true" /> {t('layoutMasonry')}</>}
           </button>
           {onUpdatePerson && tree.persons.length > 0 && (
             <button onClick={() => { setShowAdd(s => !s); setAddPersonId(''); }} className="btn btn-primary btn-sm" style={{ gap: '6px' }}>
-              <Plus size={14} aria-hidden="true" /> Ajouter une photo
+              <Plus size={14} aria-hidden="true" /> {t('addPhoto')}
             </button>
           )}
         </div>
@@ -102,16 +105,16 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson }: Pr
       {/* Add-photo panel */}
       {showAdd && onUpdatePerson && (
         <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-muted)', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <span className="label" style={{ flexShrink: 0 }}>Associer à</span>
-          <select value={addPersonId} onChange={e => setAddPersonId(e.target.value)} className="input" style={{ width: 'auto', maxWidth: '220px' }}>
-            <option value="">Choisir une personne…</option>
+          <span className="label" style={{ flexShrink: 0 }}>{t('associateWith')}</span>
+          <select value={addPersonId} onChange={e => setAddPersonId(e.target.value)} className="input" style={{ width: 'auto', maxWidth: '220px' }} aria-label={t('choosePersonLabel')}>
+            <option value="">{t('choosePerson')}</option>
             {tree.persons.map(p => <option key={p.id} value={p.id}>{getDisplayName(p)}</option>)}
           </select>
           <input ref={addFileRef} type="file" accept="image/*" onChange={handleAddFile} style={{ display: 'none' }} />
           <button onClick={() => addFileRef.current?.click()} disabled={!addPersonId || uploading} className="btn btn-primary btn-sm" style={{ gap: '6px' }}>
-            {uploading ? <span className="spinner" /> : <ImageUp size={14} aria-hidden="true" />} Importer un fichier
+            {uploading ? <span className="spinner" /> : <ImageUp size={14} aria-hidden="true" />} {t('importFile')}
           </button>
-          <button onClick={() => setShowAdd(false)} className="btn btn-ghost btn-sm">Annuler</button>
+          <button onClick={() => setShowAdd(false)} className="btn btn-ghost btn-sm">{t('cancel')}</button>
         </div>
       )}
 
@@ -120,17 +123,17 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson }: Pr
         {photos.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 24px', maxWidth: '420px', margin: '0 auto' }}>
             <ImageOff size={48} strokeWidth={1.25} style={{ color: 'var(--text-light)', marginBottom: '14px' }} aria-hidden="true" />
-            <h3 style={{ margin: '0 0 6px' }}>{filterPersonId ? 'Pas encore de photo' : 'Votre galerie de famille est vide'}</h3>
+            <h3 style={{ margin: '0 0 6px' }}>{filterPersonId ? t('emptyFilteredTitle') : t('emptyTitle')}</h3>
             <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: '0 0 16px' }}>
               {filterPersonId
-                ? 'Cette personne n\'a pas encore de photo. Ajoutez-en depuis sa fiche.'
-                : 'Ajoutez une photo de profil ou des souvenirs depuis la fiche de chaque personne ; ils apparaîtront ici.'}
+                ? t('emptyFilteredText')
+                : t('emptyText')}
             </p>
             {filterPersonId ? (
-              <button className="btn btn-secondary btn-sm" onClick={() => setFilterPersonId('')}>Voir toutes les personnes</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => setFilterPersonId('')}>{t('seeAllPeople')}</button>
             ) : (onUpdatePerson && tree.persons.length > 0 && (
               <button className="btn btn-primary btn-sm" onClick={() => { setShowAdd(true); setAddPersonId(''); }} style={{ gap: '6px' }}>
-                <Plus size={14} aria-hidden="true" /> Ajouter une photo
+                <Plus size={14} aria-hidden="true" /> {t('addPhoto')}
               </button>
             ))}
           </div>
@@ -144,7 +147,7 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson }: Pr
                 key={i}
                 type="button"
                 onClick={() => setSelected(photo)}
-                aria-label={`Voir la photo de ${getDisplayName(photo.person)}`}
+                aria-label={t('viewPhotoOf', { name: getDisplayName(photo.person) })}
                 className="gallery-tile"
                 style={{
                   borderRadius: 'var(--radius)', overflow: 'hidden',
@@ -159,7 +162,7 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson }: Pr
               >
                 <img
                   src={photo.url}
-                  alt={getDisplayName(photo.person)}
+                  alt={t('photoAlt', { name: getDisplayName(photo.person), n: i + 1 })}
                   style={{
                     width: '100%',
                     height: layout === 'grid' ? '100%' : 'auto',
@@ -171,7 +174,7 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson }: Pr
                   <div className="badge badge-accent" style={{
                     position: 'absolute', top: '6px', right: '6px',
                     fontSize: '9px', padding: '2px 7px',
-                  }}>Profil</div>
+                  }}>{t('profileBadge')}</div>
                 )}
                 {/* Hover overlay */}
                 <div className="photo-overlay" style={{
@@ -207,7 +210,7 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson }: Pr
           <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '80vh' }} onClick={e => e.stopPropagation()}>
             <img
               src={selected.url}
-              alt=""
+              alt={t('lightboxAlt', { name: getDisplayName(selected.person) })}
               style={{
                 maxWidth: '100%', maxHeight: '75vh',
                 borderRadius: 'var(--radius-lg)', objectFit: 'contain',
@@ -216,7 +219,7 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson }: Pr
             />
             <button
               onClick={() => setSelected(null)}
-              aria-label="Fermer"
+              aria-label={t('close')}
               style={{
                 position: 'absolute', top: '-12px', right: '-12px',
                 background: 'var(--bg-card)', color: 'var(--text)', border: '1.5px solid var(--border-strong)', borderRadius: 'var(--radius)',
@@ -245,7 +248,7 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson }: Pr
               {!selected.person.isAlive && selected.person.deathDate && ` – ${formatYear(selected.person.deathDate)}`}
             </div>
             <div style={{ fontSize: '11px', marginTop: '4px', color: 'var(--accent)', fontWeight: 700 }}>
-              Cliquer pour voir le profil
+              {t('clickToViewProfile')}
             </div>
           </div>
         </div>
