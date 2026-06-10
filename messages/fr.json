@@ -1105,6 +1105,8 @@
     "cancel": "Annuler",
     "cardTitle": "Reconnaissance IA",
     "analyzeAPhoto": "Analyser une photo →",
-    "galleryButton": "Analyser avec l'IA"
+    "galleryButton": "Analyser avec l'IA",
+    "photoAlt": "Photo analysée",
+    "treeMembers": "Membres de l'arbre"
   }
 }

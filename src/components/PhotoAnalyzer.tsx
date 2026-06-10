@@ -80,6 +80,7 @@ export default function PhotoAnalyzer({ tree, preselectPersonId, onClose, onConf
   const [error, setError] = useState('');
   const [faces, setFaces] = useState<DetectedFace[]>([]);
   const [confidence, setConfidence] = useState<number | null>(null);
+  const [photoDescription, setPhotoDescription] = useState('');
   const [assignments, setAssignments] = useState<Record<number, string>>({});
   const [saving, setSaving] = useState(false);
 
@@ -114,10 +115,11 @@ export default function PhotoAnalyzer({ tree, preselectPersonId, onClose, onConf
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.error || t('error'));
       }
-      const data = await res.json() as { faces: DetectedFace[]; confidence: number | null };
+      const data = await res.json() as { faces: DetectedFace[]; confidence: number | null; photoDescription?: string };
       const detected = data.faces || [];
       setFaces(detected);
       setConfidence(data.confidence ?? null);
+      setPhotoDescription(data.photoDescription || '');
       // Pre-assign the first face to the current person when opened from a profile.
       const init: Record<number, string> = {};
       detected.forEach((f, i) => { init[f.id] = i === 0 && preselectPersonId ? preselectPersonId : 'unknown'; });
@@ -192,7 +194,7 @@ export default function PhotoAnalyzer({ tree, preselectPersonId, onClose, onConf
                 <div className="animate-fade-in">
                   <div className="pa-preview-wrap">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={preview} alt="" className="pa-preview-img" />
+                    <img src={preview} alt={t('photoAlt')} className="pa-preview-img" />
                   </div>
                   <div className="pa-actions">
                     <button onClick={() => { setFile(null); setPreview(''); }} className="btn btn-secondary btn-sm">{t('changePhoto')}</button>
@@ -210,7 +212,7 @@ export default function PhotoAnalyzer({ tree, preselectPersonId, onClose, onConf
             <div className="animate-fade-in">
               <div className="pa-scan-wrap">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={preview} alt="" className="pa-preview-img" />
+                <img src={preview} alt={t('photoAlt')} className="pa-preview-img" />
                 <div className="pa-scan-line" aria-hidden="true" />
                 <div className="pa-scan-grid" aria-hidden="true" />
               </div>
@@ -232,18 +234,20 @@ export default function PhotoAnalyzer({ tree, preselectPersonId, onClose, onConf
                 {confidence != null && <span className="label" style={{ color: 'var(--text-muted)' }}>{t('confidence', { value: Math.round(confidence * 100) })}</span>}
               </div>
 
-              <div className="pa-canvas">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={preview} alt="" className="pa-preview-img" />
-                {faces.map((f, i) => (
-                  <div
-                    key={f.id}
-                    className="pa-face"
-                    style={{ left: `${f.x}%`, top: `${f.y}%`, width: `${f.width}%`, height: `${f.height}%` }}
-                  >
-                    <span className="pa-face-tag">{i + 1}</span>
-                  </div>
-                ))}
+              <div className="pa-canvas-scroll">
+                <div className="pa-canvas">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={preview} alt={photoDescription || t('photoAlt')} className="pa-preview-img" />
+                  {faces.map((f, i) => (
+                    <div
+                      key={f.id}
+                      className="pa-face"
+                      style={{ left: `${f.x}%`, top: `${f.y}%`, width: `${f.width}%`, height: `${f.height}%` }}
+                    >
+                      <span className="pa-face-tag">{i + 1}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {faces.length === 0 ? (
@@ -259,15 +263,17 @@ export default function PhotoAnalyzer({ tree, preselectPersonId, onClose, onConf
                           <span className="pa-badge pa-badge-g">{genderLabel(f.gender)}</span>
                         </div>
                         {f.description && <p className="pa-row-desc">{f.description}</p>}
-                        <label className="pa-assign-label label">{t('assignPerson')}</label>
+                        <label htmlFor={`pa-face-select-${f.id}`} className="pa-assign-label label">{t('assignPerson')} #{i + 1}</label>
                         <select
+                          id={`pa-face-select-${f.id}`}
+                          aria-label={`${t('assignPerson')} ${f.description || i + 1}`}
                           className="input pa-select"
                           value={assignments[f.id] ?? 'unknown'}
                           onChange={e => setAssignments(a => ({ ...a, [f.id]: e.target.value }))}
                         >
                           <option value="unknown">{t('unknown')}</option>
                           <option value="new">{t('newMember')}</option>
-                          <optgroup label="—">
+                          <optgroup label={t('treeMembers')}>
                             {people.map(p => <option key={p.id} value={p.id}>{getDisplayName(p)}</option>)}
                           </optgroup>
                         </select>
@@ -294,7 +300,7 @@ export default function PhotoAnalyzer({ tree, preselectPersonId, onClose, onConf
 }
 
 const PA_CSS = `
-.pa-overlay { position: fixed; inset: 0; z-index: 2000; background: rgba(27,22,18,0.55); display: flex; align-items: flex-start; justify-content: center; padding: 6vh 16px 40px; overflow-y: auto; }
+.pa-overlay { position: fixed; inset: 0; z-index: 2000; background: var(--scrim, rgba(27,22,18,0.55)); display: flex; align-items: flex-start; justify-content: center; padding: 6vh 16px 40px; overflow-y: auto; }
 .pa-modal { position: relative; width: 100%; max-width: 680px; background: var(--bg-card); border: var(--bw) solid var(--border-strong); box-shadow: var(--shadow-xl, 10px 10px 0 var(--shadow-color)); border-radius: var(--radius); }
 .pa-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 20px 22px 14px; border-bottom: var(--bw) solid var(--border-strong); }
 .pa-title { margin: 0 0 3px; font-size: 1.3rem; display: flex; align-items: center; gap: 9px; }
@@ -308,16 +314,27 @@ const PA_CSS = `
 .pa-drop:hover, .pa-drop-over { border-color: var(--accent); background: var(--accent-light); transform: translate(-2px,-2px); box-shadow: var(--shadow); }
 .pa-drop-text { margin: 0; font-size: 14px; color: var(--text); max-width: 280px; }
 
-.pa-preview-wrap, .pa-canvas, .pa-scan-wrap { position: relative; border: var(--bw) solid var(--border-strong); border-radius: var(--radius); overflow: hidden; background: #000; }
-.pa-preview-img { display: block; width: 100%; max-height: 420px; object-fit: contain; }
+.pa-preview-wrap, .pa-scan-wrap, .pa-canvas-scroll { position: relative; border: var(--bw) solid var(--border-strong); border-radius: var(--radius); overflow: hidden; background: var(--bg-muted); max-height: 60vh; }
+.pa-canvas-scroll { overflow: auto; }
+/* The canvas sizes itself to the rendered image so face overlays map 1:1 (no object-fit letterbox). */
+.pa-canvas { position: relative; line-height: 0; }
+.pa-preview-img { display: block; width: 100%; height: auto; }
 .pa-actions { display: flex; gap: 10px; align-items: center; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap; }
 .pa-actions-end { justify-content: space-between; }
 .pa-error { margin: 12px 0 0; font-size: 13px; font-weight: 600; color: var(--danger); }
 
 /* Scan animation */
-.pa-scan-line { position: absolute; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, transparent, var(--accent), transparent); box-shadow: 0 0 14px 3px var(--accent); animation: paScan 1.8s cubic-bezier(0.45,0,0.55,1) infinite; }
+/* Full-height element with a thin accent band at its top; translateY sweeps it the
+   full container height (transform, not the layout 'top' property). */
+.pa-scan-line { position: absolute; left: 0; right: 0; top: 0; height: 100%; pointer-events: none; will-change: transform;
+  background: linear-gradient(to bottom, rgba(191,75,44,0.55) 0, var(--accent) 2px, rgba(191,75,44,0.35) 5px, transparent 9px);
+  animation: paScan 1.8s cubic-bezier(0.45,0,0.55,1) infinite; }
 .pa-scan-grid { position: absolute; inset: 0; background-image: linear-gradient(var(--accent) 1px, transparent 1px), linear-gradient(90deg, var(--accent) 1px, transparent 1px); background-size: 28px 28px; opacity: 0.12; pointer-events: none; }
-@keyframes paScan { 0% { top: 0; } 50% { top: calc(100% - 3px); } 100% { top: 0; } }
+@keyframes paScan { from { transform: translateY(0); } to { transform: translateY(100%); } }
+@media (prefers-reduced-motion: reduce) {
+  .pa-scan-line { display: none; }
+  .pa-scan-grid { opacity: 0.3; animation: none; }
+}
 .pa-analyzing { display: flex; align-items: center; gap: 14px; margin-top: 18px; }
 .pa-spinner { width: 22px; height: 22px; border-width: 3px; border-color: var(--accent); border-right-color: transparent; flex-shrink: 0; }
 .pa-analyzing-main { margin: 0; font-weight: 700; font-size: 15px; }

@@ -52,6 +52,7 @@
   --shadow-lg: 6px 6px 0 var(--shadow-color);
   --shadow-xl: 10px 10px 0 var(--shadow-color);
   --shadow-accent: 4px 4px 0 var(--accent);
+  --scrim: rgba(27, 22, 18, 0.55);   /* modal / overlay backdrop */
 
   /* Radii — sharp by design */
   --radius-sm: 0px;
@@ -98,6 +99,7 @@
   --accent: #e0623e;
   --accent-hover: #ef7350;
   --accent-light: #2e211b;
+  --scrim: rgba(0, 0, 0, 0.7);   /* deeper backdrop in dark mode */
 
   --male: #5b8fc0;
   --female: #c87a9a;
