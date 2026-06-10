@@ -3,6 +3,8 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { FamilyTree, Person } from '@/types';
 import { getParents, getChildren, getSpouses, getSiblings, getDisplayName, formatYear, getAge, formatAge, personCompleteness } from '@/lib/treeUtils';
+import { joinTreePresence, presenceColor, collaborationEnabled, type PresenceUser } from '@/lib/collaboration';
+import { useAuth } from '@/hooks/useAuth';
 import { Search, ZoomIn, ZoomOut, Crosshair, Info, Plus, Aperture, Sprout, Printer, Camera, CheckCircle2, FileText } from 'lucide-react';
 
 /** Two-letter initials for the avatar fallback (same logic as PersonPanel/Sidebar). */
@@ -104,6 +106,11 @@ const GRID = 24; // canvas dot-grid spacing
 
 export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAddPerson, onExport, readOnly = false }: Props) {
   const t = useTranslations('tree');
+  const tc = useTranslations('collaboration');
+  const { user } = useAuth();
+  // OTHER connected users on this tree (excludes the current user). Empty when
+  // offline/guest or alone — the cluster renders nothing in that case.
+  const [others, setOthers] = useState<PresenceUser[]>([]);
   const [rootId, setRootId] = useState(tree.rootPersonId || tree.persons[0]?.id || null);
   const [scale, setScale] = useState(1.1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -348,6 +355,28 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
     return () => ro.disconnect();
   }, []);
 
+  // Real-time presence: announce self on the tree's channel and track the OTHER
+  // connected users. Joins only when Supabase is configured AND we have a real
+  // (non-guest) user; otherwise stays a no-op and `others` remains []. The leave
+  // function tears the channel down on unmount or when the tree/user changes.
+  useEffect(() => {
+    if (!collaborationEnabled() || !user || !tree?.id) {
+      setOthers([]);
+      return;
+    }
+    const me: PresenceUser = {
+      id: user.id,
+      name: (user.user_metadata?.display_name as string) || user.email || '?',
+      color: presenceColor(user.id),
+    };
+    const leave = joinTreePresence(tree.id, me, setOthers);
+    return () => {
+      leave();
+      setOthers([]);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tree.id, user?.id]);
+
   const handleWheel = (e: React.WheelEvent) => {
     if (layoutMode === 'fan') return;
     e.preventDefault();
@@ -468,9 +497,18 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
           from { opacity: 0; }
           to   { opacity: 1; }
         }
+        .tv-presence-avatar {
+          opacity: 0;
+          transform: scale(0.6);
+          animation: tvPresenceIn 240ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        @keyframes tvPresenceIn {
+          to { opacity: 1; transform: scale(1); }
+        }
         @media (prefers-reduced-motion: reduce) {
           .tv-node-inner,
-          .tv-content-enter {
+          .tv-content-enter,
+          .tv-presence-avatar {
             animation: none !important;
             opacity: 1 !important;
             transform: none !important;
@@ -711,6 +749,60 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
         <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '100px', padding: '4px 12px', fontSize: '11px', color: 'var(--text-muted)' }}>
           {nodes.length} / {tree.persons.length} {t('persons')}
         </div>
+
+        {/* Real-time presence: overlapping avatar cluster + counter. Rendered only
+            when at least one OTHER user is connected (so never shows when alone). */}
+        {others.length > 0 && (
+          <div
+            aria-live="polite"
+            style={{
+              position: 'absolute', top: '48px', right: '12px', zIndex: 140,
+              display: 'flex', alignItems: 'center', gap: '8px',
+              background: 'var(--bg-card)', border: 'var(--bw, 1px) solid var(--border-strong, var(--border))',
+              borderRadius: '100px', padding: '4px 12px 4px 8px',
+              boxShadow: 'var(--shadow)',
+            }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'row-reverse', alignItems: 'center' }}>
+              {others.slice(0, 4).map((u, i) => (
+                <span
+                  key={u.id}
+                  className="tv-presence-avatar"
+                  title={u.name}
+                  style={{
+                    width: '26px', height: '26px', borderRadius: '50%',
+                    background: u.color || presenceColor(u.id), color: '#fff',
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '11px', fontWeight: 700, fontFamily: 'var(--font-display)',
+                    border: '2px solid var(--bg-card)',
+                    marginRight: i === 0 ? 0 : '-9px',
+                    animationDelay: `${(Math.min(others.length, 4) - 1 - i) * 60}ms`,
+                  }}
+                >
+                  {(u.name?.[0] || '?').toUpperCase()}
+                </span>
+              ))}
+              {others.length > 4 && (
+                <span
+                  className="tv-presence-avatar"
+                  title={others.slice(4).map(u => u.name).join(', ')}
+                  style={{
+                    width: '26px', height: '26px', borderRadius: '50%',
+                    background: 'var(--text-muted)', color: '#fff',
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '10px', fontWeight: 700, fontFamily: 'var(--font-mono)',
+                    border: '2px solid var(--bg-card)', marginRight: '-9px',
+                  }}
+                >
+                  +{others.length - 4}
+                </span>
+              )}
+            </div>
+            <span className="label" style={{ fontSize: '10px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+              {tc('presence', { count: others.length + 1 })}
+            </span>
+          </div>
+        )}
 
         {/* Minimap */}
         {layoutMode === 'vertical' && nodes.length > 0 && (() => {

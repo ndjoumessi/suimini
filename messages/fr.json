@@ -1119,5 +1119,48 @@
     "galleryButton": "Analyser avec l'IA",
     "photoAlt": "Photo analysée",
     "treeMembers": "Membres de l'arbre"
+  },
+  "narrative": {
+    "tab": "Récit",
+    "generate": "Générer le récit de {name} →",
+    "generating": "Claude rédige le récit...",
+    "regenerate": "Régénérer",
+    "copy": "Copier",
+    "copied": "Copié !",
+    "questions": "Questions pour approfondir",
+    "compare": "Comparer {a} et {b}",
+    "compareWith": "Comparer avec…",
+    "saved": "Récit sauvegardé",
+    "error": "Impossible de générer le récit",
+    "empty": "Aucun récit pour l'instant."
+  },
+  "search": {
+    "filters": "Filtres",
+    "yearFrom": "Né(e) après",
+    "yearTo": "Né(e) avant",
+    "place": "Lieu",
+    "gender": "Genre",
+    "all": "Tous",
+    "male": "Homme",
+    "female": "Femme",
+    "hasPhotos": "Avec photos",
+    "living": "Vivant",
+    "deceased": "Décédé",
+    "aiSearch": "Recherche IA 🤖",
+    "aiSearching": "Claude cherche...",
+    "aiError": "Recherche IA impossible",
+    "kinship": "Lien de parenté",
+    "clearFilters": "Réinitialiser",
+    "noMatch": "Aucune correspondance"
+  },
+  "collaboration": {
+    "tab": "Discussion",
+    "comment": "Commenter",
+    "placeholder": "Votre commentaire...",
+    "loginToComment": "Connectez-vous pour commenter",
+    "noComments": "Aucun commentaire. Lancez la discussion !",
+    "presence": "{count, plural, one {# personne sur cet arbre} other {# personnes sur cet arbre}}",
+    "suggest": "Suggérer une modification",
+    "sending": "Envoi..."
   }
 }

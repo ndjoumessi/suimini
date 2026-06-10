@@ -1119,5 +1119,48 @@
     "galleryButton": "Analyze with AI",
     "photoAlt": "Analyzed photo",
     "treeMembers": "Tree members"
+  },
+  "narrative": {
+    "tab": "Story",
+    "generate": "Generate {name}'s story →",
+    "generating": "Claude is writing the story...",
+    "regenerate": "Regenerate",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "questions": "Questions to dig deeper",
+    "compare": "Compare {a} and {b}",
+    "compareWith": "Compare with…",
+    "saved": "Story saved",
+    "error": "Could not generate the story",
+    "empty": "No story yet."
+  },
+  "search": {
+    "filters": "Filters",
+    "yearFrom": "Born after",
+    "yearTo": "Born before",
+    "place": "Place",
+    "gender": "Gender",
+    "all": "All",
+    "male": "Male",
+    "female": "Female",
+    "hasPhotos": "With photos",
+    "living": "Living",
+    "deceased": "Deceased",
+    "aiSearch": "AI search 🤖",
+    "aiSearching": "Claude is searching...",
+    "aiError": "AI search failed",
+    "kinship": "Relationship",
+    "clearFilters": "Reset",
+    "noMatch": "No match"
+  },
+  "collaboration": {
+    "tab": "Discussion",
+    "comment": "Comment",
+    "placeholder": "Your comment...",
+    "loginToComment": "Sign in to comment",
+    "noComments": "No comments yet. Start the discussion!",
+    "presence": "{count, plural, one {# person on this tree} other {# people on this tree}}",
+    "suggest": "Suggest an edit",
+    "sending": "Sending..."
   }
 }

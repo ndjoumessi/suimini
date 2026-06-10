@@ -1,11 +1,13 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { Person, FamilyTree, Relationship, RelationType, FamilyEvent, EventType, Note, Citation, DnaOrigin } from '@/types';
+import { Person, FamilyTree, Relationship, RelationType, FamilyEvent, EventType, Note, Citation, DnaOrigin, AiNarrative } from '@/types';
 import { getParents, getChildren, getSpouses, getSiblings, getAge, formatDate, formatYear, getDisplayName, generateId, safeHttpUrl } from '@/lib/treeUtils';
 import { personEras, type HistoricalEvent } from '@/lib/history';
+import { fetchComments, addComment, subscribeComments, collaborationEnabled, type PersonComment } from '@/lib/collaboration';
+import { useAuth } from '@/hooks/useAuth';
 import PersonForm from './PersonForm';
-import { X, Pencil, Trash2, User, Clock, Users, Calendar, StickyNote, BookOpen, Lightbulb, Link2, AlertCircle, Dna, FileText, Images, ScanFace, Landmark } from 'lucide-react';
+import { X, Pencil, Trash2, User, Clock, Users, Calendar, StickyNote, BookOpen, Lightbulb, Link2, AlertCircle, Dna, FileText, Images, ScanFace, Landmark, MessageSquare } from 'lucide-react';
 
 interface Props {
   person: Person;
@@ -31,11 +33,14 @@ const REL_LABEL_KEYS: Record<RelationType, string> = { spouse: 'relSpouse', part
 export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete, onSelectPerson, onAddRelationship, onUpdateRelationship, onDeleteRelationship, onAnalyzePhoto }: Props) {
   const t = useTranslations('personPanel');
   const tp = useTranslations('photoAnalyzer');
+  const tn = useTranslations('narrative');
+  const tc = useTranslations('collaboration');
   const locale = useLocale();
+  const { user } = useAuth();
   const relLabel = (type: RelationType) => t(REL_LABEL_KEYS[type]);
   const eventTypeLabel = (type: string) =>
     KNOWN_EVENT_TYPES.has(type) ? t(`event_${type}`) : (type.charAt(0).toUpperCase() + type.slice(1));
-  const [tab, setTab] = useState<'profile'|'life'|'family'|'events'|'notes'|'sources'|'gallery'|'edit'>('profile');
+  const [tab, setTab] = useState<'profile'|'life'|'family'|'events'|'notes'|'sources'|'gallery'|'narrative'|'discussion'|'edit'>('profile');
   const [eraEvent, setEraEvent] = useState<HistoricalEvent | null>(null);
   const eras = personEras(person);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -53,7 +58,101 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
   const [editNoteId, setEditNoteId] = useState<string|null>(null);
   const [showAddCitation, setShowAddCitation] = useState(false);
   const [newCitation, setNewCitation] = useState<Partial<Citation>>({});
+  // --- Narrative tab (#3B/#3C) ---
+  const [narrativeLoading, setNarrativeLoading] = useState(false);
+  const [narrativeError, setNarrativeError] = useState(false);
+  const [comparePersonId, setComparePersonId] = useState('');
+  const [compareNarrative, setCompareNarrative] = useState<string | null>(null);
+  const [compareLoading, setCompareLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  // --- Discussion tab (#4B) ---
+  const [comments, setComments] = useState<PersonComment[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [sendingComment, setSendingComment] = useState(false);
   // The panel is remounted per person (keyed by id in the parent), so transient UI resets naturally.
+
+  const commentsEnabled = collaborationEnabled() && !!user;
+  const commentAuthor = user
+    ? { id: user.id, name: (user.user_metadata?.display_name as string) || user.email || 'Anonyme' }
+    : null;
+
+  // Load + subscribe to comments when the Discussion tab is active for this person.
+  useEffect(() => {
+    if (tab !== 'discussion' || !commentsEnabled) return;
+    let active = true;
+    fetchComments(tree.id, person.id).then(rows => { if (active) setComments(rows); });
+    const unsubscribe = subscribeComments(person.id, c =>
+      setComments(prev => prev.some(x => x.id === c.id) ? prev : [...prev, c]),
+    );
+    return () => { active = false; unsubscribe(); };
+  }, [tab, commentsEnabled, tree.id, person.id]);
+
+  async function generateNarrative(force = false) {
+    if (narrativeLoading) return;
+    if (!force && person.aiNarrative) return; // never regenerate when already present
+    setNarrativeLoading(true);
+    setNarrativeError(false);
+    try {
+      const res = await fetch('/api/narrative-person', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ person, tree, type: 'biography' }),
+      });
+      if (!res.ok) throw new Error('request failed');
+      const data = (await res.json()) as { narrative: string; questions: string[] };
+      const narrative: AiNarrative = { text: data.narrative, questions: data.questions || [], generatedAt: new Date().toISOString() };
+      onUpdate({ aiNarrative: narrative });
+    } catch {
+      setNarrativeError(true);
+    } finally {
+      setNarrativeLoading(false);
+    }
+  }
+
+  async function runCompare(otherId: string) {
+    setComparePersonId(otherId);
+    setCompareNarrative(null);
+    if (!otherId) return;
+    const comparePerson = tree.persons.find(p => p.id === otherId);
+    if (!comparePerson) return;
+    setCompareLoading(true);
+    try {
+      const res = await fetch('/api/narrative-person', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ person, tree, type: 'compare', comparePerson }),
+      });
+      if (!res.ok) throw new Error('request failed');
+      const data = (await res.json()) as { narrative: string; questions?: string[] };
+      setCompareNarrative(data.narrative); // transient — not persisted to aiNarrative
+    } catch {
+      setCompareNarrative(null);
+      setNarrativeError(true);
+    } finally {
+      setCompareLoading(false);
+    }
+  }
+
+  async function copyNarrative() {
+    if (!person.aiNarrative?.text) return;
+    try {
+      await navigator.clipboard.writeText(person.aiNarrative.text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch { /* clipboard unavailable */ }
+  }
+
+  async function submitComment() {
+    if (!commentAuthor || !newComment.trim() || sendingComment) return;
+    setSendingComment(true);
+    const saved = await addComment(tree.id, person.id, newComment, commentAuthor);
+    if (saved) {
+      // Realtime INSERT may also echo this — dedupe by id.
+      setComments(prev => prev.some(x => x.id === saved.id) ? prev : [...prev, saved]);
+      setNewComment('');
+    }
+    setSendingComment(false);
+  }
 
   const parents = getParents(person.id, tree.relationships, tree.persons);
   const children = getChildren(person.id, tree.relationships, tree.persons);
@@ -81,6 +180,10 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
       (r.person2Id === person.id && r.person1Id === p.id)
     )
   );
+
+  // Other tree members available for the comparative narrative (#3C).
+  const availableComparePersons = tree.persons.filter(p => p.id !== person.id);
+  const comparePerson = tree.persons.find(p => p.id === comparePersonId) || null;
 
   // --- All raw relationships involving this person (for management) ---
   const myRelationships = tree.relationships.filter(r => r.person1Id === person.id || r.person2Id === person.id);
@@ -245,12 +348,17 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
           { id:'notes', Icon:StickyNote, count:person.notes?.length },
           { id:'sources', Icon:BookOpen, count:person.citations?.length },
           { id:'gallery', Icon:Images, count:person.photos?.length },
+          { id:'narrative', Icon:BookOpen },
+          { id:'discussion', Icon:MessageSquare },
           { id:'edit', Icon:Pencil },
-        ] as { id: typeof tab; Icon: typeof User; count?: number }[]).map(({ id, Icon, count }) => (
-          <button key={id} onClick={() => setTab(id as typeof tab)} className={`tab ${tab===id?'active':''}`} style={{ display:'inline-flex', alignItems:'center', gap:'5px', padding:'8px 10px', whiteSpace:'nowrap', fontSize:'13px' }} aria-label={t(`tab_${id}`)} title={t(`tab_${id}`)}>
+        ] as { id: typeof tab; Icon: typeof User; count?: number }[]).map(({ id, Icon, count }) => {
+          const tabLabel = id==='narrative' ? tn('tab') : id==='discussion' ? tc('tab') : t(`tab_${id}`);
+          return (
+          <button key={id} onClick={() => setTab(id as typeof tab)} className={`tab ${tab===id?'active':''}`} style={{ display:'inline-flex', alignItems:'center', gap:'5px', padding:'8px 10px', whiteSpace:'nowrap', fontSize:'13px' }} aria-label={tabLabel} title={tabLabel}>
             <Icon size={15} aria-hidden="true" />{count?<span className="mono" style={{ fontSize:'11px' }}>{count}</span>:null}
           </button>
-        ))}
+          );
+        })}
       </div>
 
       {/* Content */}
@@ -672,6 +780,145 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
           </div>
         )}
 
+        {tab==='narrative' && (
+          <div className="animate-fade-in" style={{ display:'flex', flexDirection:'column', gap:'16px' }}>
+            {/* Header action */}
+            <div>
+              {!person.aiNarrative && !narrativeLoading ? (
+                <button onClick={()=>generateNarrative(false)} className="btn btn-primary btn-sm" style={{ width:'100%', justifyContent:'center', gap:'7px' }}>
+                  <BookOpen size={14} aria-hidden="true" /> {tn('generate', { name: person.firstName })}
+                </button>
+              ) : person.aiNarrative ? (
+                <div style={{ display:'flex', gap:'6px', flexWrap:'wrap' }}>
+                  <button onClick={()=>generateNarrative(true)} className="btn btn-secondary btn-sm" disabled={narrativeLoading}>
+                    {tn('regenerate')}
+                  </button>
+                  <button onClick={copyNarrative} className="btn btn-ghost btn-sm">
+                    {copied ? tn('copied') : tn('copy')}
+                  </button>
+                </div>
+              ) : null}
+            </div>
+
+            {/* Loading */}
+            {narrativeLoading && (
+              <div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'14px', background:'var(--bg-muted)', borderRadius:'var(--radius)', color:'var(--text-muted)', fontSize:'13px' }}>
+                <Spinner /> {tn('generating')}
+              </div>
+            )}
+
+            {/* Error */}
+            {narrativeError && !narrativeLoading && (
+              <div style={{ padding:'10px 12px', background:'var(--bg-muted)', border:'1.5px solid var(--danger)', borderRadius:'var(--radius)', fontSize:'12px', color:'var(--danger)', display:'flex', alignItems:'center', gap:'6px' }}>
+                <AlertCircle size={13} aria-hidden="true" /> {tn('error')}
+              </div>
+            )}
+
+            {/* Narrative text */}
+            {person.aiNarrative && !narrativeLoading && (
+              <div style={{ fontFamily:'var(--font-display)', fontSize:'14px', lineHeight:1.8, color:'var(--text)' }}>
+                {person.aiNarrative.text.split(/\n\s*\n/).map((para, i) => (
+                  <p key={i} style={{ margin:'0 0 14px' }}>{para}</p>
+                ))}
+              </div>
+            )}
+
+            {/* Questions to go deeper */}
+            {person.aiNarrative && person.aiNarrative.questions.length > 0 && !narrativeLoading && (
+              <div>
+                <div className="label" style={{ color:'var(--text-light)', marginBottom:'8px' }}>{tn('questions')}</div>
+                <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
+                  {person.aiNarrative.questions.map((q, i) => (
+                    <button key={i} onClick={()=>setTab('edit')}
+                      style={{ textAlign:'left', padding:'10px 12px', background:'var(--bg-card)', border:'1.5px solid var(--border-strong)', borderRadius:'var(--radius)', boxShadow:'var(--shadow-sm)', cursor:'pointer', font:'inherit', fontSize:'13px', lineHeight:1.5, color:'var(--text)', display:'flex', gap:'8px', alignItems:'flex-start', transition:'transform 0.12s' }}
+                      onMouseEnter={e=>{ e.currentTarget.style.transform='translate(-1px,-1px)'; }}
+                      onMouseLeave={e=>{ e.currentTarget.style.transform='none'; }}
+                    >
+                      <Lightbulb size={14} aria-hidden="true" style={{ color:'var(--accent)', flexShrink:0, marginTop:'2px' }} />
+                      <span>{q}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Comparative narrative (#3C) */}
+            {person.aiNarrative && !narrativeLoading && availableComparePersons.length > 0 && (
+              <div>
+                <select value={comparePersonId} onChange={e=>runCompare(e.target.value)} className="input">
+                  <option value="">{tn('compareWith')}</option>
+                  {availableComparePersons.map(p => <option key={p.id} value={p.id}>{getDisplayName(p)}</option>)}
+                </select>
+                {compareLoading && (
+                  <div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'12px 0', color:'var(--text-muted)', fontSize:'13px' }}>
+                    <Spinner /> {tn('generating')}
+                  </div>
+                )}
+                {compareNarrative && !compareLoading && comparePerson && (
+                  <div style={{ marginTop:'12px' }}>
+                    <div className="label" style={{ color:'var(--accent)', marginBottom:'8px' }}>
+                      {tn('compare', { a: person.firstName, b: comparePerson.firstName })}
+                    </div>
+                    <div style={{ fontFamily:'var(--font-display)', fontSize:'14px', lineHeight:1.8, color:'var(--text)' }}>
+                      {compareNarrative.split(/\n\s*\n/).map((para, i) => (
+                        <p key={i} style={{ margin:'0 0 14px' }}>{para}</p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Empty state */}
+            {!person.aiNarrative && !narrativeLoading && !narrativeError && (
+              <div style={{ textAlign:'center', padding:'12px 16px', color:'var(--text-muted)', fontSize:'13px' }}>{tn('empty')}</div>
+            )}
+          </div>
+        )}
+
+        {tab==='discussion' && (
+          <div className="animate-fade-in" style={{ display:'flex', flexDirection:'column', gap:'12px', height:'100%' }}>
+            {!commentsEnabled ? (
+              <div style={{ textAlign:'center', padding:'24px 16px', color:'var(--text-muted)', fontSize:'13px' }}>{tc('loginToComment')}</div>
+            ) : (
+              <>
+                <div style={{ display:'flex', flexDirection:'column', gap:'10px', flex:1, overflowY:'auto' }}>
+                  {comments.length === 0 ? (
+                    <div style={{ textAlign:'center', padding:'20px', color:'var(--text-muted)', fontSize:'13px' }}>{tc('noComments')}</div>
+                  ) : (
+                    comments.map(c => {
+                      const name = c.authorName || 'Anonyme';
+                      const initials = name.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+                      return (
+                        <div key={c.id} style={{ display:'flex', gap:'8px', alignItems:'flex-start' }}>
+                          <div style={{ width:'30px', height:'30px', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', background:'var(--accent-light)', color:'var(--accent)', border:'1.5px solid var(--border-strong)', borderRadius:'var(--radius)', fontSize:'11px', fontWeight:700 }}>
+                            {initials || '?'}
+                          </div>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ display:'flex', gap:'6px', alignItems:'baseline', flexWrap:'wrap' }}>
+                              <span style={{ fontSize:'12.5px', fontWeight:700 }}>{name}</span>
+                              <span style={{ fontSize:'11px', color:'var(--text-light)' }}>
+                                {new Date(c.createdAt).toLocaleDateString(locale === 'en' ? 'en-US' : 'fr-FR', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })}
+                              </span>
+                            </div>
+                            <p style={{ margin:'2px 0 0', fontSize:'13px', lineHeight:1.5, color:'var(--text)', wordBreak:'break-word' }}>{c.content}</p>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+                <div style={{ flexShrink:0, borderTop:'1px solid var(--border)', paddingTop:'10px' }}>
+                  <textarea value={newComment} onChange={e=>setNewComment(e.target.value)} className="input" rows={2} style={{ resize:'vertical', width:'100%', marginBottom:'8px' }} placeholder={tc('placeholder')} />
+                  <button onClick={submitComment} className="btn btn-primary btn-sm" disabled={!newComment.trim() || sendingComment}>
+                    {sendingComment ? tc('sending') : tc('comment')}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
         {tab==='edit' && (
           <div className="animate-fade-in">
             <PersonForm initial={person} onSave={(updates)=>{onUpdate(updates);setTab('profile');}} onCancel={()=>setTab('profile')} />
@@ -721,6 +968,18 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
         </div>
       )}
     </aside>
+  );
+}
+
+function Spinner() {
+  // Respects prefers-reduced-motion: falls back to a static dot, no spin.
+  const reduce = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  return (
+    <span aria-hidden="true" style={{
+      width:'15px', height:'15px', flexShrink:0, display:'inline-block', borderRadius:'50%',
+      border:'2px solid var(--border)', borderTopColor:'var(--accent)',
+      animation: reduce ? 'none' : 'spin 0.7s linear infinite',
+    }} />
   );
 }
 
