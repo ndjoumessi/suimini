@@ -3,7 +3,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { FamilyTree, Person } from '@/types';
 import { getParents, getChildren, getSpouses, getSiblings, getDisplayName, formatYear, getAge, formatAge, personCompleteness } from '@/lib/treeUtils';
-import { joinTreePresence, presenceColor, collaborationEnabled, type PresenceUser } from '@/lib/collaboration';
+import { joinTreeCursors, presenceColor, collaborationEnabled, type CursorPeer } from '@/lib/collaboration';
 import { useAuth } from '@/hooks/useAuth';
 import { Search, ZoomIn, ZoomOut, Crosshair, Info, Plus, Aperture, Sprout, Printer, Camera, CheckCircle2, FileText } from 'lucide-react';
 
@@ -108,9 +108,16 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
   const t = useTranslations('tree');
   const tc = useTranslations('collaboration');
   const { user } = useAuth();
-  // OTHER connected users on this tree (excludes the current user). Empty when
-  // offline/guest or alone — the cluster renders nothing in that case.
-  const [others, setOthers] = useState<PresenceUser[]>([]);
+  // OTHER connected users on this tree (excludes the current user), each with
+  // their latest cursor position. Empty when offline/guest or alone — the
+  // cluster + cursors render nothing in that case. ONE channel powers both.
+  const [peers, setPeers] = useState<CursorPeer[]>([]);
+  // Handle to the live-cursor channel (move broadcaster + leave). Held in a ref
+  // so the throttled mousemove handler can broadcast without re-subscribing.
+  const cursorRef = useRef<{ move: (x: number, y: number) => void; leave: () => void } | null>(null);
+  // Throttle guard for cursor broadcasts (~50ms) and a 1s tick to fade stale cursors.
+  const lastCursorSentRef = useRef(0);
+  const [, setCursorTick] = useState(0);
   const [rootId, setRootId] = useState(tree.rootPersonId || tree.persons[0]?.id || null);
   const [scale, setScale] = useState(1.1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -355,27 +362,37 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
     return () => ro.disconnect();
   }, []);
 
-  // Real-time presence: announce self on the tree's channel and track the OTHER
-  // connected users. Joins only when Supabase is configured AND we have a real
-  // (non-guest) user; otherwise stays a no-op and `others` remains []. The leave
-  // function tears the channel down on unmount or when the tree/user changes.
+  // Real-time presence + live cursors on ONE channel: announce self and track
+  // the OTHER connected users (with their latest cursor position). Joins only
+  // when Supabase is configured AND we have a real (non-guest) user; otherwise
+  // stays a no-op and `peers` remains []. The leave function tears the channel
+  // down on unmount or when the tree/user changes.
   useEffect(() => {
     if (!collaborationEnabled() || !user || !tree?.id) {
-      setOthers([]);
+      setPeers([]);
       return;
     }
-    const me: PresenceUser = {
+    const me = {
       id: user.id,
       name: (user.user_metadata?.display_name as string) || user.email || '?',
       color: presenceColor(user.id),
     };
-    const leave = joinTreePresence(tree.id, me, setOthers);
+    cursorRef.current = joinTreeCursors(tree.id, me, setPeers);
     return () => {
-      leave();
-      setOthers([]);
+      cursorRef.current?.leave();
+      cursorRef.current = null;
+      setPeers([]);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tree.id, user?.id]);
+
+  // ~1s tick so stale cursors (no event for >3s) fade even without new presence
+  // events. Only runs while peers are present (cheap no-op when alone/offline).
+  useEffect(() => {
+    if (peers.length === 0) return;
+    const i = setInterval(() => setCursorTick(n => n + 1), 1000);
+    return () => clearInterval(i);
+  }, [peers.length]);
 
   const handleWheel = (e: React.WheelEvent) => {
     if (layoutMode === 'fan') return;
@@ -407,6 +424,19 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
       if (dx > 4 || dy > 4) setDragMoved(true);
       setOffset({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
     }
+    // Broadcast my cursor in CONTENT space (the same space node x/y live in).
+    // Inner <g> is translate(offset)·scale, so content = (screen - offset)/scale.
+    // Cursors only exist in the classic vertical layout (the fan view has its own
+    // viewBox-based coordinate system — see report). Throttled to ~50ms.
+    if (layoutMode !== 'vertical' || !cursorRef.current) return;
+    const now = Date.now();
+    if (now - lastCursorSentRef.current < 50) return;
+    lastCursorSentRef.current = now;
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const cx = (e.clientX - rect.left - offset.x) / scale;
+    const cy = (e.clientY - rect.top - offset.y) / scale;
+    cursorRef.current.move(cx, cy);
   };
   const handleMouseUp = () => setIsDragging(false);
 
@@ -505,6 +535,8 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
         @keyframes tvPresenceIn {
           to { opacity: 1; transform: scale(1); }
         }
+        /* Live-cursor gliding motion between throttled position updates. */
+        .tv-cursor { transition: transform 0.1s linear; }
         @media (prefers-reduced-motion: reduce) {
           .tv-node-inner,
           .tv-content-enter,
@@ -518,6 +550,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
             transform: none !important;
             filter: none !important;
           }
+          .tv-cursor { transition: none !important; }
         }
       `}</style>
       {/* Toolbar — compact 44px on desktop; wraps on narrow/mobile so no control is clipped */}
@@ -708,6 +741,30 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                 </g>
               );
             })}
+
+            {/* Live collaborator cursors — rendered in CONTENT space (same <g> as
+                the nodes), so a cursor at content (x,y) lands in the right place
+                for every viewer regardless of their own pan/zoom. Only peers seen
+                in the last 3s are shown; the ~1s tick re-evaluates so idle cursors
+                fade out. Self is already excluded by the lib. pointerEvents:none so
+                cursors never intercept clicks/drags on the canvas below. */}
+            {peers.map(peer => {
+              if (peer.x === undefined || peer.y === undefined) return null;
+              if (!peer.t || Date.now() - peer.t > 3000) return null;
+              const labelW = peer.name.length * 7 + 8;
+              return (
+                <g key={peer.id} className="tv-cursor"
+                  transform={`translate(${peer.x}, ${peer.y})`}
+                  style={{ pointerEvents: 'none' }}>
+                  <path d="M0 0 L0 16 L4 12 L8 18 L10 16 L6 10 L12 10 Z"
+                    fill={peer.color} stroke="white" strokeWidth={1} />
+                  <rect x={14} y={-2} width={labelW} height={18} rx={3} fill={peer.color} />
+                  <text x={18} y={11} fill="white" fontSize={11} fontFamily="var(--font-mono)">
+                    {peer.name}
+                  </text>
+                </g>
+              );
+            })}
             </g>{/* /tv-content-enter (root-change fade) */}
           </g>
         </svg>
@@ -751,8 +808,9 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
         </div>
 
         {/* Real-time presence: overlapping avatar cluster + counter. Rendered only
-            when at least one OTHER user is connected (so never shows when alone). */}
-        {others.length > 0 && (
+            when at least one OTHER user is connected (so never shows when alone).
+            Driven by the same `peers` state that powers the live cursors. */}
+        {peers.length > 0 && (
           <div
             aria-live="polite"
             style={{
@@ -764,7 +822,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
             }}
           >
             <div style={{ display: 'flex', flexDirection: 'row-reverse', alignItems: 'center' }}>
-              {others.slice(0, 4).map((u, i) => (
+              {peers.slice(0, 4).map((u, i) => (
                 <span
                   key={u.id}
                   className="tv-presence-avatar"
@@ -776,16 +834,16 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                     fontSize: '11px', fontWeight: 700, fontFamily: 'var(--font-display)',
                     border: '2px solid var(--bg-card)',
                     marginRight: i === 0 ? 0 : '-9px',
-                    animationDelay: `${(Math.min(others.length, 4) - 1 - i) * 60}ms`,
+                    animationDelay: `${(Math.min(peers.length, 4) - 1 - i) * 60}ms`,
                   }}
                 >
                   {(u.name?.[0] || '?').toUpperCase()}
                 </span>
               ))}
-              {others.length > 4 && (
+              {peers.length > 4 && (
                 <span
                   className="tv-presence-avatar"
-                  title={others.slice(4).map(u => u.name).join(', ')}
+                  title={peers.slice(4).map(u => u.name).join(', ')}
                   style={{
                     width: '26px', height: '26px', borderRadius: '50%',
                     background: 'var(--text-muted)', color: '#fff',
@@ -794,12 +852,12 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                     border: '2px solid var(--bg-card)', marginRight: '-9px',
                   }}
                 >
-                  +{others.length - 4}
+                  +{peers.length - 4}
                 </span>
               )}
             </div>
             <span className="label" style={{ fontSize: '10px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-              {tc('presence', { count: others.length + 1 })}
+              {tc('presence', { count: peers.length + 1 })}
             </span>
           </div>
         )}

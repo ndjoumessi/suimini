@@ -4,8 +4,9 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Person, FamilyTree, Relationship, RelationType, FamilyEvent, EventType, Note, Citation, DnaOrigin, AiNarrative } from '@/types';
 import { getParents, getChildren, getSpouses, getSiblings, getAge, formatDate, formatYear, getDisplayName, generateId, safeHttpUrl } from '@/lib/treeUtils';
 import { personEras, type HistoricalEvent } from '@/lib/history';
-import { fetchComments, addComment, subscribeComments, collaborationEnabled, type PersonComment } from '@/lib/collaboration';
+import { fetchComments, addComment, subscribeComments, collaborationEnabled, type PersonComment, fetchPendingSuggestions, addSuggestion, resolveSuggestion, type PersonSuggestion } from '@/lib/collaboration';
 import { useAuth } from '@/hooks/useAuth';
+import ReactMarkdown from 'react-markdown';
 import PersonForm from './PersonForm';
 import { X, Pencil, Trash2, User, Clock, Users, Calendar, StickyNote, BookOpen, Lightbulb, Link2, AlertCircle, Dna, FileText, Images, ScanFace, Landmark, MessageSquare } from 'lucide-react';
 
@@ -21,6 +22,8 @@ interface Props {
   onDeleteRelationship: (relId: string) => void;
   /** Open the AI face-recognition analyzer, pre-selecting this person. */
   onAnalyzePhoto?: () => void;
+  /** Surface a transient toast (passed by the parent). */
+  onToast?: (msg: string, type?: string) => void;
 }
 
 const EVENT_TYPES: EventType[] = ['birth','death','marriage','divorce','baptism','graduation','military','immigration','other'];
@@ -30,11 +33,48 @@ const KNOWN_EVENT_TYPES = new Set<string>(EVENT_TYPES);
 const REL_TYPES: RelationType[] = ['spouse', 'partner', 'parent', 'child', 'sibling'];
 const REL_LABEL_KEYS: Record<RelationType, string> = { spouse: 'relSpouse', partner: 'relPartner', parent: 'relParent', child: 'relChild', sibling: 'relSibling' };
 
-export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete, onSelectPerson, onAddRelationship, onUpdateRelationship, onDeleteRelationship, onAnalyzePhoto }: Props) {
+// Person fields a member can suggest editing (must have a `suggestions.fields.<f>` label).
+const SUGGESTABLE_FIELDS = ['firstName','lastName','maidenName','birthDate','deathDate','birthPlace','occupation','nationality','religion','education','bio'] as const;
+type SuggestableField = typeof SUGGESTABLE_FIELDS[number];
+
+// Atelier-styled Markdown renderers for AI récits (display-font headings,
+// terracotta uppercase sub-labels, --font-body paragraphs). Inline styles only.
+const MD_COMPONENTS = {
+  h1: (props: { children?: React.ReactNode }) => (
+    <h2 className="serif" style={{ margin:'0 0 10px', fontSize:'1.1rem', lineHeight:1.3, color:'var(--text)' }}>{props.children}</h2>
+  ),
+  h2: (props: { children?: React.ReactNode }) => (
+    <div className="label" style={{ color:'var(--accent)', margin:'16px 0 6px' }}>{props.children}</div>
+  ),
+  h3: (props: { children?: React.ReactNode }) => (
+    <div className="label" style={{ color:'var(--accent)', margin:'14px 0 6px' }}>{props.children}</div>
+  ),
+  p: (props: { children?: React.ReactNode }) => (
+    <p style={{ margin:'0 0 12px', fontFamily:'var(--font-body)', fontSize:'14px', lineHeight:1.7, color:'var(--text)' }}>{props.children}</p>
+  ),
+  strong: (props: { children?: React.ReactNode }) => (
+    <strong style={{ fontWeight:700, color:'var(--ink, var(--text))' }}>{props.children}</strong>
+  ),
+  em: (props: { children?: React.ReactNode }) => (
+    <em style={{ fontStyle:'italic' }}>{props.children}</em>
+  ),
+  ul: (props: { children?: React.ReactNode }) => (
+    <ul style={{ margin:'0 0 12px', paddingLeft:'20px', fontFamily:'var(--font-body)', fontSize:'14px', lineHeight:1.7, color:'var(--text)' }}>{props.children}</ul>
+  ),
+  ol: (props: { children?: React.ReactNode }) => (
+    <ol style={{ margin:'0 0 12px', paddingLeft:'20px', fontFamily:'var(--font-body)', fontSize:'14px', lineHeight:1.7, color:'var(--text)' }}>{props.children}</ol>
+  ),
+  li: (props: { children?: React.ReactNode }) => (
+    <li style={{ marginBottom:'4px' }}>{props.children}</li>
+  ),
+};
+
+export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete, onSelectPerson, onAddRelationship, onUpdateRelationship, onDeleteRelationship, onAnalyzePhoto, onToast }: Props) {
   const t = useTranslations('personPanel');
   const tp = useTranslations('photoAnalyzer');
   const tn = useTranslations('narrative');
   const tc = useTranslations('collaboration');
+  const ts = useTranslations('suggestions');
   const locale = useLocale();
   const { user } = useAuth();
   const relLabel = (type: RelationType) => t(REL_LABEL_KEYS[type]);
@@ -69,6 +109,12 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
   const [comments, setComments] = useState<PersonComment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [sendingComment, setSendingComment] = useState(false);
+  // --- Edit suggestions (Discussion tab) ---
+  const [suggestions, setSuggestions] = useState<PersonSuggestion[]>([]);
+  const [showSuggestForm, setShowSuggestForm] = useState(false);
+  const [suggestField, setSuggestField] = useState<SuggestableField>('firstName');
+  const [suggestValue, setSuggestValue] = useState('');
+  const [sendingSuggestion, setSendingSuggestion] = useState(false);
   // The panel is remounted per person (keyed by id in the parent), so transient UI resets naturally.
 
   const commentsEnabled = collaborationEnabled() && !!user;
@@ -86,6 +132,71 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
     );
     return () => { active = false; unsubscribe(); };
   }, [tab, commentsEnabled, tree.id, person.id]);
+
+  // Load pending edit suggestions when the Discussion tab is active for this person.
+  useEffect(() => {
+    if (tab !== 'discussion' || !commentsEnabled) return;
+    let active = true;
+    fetchPendingSuggestions(tree.id, person.id).then(rows => { if (active) setSuggestions(rows); });
+    return () => { active = false; };
+  }, [tab, commentsEnabled, tree.id, person.id]);
+
+  // Resolve a key into a translated field label; fall back to the raw field name.
+  function fieldLabel(field: string): string {
+    const known = (SUGGESTABLE_FIELDS as readonly string[]).includes(field);
+    return known ? ts(`fields.${field}`) : field;
+  }
+
+  // Current value of a Person field as a string (or null) for diffing in a suggestion.
+  function currentFieldValue(field: SuggestableField): string | null {
+    if (field === 'birthPlace') return person.birthPlace?.city || null;
+    const v = person[field];
+    return typeof v === 'string' && v ? v : null;
+  }
+
+  async function acceptSuggestion(s: PersonSuggestion) {
+    const f = s.field;
+    if (f === 'birthPlace') {
+      onUpdate({ birthPlace: { ...person.birthPlace, city: s.suggestedValue } });
+    } else if ((SUGGESTABLE_FIELDS as readonly string[]).includes(f)) {
+      onUpdate({ [f]: s.suggestedValue } as Partial<Person>);
+    }
+    // Unknown fields: skip the person update but still resolve below.
+    const ok = await resolveSuggestion(s.id, 'accepted');
+    if (ok) {
+      setSuggestions(prev => prev.filter(x => x.id !== s.id));
+      onToast?.(ts('accepted'));
+    }
+  }
+
+  async function rejectSuggestion(s: PersonSuggestion) {
+    const ok = await resolveSuggestion(s.id, 'rejected');
+    if (ok) {
+      setSuggestions(prev => prev.filter(x => x.id !== s.id));
+      onToast?.(ts('rejected'), 'info');
+    }
+  }
+
+  async function submitSuggestion() {
+    if (!commentAuthor || !suggestValue.trim() || sendingSuggestion) return;
+    setSendingSuggestion(true);
+    const saved = await addSuggestion({
+      treeId: tree.id,
+      personId: person.id,
+      field: suggestField,
+      currentValue: currentFieldValue(suggestField),
+      suggestedValue: suggestValue.trim(),
+      author: commentAuthor,
+    });
+    if (saved) {
+      setSuggestValue('');
+      setShowSuggestForm(false);
+      const rows = await fetchPendingSuggestions(tree.id, person.id);
+      setSuggestions(rows);
+      onToast?.(ts('sent'));
+    }
+    setSendingSuggestion(false);
+  }
 
   async function generateNarrative(force = false) {
     if (narrativeLoading) return;
@@ -814,12 +925,10 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
               </div>
             )}
 
-            {/* Narrative text */}
+            {/* Narrative text (Markdown) */}
             {person.aiNarrative && !narrativeLoading && (
-              <div style={{ fontFamily:'var(--font-display)', fontSize:'14px', lineHeight:1.8, color:'var(--text)' }}>
-                {person.aiNarrative.text.split(/\n\s*\n/).map((para, i) => (
-                  <p key={i} style={{ margin:'0 0 14px' }}>{para}</p>
-                ))}
+              <div>
+                <ReactMarkdown components={MD_COMPONENTS}>{person.aiNarrative.text}</ReactMarkdown>
               </div>
             )}
 
@@ -859,11 +968,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                     <div className="label" style={{ color:'var(--accent)', marginBottom:'8px' }}>
                       {tn('compare', { a: person.firstName, b: comparePerson.firstName })}
                     </div>
-                    <div style={{ fontFamily:'var(--font-display)', fontSize:'14px', lineHeight:1.8, color:'var(--text)' }}>
-                      {compareNarrative.split(/\n\s*\n/).map((para, i) => (
-                        <p key={i} style={{ margin:'0 0 14px' }}>{para}</p>
-                      ))}
-                    </div>
+                    <ReactMarkdown components={MD_COMPONENTS}>{compareNarrative}</ReactMarkdown>
                   </div>
                 )}
               </div>
@@ -913,6 +1018,46 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                   <button onClick={submitComment} className="btn btn-primary btn-sm" disabled={!newComment.trim() || sendingComment}>
                     {sendingComment ? tc('sending') : tc('comment')}
                   </button>
+                </div>
+
+                {/* Edit suggestions (accept / reject + suggest form) */}
+                <div style={{ flexShrink:0, borderTop:'1px solid var(--border)', paddingTop:'12px', display:'flex', flexDirection:'column', gap:'10px' }}>
+                  <div className="label" style={{ color:'var(--text-light)' }}>{ts('title')}</div>
+                  {suggestions.length === 0 ? (
+                    <div style={{ fontSize:'12px', color:'var(--text-muted)' }}>{ts('none')}</div>
+                  ) : (
+                    suggestions.map(s => (
+                      <div key={s.id} style={{ padding:'10px 12px', background:'var(--bg-card)', border:'1.5px solid var(--border-strong)', borderRadius:'var(--radius)', boxShadow:'var(--shadow-sm)' }}>
+                        <div style={{ fontSize:'12px', fontWeight:700, color:'var(--text)', marginBottom:'4px' }}>
+                          {ts('suggestsBy', { author: s.authorName || '?' })}
+                        </div>
+                        <div style={{ fontSize:'13px', lineHeight:1.5, color:'var(--text)', marginBottom:'8px' }}>
+                          <strong>{fieldLabel(s.field)}</strong> : <span style={{ color:'var(--text-muted)' }}>{s.currentValue || ts('empty')}</span> → <span style={{ color:'var(--accent)', fontWeight:700 }}>{s.suggestedValue}</span>
+                        </div>
+                        <div style={{ display:'flex', gap:'6px' }}>
+                          <button onClick={()=>acceptSuggestion(s)} className="btn btn-primary btn-sm">{ts('accept')}</button>
+                          <button onClick={()=>rejectSuggestion(s)} className="btn btn-ghost btn-sm">{ts('reject')}</button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+
+                  {!showSuggestForm ? (
+                    <button onClick={()=>setShowSuggestForm(true)} className="btn btn-secondary btn-sm" style={{ alignSelf:'flex-start' }}>
+                      <Pencil size={13} aria-hidden="true" /> {ts('suggest')}
+                    </button>
+                  ) : (
+                    <div className="animate-fade-in" style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)', display:'flex', flexDirection:'column', gap:'8px' }}>
+                      <select value={suggestField} onChange={e=>setSuggestField(e.target.value as SuggestableField)} className="input" aria-label={ts('field')}>
+                        {SUGGESTABLE_FIELDS.map(f => <option key={f} value={f}>{ts(`fields.${f}`)}</option>)}
+                      </select>
+                      <input value={suggestValue} onChange={e=>setSuggestValue(e.target.value)} className="input" placeholder={ts('newValue')} />
+                      <div style={{ display:'flex', gap:'6px' }}>
+                        <button onClick={submitSuggestion} className="btn btn-primary btn-sm" disabled={!suggestValue.trim() || sendingSuggestion}>{ts('send')}</button>
+                        <button onClick={()=>{ setShowSuggestForm(false); setSuggestValue(''); }} className="btn btn-ghost btn-sm">{ts('cancel')}</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </>
             )}

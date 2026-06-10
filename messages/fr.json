@@ -893,7 +893,8 @@
     "syncSyncing": "Synchronisation…",
     "syncError": "Erreur sync",
     "syncOffline": "Hors ligne",
-    "syncSaved": "Sauvegardé"
+    "syncSaved": "Sauvegardé",
+    "pendingSuggestions": "{count, plural, one {# suggestion en attente} other {# suggestions en attente}}"
   },
   "commandPalette": {
     "dialogLabel": "Palette de commandes",
@@ -1162,5 +1163,34 @@
     "presence": "{count, plural, one {# personne sur cet arbre} other {# personnes sur cet arbre}}",
     "suggest": "Suggérer une modification",
     "sending": "Envoi..."
+  },
+  "suggestions": {
+    "title": "Suggestions en attente",
+    "suggest": "Suggérer une modification",
+    "field": "Champ à modifier",
+    "newValue": "Nouvelle valeur",
+    "send": "Envoyer",
+    "cancel": "Annuler",
+    "accept": "Accepter",
+    "reject": "Refuser",
+    "accepted": "Modification acceptée",
+    "rejected": "Suggestion refusée",
+    "sent": "Suggestion envoyée au propriétaire",
+    "suggestsBy": "{author} suggère :",
+    "none": "Aucune suggestion en attente",
+    "empty": "(vide)",
+    "fields": {
+      "firstName": "Prénom",
+      "lastName": "Nom",
+      "maidenName": "Nom de jeune fille",
+      "birthDate": "Date de naissance",
+      "deathDate": "Date de décès",
+      "birthPlace": "Lieu de naissance",
+      "occupation": "Profession",
+      "nationality": "Nationalité",
+      "religion": "Religion",
+      "education": "Éducation",
+      "bio": "Biographie"
+    }
   }
 }

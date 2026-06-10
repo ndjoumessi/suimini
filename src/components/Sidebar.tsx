@@ -1,7 +1,9 @@
 'use client';
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import LanguageSwitcher from './LanguageSwitcher';
+import { countPendingSuggestions } from '@/lib/collaboration';
 import { FamilyTree, ViewMode } from '@/types';
 import {
   Home, TreePine, Users, Calendar, Map, Images, BookOpen, Cake, Search, BarChart2, Settings,
@@ -87,6 +89,18 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
   const t = useTranslations('nav');
   const ts = useTranslations('sidebar');
 
+  // Pending edit-suggestions on the active tree (owner alert). Polls every 60s.
+  const [pendingSuggestions, setPendingSuggestions] = useState(0);
+  const activeTreeId = activeTree?.id;
+  useEffect(() => {
+    if (!cloud || !userEmail || !activeTreeId) { setPendingSuggestions(0); return; }
+    let alive = true;
+    const refresh = () => { countPendingSuggestions(activeTreeId).then(n => { if (alive) setPendingSuggestions(n); }); };
+    refresh();
+    const iv = setInterval(refresh, 60000);
+    return () => { alive = false; clearInterval(iv); };
+  }, [cloud, userEmail, activeTreeId]);
+
   return (
     <aside style={{ width: '232px', flexShrink: 0, background: 'var(--bg-card)', borderRight: 'var(--bw) solid var(--border-strong)', display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 50 }}
       className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}
@@ -118,10 +132,20 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
       >
         <div className="label" style={{ fontSize: '10px', marginBottom: '2px' }}>{ts('activeTree')}</div>
         <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--accent)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }}>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '120px' }}>
             {activeTree?.name || ts('noTree')}
           </span>
-          <ChevronDown size={14} style={{ opacity: 0.6 }} />
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+            {pendingSuggestions > 0 && (
+              <span
+                title={ts('pendingSuggestions', { count: pendingSuggestions })}
+                style={{ minWidth: '18px', height: '18px', padding: '0 5px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'var(--danger)', color: '#fff', fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700, borderRadius: '100px', border: '1.5px solid var(--border-strong)' }}
+              >
+                {pendingSuggestions}
+              </span>
+            )}
+            <ChevronDown size={14} style={{ opacity: 0.6 }} />
+          </span>
         </div>
         {activeTree && (
           <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px' }}>

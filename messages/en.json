@@ -893,7 +893,8 @@
     "syncSyncing": "Syncing…",
     "syncError": "Sync error",
     "syncOffline": "Offline",
-    "syncSaved": "Saved"
+    "syncSaved": "Saved",
+    "pendingSuggestions": "{count, plural, one {# pending suggestion} other {# pending suggestions}}"
   },
   "commandPalette": {
     "dialogLabel": "Command palette",
@@ -1162,5 +1163,34 @@
     "presence": "{count, plural, one {# person on this tree} other {# people on this tree}}",
     "suggest": "Suggest an edit",
     "sending": "Sending..."
+  },
+  "suggestions": {
+    "title": "Pending suggestions",
+    "suggest": "Suggest an edit",
+    "field": "Field to edit",
+    "newValue": "New value",
+    "send": "Send",
+    "cancel": "Cancel",
+    "accept": "Accept",
+    "reject": "Reject",
+    "accepted": "Change accepted",
+    "rejected": "Suggestion rejected",
+    "sent": "Suggestion sent to the owner",
+    "suggestsBy": "{author} suggests:",
+    "none": "No pending suggestions",
+    "empty": "(empty)",
+    "fields": {
+      "firstName": "First name",
+      "lastName": "Last name",
+      "maidenName": "Maiden name",
+      "birthDate": "Birth date",
+      "deathDate": "Death date",
+      "birthPlace": "Birthplace",
+      "occupation": "Occupation",
+      "nationality": "Nationality",
+      "religion": "Religion",
+      "education": "Education",
+      "bio": "Biography"
+    }
   }
 }

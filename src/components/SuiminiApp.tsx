@@ -389,6 +389,7 @@ export default function SuiminiApp() {
           onUpdateRelationship={(id, updates) => { store.updateRelationship(id, updates); showToast('Relation mise à jour'); }}
           onDeleteRelationship={(id) => { store.deleteRelationship(id); showToast('Relation supprimée', 'info'); }}
           onAnalyzePhoto={() => openPhotoAnalyzer(selectedPerson.id)}
+          onToast={showToast}
         />
       )}
 
