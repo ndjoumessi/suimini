@@ -3,8 +3,9 @@ import { useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Person, FamilyTree, Relationship, RelationType, FamilyEvent, EventType, Note, Citation, DnaOrigin } from '@/types';
 import { getParents, getChildren, getSpouses, getSiblings, getAge, formatDate, formatYear, getDisplayName, generateId, safeHttpUrl } from '@/lib/treeUtils';
+import { personEras, type HistoricalEvent } from '@/lib/history';
 import PersonForm from './PersonForm';
-import { X, Pencil, Trash2, User, Clock, Users, Calendar, StickyNote, BookOpen, Lightbulb, Link2, AlertCircle, Dna, FileText, Images, ScanFace } from 'lucide-react';
+import { X, Pencil, Trash2, User, Clock, Users, Calendar, StickyNote, BookOpen, Lightbulb, Link2, AlertCircle, Dna, FileText, Images, ScanFace, Landmark } from 'lucide-react';
 
 interface Props {
   person: Person;
@@ -35,6 +36,8 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
   const eventTypeLabel = (type: string) =>
     KNOWN_EVENT_TYPES.has(type) ? t(`event_${type}`) : (type.charAt(0).toUpperCase() + type.slice(1));
   const [tab, setTab] = useState<'profile'|'life'|'family'|'events'|'notes'|'sources'|'gallery'|'edit'>('profile');
+  const [eraEvent, setEraEvent] = useState<HistoricalEvent | null>(null);
+  const eras = personEras(person);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showAddRel, setShowAddRel] = useState(false);
   const [newRelType, setNewRelType] = useState<RelationType>('spouse');
@@ -285,6 +288,29 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                 {formatDate(person.deathDate, person.deathDateApprox)||'—'}
                 {person.deathPlace?.city&&<><br/><small>📍 {[person.deathPlace.city, person.deathPlace.country].filter(Boolean).join(', ')}</small></>}
               </InfoBlock>
+            )}
+            {/* Historical context — eras this person lived through (clickable) */}
+            {eras.length>0&&(
+              <div>
+                <div className="label" style={{ color:'var(--text-light)', marginBottom:'6px', display:'inline-flex', alignItems:'center', gap:'5px' }}>
+                  <Landmark size={12} aria-hidden="true" /> {t('historicalContext')}
+                </div>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:'6px' }}>
+                  {eras.map(ev=>(
+                    <button
+                      key={ev.id}
+                      onClick={()=>setEraEvent(ev)}
+                      title={ev[locale==='en'?'en':'fr'].context}
+                      style={{ display:'inline-flex', alignItems:'center', gap:'6px', padding:'4px 10px', background:'var(--bg-card)', border:'1.5px solid var(--border-strong)', borderRadius:'var(--radius)', cursor:'pointer', font:'inherit', fontSize:'12px', fontWeight:700, color:'var(--text)', transition:'transform 0.12s, box-shadow 0.12s' }}
+                      onMouseEnter={e=>{e.currentTarget.style.transform='translate(-1px,-1px)';e.currentTarget.style.boxShadow='var(--shadow-sm)';}}
+                      onMouseLeave={e=>{e.currentTarget.style.transform='none';e.currentTarget.style.boxShadow='none';}}
+                    >
+                      {ev[locale==='en'?'en':'fr'].label}
+                      <span style={{ fontFamily:'var(--font-mono)', fontSize:'10px', color:'var(--accent)' }}>{ev[locale==='en'?'en':'fr'].short}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' }}>
               {person.occupation&&<InfoBlock label={t('occupation')} icon="💼">{person.occupation}</InfoBlock>}
@@ -669,6 +695,31 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
           </div>
         )}
       </div>
+
+      {/* Historical context popup (#3C) */}
+      {eraEvent && (
+        <div
+          onMouseDown={e=>{ if(e.target===e.currentTarget) setEraEvent(null); }}
+          style={{ position:'fixed', inset:0, zIndex:2100, background:'var(--scrim, rgba(27,22,18,0.55))', display:'flex', alignItems:'center', justifyContent:'center', padding:'24px' }}
+          role="dialog" aria-modal="true" aria-label={eraEvent[locale==='en'?'en':'fr'].label}
+        >
+          <div className="card animate-scale-in" style={{ maxWidth:'420px', padding:'22px' }}>
+            <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:'12px', marginBottom:'10px' }}>
+              <h3 className="serif" style={{ margin:0, fontSize:'1.15rem', display:'flex', alignItems:'center', gap:'8px' }}>
+                <Landmark size={18} aria-hidden="true" style={{ color:'var(--accent)', flexShrink:0 }} />
+                {eraEvent[locale==='en'?'en':'fr'].label}
+              </h3>
+              <button onClick={()=>setEraEvent(null)} className="icon-btn" aria-label={t('close')}><X size={18} /></button>
+            </div>
+            <div className="label" style={{ color:'var(--accent)', marginBottom:'10px' }}>
+              {eraEvent.start}{eraEvent.end?`–${eraEvent.end}`:''}
+            </div>
+            <p style={{ margin:0, fontSize:'14px', lineHeight:1.7, color:'var(--text)' }}>
+              {eraEvent[locale==='en'?'en':'fr'].context}
+            </p>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }

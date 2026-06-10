@@ -304,7 +304,11 @@
     "filiation": "Filiation",
     "spouse": "Conjoint(e)",
     "clickToNavigate": "Cliquez pour naviguer",
-    "noAncestors": "Aucun ancêtre enregistré pour cette racine"
+    "noAncestors": "Aucun ancêtre enregistré pour cette racine",
+    "fullView": "Vue complète",
+    "badgePhotos": "A des photos",
+    "badgeComplete": "Fiche complète",
+    "badgeSources": "Sources attachées"
   },
   "person": {
     "firstName": "Prénom",
@@ -857,7 +861,8 @@
     "world_berlinWall": "Chute du mur de Berlin",
     "world_publicWeb": "Web grand public",
     "world_euro": "Passage à l'euro",
-    "world_covid": "Pandémie de COVID-19"
+    "world_covid": "Pandémie de COVID-19",
+    "historicalContext": "Contexte historique"
   },
   "sidebar": {
     "backToSiteAria": "Retour à l'accueil du site",
@@ -1042,7 +1047,13 @@
     "type_graduation": "Diplôme",
     "type_military": "Service militaire",
     "type_immigration": "Immigration",
-    "type_other": "Événement"
+    "type_other": "Événement",
+    "viewList": "Liste",
+    "viewCentury": "Siècle",
+    "scopeFamily": "Famille",
+    "scopeIndividual": "Individu",
+    "choosePerson": "Choisir une personne",
+    "living": "en vie"
   },
   "gallery": {
     "heading": "Galerie",

@@ -304,7 +304,11 @@
     "filiation": "Filiation",
     "spouse": "Spouse",
     "clickToNavigate": "Click to navigate",
-    "noAncestors": "No ancestors recorded for this root"
+    "noAncestors": "No ancestors recorded for this root",
+    "fullView": "Full view",
+    "badgePhotos": "Has photos",
+    "badgeComplete": "Complete profile",
+    "badgeSources": "Sources attached"
   },
   "person": {
     "firstName": "First name",
@@ -857,7 +861,8 @@
     "world_berlinWall": "Fall of the Berlin Wall",
     "world_publicWeb": "Public Web",
     "world_euro": "Switch to the euro",
-    "world_covid": "COVID-19 pandemic"
+    "world_covid": "COVID-19 pandemic",
+    "historicalContext": "Historical context"
   },
   "sidebar": {
     "backToSiteAria": "Back to the site home",
@@ -1042,7 +1047,13 @@
     "type_graduation": "Graduation",
     "type_military": "Military service",
     "type_immigration": "Immigration",
-    "type_other": "Event"
+    "type_other": "Event",
+    "viewList": "List",
+    "viewCentury": "Century",
+    "scopeFamily": "Family",
+    "scopeIndividual": "Individual",
+    "choosePerson": "Choose a person",
+    "living": "living"
   },
   "gallery": {
     "heading": "Gallery",

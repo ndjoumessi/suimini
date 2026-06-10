@@ -138,6 +138,23 @@ export function formatYear(dateStr?: string): string {
   return new Date(dateStr).getFullYear().toString();
 }
 
+/**
+ * Profile completeness as a 0–100 score over six key fields. Shared by the
+ * PersonPanel completion donut and the tree node "infos complètes" badge so
+ * both agree on what "complete" means.
+ */
+export function personCompleteness(p: Person): number {
+  const checks = [
+    !!p.profilePhoto,
+    !!p.birthDate,
+    !!p.birthPlace?.city,
+    p.isAlive || !!p.deathDate,
+    !!p.occupation,
+    !!(p.bio && p.bio.trim()),
+  ];
+  return Math.round((checks.filter(Boolean).length / checks.length) * 100);
+}
+
 export function getFullName(person: Person): string {
   const parts = [person.firstName, person.maidenName ? `(${person.maidenName})` : null, person.lastName].filter(Boolean);
   return parts.join(' ');

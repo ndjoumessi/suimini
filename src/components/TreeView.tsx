@@ -2,8 +2,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { FamilyTree, Person } from '@/types';
-import { getParents, getChildren, getSpouses, getDisplayName, formatYear, getAge, formatAge } from '@/lib/treeUtils';
-import { Search, ZoomIn, ZoomOut, Crosshair, Info, Plus, Aperture, Sprout, Printer } from 'lucide-react';
+import { getParents, getChildren, getSpouses, getSiblings, getDisplayName, formatYear, getAge, formatAge, personCompleteness } from '@/lib/treeUtils';
+import { Search, ZoomIn, ZoomOut, Crosshair, Info, Plus, Aperture, Sprout, Printer, Camera, CheckCircle2, FileText } from 'lucide-react';
 
 /** Two-letter initials for the avatar fallback (same logic as PersonPanel/Sidebar). */
 function nodeInitials(p: Person): string {
@@ -26,6 +26,45 @@ function NodeAvatar({ person, clipId }: { person: Person; clipId: string }) {
       fontFamily="var(--font-display)" fontSize={13} fontWeight={700} fill="var(--accent)">
       {nodeInitials(person)}
     </text>
+  );
+}
+
+/** Corner indicator badges (decorative): photos, completeness, sources.
+ *  Each badge sits on a small light chip and carries a <title> tooltip. */
+function NodeBadges({ person, labels }: {
+  person: Person;
+  labels: { photos: string; complete: string; sources: string };
+}) {
+  const hasPhotos = !!(person.profilePhoto || person.photos?.length);
+  const isComplete = personCompleteness(person) >= 80;
+  const hasSources = !!(person.sources?.length || person.citations?.length);
+
+  const items: { key: string; title: string; color: string; icon: React.ReactNode }[] = [];
+  if (hasPhotos) items.push({ key: 'photos', title: labels.photos, color: 'var(--accent)', icon: <Camera size={12} /> });
+  if (isComplete) items.push({ key: 'complete', title: labels.complete, color: 'var(--success)', icon: <CheckCircle2 size={12} /> });
+  if (hasSources) items.push({ key: 'sources', title: labels.sources, color: 'var(--text-muted)', icon: <FileText size={12} /> });
+  if (items.length === 0) return null;
+
+  const CHIP = 16, GAP = 3;
+  // Row anchored to the BOTTOM-right corner, growing leftwards. Bottom-right keeps
+  // clear of the avatar (left), the name/date text (left), and the root crown (top-right).
+  const startX = NODE_W - 6 - CHIP - (items.length - 1) * (CHIP + GAP);
+  const y = NODE_H - 6 - CHIP;
+  return (
+    <g style={{ pointerEvents: 'none' }} aria-hidden="true">
+      {items.map((it, i) => {
+        const x = startX + i * (CHIP + GAP);
+        return (
+          <g key={it.key} transform={`translate(${x}, ${y})`}>
+            <title>{it.title}</title>
+            <rect width={CHIP} height={CHIP} rx={2} fill="var(--bg-card)" stroke="var(--border)" strokeWidth={0.75} />
+            <g transform="translate(2, 2)" style={{ color: it.color }} stroke={it.color}>
+              {it.icon}
+            </g>
+          </g>
+        );
+      })}
+    </g>
   );
 }
 
@@ -77,8 +116,21 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
   const [showLegend, setShowLegend] = useState(false);
   const [viewport, setViewport] = useState({ w: 0, h: 0 });
   const [layoutMode, setLayoutMode] = useState<'vertical' | 'fan'>('vertical');
+  // Focus mode: when set, dims everyone outside the focus person's close family.
+  const [focusId, setFocusId] = useState<string | null>(null);
 
   const rootPerson = tree.persons.find(p => p.id === rootId);
+
+  // Close-family id set for focus mode (focus person + spouses + parents + children + siblings).
+  const focusSet: Set<string> | null = (() => {
+    if (!focusId) return null;
+    const set = new Set<string>([focusId]);
+    for (const helper of [getSpouses, getParents, getChildren, getSiblings]) {
+      for (const rel of helper(focusId, tree.relationships, tree.persons)) set.add(rel.id);
+    }
+    return set;
+  })();
+  const inFocus = (id: string) => !focusSet || focusSet.has(id);
 
   const buildLayout = useCallback(() => {
     if (!rootId || !rootPerson) return { nodes: [] as TreeNode[], edges: [] as Edge[], pearls: [] as Pearl[] };
@@ -348,6 +400,13 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
 
   const handleNodeClick = (personId: string) => { if (!dragMoved && !readOnly) onSelectPerson(personId); };
 
+  // Double-click focuses the close family around a person and recenters on them.
+  const handleNodeDoubleClick = (personId: string) => {
+    if (dragMoved) return;
+    setFocusId(personId);
+    setTimeout(() => centerOn(personId), 0);
+  };
+
   const genderColor = (g: string) =>
     g === 'male' ? 'var(--male)' : g === 'female' ? 'var(--female)' : 'var(--text-muted)';
 
@@ -384,6 +443,45 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* Tree-view motion (entrance stagger, hover lift, root-change fade).
+          All animations are disabled under prefers-reduced-motion. */}
+      <style>{`
+        .tv-node-inner {
+          opacity: 0;
+          transform: translateY(8px);
+          animation: tvNodeIn 360ms ease forwards;
+          transition: transform 160ms ease, filter 160ms ease;
+        }
+        @keyframes tvNodeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .person-node:hover .tv-node-inner,
+        .person-node:focus-visible .tv-node-inner {
+          transform: translateY(-2px);
+          filter: drop-shadow(3px 3px 0 var(--shadow-color));
+        }
+        .tv-content-enter {
+          animation: tvContentIn 320ms ease forwards;
+        }
+        @keyframes tvContentIn {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .tv-node-inner,
+          .tv-content-enter {
+            animation: none !important;
+            opacity: 1 !important;
+            transform: none !important;
+          }
+          .person-node:hover .tv-node-inner,
+          .person-node:focus-visible .tv-node-inner {
+            transform: none !important;
+            filter: none !important;
+          }
+        }
+      `}</style>
       {/* Toolbar — compact 44px on desktop; wraps on narrow/mobile so no control is clipped */}
       <div style={{ minHeight: '44px', padding: '5px 12px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '6px', rowGap: '5px', flexWrap: 'wrap', flexShrink: 0 }}>
         <h2 className="serif" style={{ margin: 0, fontSize: '1rem', color: 'var(--text)', flex: 1, minWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -400,7 +498,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
               <input autoFocus value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder={t('personNamePlaceholder')} className="input" style={{ marginBottom: '6px' }} />
               <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
                 {(searchQ ? filteredPersons : tree.persons.slice(0, 20)).map(p => (
-                  <button key={p.id} onClick={() => { setRootId(p.id); setShowSearch(false); setSearchQ(''); setTimeout(() => centerOn(p.id), 120); }}
+                  <button key={p.id} onClick={() => { setRootId(p.id); setFocusId(null); setShowSearch(false); setSearchQ(''); setTimeout(() => centerOn(p.id), 120); }}
                     style={{ width: '100%', padding: '7px 8px', border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left', borderRadius: 'var(--radius)', fontSize: '13px', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}
                     onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-muted)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'none'}
@@ -470,6 +568,12 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
         {layoutMode === 'vertical' && (
         <svg className="tree-svg" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible', willChange: 'transform' }}>
           <g transform={`translate(${offset.x}, ${offset.y}) scale(${scale})`}>
+            {/* Root-change fade: re-keying on rootId restarts the opacity-only entrance.
+                Opacity only (no transform) so it never fights the pan/zoom transform above. */}
+            <g key={rootId} className="tv-content-enter">
+            {/* Edge + pearl layer. When focus mode is active, dim it uniformly so the
+                focus-set nodes stand out (edges carry no person ids — see report). */}
+            <g style={focusSet ? { opacity: 0.15, transition: 'opacity 280ms ease', pointerEvents: 'none' } : { transition: 'opacity 280ms ease' }}>
             {/* Edges (elbow filiation + dashed spouse) */}
             {edges.map((edge, i) => {
               const isSpouse = edge.type === 'spouse';
@@ -489,13 +593,17 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
               <circle key={`pearl-${i}`} cx={p.x} cy={p.y} r={3}
                 fill="var(--bg-card)" stroke="var(--accent)" strokeWidth={1} style={{ pointerEvents: 'none' }} />
             ))}
+            </g>{/* /edge+pearl focus layer */}
 
             {/* Nodes — register-card style */}
-            {nodes.map(node => {
+            {nodes.map((node, index) => {
               const p = node.person;
               const isSelected = p.id === selectedPersonId;
               const isRoot = p.id === rootId;
+              const dimmed = !inFocus(p.id);
               const ariaLabel = `${getDisplayName(p)}${p.birthDate ? `, ${p.gender === 'female' ? t('bornF') : t('bornM')} ${t('inYear')} ${formatYear(p.birthDate)}` : ''}`;
+              // Cap the stagger delay so big trees don't crawl in.
+              const delay = Math.min(index * 50, 600);
 
               return (
                 <g key={p.id}
@@ -505,15 +613,23 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                   aria-label={ariaLabel}
                   transform={`translate(${node.x}, ${node.y})`}
                   onClick={() => handleNodeClick(p.id)}
-                  onDoubleClick={() => setRootId(p.id)}
+                  onDoubleClick={() => handleNodeDoubleClick(p.id)}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleNodeClick(p.id); } }}
-                  opacity={p.isAlive ? 1 : 0.72}
-                  style={{ cursor: 'pointer' }}
+                  opacity={dimmed ? 0.15 : (p.isAlive ? 1 : 0.72)}
+                  style={{
+                    cursor: dimmed ? 'default' : 'pointer',
+                    pointerEvents: dimmed ? 'none' : 'auto',
+                    transition: 'opacity 280ms ease',
+                  }}
                 >
+                  {/* Inner group carries the entrance/hover animation. The OUTER <g>
+                      keeps the positioning transform — animating transform there would
+                      override placement, so all motion lives on this inner group. */}
+                  <g className="tv-node-inner" style={{ animationDelay: `${delay}ms` }}>
                   <clipPath id={`card-${p.id}`}><rect width={NODE_W} height={NODE_H} rx={0} ry={0} /></clipPath>
 
                   {/* Card */}
-                  <rect width={NODE_W} height={NODE_H} rx={0} ry={0}
+                  <rect className="tv-node-card" width={NODE_W} height={NODE_H} rx={0} ry={0}
                     fill={isSelected ? 'var(--accent-light)' : 'var(--bg-card)'}
                     stroke={isSelected ? 'var(--accent)' : 'var(--border)'}
                     strokeWidth={isSelected ? 2 : 1} />
@@ -547,11 +663,27 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                   <text x={48} y={NODE_H / 2 + 19} fontFamily="var(--font-body)" fontSize={10} fill="var(--text-light)">
                     {dateLine(p)}
                   </text>
+
+                  {/* Corner indicator badges (photos / completeness / sources) */}
+                  <NodeBadges person={p} labels={{ photos: t('badgePhotos'), complete: t('badgeComplete'), sources: t('badgeSources') }} />
+                  </g>
                 </g>
               );
             })}
+            </g>{/* /tv-content-enter (root-change fade) */}
           </g>
         </svg>
+        )}
+
+        {/* Focus mode: floating "full view" escape, shown only while focused */}
+        {focusId && layoutMode === 'vertical' && (
+          <button
+            onClick={() => setFocusId(null)}
+            className="btn btn-secondary btn-sm"
+            style={{ position: 'absolute', top: '12px', left: '50%', transform: 'translateX(-50%)', zIndex: 150, boxShadow: 'var(--shadow)' }}
+          >
+            {t('fullView')}
+          </button>
         )}
 
         {/* Legend — minimalist, hidden by default */}
