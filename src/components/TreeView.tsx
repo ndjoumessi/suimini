@@ -518,7 +518,6 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
         .person-node:hover .tv-node-inner,
         .person-node:focus-visible .tv-node-inner {
           transform: translateY(-2px);
-          filter: drop-shadow(3px 3px 0 var(--shadow-color));
         }
         .tv-content-enter {
           animation: tvContentIn 320ms ease forwards;
