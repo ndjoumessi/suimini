@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useId } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Person, FamilyTree, Relationship, RelationType, FamilyEvent, EventType, Note, Citation, DnaOrigin, AiNarrative } from '@/types';
 import { getParents, getChildren, getSpouses, getSiblings, getAge, formatDate, formatYear, getDisplayName, generateId, safeHttpUrl } from '@/lib/treeUtils';
@@ -8,7 +8,7 @@ import { fetchComments, addComment, subscribeComments, collaborationEnabled, typ
 import { useAuth } from '@/hooks/useAuth';
 import ReactMarkdown from 'react-markdown';
 import PersonForm from './PersonForm';
-import { X, Pencil, Trash2, User, Clock, Users, Calendar, StickyNote, BookOpen, Lightbulb, Link2, AlertCircle, Dna, FileText, Images, ScanFace, Landmark, MessageSquare } from 'lucide-react';
+import { X, Pencil, Trash2, User, Clock, Users, Calendar, StickyNote, BookOpen, Lightbulb, Link2, AlertCircle, Dna, FileText, Images, ScanFace, ScanLine, Landmark, MessageSquare } from 'lucide-react';
 
 interface Props {
   person: Person;
@@ -22,9 +22,14 @@ interface Props {
   onDeleteRelationship: (relId: string) => void;
   /** Open the AI face-recognition analyzer, pre-selecting this person. */
   onAnalyzePhoto?: () => void;
+  /** Open the document scanner pre-associated to this person (#5C). */
+  onScanDocument?: () => void;
   /** Surface a transient toast (passed by the parent). */
   onToast?: (msg: string, type?: string) => void;
 }
+
+// Visually-hidden but screen-reader-accessible (no .sr-only utility in globals.css).
+const SR_ONLY: React.CSSProperties = { position:'absolute', width:'1px', height:'1px', padding:0, margin:'-1px', overflow:'hidden', clip:'rect(0,0,0,0)', whiteSpace:'nowrap', border:0 };
 
 const EVENT_TYPES: EventType[] = ['birth','death','marriage','divorce','baptism','graduation','military','immigration','other'];
 const EVENT_ICONS: Record<string, string> = { birth:'✦', death:'†', marriage:'💒', divorce:'⚡', baptism:'✟', graduation:'🎓', military:'⚔', immigration:'🌍', other:'📌' };
@@ -69,12 +74,13 @@ const MD_COMPONENTS = {
   ),
 };
 
-export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete, onSelectPerson, onAddRelationship, onUpdateRelationship, onDeleteRelationship, onAnalyzePhoto, onToast }: Props) {
+export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete, onSelectPerson, onAddRelationship, onUpdateRelationship, onDeleteRelationship, onAnalyzePhoto, onScanDocument, onToast }: Props) {
   const t = useTranslations('personPanel');
   const tp = useTranslations('photoAnalyzer');
   const tn = useTranslations('narrative');
   const tc = useTranslations('collaboration');
   const ts = useTranslations('suggestions');
+  const to = useTranslations('ocr');
   const locale = useLocale();
   const { user } = useAuth();
   const relLabel = (type: RelationType) => t(REL_LABEL_KEYS[type]);
@@ -116,6 +122,14 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
   const [suggestValue, setSuggestValue] = useState('');
   const [sendingSuggestion, setSendingSuggestion] = useState(false);
   // The panel is remounted per person (keyed by id in the parent), so transient UI resets naturally.
+
+  // Stable ids for associating labels with the Discussion inputs (accessibility).
+  const baseId = useId();
+  const commentFieldId = `${baseId}-comment`;
+  const suggestFieldId = `${baseId}-suggest-field`;
+  const suggestValueId = `${baseId}-suggest-value`;
+
+  const reducedMotion = useReducedMotion();
 
   const commentsEnabled = collaborationEnabled() && !!user;
   const commentAuthor = user
@@ -293,8 +307,14 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
   );
 
   // Other tree members available for the comparative narrative (#3C).
-  const availableComparePersons = tree.persons.filter(p => p.id !== person.id);
-  const comparePerson = tree.persons.find(p => p.id === comparePersonId) || null;
+  const availableComparePersons = useMemo(
+    () => tree.persons.filter(p => p.id !== person.id),
+    [tree.persons, person.id],
+  );
+  const comparePerson = useMemo(
+    () => tree.persons.find(p => p.id === comparePersonId) || null,
+    [tree.persons, comparePersonId],
+  );
 
   // --- All raw relationships involving this person (for management) ---
   const myRelationships = tree.relationships.filter(r => r.person1Id === person.id || r.person2Id === person.id);
@@ -821,6 +841,11 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
 
         {tab==='sources' && (
           <div className="animate-fade-in">
+            {onScanDocument && (
+              <button onClick={onScanDocument} className="btn btn-secondary btn-sm" style={{ width:'100%', justifyContent:'center', gap:'7px', marginBottom:'12px' }}>
+                <ScanLine size={14} aria-hidden="true" /> {to('scanButton')}
+              </button>
+            )}
             <div style={{ display:'flex', flexDirection:'column', gap:'10px', marginBottom:'12px' }}>
               {(!person.citations||person.citations.length===0) ? (
                 <div style={{ textAlign:'center', padding:'20px', color:'var(--text-muted)' }}>{t('noSources')}</div>
@@ -900,27 +925,29 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                   <BookOpen size={14} aria-hidden="true" /> {tn('generate', { name: person.firstName })}
                 </button>
               ) : person.aiNarrative ? (
-                <div style={{ display:'flex', gap:'6px', flexWrap:'wrap' }}>
-                  <button onClick={()=>generateNarrative(true)} className="btn btn-secondary btn-sm" disabled={narrativeLoading}>
+                <div style={{ display:'flex', gap:'6px', flexWrap:'wrap', minWidth:0 }}>
+                  <button onClick={()=>generateNarrative(true)} className="btn btn-secondary btn-sm" disabled={narrativeLoading} aria-label={tn('regenerate')}>
                     {tn('regenerate')}
                   </button>
-                  <button onClick={copyNarrative} className="btn btn-ghost btn-sm">
+                  <button onClick={copyNarrative} className="btn btn-ghost btn-sm" aria-label={tn('copy')}>
                     {copied ? tn('copied') : tn('copy')}
                   </button>
+                  {/* Announce the copy result to screen readers without a visual change. */}
+                  <span aria-live="polite" style={SR_ONLY}>{copied ? tn('copied') : ''}</span>
                 </div>
               ) : null}
             </div>
 
             {/* Loading */}
             {narrativeLoading && (
-              <div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'14px', background:'var(--bg-muted)', borderRadius:'var(--radius)', color:'var(--text-muted)', fontSize:'13px' }}>
+              <div role="status" aria-live="polite" style={{ display:'flex', alignItems:'center', gap:'10px', padding:'14px', background:'var(--bg-muted)', borderRadius:'var(--radius)', color:'var(--text-muted)', fontSize:'13px' }}>
                 <Spinner /> {tn('generating')}
               </div>
             )}
 
             {/* Error */}
             {narrativeError && !narrativeLoading && (
-              <div style={{ padding:'10px 12px', background:'var(--bg-muted)', border:'1.5px solid var(--danger)', borderRadius:'var(--radius)', fontSize:'12px', color:'var(--danger)', display:'flex', alignItems:'center', gap:'6px' }}>
+              <div role="alert" style={{ padding:'10px 12px', background:'var(--bg-muted)', border:'1.5px solid var(--danger)', borderRadius:'var(--radius)', fontSize:'12px', color:'var(--danger)', display:'flex', alignItems:'center', gap:'6px' }}>
                 <AlertCircle size={13} aria-hidden="true" /> {tn('error')}
               </div>
             )}
@@ -938,13 +965,14 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                 <div className="label" style={{ color:'var(--text-light)', marginBottom:'8px' }}>{tn('questions')}</div>
                 <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
                   {person.aiNarrative.questions.map((q, i) => (
-                    <button key={i} onClick={()=>setTab('edit')}
-                      style={{ textAlign:'left', padding:'10px 12px', background:'var(--bg-card)', border:'1.5px solid var(--border-strong)', borderRadius:'var(--radius)', boxShadow:'var(--shadow-sm)', cursor:'pointer', font:'inherit', fontSize:'13px', lineHeight:1.5, color:'var(--text)', display:'flex', gap:'8px', alignItems:'flex-start', transition:'transform 0.12s' }}
-                      onMouseEnter={e=>{ e.currentTarget.style.transform='translate(-1px,-1px)'; }}
+                    <button key={i} type="button" onClick={()=>setTab('edit')}
+                      aria-label={`${q} · ${t('tab_edit')}`}
+                      style={{ textAlign:'left', padding:'10px 12px', background:'var(--bg-card)', border:'1.5px solid var(--border-strong)', borderRadius:'var(--radius)', boxShadow:'var(--shadow-sm)', cursor:'pointer', font:'inherit', fontSize:'13px', lineHeight:1.5, color:'var(--text)', display:'flex', gap:'8px', alignItems:'flex-start', minWidth:0, transition: reducedMotion ? 'none' : 'transform 0.12s' }}
+                      onMouseEnter={e=>{ if(!reducedMotion) e.currentTarget.style.transform='translate(-1px,-1px)'; }}
                       onMouseLeave={e=>{ e.currentTarget.style.transform='none'; }}
                     >
                       <Lightbulb size={14} aria-hidden="true" style={{ color:'var(--accent)', flexShrink:0, marginTop:'2px' }} />
-                      <span>{q}</span>
+                      <span style={{ minWidth:0, overflowWrap:'anywhere' }}>{q}</span>
                     </button>
                   ))}
                 </div>
@@ -954,12 +982,12 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
             {/* Comparative narrative (#3C) */}
             {person.aiNarrative && !narrativeLoading && availableComparePersons.length > 0 && (
               <div>
-                <select value={comparePersonId} onChange={e=>runCompare(e.target.value)} className="input">
+                <select value={comparePersonId} onChange={e=>runCompare(e.target.value)} className="input" aria-label={tn('compareWith')}>
                   <option value="">{tn('compareWith')}</option>
                   {availableComparePersons.map(p => <option key={p.id} value={p.id}>{getDisplayName(p)}</option>)}
                 </select>
                 {compareLoading && (
-                  <div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'12px 0', color:'var(--text-muted)', fontSize:'13px' }}>
+                  <div role="status" aria-live="polite" style={{ display:'flex', alignItems:'center', gap:'10px', padding:'12px 0', color:'var(--text-muted)', fontSize:'13px' }}>
                     <Spinner /> {tn('generating')}
                   </div>
                 )}
@@ -1014,10 +1042,12 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                   )}
                 </div>
                 <div style={{ flexShrink:0, borderTop:'1px solid var(--border)', paddingTop:'10px' }}>
-                  <textarea value={newComment} onChange={e=>setNewComment(e.target.value)} className="input" rows={2} style={{ resize:'vertical', width:'100%', marginBottom:'8px' }} placeholder={tc('placeholder')} />
-                  <button onClick={submitComment} className="btn btn-primary btn-sm" disabled={!newComment.trim() || sendingComment}>
+                  <label htmlFor={commentFieldId} style={SR_ONLY}>{tc('placeholder')}</label>
+                  <textarea id={commentFieldId} value={newComment} onChange={e=>setNewComment(e.target.value)} className="input" rows={2} style={{ resize:'vertical', width:'100%', marginBottom:'8px' }} placeholder={tc('placeholder')} />
+                  <button onClick={submitComment} className="btn btn-primary btn-sm" disabled={!newComment.trim() || sendingComment} aria-label={tc('comment')}>
                     {sendingComment ? tc('sending') : tc('comment')}
                   </button>
+                  <span aria-live="polite" style={SR_ONLY}>{sendingComment ? tc('sending') : ''}</span>
                 </div>
 
                 {/* Edit suggestions (accept / reject + suggest form) */}
@@ -1114,6 +1144,20 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
       )}
     </aside>
   );
+}
+
+// Tracks the user's reduced-motion preference (SSR-safe; updates on change).
+function useReducedMotion(): boolean {
+  const [reduce, setReduce] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    if (!mq) return;
+    setReduce(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setReduce(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  return reduce;
 }
 
 function Spinner() {

@@ -114,7 +114,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
   const [peers, setPeers] = useState<CursorPeer[]>([]);
   // Handle to the live-cursor channel (move broadcaster + leave). Held in a ref
   // so the throttled mousemove handler can broadcast without re-subscribing.
-  const cursorRef = useRef<{ move: (x: number, y: number) => void; leave: () => void } | null>(null);
+  const cursorRef = useRef<{ move: (x: number, y: number, layout?: 'vertical' | 'fan') => void; leave: () => void } | null>(null);
   // Throttle guard for cursor broadcasts (~50ms) and a 1s tick to fade stale cursors.
   const lastCursorSentRef = useRef(0);
   const [, setCursorTick] = useState(0);
@@ -436,7 +436,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
     if (!rect) return;
     const cx = (e.clientX - rect.left - offset.x) / scale;
     const cy = (e.clientY - rect.top - offset.y) / scale;
-    cursorRef.current.move(cx, cy);
+    cursorRef.current.move(cx, cy, 'vertical');
   };
   const handleMouseUp = () => setIsDragging(false);
 
@@ -633,7 +633,8 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
       >
         {layoutMode === 'fan' && fan && (
           <FanChart fan={fan} fanGenColor={fanGenColor} r0={FAN_R0} ring={FAN_RING}
-            selectedPersonId={selectedPersonId} onSelectPerson={onSelectPerson} />
+            selectedPersonId={selectedPersonId} onSelectPerson={onSelectPerson}
+            peers={peers} cursorRef={cursorRef} lastCursorSentRef={lastCursorSentRef} />
         )}
 
         {layoutMode === 'vertical' && (
@@ -749,6 +750,9 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                 fade out. Self is already excluded by the lib. pointerEvents:none so
                 cursors never intercept clicks/drags on the canvas below. */}
             {peers.map(peer => {
+              // Only show peers broadcasting in the vertical layout here; fan-layout
+              // peers carry SVG-viewBox coordinates that don't map to content space.
+              if (peer.layout === 'fan') return null;
               if (peer.x === undefined || peer.y === undefined) return null;
               if (!peer.t || Date.now() - peer.t > 3000) return null;
               const labelW = peer.name.length * 7 + 8;
@@ -907,17 +911,43 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
 // ===== Fan chart (ancestor pedigree, pure SVG, auto-fit) =====
 interface FanData { slots: { person: Person; gen: number; index: number }[]; maxGen: number; R: number; }
 
-function FanChart({ fan, fanGenColor, r0, ring, selectedPersonId, onSelectPerson }: {
+function FanChart({ fan, fanGenColor, r0, ring, selectedPersonId, onSelectPerson, peers, cursorRef, lastCursorSentRef }: {
   fan: FanData;
   fanGenColor: (gen: number) => string;
   r0: number;
   ring: number;
   selectedPersonId: string | null;
   onSelectPerson: (id: string) => void;
+  peers: CursorPeer[];
+  cursorRef: React.RefObject<{ move: (x: number, y: number, layout?: 'vertical' | 'fan') => void; leave: () => void } | null>;
+  lastCursorSentRef: React.RefObject<number>;
 }) {
   const t = useTranslations('tree');
+  // Ref to this fan <svg> so screen→fan-SVG coords can be derived via its CTM.
+  // Fan coordinates live in the centered viewBox space (origin at the fan centre);
+  // getScreenCTM().inverse() yields exactly that, so a peer's translate(x,y) lands
+  // identically for every viewer regardless of container size (preserveAspectRatio).
+  const fanSvgRef = useRef<SVGSVGElement>(null);
   const pad = 32;
   const view = fan.R + pad;
+
+  // Broadcast my cursor in fan-SVG space. Throttled (~50ms) via the SAME ref the
+  // vertical handler uses, so the two layouts can't double-fire within a frame.
+  const handleFanMouseMove = (e: React.MouseEvent) => {
+    if (!cursorRef.current) return;
+    const now = Date.now();
+    if (now - lastCursorSentRef.current < 50) return;
+    lastCursorSentRef.current = now;
+    const el = fanSvgRef.current;
+    if (!el) return;
+    const ptScreen = el.createSVGPoint();
+    ptScreen.x = e.clientX;
+    ptScreen.y = e.clientY;
+    const m = el.getScreenCTM();
+    if (!m) return;
+    const p = ptScreen.matrixTransform(m.inverse());
+    cursorRef.current.move(p.x, p.y, 'fan');
+  };
   const ang = (a: number) => -Math.PI / 2 + a;
   const pt = (r: number, a: number): [number, number] => [r * Math.cos(ang(a)), r * Math.sin(ang(a))];
 
@@ -933,7 +963,8 @@ function FanChart({ fan, fanGenColor, r0, ring, selectedPersonId, onSelectPerson
   const root = fan.slots.find(s => s.gen === 0);
 
   return (
-    <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+    <svg ref={fanSvgRef} onMouseMove={handleFanMouseMove}
+      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
       viewBox={`${-view} ${-view} ${view * 2} ${view * 2}`} preserveAspectRatio="xMidYMid meet">
       {fan.slots.filter(s => s.gen >= 1).map(s => {
         const slotAngle = (Math.PI * 2) / Math.pow(2, s.gen);
@@ -980,6 +1011,29 @@ function FanChart({ fan, fanGenColor, r0, ring, selectedPersonId, onSelectPerson
           {t('noAncestors')}
         </text>
       )}
+
+      {/* Live collaborator cursors in fan-SVG space — only peers broadcasting the
+          fan layout, seen in the last 3s. Same arrow + mono name badge as the
+          vertical cursors; the .tv-cursor class also picks up the reduced-motion
+          rule. pointerEvents:none so they never intercept fan slot clicks. */}
+      {peers.map(peer => {
+        if (peer.layout !== 'fan') return null;
+        if (peer.x === undefined || peer.y === undefined) return null;
+        if (!peer.t || Date.now() - peer.t > 3000) return null;
+        const labelW = peer.name.length * 7 + 8;
+        return (
+          <g key={peer.id} className="tv-cursor"
+            transform={`translate(${peer.x}, ${peer.y})`}
+            style={{ pointerEvents: 'none' }}>
+            <path d="M0 0 L0 16 L4 12 L8 18 L10 16 L6 10 L12 10 Z"
+              fill={peer.color} stroke="white" strokeWidth={1} />
+            <rect x={14} y={-2} width={labelW} height={18} rx={3} fill={peer.color} />
+            <text x={18} y={11} fill="white" fontSize={11} fontFamily="var(--font-mono)">
+              {peer.name}
+            </text>
+          </g>
+        );
+      })}
     </svg>
   );
 }

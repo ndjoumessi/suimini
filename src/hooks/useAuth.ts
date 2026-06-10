@@ -4,6 +4,7 @@ import type { User, Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { sampleFamilyTree } from '@/lib/sampleData';
 import type { UserProfile } from '@/types';
+import { fetchMyMemberships, type TreeMember } from '@/lib/sharing';
 
 const DEMO_KEY = 'suimini_demo';
 const DEMO_VALUE = 'true';
@@ -41,6 +42,7 @@ export function useAuth() {
   const [isLoading, setIsLoading] = useState(isSupabaseConfigured);
   const [demo, setDemo] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [treeMemberships, setTreeMemberships] = useState<TreeMember[]>([]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') setDemo(localStorage.getItem(DEMO_KEY) === DEMO_VALUE);
@@ -51,7 +53,10 @@ export function useAuth() {
       setSession(data.session);
       setUser(data.session?.user ?? null);
       setIsLoading(false);
-      if (data.session?.user) setUserProfile(await fetchProfile(data.session.user.id));
+      if (data.session?.user) {
+        setUserProfile(await fetchProfile(data.session.user.id));
+        fetchMyMemberships().then(m => { if (active) setTreeMemberships(m); });
+      }
     });
     // IMPORTANT: keep this callback synchronous and never `await` a Supabase call
     // inside it. It runs while GoTrue holds its auth lock; calling fetchProfile
@@ -68,9 +73,13 @@ export function useAuth() {
         setDemoCookie(false);
         setDemo(false);
         const uid = s.user.id;
-        setTimeout(() => { fetchProfile(uid).then(p => { if (active) setUserProfile(p); }); }, 0);
+        setTimeout(() => {
+          fetchProfile(uid).then(p => { if (active) setUserProfile(p); });
+          fetchMyMemberships().then(m => { if (active) setTreeMemberships(m); });
+        }, 0);
       } else {
         setUserProfile(null);
+        setTreeMemberships([]);
       }
     });
     return () => { active = false; sub.subscription.unsubscribe(); };
@@ -181,6 +190,7 @@ export function useAuth() {
     user, session, isDemo, isLoading, loading: isLoading,
     configured: isSupabaseConfigured,
     userProfile, status, role, isAdmin, isSuperAdmin, isApproved, tenantId, refreshProfile,
+    treeMemberships,
     signUp, signIn, signInWithMagicLink, resetPassword, signOut, startDemo, exitDemo,
   };
 }

@@ -30,6 +30,7 @@ import PresentationMode from './PresentationMode';
 import NarrativeModal from './NarrativeModal';
 import AddPersonModal from './AddPersonModal';
 import PhotoAnalyzer, { FaceAssignment } from './PhotoAnalyzer';
+import DocumentScanner, { ImportItem } from './DocumentScanner';
 import AdminDashboard from './AdminDashboard';
 import TreeSelectorModal from './TreeSelectorModal';
 import ImportExportModal from './ImportExportModal';
@@ -110,6 +111,51 @@ export default function SuiminiApp() {
   const tPhoto = useTranslations('photoAnalyzer');
   const [photoAnalyzer, setPhotoAnalyzer] = useState<{ open: boolean; personId?: string }>({ open: false });
   const openPhotoAnalyzer = useCallback((personId?: string) => setPhotoAnalyzer({ open: true, personId }), []);
+
+  // --- OCR document scanner (face/record extraction → tree) ---
+  const tOcr = useTranslations('ocr');
+  const [docScanner, setDocScanner] = useState<{ open: boolean; personId?: string }>({ open: false });
+  const openDocumentScanner = useCallback((personId?: string) => setDocScanner({ open: true, personId }), []);
+
+  // Apply scanned-document people atomically: 'new' creates a person, a personId merges filled fields.
+  const handleDocumentImport = useCallback((items: ImportItem[]) => {
+    const tree = store.activeTree;
+    if (!tree) return;
+    const now = new Date().toISOString();
+    let persons = [...tree.persons];
+    let count = 0;
+    for (const it of items) {
+      if (it.assignment === 'ignore') continue;
+      const place = it.birthPlace ? { city: it.birthPlace } : undefined;
+      if (it.assignment === 'new') {
+        persons.push({
+          id: generateId(), firstName: it.firstName || '', lastName: it.lastName || '',
+          gender: 'unknown', isAlive: !it.birthDate ? true : true,
+          birthDate: it.birthDate || undefined, birthPlace: place, occupation: it.occupation || undefined,
+          createdAt: now, updatedAt: now,
+        });
+        count++;
+      } else {
+        persons = persons.map(p => {
+          if (p.id !== it.assignment) return p;
+          return {
+            ...p,
+            ...(it.firstName ? { firstName: it.firstName } : {}),
+            ...(it.lastName ? { lastName: it.lastName } : {}),
+            ...(it.birthDate ? { birthDate: it.birthDate } : {}),
+            ...(it.occupation ? { occupation: it.occupation } : {}),
+            ...(it.birthPlace ? { birthPlace: { ...p.birthPlace, city: it.birthPlace } } : {}),
+            updatedAt: now,
+          };
+        });
+        count++;
+      }
+    }
+    if (count > 0) {
+      store.updateTree({ ...tree, persons });
+      showToast(tOcr('imported', { count }));
+    }
+  }, [store, showToast, tOcr]);
 
   // Apply the photo + face tags atomically (one tree update; creates "new member" persons as needed).
   const handlePhotoTags = useCallback((photoUrl: string, assignments: FaceAssignment[]) => {
@@ -389,6 +435,7 @@ export default function SuiminiApp() {
           onUpdateRelationship={(id, updates) => { store.updateRelationship(id, updates); showToast('Relation mise à jour'); }}
           onDeleteRelationship={(id) => { store.deleteRelationship(id); showToast('Relation supprimée', 'info'); }}
           onAnalyzePhoto={() => openPhotoAnalyzer(selectedPerson.id)}
+          onScanDocument={() => openDocumentScanner(selectedPerson.id)}
           onToast={showToast}
         />
       )}
@@ -400,6 +447,16 @@ export default function SuiminiApp() {
           preselectPersonId={photoAnalyzer.personId}
           onClose={() => setPhotoAnalyzer({ open: false })}
           onConfirm={handlePhotoTags}
+        />
+      )}
+
+      {/* OCR document scanner */}
+      {docScanner.open && store.activeTree && (
+        <DocumentScanner
+          tree={store.activeTree}
+          preselectPersonId={docScanner.personId}
+          onClose={() => setDocScanner({ open: false })}
+          onImport={handleDocumentImport}
         />
       )}
 
@@ -495,6 +552,7 @@ export default function SuiminiApp() {
           initialTab={importExportTab}
           onImport={(t) => { store.importTree(t); showToast(`Arbre « ${t.name} » importé`); }}
           onClose={() => setImportExportTab(null)}
+          onScanDocument={() => openDocumentScanner()}
         />
       )}
 

@@ -3,16 +3,20 @@ import { useOverlay } from '@/hooks/useOverlay';
 import { useState, useRef } from 'react';
 import { FamilyTree } from '@/types';
 import { exportGEDCOM, importGEDCOM } from '@/lib/treeUtils';
-import { CheckCircle2, AlertCircle, FolderOpen, X } from 'lucide-react';
+import { CheckCircle2, AlertCircle, FolderOpen, X, ScanLine } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface Props {
   tree: FamilyTree;
   onImport: (tree: FamilyTree) => void;
   onClose: () => void;
   initialTab?: 'export' | 'import';
+  /** Open the OCR document scanner (closes this modal first). */
+  onScanDocument?: () => void;
 }
 
-export default function ImportExportModal({ tree, onImport, onClose, initialTab = 'export' }: Props) {
+export default function ImportExportModal({ tree, onImport, onClose, initialTab = 'export', onScanDocument }: Props) {
+  const tOcr = useTranslations('ocr');
   const [tab, setTab] = useState<'export' | 'import'>(initialTab);
   const [importing, setImporting] = useState(false);
   const [importMsg, setImportMsg] = useState('');
@@ -87,6 +91,11 @@ export default function ImportExportModal({ tree, onImport, onClose, initialTab 
         <div className="tabs" style={{ margin: '0 24px', paddingTop: '4px' }}>
           <button onClick={() => setTab('export')} className={`tab ${tab === 'export' ? 'active' : ''}`}>📤 Exporter</button>
           <button onClick={() => setTab('import')} className={`tab ${tab === 'import' ? 'active' : ''}`}>📥 Importer</button>
+          {onScanDocument && (
+            <button onClick={() => { onClose(); onScanDocument(); }} className="tab" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+              <ScanLine size={14} aria-hidden="true" /> {tOcr('scanButton')}
+            </button>
+          )}
         </div>
 
         <div style={{ padding: '16px 24px 24px' }}>

@@ -227,6 +227,8 @@ export interface CursorPeer {
   color: string;
   x?: number;
   y?: number;
+  /** Which layout the coordinates belong to (vertical pan/zoom space vs fan SVG space). */
+  layout?: 'vertical' | 'fan';
   /** Last-update timestamp (ms) — used to fade stale cursors. */
   t?: number;
 }
@@ -240,7 +242,7 @@ export function joinTreeCursors(
   treeId: string,
   me: { id: string; name: string; color: string },
   onPeers: (peers: CursorPeer[]) => void,
-): { move: (x: number, y: number) => void; leave: () => void } {
+): { move: (x: number, y: number, layout?: 'vertical' | 'fan') => void; leave: () => void } {
   if (!supabase) return { move: () => {}, leave: () => {} };
   const sb = supabase;
   const channel = sb.channel(`tree-cursors-${treeId}`, { config: { presence: { key: me.id } } });
@@ -251,7 +253,7 @@ export function joinTreeCursors(
     for (const key of Object.keys(state)) {
       if (key === me.id) continue;
       const e = state[key]?.[0];
-      if (e) peers.push({ id: e.id ?? key, name: e.name ?? '', color: e.color ?? 'var(--accent)', x: e.x, y: e.y, t: e.t });
+      if (e) peers.push({ id: e.id ?? key, name: e.name ?? '', color: e.color ?? 'var(--accent)', x: e.x, y: e.y, layout: e.layout, t: e.t });
     }
     onPeers(peers);
   };
@@ -266,7 +268,7 @@ export function joinTreeCursors(
     });
 
   return {
-    move: (x: number, y: number) => { if (ready) channel.track({ ...me, x, y, t: Date.now() }); },
+    move: (x: number, y: number, layout: 'vertical' | 'fan' = 'vertical') => { if (ready) channel.track({ ...me, x, y, layout, t: Date.now() }); },
     leave: () => { sb.removeChannel(channel); },
   };
 }
