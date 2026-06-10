@@ -129,6 +129,7 @@ body {
   margin: 0;
   transition: background var(--t-base), color var(--t-base);
   -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none; /* prevent pull-to-refresh / over-bounce in PWA */
 }
 
 /* ===== Typography hierarchy ===== */

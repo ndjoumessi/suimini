@@ -5,11 +5,12 @@
   "start_url": "/app",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
   "orientation": "portrait-primary",
   "lang": "fr",
   "dir": "ltr",
-  "theme_color": "#8b6f47",
-  "background_color": "#faf8f5",
+  "theme_color": "#f4f1ea",
+  "background_color": "#f4f1ea",
   "categories": ["lifestyle", "productivity", "social"],
   "icons": [
     {
@@ -41,6 +42,61 @@
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Mon arbre",
+      "short_name": "Arbre",
+      "description": "Ouvrir l'arbre généalogique",
+      "url": "/app?view=tree",
+      "icons": [{ "src": "/icon-shortcut-tree.png", "sizes": "96x96", "type": "image/png" }]
+    },
+    {
+      "name": "Ajouter un membre",
+      "short_name": "Membre",
+      "description": "Ajouter une personne à l'arbre",
+      "url": "/app?action=add-person",
+      "icons": [{ "src": "/icon-shortcut-person.png", "sizes": "96x96", "type": "image/png" }]
+    },
+    {
+      "name": "Journal familial",
+      "short_name": "Journal",
+      "description": "Ouvrir le journal de la famille",
+      "url": "/app?view=journal",
+      "icons": [{ "src": "/icon-shortcut-journal.png", "sizes": "96x96", "type": "image/png" }]
+    },
+    {
+      "name": "Partager l'arbre",
+      "short_name": "Partager",
+      "description": "Partager l'arbre avec la famille",
+      "url": "/app?action=share",
+      "icons": [{ "src": "/icon-shortcut-share.png", "sizes": "96x96", "type": "image/png" }]
+    }
+  ],
+  "share_target": {
+    "action": "/app/share",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "screenshots": [
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Vue arbre généalogique"
+    },
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Vue mobile"
     }
   ]
 }

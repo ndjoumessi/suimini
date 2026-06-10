@@ -1,5 +1,5 @@
-/* Suimini — service worker v2 : cache offline des assets statiques + API Supabase. */
-const CACHE = 'suimini-static-v2';
+/* Suimini — service worker v3 : cache offline des assets statiques + API Supabase. */
+const CACHE = 'suimini-static-v3';
 
 // Assets statiques pré-mis en cache lors de l'installation.
 const PRECACHE_URLS = [
@@ -11,6 +11,11 @@ const PRECACHE_URLS = [
   '/icon-512.svg',
   '/og.svg',
   '/favicon.ico',
+  // PWA shortcut icons
+  '/icon-shortcut-tree.png',
+  '/icon-shortcut-person.png',
+  '/icon-shortcut-journal.png',
+  '/icon-shortcut-share.png',
 ];
 
 self.addEventListener('install', (event) => {

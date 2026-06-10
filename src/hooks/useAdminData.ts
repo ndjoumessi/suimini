@@ -122,6 +122,20 @@ export function useAdminData({ enabled }: { enabled: boolean }) {
     };
   }, [enabled, fetchNotifications]);
 
+  // Reflect pending-approval count in the PWA app badge.
+  useEffect(() => {
+    if (!('setAppBadge' in navigator)) return;
+    const nav = navigator as Navigator & {
+      setAppBadge(count?: number): Promise<void>;
+      clearAppBadge(): Promise<void>;
+    };
+    if (unreadCount > 0) {
+      nav.setAppBadge(unreadCount).catch(() => {});
+    } else {
+      nav.clearAppBadge?.().catch(() => {});
+    }
+  }, [unreadCount]);
+
   return {
     users, notifications, tenants, unreadCount, loading,
     fetchUsers, fetchNotifications, fetchTenants,

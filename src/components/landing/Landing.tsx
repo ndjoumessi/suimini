@@ -125,6 +125,12 @@ function FaqItem({ q, a }: { q: string; a: string }) {
   );
 }
 
+// Type for the non-standard BeforeInstallPromptEvent (Chrome/Android).
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
 export default function Landing() {
   const t = useTranslations('landing');
   const ta = useTranslations('auth');
@@ -138,6 +144,25 @@ export default function Landing() {
   const firstName = displayName ? displayName.split(/\s+/)[0] : '';
   const [showAuth, setShowAuth] = useState(false);
   const [authTab, setAuthTab] = useState<'login' | 'signup'>('signup');
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [installDismissed, setInstallDismissed] = useState(false);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e as BeforeInstallPromptEvent);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === 'accepted') setInstallPrompt(null);
+    else setInstallDismissed(true);
+  };
 
   const openAuth = (tab: 'login' | 'signup') => { setAuthTab(tab); setShowAuth(true); };
   const startSignup = () => openAuth('signup');
@@ -391,6 +416,34 @@ export default function Landing() {
       </footer>
 
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} initialTab={authTab} />}
+
+      {/* PWA install prompt — appears on Android/Chrome when the app is installable. */}
+      {installPrompt && !installDismissed && (
+        <div style={{
+          position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 9000,
+          display: 'flex', alignItems: 'center', gap: '14px',
+          background: INK, color: BONE, border: `2px solid ${ACCENT}`,
+          boxShadow: `6px 6px 0 ${ACCENT}`,
+          padding: '14px 20px', maxWidth: 'calc(100vw - 48px)', width: '400px',
+          fontFamily: 'var(--font-body)',
+        }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', letterSpacing: '-0.01em' }}>
+              Installer Suimini
+            </div>
+            <div style={{ fontSize: '12px', color: '#b8b2a6', marginTop: '2px', fontFamily: 'var(--font-mono)' }}>
+              Accès rapide, fonctionne hors-ligne
+            </div>
+          </div>
+          <button onClick={handleInstall} className="lp-btn-primary" style={{ flexShrink: 0, padding: '8px 16px', fontSize: '13px' }}>
+            Installer
+          </button>
+          <button onClick={() => setInstallDismissed(true)} aria-label="Fermer"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8a8276', padding: '4px', flexShrink: 0, fontSize: '18px', lineHeight: 1 }}>
+            ×
+          </button>
+        </div>
+      )}
 
       <style>{LANDING_CSS}</style>
     </div>

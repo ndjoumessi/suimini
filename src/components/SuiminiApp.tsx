@@ -284,6 +284,61 @@ export default function SuiminiApp() {
     setShowOnboarding(false);
   }, []);
 
+  // Handle PWA shortcut deep-links (?view=tree, ?action=add-person, etc.)
+  // and Web Share Target payloads stored in sessionStorage by /app/share.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !store.loaded) return;
+    // URL params from shortcuts
+    const params = new URLSearchParams(window.location.search);
+    const viewParam = params.get('view') as ViewMode | null;
+    const actionParam = params.get('action');
+    const validViews: ViewMode[] = ['dashboard', 'tree', 'list', 'map', 'journal', 'timeline', 'statistics', 'birthdays', 'gallery', 'ancestors', 'settings'];
+    if (viewParam && validViews.includes(viewParam)) setView(viewParam);
+    if (actionParam === 'add-person') setShowAddPerson(true);
+    if (actionParam === 'share') setShowShare(true);
+    if (params.toString()) window.history.replaceState({}, '', '/app');
+
+    // Shared content from Web Share Target
+    try {
+      const raw = sessionStorage.getItem('suimini_shared');
+      if (raw) {
+        sessionStorage.removeItem('suimini_shared');
+        const shared = JSON.parse(raw) as { title?: string; text?: string; url?: string };
+        const label = [shared.title, shared.text, shared.url].filter(Boolean).join(' — ');
+        if (label) showToast(label.slice(0, 80), 'info');
+      }
+    } catch { /* ignore */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store.loaded]);
+
+  // Mobile swipe-between-views (left/right, skip tree which has its own panning).
+  const swipeTouchX = useRef<number | null>(null);
+  const swipeTouchY = useRef<number | null>(null);
+  const SWIPE_VIEWS: ViewMode[] = ['dashboard', 'tree', 'list', 'map', 'journal'];
+  const handleSwipeStart = useCallback((e: React.TouchEvent) => {
+    swipeTouchX.current = e.touches[0].clientX;
+    swipeTouchY.current = e.touches[0].clientY;
+  }, []);
+  const handleSwipeEnd = useCallback((e: React.TouchEvent) => {
+    if (swipeTouchX.current === null || swipeTouchY.current === null) return;
+    const dx = e.changedTouches[0].clientX - swipeTouchX.current;
+    const dy = e.changedTouches[0].clientY - swipeTouchY.current;
+    swipeTouchX.current = null;
+    swipeTouchY.current = null;
+    // Only fire on very horizontal swipes (< 30° tilt) of at least 80px.
+    if (Math.abs(dx) < 80 || Math.abs(dx) < Math.abs(dy) * 2) return;
+    // Don't interfere with tree panning or open modals.
+    const target = e.target as HTMLElement;
+    if (target.closest('.tree-svg')) return;
+    const anyModalOpen = showAddPerson || showTreeSelector || !!importExportTab || showPrint || showShare || showPalette || showPresentation || showNarrative || showAuth || showOnboarding || !!docScanner.open || !!photoAnalyzer.open;
+    if (anyModalOpen) return;
+    const idx = SWIPE_VIEWS.indexOf(view);
+    if (idx === -1) return;
+    if (dx < 0 && idx < SWIPE_VIEWS.length - 1) setView(SWIPE_VIEWS[idx + 1]);
+    if (dx > 0 && idx > 0) setView(SWIPE_VIEWS[idx - 1]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, showAddPerson, showTreeSelector, importExportTab, showPrint, showShare, showPalette, showPresentation, showNarrative, showAuth, showOnboarding, docScanner.open, photoAnalyzer.open]);
+
   // Global keyboard shortcuts: Cmd/Ctrl+K (palette), Cmd/Ctrl+Z (undo), Cmd/Ctrl+Shift+Z (redo)
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -324,7 +379,10 @@ export default function SuiminiApp() {
     : null;
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg)' }}>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg)' }}
+      onTouchStart={handleSwipeStart}
+      onTouchEnd={handleSwipeEnd}
+    >
       {sidebarOpen && (
         <div onClick={() => setSidebarOpen(false)}
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 40 }}

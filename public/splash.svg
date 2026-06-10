@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <pattern id="dots" x="0" y="0" width="26" height="26" patternUnits="userSpaceOnUse">
+      <circle cx="1.5" cy="1.5" r="1.5" fill="rgba(27,27,27,0.08)" />
+    </pattern>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="1024" fill="#f4f1ea"/>
+  <rect width="1024" height="1024" fill="url(#dots)"/>
+
+  <!-- Border frame -->
+  <rect x="32" y="32" width="960" height="960" fill="none" stroke="#1b1b1b" stroke-width="3"/>
+  <!-- Shadow frame (terracotta) -->
+  <rect x="46" y="46" width="960" height="960" fill="none" stroke="#bf4b2c" stroke-width="3" opacity="0.35"/>
+
+  <!-- Inner panel -->
+  <rect x="72" y="72" width="880" height="880" fill="#ffffff" stroke="#1b1b1b" stroke-width="2"/>
+
+  <!-- Tree icon (centered, ~200px) -->
+  <g transform="translate(512, 430)">
+    <!-- Trunk -->
+    <rect x="-12" y="40" width="24" height="72" fill="#bf4b2c" rx="2"/>
+    <!-- Roots -->
+    <line x1="0" y1="112" x2="-48" y2="130" stroke="#bf4b2c" stroke-width="6" stroke-linecap="round"/>
+    <line x1="0" y1="112" x2="48" y2="130" stroke="#bf4b2c" stroke-width="6" stroke-linecap="round"/>
+    <!-- Main branches -->
+    <line x1="0" y1="40" x2="-80" y2="-20" stroke="#bf4b2c" stroke-width="8" stroke-linecap="round"/>
+    <line x1="0" y1="40" x2="80" y2="-20" stroke="#bf4b2c" stroke-width="8" stroke-linecap="round"/>
+    <line x1="0" y1="10" x2="0" y2="-40" stroke="#bf4b2c" stroke-width="8" stroke-linecap="round"/>
+    <!-- Sub-branches left -->
+    <line x1="-80" y1="-20" x2="-130" y2="-60" stroke="#1b1b1b" stroke-width="5" stroke-linecap="round"/>
+    <line x1="-80" y1="-20" x2="-52" y2="-72" stroke="#1b1b1b" stroke-width="5" stroke-linecap="round"/>
+    <!-- Sub-branches right -->
+    <line x1="80" y1="-20" x2="130" y2="-60" stroke="#1b1b1b" stroke-width="5" stroke-linecap="round"/>
+    <line x1="80" y1="-20" x2="52" y2="-72" stroke="#1b1b1b" stroke-width="5" stroke-linecap="round"/>
+    <!-- Top branches -->
+    <line x1="0" y1="-40" x2="-40" y2="-90" stroke="#1b1b1b" stroke-width="5" stroke-linecap="round"/>
+    <line x1="0" y1="-40" x2="40" y2="-90" stroke="#1b1b1b" stroke-width="5" stroke-linecap="round"/>
+    <!-- Person dots (leaves) -->
+    <circle cx="-130" cy="-70" r="14" fill="#bf4b2c" stroke="#1b1b1b" stroke-width="2.5"/>
+    <circle cx="-52" cy="-82" r="14" fill="#bf4b2c" stroke="#1b1b1b" stroke-width="2.5"/>
+    <circle cx="130" cy="-70" r="14" fill="#bf4b2c" stroke="#1b1b1b" stroke-width="2.5"/>
+    <circle cx="52" cy="-82" r="14" fill="#bf4b2c" stroke="#1b1b1b" stroke-width="2.5"/>
+    <circle cx="-40" cy="-102" r="14" fill="#1b1b1b" stroke="#1b1b1b" stroke-width="2.5"/>
+    <circle cx="40" cy="-102" r="14" fill="#1b1b1b" stroke="#1b1b1b" stroke-width="2.5"/>
+    <circle cx="0" cy="-148" r="18" fill="#bf4b2c" stroke="#1b1b1b" stroke-width="3"/>
+  </g>
+
+  <!-- Wordmark "Suimini" -->
+  <text x="512" y="620" font-family="'Bricolage Grotesque', 'Georgia', serif"
+        font-size="88" font-weight="800" fill="#1b1b1b"
+        text-anchor="middle" letter-spacing="-3">Suimini</text>
+
+  <!-- Tagline -->
+  <text x="512" y="672" font-family="'IBM Plex Mono', 'Courier New', monospace"
+        font-size="22" font-weight="500" fill="#bf4b2c"
+        text-anchor="middle" letter-spacing="3" text-transform="uppercase">ARBRE GÉNÉALOGIQUE</text>
+
+  <!-- Bottom rule -->
+  <rect x="200" y="710" width="624" height="2" fill="#1b1b1b" opacity="0.15"/>
+</svg>

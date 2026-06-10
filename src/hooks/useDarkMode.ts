@@ -54,6 +54,9 @@ export function useDarkMode() {
   // gender variables to the light or dark variant (see themes.ts / applyColorTheme).
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    // Keep the PWA chrome (status bar, address bar) in sync with the current theme.
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', dark ? '#161412' : '#f4f1ea');
     try {
       const storedTheme = (localStorage.getItem(THEME_STORAGE_KEY) as ColorThemeId | null) || 'sepia';
       applyColorTheme(storedTheme);
