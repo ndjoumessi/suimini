@@ -437,7 +437,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
   }
 
   return (
-    <aside className="person-panel" style={{
+    <aside className="person-panel" data-testid="person-panel" style={{
       width:'360px', flexShrink:0, height:'100%', background:'var(--bg-card)',
       borderLeft:'1px solid var(--border)', display:'flex', flexDirection:'column',
       boxShadow:'var(--shadow-lg)', zIndex:60,

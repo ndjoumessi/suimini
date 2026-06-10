@@ -53,10 +53,17 @@ jobs:
       - name: Wait for server
         run: npx wait-on http://localhost:3000 --timeout 30000
       - name: Run E2E tests
-        run: npx playwright test e2e/smoke.spec.ts
+        run: npx playwright test e2e/smoke.spec.ts e2e/auth.spec.ts e2e/dashboard.spec.ts e2e/navigation.spec.ts e2e/tree.spec.ts
         env:
           # Point Playwright at the already-running `next start` server so its
           # config skips spawning its own dev server (avoids a port-3000 clash).
           E2E_BASE_URL: http://localhost:3000
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30

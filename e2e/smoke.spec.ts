@@ -47,3 +47,22 @@ test('/sitemap.xml loads (200)', async ({ page }) => {
   expect(res?.status()).toBe(200);
   expect(res?.headers()['content-type'] || '').toContain('xml');
 });
+
+test('/invite/[token] page renders (invalid token shows error, not crash)', async ({ page }) => {
+  const res = await page.goto('/invite/smoke-test-token');
+  // La page doit rendre (200) même si le token est invalide.
+  expect(res?.status()).toBe(200);
+});
+
+test('/profil without session redirects to landing', async ({ page }) => {
+  await page.goto('/profil');
+  // /profil est protégé ; sans session → redirection vers /
+  await page.waitForURL((url) => url.pathname === '/', { timeout: 10_000 });
+  expect(new URL(page.url()).pathname).toBe('/');
+});
+
+test('/arbre/[slug] with unknown slug shows a 404 or empty state', async ({ page }) => {
+  const res = await page.goto('/arbre/smoke-test-slug-unknown');
+  // Acceptable : 200 avec page "non trouvé" OU 404 natif Next.js.
+  expect([200, 404]).toContain(res?.status());
+});
