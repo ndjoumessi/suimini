@@ -101,7 +101,7 @@ export default function AdminDashboard({ admin, role, onToast }: { admin: AdminD
             const active = tab === tabDef.id;
             return (
               <button key={tabDef.id} role="tab" aria-selected={active} onClick={() => setTab(tabDef.id)}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', whiteSpace: 'nowrap', padding: '9px 14px', border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: active ? 700 : 400, color: active ? 'var(--accent)' : 'var(--text-muted)', borderBottom: `2px solid ${active ? 'var(--accent)' : 'transparent'}` }}>
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', whiteSpace: 'nowrap', padding: '9px 14px', minHeight: '44px', border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: active ? 700 : 400, color: active ? 'var(--accent)' : 'var(--text-muted)', borderBottom: `2px solid ${active ? 'var(--accent)' : 'transparent'}` }}>
                 <tabDef.Icon size={15} aria-hidden="true" /> {tabDef.label}
                 {tabDef.badge ? <span style={{ background: 'var(--danger)', color: '#fff', fontSize: '10px', fontWeight: 700, borderRadius: '100px', padding: '1px 7px' }}>{tabDef.badge}</span> : null}
               </button>
@@ -276,7 +276,7 @@ function UsersTab({ admin, isSuperAdmin, onToast }: { admin: AdminData; isSuperA
 
 function MenuItem({ Icon, label, onClick }: { Icon: typeof Check; label: string; onClick: () => void }) {
   return (
-    <button onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '8px 10px', border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '13px', color: 'var(--text)', borderRadius: 'var(--radius-sm)', fontFamily: 'var(--font-body)' }}
+    <button onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px 12px', minHeight: '44px', border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '13px', color: 'var(--text)', borderRadius: 'var(--radius-sm)', fontFamily: 'var(--font-body)' }}
       onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-muted)'}
       onMouseLeave={e => e.currentTarget.style.background = 'none'}>
       <Icon size={14} aria-hidden="true" /> {label}

@@ -39,7 +39,7 @@ import ShareModal from './ShareModal';
 import ToastStack, { ToastType, ToastItem } from './Toast';
 import { BrandLockup } from './Brand';
 import OnboardingWizard, { OnboardingData } from './OnboardingWizard';
-import { Menu, Search, TreePine, Sprout, Cloud } from 'lucide-react';
+import { Menu, Search, TreePine, Sprout, Cloud, WifiOff } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 const MapView = dynamic(() => import('./MapView'), {
@@ -79,6 +79,7 @@ export default function SuiminiApp() {
     id: '', name: '', createdAt: '', updatedAt: '', persons: [], relationships: [],
   }), []);
   const tc = useTranslations('common');
+  const tOffline = useTranslations('offline');
 
   const [view, setView] = useState<ViewMode>('dashboard');
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
@@ -98,6 +99,20 @@ export default function SuiminiApp() {
   const [presenceCount, setPresenceCount] = useState(1);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const toastCounter = useRef(0);
+  const [isOnline, setIsOnline] = useState(true);
+
+  // Detect network connectivity changes.
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    setIsOnline(navigator.onLine);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const showToast = useCallback((msg: string, type: ToastType | string = 'success') => {
     const t: ToastType = (['success', 'error', 'info', 'warning'] as const).includes(type as ToastType) ? type as ToastType : 'info';
@@ -345,6 +360,12 @@ export default function SuiminiApp() {
       />
 
       <main className="app-main" style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', minWidth: 0 }}>
+        {!isOnline && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 16px', background: 'color-mix(in srgb, var(--accent) 12%, var(--bg-card))', borderBottom: 'var(--bw) solid var(--accent)', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--ink)', letterSpacing: '0.02em' }}>
+            <WifiOff size={14} aria-hidden="true" style={{ flexShrink: 0, color: 'var(--accent)' }} />
+            <span><strong>{tOffline('banner')}</strong> — {tOffline('saved')}</span>
+          </div>
+        )}
         {isDemo && <DemoBanner onCreateAccount={() => openAuth('signup')} onExit={exitDemo} />}
         {/* Mobile header */}
         <div style={{ display: 'none', padding: '10px 16px', borderBottom: 'var(--bw) solid var(--border-strong)', background: 'var(--bg-card)', alignItems: 'center', gap: '12px' }} className="mobile-header">

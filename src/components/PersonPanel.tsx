@@ -8,7 +8,7 @@ import { fetchComments, addComment, subscribeComments, collaborationEnabled, typ
 import { useAuth } from '@/hooks/useAuth';
 import ReactMarkdown from 'react-markdown';
 import PersonForm from './PersonForm';
-import { X, Pencil, Trash2, User, Clock, Users, Calendar, StickyNote, BookOpen, Lightbulb, Link2, AlertCircle, Dna, FileText, Images, ScanFace, ScanLine, Landmark, MessageSquare } from 'lucide-react';
+import { X, Pencil, Trash2, User, Clock, Users, Calendar, StickyNote, BookOpen, Lightbulb, Link2, AlertCircle, Dna, FileText, Images, ScanFace, ScanLine, Landmark, MessageSquare, MapPin, Briefcase, Globe, GraduationCap, Church, Baby, Skull, Heart, Swords, Plane, GripVertical, CalendarDays } from 'lucide-react';
 
 interface Props {
   person: Person;
@@ -32,7 +32,18 @@ interface Props {
 const SR_ONLY: React.CSSProperties = { position:'absolute', width:'1px', height:'1px', padding:0, margin:'-1px', overflow:'hidden', clip:'rect(0,0,0,0)', whiteSpace:'nowrap', border:0 };
 
 const EVENT_TYPES: EventType[] = ['birth','death','marriage','divorce','baptism','graduation','military','immigration','other'];
-const EVENT_ICONS: Record<string, string> = { birth:'✦', death:'†', marriage:'💒', divorce:'⚡', baptism:'✟', graduation:'🎓', military:'⚔', immigration:'🌍', other:'📌' };
+/** Emoji icons kept for SVG timeline text nodes (cannot render React components in SVG text). */
+const EVENT_ICONS: Record<string, string> = { birth:'✦', death:'†', marriage:'♡', divorce:'↔', baptism:'✟', graduation:'✎', military:'⚔', immigration:'↗', other:'·' };
+/** Returns the Lucide icon component for an event type (for use in React JSX, not SVG text). */
+function EventIcon({ type, size = 13 }: { type: string; size?: number }) {
+  const icons: Record<string, typeof Calendar> = {
+    birth: Baby, death: Skull, marriage: Heart, divorce: X, baptism: Church,
+    graduation: GraduationCap, military: Swords, immigration: Plane, other: Calendar,
+  };
+  const Icon = icons[type] ?? Calendar;
+  return <Icon size={size} aria-hidden="true" />;
+}
+
 // Built-in event types we have translated labels for (others fall back to the raw type string).
 const KNOWN_EVENT_TYPES = new Set<string>(EVENT_TYPES);
 const REL_TYPES: RelationType[] = ['spouse', 'partner', 'parent', 'child', 'sibling'];
@@ -518,14 +529,14 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                 <button onClick={()=>setTab('edit')} className="btn btn-primary btn-sm" style={{ marginTop:'10px' }}><Pencil size={13} /> {t('completeProfile')}</button>
               </div>
             )}
-            <InfoBlock label={t('birth')} icon="✦">
+            <InfoBlock label={t('birth')} Icon={Baby}>
               {formatDate(person.birthDate, person.birthDateApprox)||'—'}
-              {person.birthPlace?.city&&<><br/><small>📍 {[person.birthPlace.city, person.birthPlace.country].filter(Boolean).join(', ')}</small></>}
+              {person.birthPlace?.city&&<><br/><small style={{ display:'inline-flex', alignItems:'center', gap:'3px' }}><MapPin size={10} aria-hidden="true" /> {[person.birthPlace.city, person.birthPlace.country].filter(Boolean).join(', ')}</small></>}
             </InfoBlock>
             {!person.isAlive&&(
-              <InfoBlock label={t('death')} icon="†">
+              <InfoBlock label={t('death')} Icon={Skull}>
                 {formatDate(person.deathDate, person.deathDateApprox)||'—'}
-                {person.deathPlace?.city&&<><br/><small>📍 {[person.deathPlace.city, person.deathPlace.country].filter(Boolean).join(', ')}</small></>}
+                {person.deathPlace?.city&&<><br/><small style={{ display:'inline-flex', alignItems:'center', gap:'3px' }}><MapPin size={10} aria-hidden="true" /> {[person.deathPlace.city, person.deathPlace.country].filter(Boolean).join(', ')}</small></>}
               </InfoBlock>
             )}
             {/* Historical context — eras this person lived through (clickable) */}
@@ -552,10 +563,10 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
               </div>
             )}
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' }}>
-              {person.occupation&&<InfoBlock label={t('occupation')} icon="💼">{person.occupation}</InfoBlock>}
-              {person.nationality&&<InfoBlock label={t('nationality')} icon="🌍">{person.nationality}</InfoBlock>}
-              {person.religion&&<InfoBlock label={t('religion')} icon="✟">{person.religion}</InfoBlock>}
-              {person.education&&<InfoBlock label={t('education')} icon="🎓">{person.education}</InfoBlock>}
+              {person.occupation&&<InfoBlock label={t('occupation')} Icon={Briefcase}>{person.occupation}</InfoBlock>}
+              {person.nationality&&<InfoBlock label={t('nationality')} Icon={Globe}>{person.nationality}</InfoBlock>}
+              {person.religion&&<InfoBlock label={t('religion')} Icon={Church}>{person.religion}</InfoBlock>}
+              {person.education&&<InfoBlock label={t('education')} Icon={GraduationCap}>{person.education}</InfoBlock>}
             </div>
             {person.bio&&(
               <div style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)', borderLeft:'3px solid var(--accent)' }}>
@@ -671,7 +682,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
             )}
 
             {!showAddRel ? (
-              <button onClick={()=>setShowAddRel(true)} className="btn btn-secondary btn-sm" style={{ alignSelf:'flex-start' }}>＋ {t('addRelation')}</button>
+              <button onClick={()=>setShowAddRel(true)} className="btn btn-secondary btn-sm" style={{ alignSelf:'flex-start' }}>+ {t('addRelation')}</button>
             ) : (
               <div style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)' }} className="animate-fade-in">
                 <div style={{ display:'flex', flexDirection:'column', gap:'8px', marginBottom:'8px' }}>
@@ -704,7 +715,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
               <>
                 <div style={{ fontSize:'11px', color:'var(--text-light)', marginBottom:'8px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                   <span>↕ {t('dragToReorder')}</span>
-                  <button onClick={sortEventsByDate} className="btn btn-ghost btn-sm" style={{ fontSize:'11px' }}>📅 {t('sortByDate')}</button>
+                  <button onClick={sortEventsByDate} className="btn btn-ghost btn-sm" style={{ fontSize:'11px', gap:'5px' }}><CalendarDays size={13} aria-hidden="true" /> {t('sortByDate')}</button>
                 </div>
                 <div style={{ display:'flex', flexDirection:'column', gap:'6px', marginBottom:'12px' }}>
                   {(person.events||[]).map((event, idx)=>(
@@ -740,13 +751,13 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                       ) : (
                         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:'8px' }}>
                           <div style={{ display:'flex', gap:'8px', alignItems:'flex-start' }}>
-                            <span style={{ cursor:'grab', color:'var(--text-light)', fontSize:'13px', userSelect:'none' }}>⠿</span>
+                            <GripVertical size={14} aria-hidden="true" style={{ cursor:'grab', color:'var(--text-light)', flexShrink:0 }} />
                             <div>
-                              <div style={{ fontWeight:'700', fontSize:'13px' }}>
-                                {EVENT_ICONS[event.type]||'📌'} {eventTypeLabel(event.type)}
+                              <div style={{ fontWeight:'700', fontSize:'13px', display:'flex', alignItems:'center', gap:'5px' }}>
+                                <EventIcon type={event.type} /> {eventTypeLabel(event.type)}
                               </div>
                               {event.date&&<div style={{ fontSize:'12px', color:'var(--text-muted)' }}>{formatDate(event.date, event.dateApprox)}</div>}
-                              {event.place?.city&&<div style={{ fontSize:'12px', color:'var(--text-muted)' }}>📍 {[event.place.city, event.place.country].filter(Boolean).join(', ')}</div>}
+                              {event.place?.city&&<div style={{ fontSize:'12px', color:'var(--text-muted)', display:'flex', alignItems:'center', gap:'3px' }}><MapPin size={10} aria-hidden="true" /> {[event.place.city, event.place.country].filter(Boolean).join(', ')}</div>}
                               {event.description&&<div style={{ fontSize:'13px', marginTop:'4px' }}>{event.description}</div>}
                             </div>
                           </div>
@@ -765,7 +776,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
               </>
             )}
             {!showAddEvent ? (
-              <button onClick={()=>setShowAddEvent(true)} className="btn btn-secondary btn-sm">＋ {t('addEvent')}</button>
+              <button onClick={()=>setShowAddEvent(true)} className="btn btn-secondary btn-sm">+ {t('addEvent')}</button>
             ) : (
               <div style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)' }} className="animate-fade-in">
                 <h4 style={{ margin:'0 0 10px', fontSize:'13px' }}>{t('newEvent')}</h4>
@@ -826,7 +837,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
               )}
             </div>
             {!showAddNote ? (
-              <button onClick={()=>setShowAddNote(true)} className="btn btn-secondary btn-sm">＋ {t('addNote')}</button>
+              <button onClick={()=>setShowAddNote(true)} className="btn btn-secondary btn-sm">+ {t('addNote')}</button>
             ) : (
               <div style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)' }} className="animate-fade-in">
                 <textarea autoFocus value={newNoteContent} onChange={e=>setNewNoteContent(e.target.value)} className="input" rows={3} style={{ resize:'vertical', marginBottom:'8px', width:'100%' }} placeholder={t('noteplaceholder')} />
@@ -854,7 +865,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                   <div key={citation.id} style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)', border:'1px solid var(--border)', borderLeft:'3px solid var(--accent)' }}>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:'8px' }}>
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontWeight:'700', fontSize:'13px', lineHeight:1.4 }}>📚 {citation.title}</div>
+                        <div style={{ fontWeight:'700', fontSize:'13px', lineHeight:1.4, display:'flex', alignItems:'center', gap:'5px' }}><BookOpen size={13} aria-hidden="true" /> {citation.title}</div>
                         <div style={{ fontSize:'12px', color:'var(--text-muted)', marginTop:'2px' }}>
                           {[citation.author, citation.year].filter(Boolean).join(' · ')}
                         </div>
@@ -872,7 +883,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
               )}
             </div>
             {!showAddCitation ? (
-              <button onClick={()=>setShowAddCitation(true)} className="btn btn-secondary btn-sm">＋ {t('addSource')}</button>
+              <button onClick={()=>setShowAddCitation(true)} className="btn btn-secondary btn-sm">+ {t('addSource')}</button>
             ) : (
               <div style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)' }} className="animate-fade-in">
                 <h4 style={{ margin:'0 0 10px', fontSize:'13px' }}>{t('newSource')}</h4>
@@ -1172,11 +1183,11 @@ function Spinner() {
   );
 }
 
-function InfoBlock({ label, icon, children }: { label: string; icon?: string; children: React.ReactNode }) {
+function InfoBlock({ label, Icon, children }: { label: string; Icon?: typeof MapPin; children: React.ReactNode }) {
   return (
     <div style={{ padding:'10px', background:'var(--bg-muted)', borderRadius:'var(--radius)' }}>
-      <div style={{ fontSize:'10px', color:'var(--text-light)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'4px' }}>
-        {icon&&<span style={{ marginRight:'4px' }}>{icon}</span>}{label}
+      <div style={{ fontSize:'10px', color:'var(--text-light)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'4px', display:'flex', alignItems:'center', gap:'4px' }}>
+        {Icon&&<Icon size={11} aria-hidden="true" />}{label}
       </div>
       <div style={{ fontSize:'13px', fontWeight:'600', lineHeight:'1.4' }}>{children}</div>
     </div>
@@ -1198,15 +1209,15 @@ function FamilySection({ title, items, PersonLink }: { title: string; items: Per
 
 interface WorldEvent { labelKey: string; start: number; end?: number; icon: string; }
 const WORLD_EVENTS: WorldEvent[] = [
-  { labelKey: 'world_ww1', start: 1914, end: 1918, icon: '⚔️' },
-  { labelKey: 'world_greatDepression', start: 1929, end: 1933, icon: '📉' },
-  { labelKey: 'world_ww2', start: 1939, end: 1945, icon: '⚔️' },
+  { labelKey: 'world_ww1', start: 1914, end: 1918, icon: '⚔' },
+  { labelKey: 'world_greatDepression', start: 1929, end: 1933, icon: '↓' },
+  { labelKey: 'world_ww2', start: 1939, end: 1945, icon: '⚔' },
   { labelKey: 'world_may68', start: 1968, icon: '✊' },
-  { labelKey: 'world_moonLanding', start: 1969, icon: '🚀' },
-  { labelKey: 'world_berlinWall', start: 1989, icon: '🧱' },
-  { labelKey: 'world_publicWeb', start: 1991, icon: '🌐' },
-  { labelKey: 'world_euro', start: 2002, icon: '💶' },
-  { labelKey: 'world_covid', start: 2020, end: 2022, icon: '🦠' },
+  { labelKey: 'world_moonLanding', start: 1969, icon: '↗' },
+  { labelKey: 'world_berlinWall', start: 1989, icon: '▦' },
+  { labelKey: 'world_publicWeb', start: 1991, icon: '◎' },
+  { labelKey: 'world_euro', start: 2002, icon: '€' },
+  { labelKey: 'world_covid', start: 2020, end: 2022, icon: '✕' },
 ];
 
 function yearFloat(dateStr?: string): number | null {
@@ -1257,8 +1268,8 @@ function LifeTimeline({ person }: { person: Person }) {
 
   return (
     <div>
-      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>
-        🕰 {t('timelineRange', { start: startYear, end: (!person.isAlive && person.deathDate ? formatYear(person.deathDate) : t('today')) })}
+      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', display:'flex', alignItems:'center', gap:'5px' }}>
+        <Clock size={12} aria-hidden="true" /> {t('timelineRange', { start: startYear, end: (!person.isAlive && person.deathDate ? formatYear(person.deathDate) : t('today')) })}
         {span > 0 && <> · {t('ageYears', { age: span })}</>}
       </div>
       <div style={{ overflowX: 'auto', overflowY: 'hidden', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-muted)' }}>
@@ -1300,7 +1311,7 @@ function LifeTimeline({ person }: { person: Person }) {
               <g key={ev.id} style={{ cursor: 'default' }}>
                 <title>{`${eventTypeLabel(ev.type)} — ${formatDate(ev.date)}${ev.description ? `\n${ev.description}` : ''}`}</title>
                 <line x1={px} y1={dotY} x2={px} y2={36} stroke="var(--border)" strokeWidth={1} />
-                <text x={px} y={28} textAnchor="middle" fontSize={14}>{EVENT_ICONS[ev.type] || '📌'}</text>
+                <text x={px} y={28} textAnchor="middle" fontSize={14}>{EVENT_ICONS[ev.type] || '·'}</text>
                 <circle cx={px} cy={dotY} r={5} fill="var(--accent)" stroke="var(--bg-card)" strokeWidth={1.5} />
                 <text x={px} y={48} textAnchor="middle" fontSize={9} fill="var(--text-muted)" fontFamily="var(--font-body)">{formatYear(ev.date)}</text>
               </g>

@@ -417,7 +417,7 @@ const DS_CSS = `
 .ds-title { margin: 0 0 3px; font-size: 1.3rem; display: flex; align-items: center; gap: 9px; }
 .ds-title svg { color: var(--accent); }
 .ds-sub { margin: 0; font-size: 13px; color: var(--text-muted); }
-.ds-x { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: none; background: transparent; color: var(--text-muted); border-radius: var(--radius); cursor: pointer; flex-shrink: 0; transition: background 200ms ease, color 200ms ease; }
+.ds-x { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border: none; background: transparent; color: var(--text-muted); border-radius: var(--radius); cursor: pointer; flex-shrink: 0; transition: background 200ms ease, color 200ms ease; }
 .ds-x:hover { background: var(--interactive); color: var(--text); }
 .ds-body { padding: 20px 22px 24px; max-height: 72vh; overflow-y: auto; }
 
@@ -465,7 +465,7 @@ const DS_CSS = `
 
 /* Raw transcription */
 .ds-raw { margin-top: 16px; }
-.ds-raw-toggle { display: inline-flex; align-items: center; gap: 6px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; padding: 4px 0; }
+.ds-raw-toggle { display: inline-flex; align-items: center; gap: 6px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; padding: 10px 0; min-height: 44px; }
 .ds-raw-toggle:hover { color: var(--accent); }
 .ds-raw-text { margin: 8px 0 0; padding: 12px; font-size: 11px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto; border: 1px solid var(--border-strong); background: var(--bg-muted); color: var(--text-muted); border-radius: var(--radius); }
 `;

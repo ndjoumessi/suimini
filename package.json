@@ -14,6 +14,7 @@
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.2",
     "html2canvas": "^1.4.1",
+    "idb-keyval": "^6.2.5",
     "jspdf": "^4.2.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.17.0",

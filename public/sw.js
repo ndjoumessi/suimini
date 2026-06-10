@@ -1,5 +1,5 @@
-/* Suimini — service worker minimal pour cache offline des assets statiques. */
-const CACHE = 'suimini-static-v1';
+/* Suimini — service worker v2 : cache offline des assets statiques + API Supabase. */
+const CACHE = 'suimini-static-v2';
 
 // Assets statiques pré-mis en cache lors de l'installation.
 const PRECACHE_URLS = [
@@ -35,13 +35,59 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
+  const url = new URL(request.url);
 
-  // On ne gère que les GET de même origine ; le reste passe au réseau.
-  if (request.method !== 'GET' || new URL(request.url).origin !== self.location.origin) {
+  // Laisser passer les non-GET sans interception.
+  if (request.method !== 'GET') return;
+
+  // ── API routes Next.js (/api/) : réseau uniquement, jamais de cache. ──
+  if (url.origin === self.location.origin && url.pathname.startsWith('/api/')) {
     return;
   }
 
-  // Stale-while-revalidate : on sert le cache si présent, et on rafraîchit en arrière-plan.
+  // ── API REST Supabase (/rest/v1/) : stale-while-revalidate cross-origin. ──
+  if (url.pathname.includes('/rest/v1/')) {
+    event.respondWith(
+      caches.open(CACHE).then((cache) =>
+        cache.match(request).then((cached) => {
+          const network = fetch(request)
+            .then((response) => {
+              if (response && response.status === 200) {
+                cache.put(request, response.clone());
+              }
+              return response;
+            })
+            .catch(() => cached);
+          return cached || network;
+        })
+      )
+    );
+    return;
+  }
+
+  // ── Storage Supabase (/storage/v1/) : stale-while-revalidate cross-origin. ──
+  if (url.pathname.includes('/storage/v1/')) {
+    event.respondWith(
+      caches.open(CACHE).then((cache) =>
+        cache.match(request).then((cached) => {
+          const network = fetch(request)
+            .then((response) => {
+              if (response && response.status === 200) {
+                cache.put(request, response.clone());
+              }
+              return response;
+            })
+            .catch(() => cached);
+          return cached || network;
+        })
+      )
+    );
+    return;
+  }
+
+  // ── Autres requêtes GET de même origine : stale-while-revalidate. ──
+  if (url.origin !== self.location.origin) return;
+
   event.respondWith(
     caches.match(request).then((cached) => {
       const network = fetch(request)

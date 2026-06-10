@@ -5,6 +5,7 @@ import { sampleFamilyTree } from '@/lib/sampleData';
 import { generateId, getDisplayName } from '@/lib/treeUtils';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { loadTreesFromSupabase, saveTreeToSupabase, deleteTreeFromSupabase, loadOneTree, SharedMeta } from '@/lib/supabaseSync';
+import { offlineStorage } from '@/lib/offlineStorage';
 
 const STORAGE_KEY = 'suimini_trees';
 const ACTIVE_TREE_KEY = 'suimini_active_tree';
@@ -46,18 +47,45 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
 
     if (cloud) return; // logged-in: defer to the cloud effect; no sample.
 
-    if (parsed.length) {
-      setTrees(parsed);
-      setActiveTreeId(localStorage.getItem(ACTIVE_TREE_KEY) || parsed[0]?.id || null);
-    } else {
-      // Guest / demo, first visit → seed the sample tree.
-      setTrees([sampleFamilyTree]);
-      localCacheRef.current = [sampleFamilyTree];
-      setActiveTreeId(sampleFamilyTree.id);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify([sampleFamilyTree]));
-      localStorage.setItem(ACTIVE_TREE_KEY, sampleFamilyTree.id);
-    }
-    setLoaded(true);
+    // Prefer IndexedDB (survives localStorage quota limits); fall back to localStorage.
+    (async () => {
+      try {
+        const idbTrees = await offlineStorage.getAllTrees();
+        if (idbTrees.length > 0) {
+          // IndexedDB has data → use it directly.
+          setTrees(idbTrees);
+          setActiveTreeId(localStorage.getItem(ACTIVE_TREE_KEY) || idbTrees[0]?.id || null);
+          localCacheRef.current = idbTrees;
+        } else if (parsed.length > 0) {
+          // Migrate localStorage → IndexedDB (one-time upgrade).
+          for (const tree of parsed) await offlineStorage.setTree(tree);
+          setTrees(parsed);
+          setActiveTreeId(localStorage.getItem(ACTIVE_TREE_KEY) || parsed[0]?.id || null);
+        } else {
+          // Guest / demo, first visit → seed the sample tree.
+          setTrees([sampleFamilyTree]);
+          localCacheRef.current = [sampleFamilyTree];
+          setActiveTreeId(sampleFamilyTree.id);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify([sampleFamilyTree]));
+          localStorage.setItem(ACTIVE_TREE_KEY, sampleFamilyTree.id);
+          await offlineStorage.setTree(sampleFamilyTree);
+        }
+      } catch {
+        // IndexedDB unavailable (private browsing, etc.) → fall back to localStorage.
+        if (parsed.length) {
+          setTrees(parsed);
+          setActiveTreeId(localStorage.getItem(ACTIVE_TREE_KEY) || parsed[0]?.id || null);
+        } else {
+          setTrees([sampleFamilyTree]);
+          localCacheRef.current = [sampleFamilyTree];
+          setActiveTreeId(sampleFamilyTree.id);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify([sampleFamilyTree]));
+          localStorage.setItem(ACTIVE_TREE_KEY, sampleFamilyTree.id);
+        }
+      } finally {
+        setLoaded(true);
+      }
+    })();
   }, [authReady, cloud]);
 
   // On login: load cloud data (and offer migration of local data when the cloud is empty).
@@ -117,6 +145,8 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     setTrees(updated);
     localCacheRef.current = updated;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    // Fire-and-forget IndexedDB write (resilient: silently ignored on failure).
+    Promise.all(updated.map(t => offlineStorage.setTree(t))).catch(() => {});
   }, []);
 
   // Persist + record an undoable history snapshot of the PREVIOUS state.

@@ -1255,5 +1255,11 @@
     "cancel": "Cancel",
     "rawText": "Raw text",
     "scanButton": "Scan a document"
+  },
+  "offline": {
+    "banner": "Offline mode",
+    "saved": "Changes saved locally",
+    "syncing": "Syncing...",
+    "synced": "Synced ✓"
   }
 }
