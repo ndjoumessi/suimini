@@ -242,13 +242,19 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
   const deleteTree = useCallback((treeId: string) => {
     const updated = trees.filter(t => t.id !== treeId);
     persist(updated);
-    if (cloud) deleteTreeFromSupabase(treeId).catch(() => {});
+    // Prune the offline cache too. `persist` only UPSERTS the remaining trees into
+    // IndexedDB, so without this the deleted tree survives in IDB and the local-load
+    // effect (which reads IDB first) resurrects it on the next visit — the root cause
+    // of "impossible de supprimer un arbre".
+    offlineStorage.deleteTree(treeId).catch(() => {});
+    if (cloud && user) deleteTreeFromSupabase(treeId, user.id).catch(() => {});
     if (activeTreeId === treeId) {
       const newActive = updated[0]?.id || null;
       setActiveTreeId(newActive);
       if (newActive) localStorage.setItem(ACTIVE_TREE_KEY, newActive);
+      else localStorage.removeItem(ACTIVE_TREE_KEY);
     }
-  }, [trees, persist, activeTreeId, cloud]);
+  }, [trees, persist, activeTreeId, cloud, user]);
 
   const switchTree = useCallback((treeId: string) => {
     setActiveTreeId(treeId);

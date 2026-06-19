@@ -117,9 +117,14 @@ export default function TreeSelectorModal({ trees, activeTreeId, shared = {}, on
                       </div>
                     </button>
                     {deleteConfirm === tree.id ? (
-                      <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
-                        <button onClick={() => { onDelete(tree.id); setDeleteConfirm(null); }} className="btn btn-danger btn-sm">Oui</button>
-                        <button onClick={() => setDeleteConfirm(null)} className="btn btn-ghost btn-sm">Non</button>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px', flexShrink: 0, maxWidth: '230px' }}>
+                        <span role="alert" style={{ fontSize: '12px', color: 'var(--danger)', fontWeight: 600, textAlign: 'right', lineHeight: 1.35 }}>
+                          Supprimer «&nbsp;{tree.name}&nbsp;» ? Cette action est irréversible.
+                        </span>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button onClick={() => { onDelete(tree.id); setDeleteConfirm(null); }} className="btn btn-danger btn-sm"><Trash2 size={13} aria-hidden="true" /> Supprimer</button>
+                          <button onClick={() => setDeleteConfirm(null)} className="btn btn-ghost btn-sm">Annuler</button>
+                        </div>
                       </div>
                     ) : (
                       <div style={{ display: 'flex', gap: '2px', flexShrink: 0 }}>

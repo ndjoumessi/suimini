@@ -175,9 +175,12 @@ export async function saveTreeToSupabase(tree: FamilyTree, ownerId: string, isOw
   await syncChildTable('journal_entries', tree.id, (tree.journal || []).map(e => journalToRow(e, tree.id)));
 }
 
-export async function deleteTreeFromSupabase(treeId: string): Promise<void> {
-  if (!supabase) return;
-  await supabase.from('trees').delete().eq('id', treeId); // children cascade
+export async function deleteTreeFromSupabase(treeId: string, ownerId?: string): Promise<{ error?: string }> {
+  if (!supabase) return {};
+  let q = supabase.from('trees').delete().eq('id', treeId); // children cascade via FKs
+  if (ownerId) q = q.eq('owner_id', ownerId); // never delete someone else's tree
+  const { error } = await q;
+  return { error: error?.message };
 }
 
 // ---------- Sharing ----------

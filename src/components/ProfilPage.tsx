@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import { useFamilyStore } from '@/hooks/useFamilyStore';
 import { BrandLockup } from '@/components/Brand';
-import { ArrowLeft, ArrowRight, Save, KeyRound, LogOut, TreePine } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Save, KeyRound, LogOut, TreePine, Trash2 } from 'lucide-react';
 
 function initials(name?: string | null, email?: string | null): string {
   const src = (name || email || '?').trim();
@@ -46,6 +46,7 @@ export default function ProfilPage() {
   const [savingName, setSavingName] = useState(false);
   const [nameNote, setNameNote] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
   const [pwdNote, setPwdNote] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+  const [confirmDeleteTree, setConfirmDeleteTree] = useState<string | null>(null);
 
   if (!supabase || !user) return null;
 
@@ -179,9 +180,33 @@ export default function ProfilPage() {
                       </div>
                     </div>
                   </div>
-                  <button className="btn btn-secondary btn-sm" style={{ gap: '6px' }} onClick={() => openTree(tree.id)}>
-                    {t('open')} <ArrowRight size={14} aria-hidden="true" />
-                  </button>
+                  {confirmDeleteTree === tree.id ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px', flexShrink: 0, maxWidth: '240px' }}>
+                      <span role="alert" style={{ fontSize: '12px', color: 'var(--danger)', fontWeight: 600, textAlign: 'right', lineHeight: 1.35 }}>
+                        {t('deleteTreeConfirm', { name: tree.name })}
+                      </span>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button
+                          className="btn btn-danger btn-sm" style={{ gap: '6px' }}
+                          onClick={() => { store.deleteTree(tree.id); setConfirmDeleteTree(null); }}
+                        ><Trash2 size={13} aria-hidden="true" /> {t('deleteTreeConfirmBtn')}</button>
+                        <button className="btn btn-ghost btn-sm" onClick={() => setConfirmDeleteTree(null)}>{t('deleteTreeCancel')}</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                      <button className="btn btn-secondary btn-sm" style={{ gap: '6px' }} onClick={() => openTree(tree.id)}>
+                        {t('open')} <ArrowRight size={14} aria-hidden="true" />
+                      </button>
+                      {store.trees.length > 1 && (
+                        <button
+                          className="btn btn-ghost btn-sm btn-icon" aria-label={t('deleteTree')} title={t('deleteTree')}
+                          style={{ color: 'var(--danger)' }}
+                          onClick={() => setConfirmDeleteTree(tree.id)}
+                        ><Trash2 size={14} aria-hidden="true" /></button>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
