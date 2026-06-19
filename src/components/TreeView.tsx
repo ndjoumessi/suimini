@@ -135,6 +135,20 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
 
   const rootPerson = tree.persons.find(p => p.id === rootId);
 
+  // Keep a VALID root selected as persons load / change after mount. `rootId` is
+  // seeded once via useState, so without this it stays null when the first person
+  // is added to an empty tree (or stale after switching trees / deleting the root)
+  // — and buildLayout then returns zero nodes, so the person exists in DB but no
+  // SVG node renders. Re-point it to the tree's declared root, else the first person.
+  useEffect(() => {
+    const valid = rootId && tree.persons.some(p => p.id === rootId);
+    if (valid) return;
+    const next = (tree.rootPersonId && tree.persons.some(p => p.id === tree.rootPersonId))
+      ? tree.rootPersonId
+      : (tree.persons[0]?.id ?? null);
+    if (next !== rootId) setRootId(next);
+  }, [tree.persons, tree.rootPersonId, rootId]);
+
   // Close-family id set for focus mode (focus person + spouses + parents + children + siblings).
   const focusSet: Set<string> | null = (() => {
     if (!focusId) return null;

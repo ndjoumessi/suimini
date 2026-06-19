@@ -240,7 +240,15 @@ export default function SuiminiApp() {
   useEffect(() => {
     if (!store.cloud || !supabase || !activeTreeId || !user) return;
     const sb = supabase;
-    const reload = () => { store.reloadTreeFromCloud(activeTreeId); showToast('Un collaborateur a modifié cet arbre', 'info'); };
+    // Realtime echoes our OWN writes back. Skip events that land within the
+    // self-write window after this client's last cloud push, otherwise every
+    // local edit would trigger "un collaborateur a modifié" in a loop.
+    const SELF_WRITE_WINDOW_MS = 6000;
+    const reload = () => {
+      if (Date.now() - store.lastLocalWriteRef.current < SELF_WRITE_WINDOW_MS) return;
+      store.reloadTreeFromCloud(activeTreeId);
+      showToast('Un collaborateur a modifié cet arbre', 'info');
+    };
     const channel = sb
       .channel(`tree:${activeTreeId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'persons', filter: `tree_id=eq.${activeTreeId}` }, reload)

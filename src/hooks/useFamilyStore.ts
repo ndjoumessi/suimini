@@ -49,6 +49,10 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
   const [migrationPending, setMigrationPending] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const localCacheRef = useRef<FamilyTree[]>([]);
+  // Timestamp of the last cloud push made by THIS client. Realtime echoes our own
+  // writes back; the app uses this to ignore them (see SuiminiApp) so we don't
+  // toast "un collaborateur a modifié" in a loop on our own edits.
+  const lastLocalWriteRef = useRef(0);
 
   // Initial LOCAL load. Waits for auth to resolve (`authReady`) so we never flash
   // the demo sample to a logged-in user. We always read localStorage into
@@ -198,9 +202,12 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       setSyncStatus('syncing');
+      // Mark before AND after the write: the realtime echo of our own push can
+      // arrive either side of the REST response, so we bracket the whole window.
+      lastLocalWriteRef.current = Date.now();
       const isOwner = !shared[activeTree.id];
       saveTreeToSupabase(activeTree, user.id, isOwner)
-        .then(() => setSyncStatus('saved'))
+        .then(() => { lastLocalWriteRef.current = Date.now(); setSyncStatus('saved'); })
         .catch(() => setSyncStatus('error'));
     }, 700);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
@@ -485,5 +492,6 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     runMigration,
     dismissMigration,
     reloadTreeFromCloud,
+    lastLocalWriteRef,
   };
 }
