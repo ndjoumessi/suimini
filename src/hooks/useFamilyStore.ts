@@ -10,6 +10,22 @@ import { offlineStorage } from '@/lib/offlineStorage';
 const STORAGE_KEY = 'suimini_trees';
 const ACTIVE_TREE_KEY = 'suimini_active_tree';
 const MAX_HISTORY = 50;
+// The local→cloud migration prompt is a one-time decision per browser. Once the
+// user imports OR dismisses it, we persist that so it never re-appears on the
+// next login (the local data is still on disk and would otherwise re-trigger it).
+const IMPORT_DONE_KEY = 'suimini_import_done';
+const IMPORT_DISMISSED_KEY = 'suimini_import_dismissed';
+
+/** True when the user already imported or dismissed the local-data migration prompt. */
+function importPromptSuppressed(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return localStorage.getItem(IMPORT_DONE_KEY) === 'true'
+      || localStorage.getItem(IMPORT_DISMISSED_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
 
 export type SyncStatus = 'idle' | 'saved' | 'syncing' | 'offline' | 'error';
 export interface StoreUser { id: string; email?: string }
@@ -112,8 +128,9 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
           setActiveTreeId(prev => (remote.find(t => t.id === prev) ? prev : remote[0]?.id || null));
           setSyncStatus('saved');
         } else if (hasRealLocal) {
-          // Cloud empty but genuine local data → show it + offer migration (never the sample).
-          setMigrationPending(true);
+          // Cloud empty but genuine local data → show it + offer migration (never the sample),
+          // UNLESS the user already imported or dismissed the prompt on this browser.
+          setMigrationPending(!importPromptSuppressed());
           setTrees(localTrees);
           setActiveTreeId(localTrees[0]?.id || null);
           setSyncStatus('saved');
@@ -195,13 +212,17 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     try {
       for (const t of localCacheRef.current) await saveTreeToSupabase(t, user.id, true);
       setMigrationPending(false);
+      try { localStorage.setItem(IMPORT_DONE_KEY, 'true'); } catch { /* ignore */ }
       setSyncStatus('saved');
     } catch {
       setSyncStatus('offline');
     }
   }, [user]);
 
-  const dismissMigration = useCallback(() => setMigrationPending(false), []);
+  const dismissMigration = useCallback(() => {
+    setMigrationPending(false);
+    try { localStorage.setItem(IMPORT_DISMISSED_KEY, 'true'); } catch { /* ignore */ }
+  }, []);
 
   // updateTree is the primitive used by every editing action — it records history.
   const updateTreeWithHistory = useCallback((updatedTree: FamilyTree, description: string) => {
