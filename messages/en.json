@@ -1246,6 +1246,10 @@
     "joinExpired": "This invitation has expired",
     "joinLogin": "Sign in to accept"
   },
+  "invite": {
+    "later": "Later",
+    "expiresOn": "EXPIRES"
+  },
   "ocr": {
     "title": "Scan a document",
     "subtitle": "Birth, marriage, death records...",

@@ -23,6 +23,7 @@ export default function InvitePage() {
   const { token } = useParams<{ token: string }>();
   const router = useRouter();
   const t = useTranslations('members');
+  const ti = useTranslations('invite');
   const locale = useLocale();
   const [state, setState] = useState<PageState>({ kind: 'loading' });
 
@@ -169,7 +170,7 @@ export default function InvitePage() {
         <span className="badge badge-accent">{t('role')} : {roleLabel(invite.role)}</span>
         {expiry && (
           <span className="badge" style={{ background: 'var(--bg-muted, #ece7dc)', color: 'var(--text-muted, #4a4742)', borderColor: 'var(--border, #d8d2c6)' }}>
-            <Clock size={10} aria-hidden="true" style={{ marginRight: '4px' }} /> Expire le {expiry}
+            <Clock size={10} aria-hidden="true" style={{ marginRight: '4px' }} /> {ti('expiresOn')} {expiry}
           </span>
         )}
       </div>
@@ -177,7 +178,7 @@ export default function InvitePage() {
       {state.kind === 'valid' ? (
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <button onClick={handleAccept} className="btn btn-primary"><UserPlus size={16} aria-hidden="true" /> {t('joinButton')}</button>
-          <a href="/app" className="btn btn-secondary">Plus tard</a>
+          <a href="/app" className="btn btn-secondary">{ti('later')}</a>
         </div>
       ) : (
         <div>
