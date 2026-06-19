@@ -137,11 +137,15 @@ drop policy if exists profiles_modify on public.profiles;
 create policy profiles_modify on public.profiles for all to authenticated
   using (id = auth.uid()) with check (id = auth.uid());
 
--- Trees : le propriétaire OU un destinataire d'un partage peut lire ; seul le propriétaire modifie.
+-- Trees : le propriétaire lit ses arbres ; seul le propriétaire modifie.
+-- Lecture limitée à owner_id = auth.uid() : on retire la sous-requête sur
+-- tree_shares qui provoquait une récursion RLS (trees_select <-> policies de
+-- tree_shares) et empêchait le chargement des arbres. L'accès en lecture des
+-- membres acceptés est porté par une policy dédiée non récursive
+-- (trees_members_read, voir sharing.sql) ; le partage public par share-public.sql.
 drop policy if exists trees_select on public.trees;
 create policy trees_select on public.trees for select to authenticated
-  using (owner_id = auth.uid()
-         or exists (select 1 from public.tree_shares s where s.tree_id = trees.id and s.shared_with_email = auth.email()));
+  using (owner_id = auth.uid());
 drop policy if exists trees_insert on public.trees;
 create policy trees_insert on public.trees for insert to authenticated with check (owner_id = auth.uid());
 drop policy if exists trees_update on public.trees;
