@@ -63,10 +63,19 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
 
     if (cloud) return; // logged-in: defer to the cloud effect; no sample.
 
+    // CANCELLATION GUARD: this guest load is async (awaits IndexedDB). If auth
+    // resolves a session mid-flight (getSession returns nothing, then
+    // onAuthStateChange fires SIGNED_IN), `cloud` flips true and the cloud effect
+    // loads the Supabase trees. Without this guard, the in-flight guest load would
+    // then resolve and clobber those trees with IndexedDB/sample/empty data — the
+    // root cause of "les arbres Supabase ne s'affichent pas". The cleanup sets
+    // `active=false` when cloud takes over, so no stale write lands.
+    let active = true;
     // Prefer IndexedDB (survives localStorage quota limits); fall back to localStorage.
     (async () => {
       try {
         const idbTrees = await offlineStorage.getAllTrees();
+        if (!active) return;
         if (idbTrees.length > 0) {
           // IndexedDB has data → use it directly.
           setTrees(idbTrees);
@@ -75,6 +84,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
         } else if (parsed.length > 0) {
           // Migrate localStorage → IndexedDB (one-time upgrade).
           for (const tree of parsed) await offlineStorage.setTree(tree);
+          if (!active) return;
           setTrees(parsed);
           setActiveTreeId(localStorage.getItem(ACTIVE_TREE_KEY) || parsed[0]?.id || null);
         } else {
@@ -87,6 +97,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
           await offlineStorage.setTree(sampleFamilyTree);
         }
       } catch {
+        if (!active) return;
         // IndexedDB unavailable (private browsing, etc.) → fall back to localStorage.
         if (parsed.length) {
           setTrees(parsed);
@@ -99,9 +110,10 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
           localStorage.setItem(ACTIVE_TREE_KEY, sampleFamilyTree.id);
         }
       } finally {
-        setLoaded(true);
+        if (active) setLoaded(true);
       }
     })();
+    return () => { active = false; };
   }, [authReady, cloud]);
 
   // On login: load cloud data (and offer migration of local data when the cloud is empty).
