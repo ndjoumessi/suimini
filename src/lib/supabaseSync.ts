@@ -82,8 +82,19 @@ function rowToJournal(r: any): JournalEntry {
 
 export async function loadTreesFromSupabase(userId: string): Promise<LoadResult> {
   if (!supabase) return { trees: [], shared: {} };
+
+  // ── TEMP DEBUG (remove once tree loading is confirmed) ──────────────────
+  console.log('[SUIMINI] Loading trees for user:', userId);
+  // Surface the session uid RLS actually sees — a mismatch with `userId` (or a
+  // null uid = no auth header sent) is the usual reason a corrected policy still
+  // returns nothing.
+  const { data: authData } = await supabase.auth.getUser();
+  console.log('[SUIMINI] Session auth uid (RLS auth.uid()):', authData?.user?.id ?? null);
+
   const { data: treeRows, error } = await supabase.from('trees').select('*');
+  console.log('[SUIMINI] Trees result:', treeRows, error);
   if (error || !treeRows) return { trees: [], shared: {} };
+  console.log('[SUIMINI] Tree count:', treeRows.length, 'owners:', treeRows.map(t => t.owner_id));
 
   const treeIds = treeRows.map(t => t.id);
   const shared: Record<string, SharedMeta> = {};
