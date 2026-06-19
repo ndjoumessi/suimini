@@ -4,7 +4,18 @@ import type { User, Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { sampleFamilyTree } from '@/lib/sampleData';
 import type { UserProfile } from '@/types';
-import { fetchMyMemberships, type TreeMember } from '@/lib/sharing';
+import { fetchMyMemberships, acceptInvitation, PENDING_INVITE_KEY, type TreeMember } from '@/lib/sharing';
+
+/** If the user arrived via an /invite link before signing in, claim it now. */
+async function claimPendingInvite(): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  let token: string | null = null;
+  try { token = localStorage.getItem(PENDING_INVITE_KEY); } catch { return false; }
+  if (!token) return false;
+  try { localStorage.removeItem(PENDING_INVITE_KEY); } catch { /* ignore */ }
+  const res = await acceptInvitation(token);
+  return !!res;
+}
 
 const DEMO_KEY = 'suimini_demo';
 const DEMO_VALUE = 'true';
@@ -75,7 +86,14 @@ export function useAuth() {
         const uid = s.user.id;
         setTimeout(() => {
           fetchProfile(uid).then(p => { if (active) setUserProfile(p); });
-          fetchMyMemberships().then(m => { if (active) setTreeMemberships(m); });
+          // Claim a pending /invite token first, then refresh memberships so the
+          // freshly-joined tree shows up. Redirect to /app on a successful claim.
+          claimPendingInvite().then(claimed => {
+            fetchMyMemberships().then(m => { if (active) setTreeMemberships(m); });
+            if (claimed && typeof window !== 'undefined' && window.location.pathname !== '/app') {
+              window.location.href = '/app';
+            }
+          });
         }, 0);
       } else {
         setUserProfile(null);

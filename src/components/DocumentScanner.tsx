@@ -240,7 +240,7 @@ export default function DocumentScanner({ tree, preselectPersonId, onClose, onIm
                 <div className="animate-fade-in">
                   <div className="ds-preview-wrap">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={preview} alt={t('title')} className="ds-preview-img" />
+                    <img src={preview} alt={t('title')} loading="lazy" decoding="async" className="ds-preview-img" />
                   </div>
                 </div>
               )}
@@ -274,7 +274,7 @@ export default function DocumentScanner({ tree, preselectPersonId, onClose, onIm
             <div className="animate-fade-in">
               <div className="ds-scan-wrap">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={preview} alt={t('title')} className="ds-preview-img" />
+                <img src={preview} alt={t('title')} loading="lazy" decoding="async" className="ds-preview-img" />
                 <div className="ds-scan-line" aria-hidden="true" />
                 <div className="ds-scan-grid" aria-hidden="true" />
               </div>
@@ -411,7 +411,7 @@ export default function DocumentScanner({ tree, preselectPersonId, onClose, onIm
 }
 
 const DS_CSS = `
-.ds-overlay { position: fixed; inset: 0; z-index: 2000; background: var(--scrim, rgba(27,22,18,0.55)); display: flex; align-items: flex-start; justify-content: center; padding: 6vh 16px 40px; overflow-y: auto; }
+.ds-overlay { position: fixed; inset: 0; z-index: var(--z-modal); background: var(--scrim, rgba(27,22,18,0.55)); display: flex; align-items: flex-start; justify-content: center; padding: 6vh 16px 40px; overflow-y: auto; }
 .ds-modal { position: relative; width: 100%; max-width: 680px; background: var(--bg-card); border: var(--bw) solid var(--border-strong); box-shadow: var(--shadow-xl, 10px 10px 0 var(--shadow-color)); border-radius: var(--radius); }
 .ds-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 20px 22px 14px; border-bottom: var(--bw) solid var(--border-strong); }
 .ds-title { margin: 0 0 3px; font-size: 1.3rem; display: flex; align-items: center; gap: 9px; }

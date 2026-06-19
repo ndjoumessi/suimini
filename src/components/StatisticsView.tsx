@@ -160,7 +160,7 @@ function WordCloud({ entries }: { entries: NameEntry[] }) {
       {ordered.map(e => (
         <span
           key={e.name}
-          title={`${e.name} — ${e.count}`}
+          title={`${e.name} : ${e.count}`}
           style={{
             fontFamily: 'var(--font-display)',
             fontWeight: 700,

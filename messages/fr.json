@@ -12,7 +12,10 @@
     "statistics": "Statistiques",
     "settings": "Paramètres",
     "admin": "Admin",
-    "profile": "Profil"
+    "profile": "Profil",
+    "menu": "Menu",
+    "mobileNav": "Navigation mobile",
+    "openMenu": "Ouvrir le menu"
   },
   "auth": {
     "login": "Connexion",
@@ -387,6 +390,7 @@
     "save": "Enregistrer"
   },
   "addPerson": {
+    "close": "Fermer",
     "newPerson": "Nouvelle personne",
     "establishRelation": "Établir une relation",
     "stepInfo": "Informations",
@@ -1212,6 +1216,30 @@
     "noMembers": "Aucun membre pour l'instant. Invitez vos proches.",
     "emailPlaceholder": "proche@exemple.com",
     "you": "Vous"
+  },
+  "members": {
+    "title": "Membres",
+    "invite": "Inviter un membre",
+    "role": "Rôle",
+    "viewer": "Lecteur",
+    "editor": "Éditeur",
+    "admin": "Administrateur",
+    "owner": "Propriétaire",
+    "pending": "En attente",
+    "accepted": "Accepté",
+    "declined": "Refusé",
+    "remove": "Retirer",
+    "removeConfirm": "Retirer {email} de l'arbre ?",
+    "changeRole": "Changer le rôle",
+    "noMembers": "Aucun membre invité",
+    "inviteSuccess": "Invitation envoyée à {email}",
+    "readOnly": "Lecture seule",
+    "readOnlyHint": "Vous consultez cet arbre en lecture seule.",
+    "joinTitle": "Rejoindre {tree}",
+    "joinDesc": "{inviter} vous invite à collaborer",
+    "joinButton": "Rejoindre l'arbre",
+    "joinExpired": "Cette invitation a expiré",
+    "joinLogin": "Connectez-vous pour accepter"
   },
   "ocr": {
     "title": "Scanner un document",

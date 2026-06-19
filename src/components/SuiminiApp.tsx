@@ -7,6 +7,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
 import { useAdminData } from '@/hooks/useAdminData';
 import { useBirthdayNotifications } from '@/hooks/useBirthdayNotifications';
+import { useTreeRole } from '@/hooks/useTreeRole';
 import { supabase } from '@/lib/supabase';
 import { ViewMode, Person, FamilyTree, PhotoTag } from '@/types';
 import { generateId } from '@/lib/treeUtils';
@@ -71,6 +72,19 @@ export default function SuiminiApp() {
   const { dark, toggle: toggleDark, mode: themeMode, setMode: setThemeMode } = useDarkMode();
   const { themeId, setTheme, previewTheme, cancelPreview } = useTheme();
   const birthdayAlertCount = useBirthdayNotifications(store.activeTree);
+
+  // Collaborative role on the active tree. Owners/guests get 'owner' (full access);
+  // shared trees resolve to admin/editor/viewer. Drives the edit / manage gating below.
+  const roleTreeId = store.activeTree?.id ?? null;
+  const isSharedTree = !!roleTreeId && !!store.shared[roleTreeId];
+  const userRole = useTreeRole({
+    treeId: roleTreeId,
+    cloud: store.cloud,
+    isShared: isSharedTree,
+    sharedPermission: roleTreeId ? store.shared[roleTreeId]?.permission : undefined,
+  });
+  const canEdit = userRole !== 'viewer';
+  const canManageMembers = userRole === 'owner' || userRole === 'admin';
 
   // Fallback so non-tree views (stats, journal, settings…) still render when the
   // user has no active tree, instead of taking over the screen with the tree
@@ -231,6 +245,11 @@ export default function SuiminiApp() {
       .channel(`tree:${activeTreeId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'persons', filter: `tree_id=eq.${activeTreeId}` }, reload)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'relationships', filter: `tree_id=eq.${activeTreeId}` }, reload)
+      // Notify the owner/manager when an invited member accepts and joins the tree.
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tree_members', filter: `tree_id=eq.${activeTreeId}` }, (payload) => {
+        const row = payload.new as { email?: string; status?: string };
+        if (row?.status === 'accepted') showToast(`${row.email ?? 'Un membre'} a rejoint « ${store.activeTree?.name ?? 'votre arbre'} »`, 'success');
+      })
       .on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState();
         setPresenceCount(Math.max(1, Object.keys(state).length));
@@ -384,8 +403,8 @@ export default function SuiminiApp() {
       onTouchEnd={handleSwipeEnd}
     >
       {sidebarOpen && (
-        <div onClick={() => setSidebarOpen(false)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 40 }}
+        <div onClick={() => setSidebarOpen(false)} aria-hidden="true"
+          style={{ position: 'fixed', inset: 0, background: 'var(--scrim)', zIndex: 'calc(var(--z-sticky) - 1)' }}
         />
       )}
 
@@ -396,6 +415,7 @@ export default function SuiminiApp() {
         trees={store.trees}
         onShowTreeSelector={() => setShowTreeSelector(true)}
         onAddPerson={() => setShowAddPerson(true)}
+        canEdit={canEdit}
         onShowImportExport={() => setImportExportTab('export')}
         onPrint={() => setShowPrint(true)}
         onShare={() => setShowShare(true)}
@@ -451,8 +471,8 @@ export default function SuiminiApp() {
           <EmptyState onCreateTree={() => setShowTreeSelector(true)} />
         ) : (
           <>
-            {view === 'tree' && store.activeTree && <TreeView tree={store.activeTree} selectedPersonId={selectedPersonId} onSelectPerson={handleSelectPerson} onAddPerson={() => setShowAddPerson(true)} onExport={() => setShowPrint(true)} />}
-            {view === 'list' && <ListView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} onAddPerson={() => setShowAddPerson(true)} />}
+            {view === 'tree' && store.activeTree && <TreeView tree={store.activeTree} selectedPersonId={selectedPersonId} onSelectPerson={handleSelectPerson} onAddPerson={() => setShowAddPerson(true)} onExport={() => setShowPrint(true)} readOnly={!canEdit} />}
+            {view === 'list' && <ListView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} onAddPerson={() => setShowAddPerson(true)} canEdit={canEdit} />}
             {view === 'timeline' && <TimelineView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} />}
             {view === 'map' && <MapView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} />}
             {view === 'gallery' && <GalleryView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} onUpdatePerson={(id, updates) => { store.updatePerson(id, updates); showToast('Photo ajoutée'); }} onAnalyzePhoto={() => openPhotoAnalyzer()} />}
@@ -506,6 +526,7 @@ export default function SuiminiApp() {
           key={selectedPerson.id}
           person={selectedPerson}
           tree={store.activeTree}
+          readOnly={!canEdit}
           onClose={() => setSelectedPersonId(null)}
           onUpdate={(updates) => { store.updatePerson(selectedPerson.id, updates); showToast('Profil mis à jour'); }}
           onDelete={() => { store.deletePerson(selectedPerson.id); setSelectedPersonId(null); showToast('Personne supprimée', 'info'); }}
@@ -548,7 +569,7 @@ export default function SuiminiApp() {
           onClose={() => setShowPalette(false)}
           onOpenPerson={(treeId, personId) => { if (treeId !== store.activeTreeId) store.switchTree(treeId); handleSelectPerson(personId); }}
           onNavigate={setView}
-          onAddPerson={() => setShowAddPerson(true)}
+          onAddPerson={canEdit ? () => setShowAddPerson(true) : undefined}
           onImportExport={(tab) => setImportExportTab(tab)}
           onPrint={() => setShowPrint(true)}
           onShare={() => setShowShare(true)}
@@ -569,7 +590,7 @@ export default function SuiminiApp() {
       )}
 
       {/* Modals */}
-      {showAddPerson && store.activeTree && (
+      {showAddPerson && store.activeTree && canEdit && (
         <AddPersonModal
           tree={store.activeTree}
           onClose={() => setShowAddPerson(false)}
@@ -643,6 +664,7 @@ export default function SuiminiApp() {
         <ShareModal
           tree={store.activeTree}
           cloud={store.cloud}
+          canManageMembers={canManageMembers}
           onRequireAuth={() => { setShowShare(false); openAuth('login'); }}
           onToast={showToast}
           onClose={() => setShowShare(false)}

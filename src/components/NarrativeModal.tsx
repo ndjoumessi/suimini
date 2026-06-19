@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { FamilyTree } from '@/types';
 import { ScrollText, Copy, Download, RefreshCw, X, Check, AlertTriangle } from 'lucide-react';
 
@@ -10,6 +10,8 @@ export default function NarrativeModal({ tree, onClose }: { tree: FamilyTree; on
   const [narrative, setNarrative] = useState('');
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const generate = useCallback(async () => {
     setState('loading');
@@ -38,17 +40,25 @@ export default function NarrativeModal({ tree, onClose }: { tree: FamilyTree; on
   // Auto-generate on open; Esc closes; lock body scroll (matches the app's modal pattern).
   useEffect(() => { generate(); }, [generate]);
   useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
     document.body.classList.add('modal-open');
+    dialogRef.current?.focus();
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
-    return () => { document.body.classList.remove('modal-open'); window.removeEventListener('keydown', onKey); };
+    return () => {
+      document.body.classList.remove('modal-open');
+      window.removeEventListener('keydown', onKey);
+      if (copyTimer.current) clearTimeout(copyTimer.current);
+      previouslyFocused?.focus?.();   // restore focus to the trigger on close
+    };
   }, [onClose]);
 
   const copy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(narrative);
       setCopied(true);
-      setTimeout(() => setCopied(false), 1600);
+      if (copyTimer.current) clearTimeout(copyTimer.current);
+      copyTimer.current = setTimeout(() => setCopied(false), 1600);
     } catch { /* clipboard unavailable */ }
   }, [narrative]);
 
@@ -65,7 +75,7 @@ export default function NarrativeModal({ tree, onClose }: { tree: FamilyTree; on
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{ maxWidth: '680px', width: '100%', display: 'flex', flexDirection: 'column' }} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Rapport narratif">
+      <div ref={dialogRef} tabIndex={-1} className="modal" style={{ maxWidth: '680px', width: '100%', display: 'flex', flexDirection: 'column' }} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Rapport narratif" aria-busy={state === 'loading'}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '16px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
           <ScrollText size={20} style={{ color: 'var(--accent)', flexShrink: 0 }} aria-hidden="true" />
@@ -79,7 +89,7 @@ export default function NarrativeModal({ tree, onClose }: { tree: FamilyTree; on
         {/* Body */}
         <div style={{ padding: '20px', overflowY: 'auto', flex: 1 }}>
           {state === 'loading' && (
-            <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
+            <div role="status" aria-live="polite" style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
               <span className="spinner" style={{ width: '22px', height: '22px', color: 'var(--accent)' }} />
               <p style={{ marginTop: '14px' }}>Composition du récit familial…</p>
               <p style={{ fontSize: '12px', color: 'var(--text-light)' }}>Cela prend généralement quelques secondes.</p>
@@ -87,7 +97,7 @@ export default function NarrativeModal({ tree, onClose }: { tree: FamilyTree; on
           )}
 
           {state === 'error' && (
-            <div style={{ textAlign: 'center', padding: '32px 20px', maxWidth: '420px', margin: '0 auto' }}>
+            <div role="alert" style={{ textAlign: 'center', padding: '32px 20px', maxWidth: '420px', margin: '0 auto' }}>
               <AlertTriangle size={40} strokeWidth={1.4} style={{ color: 'var(--danger)', marginBottom: '12px' }} aria-hidden="true" />
               <h3 style={{ margin: '0 0 6px' }}>Génération impossible</h3>
               <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '16px' }}>{error}</p>

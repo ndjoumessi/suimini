@@ -1,7 +1,7 @@
 'use client';
 import { useState, useRef } from 'react';
 import { useTranslations } from 'next-intl';
-import { AlertCircle, FolderOpen, Plus, X, Dna, ImageUp, Images } from 'lucide-react';
+import { AlertCircle, FolderOpen, Plus, X, Dna, ImageUp, Images, Check } from 'lucide-react';
 import { Person, Gender } from '@/types';
 import { uploadAvatar } from '@/lib/uploadImage';
 
@@ -295,6 +295,7 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel }: P
           </button>
         </div>
         <input
+          aria-label={t('galleryUrlPlaceholder')}
           onKeyDown={e => { const v = (e.target as HTMLInputElement).value.trim(); if (e.key === 'Enter' && v) { e.preventDefault(); set('photos', [...photos, v]); (e.target as HTMLInputElement).value = ''; } }}
           className="input" placeholder={t('galleryUrlPlaceholder')} style={{ marginTop: '8px', textTransform: 'none', fontWeight: 400 }}
         />
@@ -336,16 +337,18 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel }: P
                 <input
                   value={d.region}
                   onChange={e => updateDna(i, 'region', e.target.value)}
+                  aria-label={t('dnaRegionPlaceholder')}
                   className="input" placeholder={t('dnaRegionPlaceholder')} style={{ flex: 1 }}
                 />
                 <input
                   type="number" min={0} max={100}
                   value={d.percent || ''}
                   onChange={e => updateDna(i, 'percent', e.target.value)}
+                  aria-label={`${d.region || t('dnaRegionPlaceholder')} %`}
                   className="input" placeholder="%" style={{ width: '72px' }}
                 />
-                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>%</span>
-                <button type="button" onClick={() => removeDna(i)} className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }}>✕</button>
+                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }} aria-hidden="true">%</span>
+                <button type="button" onClick={() => removeDna(i)} aria-label={t('remove')} className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--danger)' }}><X size={14} aria-hidden="true" /></button>
               </div>
             ))}
           </div>
@@ -393,7 +396,7 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel }: P
           </button>
         )}
         <button type="submit" className="btn btn-primary" disabled={blocked} style={{ opacity: blocked ? 0.5 : 1 }}>
-          ✓ {submitLabel ?? t('save')}
+          <Check size={15} aria-hidden="true" /> {submitLabel ?? t('save')}
         </button>
       </div>
     </form>

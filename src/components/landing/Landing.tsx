@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   TreePine, Map, Cloud, Search, BookOpen, Play, BarChart2, Dna,
   ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Check, Mail,
-  KeyRound, UserPlus, Share2, ShieldCheck, Star, Gamepad2,
+  KeyRound, UserPlus, Share2, ShieldCheck, Star, Gamepad2, X,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/hooks/useAuth';
@@ -420,7 +420,7 @@ export default function Landing() {
       {/* PWA install prompt — appears on Android/Chrome when the app is installable. */}
       {installPrompt && !installDismissed && (
         <div style={{
-          position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 9000,
+          position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 'var(--z-toast)',
           display: 'flex', alignItems: 'center', gap: '14px',
           background: INK, color: BONE, border: `2px solid ${ACCENT}`,
           boxShadow: `6px 6px 0 ${ACCENT}`,
@@ -439,8 +439,8 @@ export default function Landing() {
             Installer
           </button>
           <button onClick={() => setInstallDismissed(true)} aria-label="Fermer"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8a8276', padding: '4px', flexShrink: 0, fontSize: '18px', lineHeight: 1 }}>
-            ×
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8a8276', padding: '4px', flexShrink: 0, display: 'inline-flex', lineHeight: 1 }}>
+            <X size={18} aria-hidden="true" />
           </button>
         </div>
       )}

@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Person, Relationship, RelationType, FamilyTree } from '@/types';
 import { getDisplayName } from '@/lib/treeUtils';
-import { Check, Plus, Link2, User } from 'lucide-react';
+import { Check, Plus, Link2, User, X, ArrowLeft, Heart, Baby, Users, UsersRound } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import PersonForm from './PersonForm';
 
 interface Props {
@@ -13,11 +14,11 @@ interface Props {
   onAdd: (person: Omit<Person, 'id' | 'createdAt' | 'updatedAt'>, relation?: { type: RelationType; personId: string }) => void;
 }
 
-const REL_OPTIONS: { value: RelationType; labelKey: string; icon: string; descKey: string }[] = [
-  { value: 'spouse',  labelKey: 'relSpouse',  icon: '💒', descKey: 'relSpouseDesc' },
-  { value: 'parent',  labelKey: 'relParent',  icon: '👴', descKey: 'relParentDesc' },
-  { value: 'child',   labelKey: 'relChild',   icon: '👶', descKey: 'relChildDesc' },
-  { value: 'sibling', labelKey: 'relSibling', icon: '👫', descKey: 'relSiblingDesc' },
+const REL_OPTIONS: { value: RelationType; labelKey: string; Icon: LucideIcon; descKey: string }[] = [
+  { value: 'spouse',  labelKey: 'relSpouse',  Icon: Heart,       descKey: 'relSpouseDesc' },
+  { value: 'parent',  labelKey: 'relParent',  Icon: Users,       descKey: 'relParentDesc' },
+  { value: 'child',   labelKey: 'relChild',   Icon: Baby,        descKey: 'relChildDesc' },
+  { value: 'sibling', labelKey: 'relSibling', Icon: UsersRound,  descKey: 'relSiblingDesc' },
 ];
 
 export default function AddPersonModal({ onClose, tree, onAdd }: Props) {
@@ -53,7 +54,7 @@ export default function AddPersonModal({ onClose, tree, onAdd }: Props) {
   const overlayRef = useOverlay(onClose);
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div ref={overlayRef} tabIndex={-1} className="modal" style={{ maxWidth: '600px' }}>
+      <div ref={overlayRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={step === 'form' ? t('newPerson') : t('establishRelation')} className="modal" style={{ maxWidth: '600px' }}>
         {/* Header */}
         <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
@@ -64,7 +65,7 @@ export default function AddPersonModal({ onClose, tree, onAdd }: Props) {
             <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: step === 'form' ? 'var(--accent)' : 'var(--text-light)' }}>
                 <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: step === 'form' ? 'var(--accent)' : 'var(--success)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '700' }}>
-                  {step === 'relation' ? '✓' : '1'}
+                  {step === 'relation' ? <Check size={11} aria-hidden="true" /> : '1'}
                 </div>
                 {t('stepInfo')}
               </div>
@@ -75,7 +76,7 @@ export default function AddPersonModal({ onClose, tree, onAdd }: Props) {
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="btn btn-ghost btn-sm">✕</button>
+          <button onClick={onClose} className="btn btn-ghost btn-sm btn-icon" aria-label={t('close')}><X size={16} aria-hidden="true" /></button>
         </div>
 
         <div style={{ padding: '20px 24px 24px', maxHeight: '78vh', overflowY: 'auto' }}>
@@ -100,7 +101,7 @@ export default function AddPersonModal({ onClose, tree, onAdd }: Props) {
                     {newPerson.occupation || ''}{newPerson.birthDate ? ` · ${t('bornYear', { year: new Date(newPerson.birthDate).getFullYear() })}` : ''}
                   </div>
                 </div>
-                <span style={{ marginLeft: 'auto', fontSize: '12px', color: 'var(--accent)' }}>✓ {t('created')}</span>
+                <span style={{ marginLeft: 'auto', fontSize: '12px', color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Check size={13} aria-hidden="true" /> {t('created')}</span>
               </div>
 
               <div>
@@ -114,13 +115,14 @@ export default function AddPersonModal({ onClose, tree, onAdd }: Props) {
                     <button
                       key={opt.value}
                       onClick={() => setRelType(opt.value)}
+                      aria-pressed={relType === opt.value}
                       style={{
                         padding: '10px 12px', border: `2px solid ${relType === opt.value ? 'var(--accent)' : 'var(--border)'}`,
                         borderRadius: 'var(--radius)', background: relType === opt.value ? 'var(--accent-light)' : 'var(--bg-card)',
                         cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s',
                       }}
                     >
-                      <div style={{ fontSize: '18px', marginBottom: '2px' }}>{opt.icon}</div>
+                      <div style={{ marginBottom: '2px', color: relType === opt.value ? 'var(--accent)' : 'var(--text-muted)' }}><opt.Icon size={18} aria-hidden="true" /></div>
                       <div style={{ fontWeight: '700', fontSize: '13px', color: relType === opt.value ? 'var(--accent)' : 'var(--text)' }}>{t(opt.labelKey)}</div>
                       <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t(opt.descKey)}</div>
                     </button>
@@ -130,12 +132,12 @@ export default function AddPersonModal({ onClose, tree, onAdd }: Props) {
                 {/* Person selector */}
                 {relType && (
                   <div className="animate-fade-in" style={{ marginBottom: '14px' }}>
-                    <label style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '6px' }}>
+                    <label htmlFor="rel-person-select" style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '6px' }}>
                       {relType === 'spouse' ? t('selectSpouse') :
                        relType === 'parent' ? t('selectParent') :
                        relType === 'child' ? t('selectChild') : t('selectSibling')}
                     </label>
-                    <select value={relPersonId} onChange={e => setRelPersonId(e.target.value)} className="input">
+                    <select id="rel-person-select" value={relPersonId} onChange={e => setRelPersonId(e.target.value)} className="input">
                       <option value="">{t('choosePerson')}</option>
                       {[...tree.persons]
                         .sort((a,b) => a.lastName.localeCompare(b.lastName))
@@ -163,7 +165,7 @@ export default function AddPersonModal({ onClose, tree, onAdd }: Props) {
               {/* Actions */}
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px solid var(--border)' }}>
                 <button onClick={() => setStep('form')} className="btn btn-ghost btn-sm">
-                  ← {t('back')}
+                  <ArrowLeft size={14} aria-hidden="true" /> {t('back')}
                 </button>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button onClick={() => onAdd(newPerson)} className="btn btn-secondary btn-sm">
@@ -174,7 +176,7 @@ export default function AddPersonModal({ onClose, tree, onAdd }: Props) {
                     className="btn btn-primary"
                     disabled={!relType || !relPersonId}
                   >
-                    ✓ {t('createWithRelation')}
+                    <Check size={15} aria-hidden="true" /> {t('createWithRelation')}
                   </button>
                 </div>
               </div>

@@ -216,7 +216,7 @@ function UsersTab({ admin, isSuperAdmin, onToast }: { admin: AdminData; isSuperA
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '14px' }}>
         <div style={{ position: 'relative', flex: 1, minWidth: '180px' }}>
           <Search size={15} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} aria-hidden="true" />
-          <input value={q} onChange={e => setQ(e.target.value)} placeholder={t('searchPlaceholder')} className="input" style={{ width: '100%', paddingLeft: '32px' }} />
+          <input value={q} onChange={e => setQ(e.target.value)} placeholder={t('searchPlaceholder')} aria-label={t('searchPlaceholder')} className="input" style={{ width: '100%', paddingLeft: '32px' }} />
         </div>
         <select value={filter} onChange={e => setFilter(e.target.value as UserStatus | 'all')} className="input" style={{ width: 'auto' }}>
           <option value="all">{t('allStatuses')}</option>
@@ -245,8 +245,8 @@ function UsersTab({ admin, isSuperAdmin, onToast }: { admin: AdminData; isSuperA
               <button onClick={() => setMenuId(menuId === u.id ? null : u.id)} className="btn btn-ghost btn-icon btn-sm" aria-label={t('actions')}><MoreVertical size={16} aria-hidden="true" /></button>
               {menuId === u.id && (
                 <>
-                  <div onClick={() => setMenuId(null)} style={{ position: 'fixed', inset: 0, zIndex: 90 }} />
-                  <div style={{ position: 'absolute', right: 0, top: '100%', zIndex: 100, marginTop: '4px', minWidth: '190px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow-lg)', padding: '4px', display: 'flex', flexDirection: 'column' }}>
+                  <div onClick={() => setMenuId(null)} aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 'calc(var(--z-dropdown) - 1)' }} />
+                  <div style={{ position: 'absolute', right: 0, top: '100%', zIndex: 'var(--z-dropdown)', marginTop: '4px', minWidth: '190px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow-lg)', padding: '4px', display: 'flex', flexDirection: 'column' }}>
                     {(u.status === 'pending' || u.status === 'rejected') && (
                       <MenuItem Icon={Check} label={t('approve')} onClick={() => act(admin.approveUser(u.id), t('toastApproved'), () => notifyApproval(u.email, u.display_name))} />
                     )}

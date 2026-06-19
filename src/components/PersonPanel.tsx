@@ -26,6 +26,8 @@ interface Props {
   onScanDocument?: () => void;
   /** Surface a transient toast (passed by the parent). */
   onToast?: (msg: string, type?: string) => void;
+  /** Viewer role: hide every edit / delete affordance (read-only consultation). */
+  readOnly?: boolean;
 }
 
 // Visually-hidden but screen-reader-accessible (no .sr-only utility in globals.css).
@@ -85,7 +87,7 @@ const MD_COMPONENTS = {
   ),
 };
 
-export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete, onSelectPerson, onAddRelationship, onUpdateRelationship, onDeleteRelationship, onAnalyzePhoto, onScanDocument, onToast }: Props) {
+export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete, onSelectPerson, onAddRelationship, onUpdateRelationship, onDeleteRelationship, onAnalyzePhoto, onScanDocument, onToast, readOnly = false }: Props) {
   const t = useTranslations('personPanel');
   const tp = useTranslations('photoAnalyzer');
   const tn = useTranslations('narrative');
@@ -447,9 +449,9 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
         <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'10px' }}>
           <CompletionDonut score={completionScore} color={completionColor} />
           <div style={{ flex:1 }} />
-          <button onClick={()=>setTab('edit')} className="icon-btn" aria-label={t('edit')} title={t('edit')}><Pencil size={16} /></button>
-          <button onClick={()=>{ setTab('edit'); setConfirmDelete(true); }} className="icon-btn" aria-label={t('delete')} title={t('delete')} style={{ color:'var(--danger)' }}><Trash2 size={16} /></button>
-          <button onClick={onClose} className="icon-btn" aria-label={t('closePanel')} title={t('close')}><X size={18} /></button>
+          {!readOnly && <button onClick={()=>setTab('edit')} className="icon-btn" aria-label={t('edit')} title={t('edit')}><Pencil size={16} aria-hidden="true" /></button>}
+          {!readOnly && <button onClick={()=>{ setTab('edit'); setConfirmDelete(true); }} className="icon-btn" aria-label={t('delete')} title={t('delete')} style={{ color:'var(--danger)' }}><Trash2 size={16} aria-hidden="true" /></button>}
+          <button onClick={onClose} className="icon-btn" aria-label={t('closePanel')} title={t('close')}><X size={18} aria-hidden="true" /></button>
         </div>
         <div style={{ display:'flex', alignItems:'flex-start', gap:'12px' }}>
           <div style={{ width:'56px', height:'56px', borderRadius:'50%', flexShrink:0, overflow:'hidden',
@@ -492,7 +494,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
           { id:'gallery', Icon:Images, count:person.photos?.length },
           { id:'narrative', Icon:BookOpen },
           { id:'discussion', Icon:MessageSquare },
-          { id:'edit', Icon:Pencil },
+          ...(readOnly ? [] : [{ id:'edit' as typeof tab, Icon:Pencil }]),
         ] as { id: typeof tab; Icon: typeof User; count?: number }[]).map(({ id, Icon, count }) => {
           const tabLabel = id==='narrative' ? tn('tab') : id==='discussion' ? tc('tab') : t(`tab_${id}`);
           return (
@@ -526,7 +528,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                     </div>
                   ))}
                 </div>
-                <button onClick={()=>setTab('edit')} className="btn btn-primary btn-sm" style={{ marginTop:'10px' }}><Pencil size={13} /> {t('completeProfile')}</button>
+                {!readOnly && <button onClick={()=>setTab('edit')} className="btn btn-primary btn-sm" style={{ marginTop:'10px' }}><Pencil size={13} aria-hidden="true" /> {t('completeProfile')}</button>}
               </div>
             )}
             <InfoBlock label={t('birth')} Icon={Baby}>
@@ -682,7 +684,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
             )}
 
             {!showAddRel ? (
-              <button onClick={()=>setShowAddRel(true)} className="btn btn-secondary btn-sm" style={{ alignSelf:'flex-start' }}>+ {t('addRelation')}</button>
+              !readOnly ? <button onClick={()=>setShowAddRel(true)} className="btn btn-secondary btn-sm" style={{ alignSelf:'flex-start' }}>+ {t('addRelation')}</button> : null
             ) : (
               <div style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)' }} className="animate-fade-in">
                 <div style={{ display:'flex', flexDirection:'column', gap:'8px', marginBottom:'8px' }}>
@@ -776,7 +778,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
               </>
             )}
             {!showAddEvent ? (
-              <button onClick={()=>setShowAddEvent(true)} className="btn btn-secondary btn-sm">+ {t('addEvent')}</button>
+              !readOnly ? <button onClick={()=>setShowAddEvent(true)} className="btn btn-secondary btn-sm">+ {t('addEvent')}</button> : null
             ) : (
               <div style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)' }} className="animate-fade-in">
                 <h4 style={{ margin:'0 0 10px', fontSize:'13px' }}>{t('newEvent')}</h4>
@@ -837,7 +839,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
               )}
             </div>
             {!showAddNote ? (
-              <button onClick={()=>setShowAddNote(true)} className="btn btn-secondary btn-sm">+ {t('addNote')}</button>
+              !readOnly ? <button onClick={()=>setShowAddNote(true)} className="btn btn-secondary btn-sm">+ {t('addNote')}</button> : null
             ) : (
               <div style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)' }} className="animate-fade-in">
                 <textarea autoFocus value={newNoteContent} onChange={e=>setNewNoteContent(e.target.value)} className="input" rows={3} style={{ resize:'vertical', marginBottom:'8px', width:'100%' }} placeholder={t('noteplaceholder')} />
@@ -852,7 +854,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
 
         {tab==='sources' && (
           <div className="animate-fade-in">
-            {onScanDocument && (
+            {!readOnly && onScanDocument && (
               <button onClick={onScanDocument} className="btn btn-secondary btn-sm" style={{ width:'100%', justifyContent:'center', gap:'7px', marginBottom:'12px' }}>
                 <ScanLine size={14} aria-hidden="true" /> {to('scanButton')}
               </button>
@@ -904,7 +906,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
 
         {tab==='gallery' && (
           <div className="animate-fade-in">
-            {onAnalyzePhoto && (
+            {!readOnly && onAnalyzePhoto && (
               <button onClick={onAnalyzePhoto} className="btn btn-secondary btn-sm" style={{ width:'100%', justifyContent:'center', gap:'7px', marginBottom:'12px' }}>
                 <ScanFace size={14} aria-hidden="true" /> {tp('analyzeAPhoto')}
               </button>
@@ -921,7 +923,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
               <div style={{ textAlign:'center', padding:'40px 16px', color:'var(--text-muted)', display:'flex', flexDirection:'column', alignItems:'center', gap:'10px' }}>
                 <Images size={40} strokeWidth={1.2} aria-hidden="true" />
                 <p style={{ margin:0, fontSize:'13px' }}>{t('noPhotos')}</p>
-                <button onClick={()=>setTab('edit')} className="btn btn-secondary btn-sm"><Pencil size={13} /> {t('addPhotos')}</button>
+                {!readOnly && <button onClick={()=>setTab('edit')} className="btn btn-secondary btn-sm"><Pencil size={13} aria-hidden="true" /> {t('addPhotos')}</button>}
               </div>
             )}
           </div>

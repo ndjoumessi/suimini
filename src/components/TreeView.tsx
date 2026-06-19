@@ -605,7 +605,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
             {onExport && (
               <button onClick={onExport} className="btn btn-secondary btn-sm btn-icon" title={t('exportPdf')} aria-label={t('exportPdf')}><Printer size={14} aria-hidden="true" /></button>
             )}
-            <button onClick={onAddPerson} className="btn btn-primary btn-sm" style={{ gap: '6px' }}><Plus size={14} aria-hidden="true" /> {t('add')}</button>
+            {!readOnly && <button onClick={onAddPerson} className="btn btn-primary btn-sm" style={{ gap: '6px' }}><Plus size={14} aria-hidden="true" /> {t('add')}</button>}
           </>
         )}
       </div>
@@ -778,7 +778,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
           <button
             onClick={() => setFocusId(null)}
             className="btn btn-secondary btn-sm"
-            style={{ position: 'absolute', top: '12px', left: '50%', transform: 'translateX(-50%)', zIndex: 150, boxShadow: 'var(--shadow)' }}
+            style={{ position: 'absolute', top: '12px', left: '50%', transform: 'translateX(-50%)', zIndex: 'var(--z-dropdown)', boxShadow: 'var(--shadow)' }}
           >
             {t('fullView')}
           </button>
@@ -817,7 +817,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
           <div
             aria-live="polite"
             style={{
-              position: 'absolute', top: '48px', right: '12px', zIndex: 140,
+              position: 'absolute', top: '48px', right: '12px', zIndex: 'var(--z-dropdown)',
               display: 'flex', alignItems: 'center', gap: '8px',
               background: 'var(--bg-card)', border: 'var(--bw, 1px) solid var(--border-strong, var(--border))',
               borderRadius: '100px', padding: '4px 12px 4px 8px',
@@ -980,7 +980,11 @@ function FanChart({ fan, fanGenColor, r0, ring, selectedPersonId, onSelectPerson
         const fontSize = s.gen <= 1 ? 12 : s.gen === 2 ? 10 : 8.5;
         const label = s.person.firstName.length > maxChars ? s.person.firstName.slice(0, maxChars - 1) + '…' : s.person.firstName;
         return (
-          <g key={s.person.id} style={{ cursor: 'pointer' }} onClick={() => onSelectPerson(s.person.id)}>
+          <g key={s.person.id} role="button" tabIndex={0}
+            aria-label={`${s.person.firstName} ${s.person.lastName}`}
+            style={{ cursor: 'pointer' }}
+            onClick={() => onSelectPerson(s.person.id)}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectPerson(s.person.id); } }}>
             <path d={annular(rInner, rOuter, a0, a1)}
               fill={fanGenColor(s.gen)} fillOpacity={isSel ? 0.95 : 0.82}
               stroke={isSel ? 'var(--accent)' : 'var(--bg-card)'} strokeWidth={isSel ? 3 : 1.5} />
@@ -994,7 +998,11 @@ function FanChart({ fan, fanGenColor, r0, ring, selectedPersonId, onSelectPerson
       })}
 
       {root && (
-        <g style={{ cursor: 'pointer' }} onClick={() => onSelectPerson(root.person.id)}>
+        <g role="button" tabIndex={0}
+          aria-label={`${root.person.firstName} ${root.person.lastName}`}
+          style={{ cursor: 'pointer' }}
+          onClick={() => onSelectPerson(root.person.id)}
+          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectPerson(root.person.id); } }}>
           <circle cx={0} cy={0} r={r0} fill={fanGenColor(0)} stroke="var(--accent)" strokeWidth={root.person.id === selectedPersonId ? 3 : 2} />
           <text x={0} y={-6} textAnchor="middle" dominantBaseline="central" fontSize={13} fontWeight={700} fontFamily="var(--font-display)" fill="#fff" style={{ pointerEvents: 'none' }}>
             {root.person.firstName.length > 12 ? root.person.firstName.slice(0, 11) + '…' : root.person.firstName}

@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { FamilyTree, SearchFilters } from '@/types';
 import { searchPersons, getAge, formatYear, getDisplayName } from '@/lib/treeUtils';
@@ -9,25 +9,27 @@ interface Props {
   tree: FamilyTree;
   onSelectPerson: (id: string) => void;
   onAddPerson: () => void;
+  canEdit?: boolean;
 }
 
 const BATCH = 50;
 
-export default function ListView({ tree, onSelectPerson, onAddPerson }: Props) {
+export default function ListView({ tree, onSelectPerson, onAddPerson, canEdit = true }: Props) {
   const t = useTranslations('list');
   const [filters, setFilters] = useState<SearchFilters>({});
   const [sortBy, setSortBy] = useState<'name' | 'birth' | 'death'>('name');
   const [showFilters, setShowFilters] = useState(false);
   const [visibleCount, setVisibleCount] = useState(BATCH);
 
-  const filtered = searchPersons(tree.persons, filters);
+  // Memoized so filtering + sorting don't re-run on every unrelated render (large trees).
+  const filtered = useMemo(() => searchPersons(tree.persons, filters), [tree.persons, filters]);
 
-  const sorted = [...filtered].sort((a, b) => {
+  const sorted = useMemo(() => [...filtered].sort((a, b) => {
     if (sortBy === 'name') return a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName);
     if (sortBy === 'birth') return (a.birthDate || '9999').localeCompare(b.birthDate || '9999');
     if (sortBy === 'death') return (a.deathDate || '9999').localeCompare(b.deathDate || '9999');
     return 0;
-  });
+  }), [filtered, sortBy]);
 
   const visible = sorted.slice(0, visibleCount);
 
@@ -48,7 +50,7 @@ export default function ListView({ tree, onSelectPerson, onAddPerson }: Props) {
             <option value="birth">{t('sortBirth')}</option>
             <option value="death">{t('sortDeath')}</option>
           </select>
-          <button onClick={onAddPerson} className="btn btn-primary btn-sm" style={{ gap: '6px' }}><Plus size={14} aria-hidden="true" /> {t('add')}</button>
+          {canEdit && <button onClick={onAddPerson} className="btn btn-primary btn-sm" style={{ gap: '6px' }}><Plus size={14} aria-hidden="true" /> {t('add')}</button>}
         </div>
 
         <input
@@ -119,9 +121,11 @@ export default function ListView({ tree, onSelectPerson, onAddPerson }: Props) {
               <h3 style={{ margin: '0 0 4px' }}>{t('emptyTitle')}</h3>
               <p style={{ margin: 0 }}>{tree.persons.length === 0 ? t('emptyTree') : t('emptyNoResults')}</p>
             </div>
-            <button onClick={tree.persons.length === 0 ? onAddPerson : () => setFilters({})} className="btn btn-primary btn-sm">
-              {tree.persons.length === 0 ? <><Plus size={14} /> {t('addPerson')}</> : t('resetFilters')}
-            </button>
+            {(canEdit || tree.persons.length > 0) && (
+              <button onClick={tree.persons.length === 0 ? onAddPerson : () => setFilters({})} className="btn btn-primary btn-sm">
+                {tree.persons.length === 0 ? <><Plus size={14} aria-hidden="true" /> {t('addPerson')}</> : t('resetFilters')}
+              </button>
+            )}
           </div>
         ) : (
           <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden', background: 'var(--bg-card)', maxWidth: '760px', margin: '0 auto' }}>
@@ -149,7 +153,7 @@ export default function ListView({ tree, onSelectPerson, onAddPerson }: Props) {
                     overflow: 'hidden'
                   }}>
                     {person.profilePhoto
-                      ? <img src={person.profilePhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ? <img src={person.profilePhoto} alt="" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       : <User size={20} style={{ color: 'var(--text-light)' }} aria-hidden="true" />
                     }
                   </div>
@@ -161,7 +165,7 @@ export default function ListView({ tree, onSelectPerson, onAddPerson }: Props) {
                       {person.maidenName && <span style={{ fontWeight: '400', color: 'var(--text-muted)', fontSize: '12px' }}> ({person.maidenName})</span>}
                     </div>
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '2px' }}>
-                      {person.occupation || '—'}
+                      {person.occupation || '·'}
                     </div>
                     <div style={{ fontSize: '11px', color: 'var(--text-light)', display: 'flex', gap: '8px', alignItems: 'center' }}>
                       {person.birthDate && <span>{formatYear(person.birthDate)}</span>}

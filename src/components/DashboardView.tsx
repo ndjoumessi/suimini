@@ -209,7 +209,7 @@ export default function DashboardView({ trees, displayName, userEmail, onNavigat
                   >
                     <span style={{ width: '34px', height: '34px', borderRadius: '50%', flexShrink: 0, background: 'var(--accent-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid var(--border)' }}>
                       {person.profilePhoto
-                        ? <img src={person.profilePhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ? <img src={person.profilePhoto} alt="" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         : <User size={16} style={{ color: 'var(--text-light)' }} aria-hidden="true" />}
                     </span>
                     <span style={{ flex: 1, minWidth: 0 }}>
@@ -230,9 +230,9 @@ export default function DashboardView({ trees, displayName, userEmail, onNavigat
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '18px 12px' }}>
             <Stat value={summary.totalPersons} label={statLabels.persons} />
             <Stat value={summary.totalTrees} label={statLabels.trees} />
-            <Stat value={summary.oldestGeneration || '—'} label={statLabels.generations} />
+            <Stat value={summary.oldestGeneration || '·'} label={statLabels.generations} />
             <Stat
-              value={summary.oldest ? summary.oldest.age : '—'}
+              value={summary.oldest ? summary.oldest.age : '·'}
               label={statLabels.elder}
               sublabel={summary.oldest ? summary.oldest.name : undefined}
             />

@@ -55,6 +55,7 @@ interface Props {
   trees: FamilyTree[];
   onShowTreeSelector: () => void;
   onAddPerson: () => void;
+  canEdit?: boolean;
   onShowImportExport: () => void;
   onPrint?: () => void;
   onShare?: () => void;
@@ -85,7 +86,7 @@ function SyncIndicator({ status }: { status: 'idle' | 'saved' | 'syncing' | 'off
   return null; // idle → rien (notamment 0 arbre)
 }
 
-export default function Sidebar({ activeView, onViewChange, activeTree, trees, onShowTreeSelector, onAddPerson, onShowImportExport, onPrint, onShare, onPresent, birthdayAlertCount = 0, dark, onToggleDark, isOpen, onClose, userEmail, displayName, isDemo, cloud, syncStatus = 'idle', presenceCount = 0, onSignIn, onSignOut, isAdmin = false, unreadCount = 0 }: Props) {
+export default function Sidebar({ activeView, onViewChange, activeTree, trees, onShowTreeSelector, onAddPerson, canEdit = true, onShowImportExport, onPrint, onShare, onPresent, birthdayAlertCount = 0, dark, onToggleDark, isOpen, onClose, userEmail, displayName, isDemo, cloud, syncStatus = 'idle', presenceCount = 0, onSignIn, onSignOut, isAdmin = false, unreadCount = 0 }: Props) {
   const t = useTranslations('nav');
   const ts = useTranslations('sidebar');
 
@@ -102,7 +103,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
   }, [cloud, userEmail, activeTreeId]);
 
   return (
-    <aside style={{ width: '232px', flexShrink: 0, background: 'var(--bg-card)', borderRight: 'var(--bw) solid var(--border-strong)', display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 50 }}
+    <aside style={{ width: '232px', flexShrink: 0, background: 'var(--bg-card)', borderRight: 'var(--bw) solid var(--border-strong)', display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 'var(--z-sticky)' }}
       className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}
     >
       {/* Logo + dark toggle */}
@@ -233,9 +234,11 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
 
       {/* Actions */}
       <div style={{ padding: '8px 10px', borderTop: '1px solid var(--border)' }}>
-        <button onClick={onAddPerson} className="btn btn-primary" style={{ width: '100%', height: '36px', borderRadius: '8px', marginBottom: '6px' }}>
-          <Plus size={16} /> {ts('addPerson')}
-        </button>
+        {canEdit && (
+          <button onClick={onAddPerson} className="btn btn-primary" style={{ width: '100%', height: '36px', borderRadius: '8px', marginBottom: '6px' }}>
+            <Plus size={16} aria-hidden="true" /> {ts('addPerson')}
+          </button>
+        )}
         <button onClick={onPresent} className="btn btn-secondary btn-sm" style={{ width: '100%', marginBottom: '6px' }}>
           <Play size={14} /> {ts('presentMode')}
         </button>

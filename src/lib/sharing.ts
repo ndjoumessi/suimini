@@ -5,6 +5,17 @@ import { supabase } from './supabase';
 
 export type MemberRole = 'viewer' | 'editor' | 'admin';
 export type MemberStatus = 'pending' | 'accepted' | 'declined';
+/** Effective role of the current user on a tree (owner is implicit, not stored as a member). */
+export type TreeRole = 'owner' | 'admin' | 'editor' | 'viewer';
+
+/** A member as seen by a manager (via the get_tree_members RPC). Keyed by email. */
+export interface ManagedMember {
+  email: string;
+  role: MemberRole;
+  status: MemberStatus;
+  invitedAt: string;
+  acceptedAt: string | null;
+}
 
 export interface TreeMember {
   id: string;
@@ -102,16 +113,65 @@ export async function inviteMember(
   return mapRow(data as MemberRow);
 }
 
-export async function updateMemberRole(id: string, role: MemberRole): Promise<boolean> {
+/** Members of a tree, manager view (owner OR accepted admin). Via SECURITY DEFINER RPC. */
+export async function getTreeMembers(treeId: string): Promise<ManagedMember[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc('get_tree_members', { p_tree_id: treeId });
+  if (error || !data) return [];
+  return (data as Array<{ email: string; role: MemberRole; status: MemberStatus; invited_at: string; accepted_at: string | null }>)
+    .map(r => ({ email: r.email, role: r.role, status: r.status, invitedAt: r.invited_at, acceptedAt: r.accepted_at }));
+}
+
+/** Change a member's role (owner/admin only — enforced server-side). */
+export async function updateMemberRole(treeId: string, email: string, role: MemberRole): Promise<boolean> {
   if (!supabase) return false;
-  const { error } = await supabase.from('tree_members').update({ role }).eq('id', id);
+  const { error } = await supabase.rpc('update_member_role', { p_tree_id: treeId, p_email: email, p_role: role });
   return !error;
 }
 
-export async function removeMember(id: string): Promise<boolean> {
+/** Remove a member (owner/admin only — enforced server-side). */
+export async function removeMember(treeId: string, email: string): Promise<boolean> {
   if (!supabase) return false;
-  const { error } = await supabase.from('tree_members').delete().eq('id', id);
+  const { error } = await supabase.rpc('remove_member', { p_tree_id: treeId, p_email: email });
   return !error;
+}
+
+/** Effective role of the current user on a tree, or null if no access. Via RPC. */
+export async function fetchMyRole(treeId: string): Promise<TreeRole | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc('my_tree_role', { p_tree_id: treeId });
+  if (error) return null;
+  return (data as TreeRole | null) ?? null;
+}
+
+export interface InvitationInfo {
+  treeName: string;
+  role: MemberRole;
+  status: MemberStatus;
+  invitedEmail: string;
+  inviterName: string | null;
+  expiresAt: string | null;
+}
+
+/** Read an invitation by token (works logged-out). Via SECURITY DEFINER RPC. */
+export async function getInvitation(token: string): Promise<InvitationInfo | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc('get_invitation', { p_token: token });
+  if (error || !data || !(data as unknown[])[0]) return null;
+  const r = (data as Array<{ tree_name: string; role: MemberRole; status: MemberStatus; invited_email: string; inviter_name: string | null; expires_at: string | null }>)[0];
+  return { treeName: r.tree_name, role: r.role, status: r.status, invitedEmail: r.invited_email, inviterName: r.inviter_name, expiresAt: r.expires_at };
+}
+
+/** localStorage key holding a pending invite token to auto-accept after sign-in. */
+export const PENDING_INVITE_KEY = 'suimini_pending_invite';
+
+/** Accept an invitation by token. Returns the joined tree (or null). Via SECURITY DEFINER RPC. */
+export async function acceptInvitation(token: string): Promise<{ treeId: string; treeName: string; role: MemberRole } | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc('accept_invitation', { p_token: token });
+  if (error || !data || !(data as unknown[])[0]) return null;
+  const row = (data as Array<{ tree_id: string; tree_name: string; role: MemberRole }>)[0];
+  return { treeId: row.tree_id, treeName: row.tree_name, role: row.role };
 }
 
 /** Accepted memberships of the current user (the trees shared WITH me). */

@@ -12,7 +12,10 @@
     "statistics": "Statistics",
     "settings": "Settings",
     "admin": "Admin",
-    "profile": "Profile"
+    "profile": "Profile",
+    "menu": "Menu",
+    "mobileNav": "Mobile navigation",
+    "openMenu": "Open menu"
   },
   "auth": {
     "login": "Sign in",
@@ -387,6 +390,7 @@
     "save": "Save"
   },
   "addPerson": {
+    "close": "Close",
     "newPerson": "New person",
     "establishRelation": "Establish a relationship",
     "stepInfo": "Information",
@@ -1212,6 +1216,30 @@
     "noMembers": "No members yet. Invite your relatives.",
     "emailPlaceholder": "relative@example.com",
     "you": "You"
+  },
+  "members": {
+    "title": "Members",
+    "invite": "Invite a member",
+    "role": "Role",
+    "viewer": "Viewer",
+    "editor": "Editor",
+    "admin": "Administrator",
+    "owner": "Owner",
+    "pending": "Pending",
+    "accepted": "Accepted",
+    "declined": "Declined",
+    "remove": "Remove",
+    "removeConfirm": "Remove {email} from the tree?",
+    "changeRole": "Change role",
+    "noMembers": "No members invited",
+    "inviteSuccess": "Invitation sent to {email}",
+    "readOnly": "Read only",
+    "readOnlyHint": "You are viewing this tree in read-only mode.",
+    "joinTitle": "Join {tree}",
+    "joinDesc": "{inviter} invites you to collaborate",
+    "joinButton": "Join the tree",
+    "joinExpired": "This invitation has expired",
+    "joinLogin": "Sign in to accept"
   },
   "ocr": {
     "title": "Scan a document",

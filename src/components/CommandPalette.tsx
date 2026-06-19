@@ -20,7 +20,8 @@ interface Props {
   /** Open a person, switching trees first if it lives in another tree. */
   onOpenPerson: (treeId: string, personId: string) => void;
   onNavigate: (v: ViewMode) => void;
-  onAddPerson: () => void;
+  /** Undefined for viewers (read-only) → the "add person" command is hidden. */
+  onAddPerson?: () => void;
   onImportExport: (tab: 'export' | 'import') => void;
   onPrint: () => void;
   onShare: () => void;
@@ -179,7 +180,7 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
   }
 
   const actions: CommandItem[] = useMemo(() => [
-    { id: 'a-add', kind: 'action', label: t('action.add'), Icon: UserPlus, searchText: 'ajouter personne nouveau membre add', run: () => { onClose(); onAddPerson(); } },
+    ...(onAddPerson ? [{ id: 'a-add', kind: 'action' as const, label: t('action.add'), Icon: UserPlus, searchText: 'ajouter personne nouveau membre add', run: () => { onClose(); onAddPerson(); } }] : []),
     { id: 'a-import', kind: 'action', label: t('action.import'), sublabel: 'JSON, GEDCOM', Icon: Download, searchText: 'importer import charger gedcom json fichier ouvrir', run: () => { onClose(); onImportExport('import'); } },
     { id: 'a-export', kind: 'action', label: t('action.export'), sublabel: 'JSON, GEDCOM', Icon: Upload, searchText: 'exporter export telecharger sauvegarde gedcom json', run: () => { onClose(); onImportExport('export'); } },
     { id: 'a-narrative', kind: 'action', label: t('action.narrative'), sublabel: t('action.narrativeSub'), Icon: ScrollText, searchText: 'rapport narratif recit histoire ia genere texte resume biographie', run: () => { onClose(); onNarrative(); } },
@@ -375,7 +376,7 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
   return (
     <div
       onMouseDown={e => e.target === e.currentTarget && onClose()}
-      style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(26,22,18,0.45)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '12vh' }}
+      style={{ position: 'fixed', inset: 0, zIndex: 'var(--z-modal)', background: 'var(--scrim)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '12vh' }}
     >
       <div ref={overlayRef} tabIndex={-1} className="animate-scale-in" onKeyDown={handleKeyDown} role="dialog" aria-modal="true" aria-label={t('dialogLabel')}
         style={{ width: '92%', maxWidth: '560px', background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--border)', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '70vh' }}
@@ -520,7 +521,7 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
         )}
 
         {/* Results */}
-        <div ref={listRef} style={{ overflowY: 'auto', padding: '8px' }}>
+        <div ref={listRef} role="listbox" aria-label={t('dialogLabel')} aria-activedescendant={flat.length > 0 ? `cp-opt-${active}` : undefined} style={{ overflowY: 'auto', padding: '8px' }}>
           {flat.length === 0 && (
             <div style={{ padding: '36px 28px', textAlign: 'center', color: 'var(--text-muted)' }}>
               <SearchX size={40} style={{ color: 'var(--text-light)', marginBottom: '10px' }} aria-hidden="true" />
@@ -540,6 +541,9 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
                 return (
                   <button
                     key={item.id}
+                    id={`cp-opt-${idx}`}
+                    role="option"
+                    aria-selected={isActive}
                     data-idx={idx}
                     onMouseEnter={() => setActive(idx)}
                     onClick={() => runItem(item)}

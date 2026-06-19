@@ -6,8 +6,8 @@ import { FamilyTree } from '@/types';
 import { shareTree, listShares, unshareTree, getPublicShare, setTreePublic } from '@/lib/supabaseSync';
 import { useAuth } from '@/hooks/useAuth';
 import {
-  fetchMembers, inviteMember, updateMemberRole, removeMember, sharingEnabled,
-  type TreeMember, type MemberRole,
+  getTreeMembers, inviteMember, updateMemberRole, removeMember, sharingEnabled,
+  type ManagedMember, type MemberRole, type MemberStatus,
 } from '@/lib/sharing';
 import {
   Share2, X, Cloud, Package, Download, Smartphone, Code2, Lightbulb,
@@ -26,9 +26,21 @@ function makeSlug(name: string): string {
 interface Props {
   tree: FamilyTree;
   cloud?: boolean;
+  /** Owner or accepted admin → can list / re-role / remove members. */
+  canManageMembers?: boolean;
   onRequireAuth?: () => void;
   onToast?: (msg: string, type?: string) => void;
   onClose: () => void;
+}
+
+/** Status pill colors: pending=amber, accepted=green, declined=red — via signal tokens. */
+function statusStyle(status: MemberStatus): React.CSSProperties {
+  const token = status === 'accepted' ? '--success' : status === 'declined' ? '--danger' : '--warning';
+  return {
+    background: `color-mix(in srgb, var(${token}) 14%, var(--bg-card))`,
+    color: `var(${token})`,
+    borderColor: `var(${token})`,
+  };
 }
 
 function Eyebrow({ Icon, children }: { Icon: typeof Cloud; children: React.ReactNode }) {
@@ -49,29 +61,30 @@ function emailInitials(email: string): string {
 
 type Tab = 'share' | 'members';
 
-export default function ShareModal({ tree, cloud, onRequireAuth, onToast, onClose }: Props) {
+export default function ShareModal({ tree, cloud, canManageMembers = true, onRequireAuth, onToast, onClose }: Props) {
   const t = useTranslations('sharing');
+  const tm = useTranslations('members');
   const locale = useLocale();
   const { user } = useAuth();
   const [tab, setTab] = useState<Tab>('share');
 
-  // Multi-member sharing state
-  const membersEnabled = sharingEnabled() && !!user;
-  const [members, setMembers] = useState<TreeMember[]>([]);
+  // Multi-member sharing state. The Members tab is for owners / admins.
+  const membersEnabled = sharingEnabled() && !!user && canManageMembers;
+  const [members, setMembers] = useState<ManagedMember[]>([]);
   const [memberEmail, setMemberEmail] = useState('');
   const [memberRole, setMemberRole] = useState<MemberRole>('viewer');
   const [inviting, setInviting] = useState(false);
   const [memberNotice, setMemberNotice] = useState<string | null>(null);
 
   const refreshMembers = useCallback(async () => {
-    const list = await fetchMembers(tree.id);
+    const list = await getTreeMembers(tree.id);
     setMembers(list);
   }, [tree.id]);
 
   useEffect(() => {
     if (!membersEnabled) return;
     let active = true;
-    fetchMembers(tree.id).then(list => { if (active) setMembers(list); });
+    getTreeMembers(tree.id).then(list => { if (active) setMembers(list); });
     return () => { active = false; };
   }, [membersEnabled, tree.id]);
 
@@ -81,29 +94,32 @@ export default function ShareModal({ tree, cloud, onRequireAuth, onToast, onClos
     setTimeout(() => setMemberNotice(null), 2500);
   }
 
+  const inviterName = (user?.user_metadata?.display_name as string | undefined) || user?.email || undefined;
+
   async function doInvite() {
     if (!user) return;
     const email = memberEmail.trim().toLowerCase();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { onToast?.('E-mail invalide', 'error'); return; }
     setInviting(true);
-    const res = await inviteMember(tree.id, email, memberRole, user.id);
+    const res = await inviteMember(tree.id, email, memberRole, user.id, inviterName, tree.name);
     setInviting(false);
     if (!res) { onToast?.('Échec de l’invitation', 'error'); return; }
     setMemberEmail('');
     setMemberRole('viewer');
     await refreshMembers();
-    notify(t('invited'));
+    notify(tm('inviteSuccess', { email }));
   }
 
-  async function doRemoveMember(id: string) {
-    const ok = await removeMember(id);
+  async function doRemoveMember(email: string) {
+    if (typeof window !== 'undefined' && !window.confirm(tm('removeConfirm', { email }))) return;
+    const ok = await removeMember(tree.id, email);
     if (!ok) { onToast?.('Échec', 'error'); return; }
     await refreshMembers();
     notify(t('removed'));
   }
 
-  async function doChangeRole(id: string, role: MemberRole) {
-    const ok = await updateMemberRole(id, role);
+  async function doChangeRole(email: string, role: MemberRole) {
+    const ok = await updateMemberRole(tree.id, email, role);
     if (!ok) { onToast?.('Échec', 'error'); return; }
     await refreshMembers();
     notify(t('roleUpdated'));
@@ -207,17 +223,19 @@ export default function ShareModal({ tree, cloud, onRequireAuth, onToast, onClos
           >
             <Share2 size={14} aria-hidden="true" /> Partage
           </button>
-          <button
-            role="tab"
-            aria-selected={tab === 'members'}
-            onClick={() => setTab('members')}
-            className={tab === 'members' ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'}
-          >
-            <Users size={14} aria-hidden="true" /> {t('members')}
-            {membersEnabled && members.length > 0 && (
-              <span className="badge" style={{ marginLeft: '4px' }}>{members.length}</span>
-            )}
-          </button>
+          {canManageMembers && (
+            <button
+              role="tab"
+              aria-selected={tab === 'members'}
+              onClick={() => setTab('members')}
+              className={tab === 'members' ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'}
+            >
+              <Users size={14} aria-hidden="true" /> {t('members')}
+              {membersEnabled && members.length > 0 && (
+                <span className="badge" style={{ marginLeft: '4px' }}>{members.length}</span>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Members tab */}
@@ -280,24 +298,24 @@ export default function ShareModal({ tree, cloud, onRequireAuth, onToast, onClos
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {members.map(m => (
-                      <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', border: 'var(--bw) solid var(--border-strong)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', boxShadow: 'var(--shadow)', flexWrap: 'wrap' }}>
+                      <div key={m.email} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', border: 'var(--bw) solid var(--border-strong)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', boxShadow: 'var(--shadow)', flexWrap: 'wrap' }}>
                         <span aria-hidden="true" style={{ width: '34px', height: '34px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid var(--border-strong)', borderRadius: 'var(--radius)', background: 'var(--accent-light)', color: 'var(--accent)', fontFamily: 'var(--font-mono)', fontSize: '12px', fontWeight: 700 }}>
                           {emailInitials(m.email)}
                         </span>
                         <div style={{ flex: '1 1 140px', minWidth: 0 }}>
                           <div style={{ fontWeight: 700, fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.email}</div>
                           <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                            <span className="badge" style={{ background: m.status === 'accepted' ? 'var(--accent-light)' : 'var(--bg-muted)', color: m.status === 'accepted' ? 'var(--accent)' : 'var(--text-muted)' }}>
+                            <span className="badge" style={statusStyle(m.status)}>
                               {m.status === 'pending' ? t('pending') : m.status === 'accepted' ? t('accepted') : t('declined')}
                             </span>
                             <span>{new Date(m.invitedAt).toLocaleDateString(locale)}</span>
                           </div>
                         </div>
-                        <label htmlFor={`role-${m.id}`} className="label" style={{ position: 'absolute', width: '1px', height: '1px', overflow: 'hidden', clip: 'rect(0,0,0,0)' }}>{t('role')}</label>
+                        <label htmlFor={`role-${m.email}`} className="label" style={{ position: 'absolute', width: '1px', height: '1px', overflow: 'hidden', clip: 'rect(0,0,0,0)' }}>{t('role')}</label>
                         <select
-                          id={`role-${m.id}`}
+                          id={`role-${m.email}`}
                           value={m.role}
-                          onChange={e => doChangeRole(m.id, e.target.value as MemberRole)}
+                          onChange={e => doChangeRole(m.email, e.target.value as MemberRole)}
                           className="input"
                           aria-label={`${t('role')} — ${m.email}`}
                           style={{ width: 'auto', fontSize: '11px', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}
@@ -307,7 +325,7 @@ export default function ShareModal({ tree, cloud, onRequireAuth, onToast, onClos
                           <option value="admin">{t('admin')}</option>
                         </select>
                         <button
-                          onClick={() => doRemoveMember(m.id)}
+                          onClick={() => doRemoveMember(m.email)}
                           aria-label={`${t('remove')} — ${m.email}`}
                           className="btn btn-ghost btn-sm btn-icon"
                           style={{ color: 'var(--danger)', flexShrink: 0 }}
