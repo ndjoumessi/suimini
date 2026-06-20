@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { FamilyTree, Person, Relationship, JournalEntry } from '@/types';
 import { sampleFamilyTree } from '@/lib/sampleData';
 import { generateId, getDisplayName } from '@/lib/treeUtils';
-import { isSupabaseConfigured } from '@/lib/supabase';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { loadTreesFromSupabase, saveTreeToSupabase, deleteTreeFromSupabase, loadOneTree, SharedMeta } from '@/lib/supabaseSync';
 import { offlineStorage } from '@/lib/offlineStorage';
 
@@ -260,11 +260,23 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
   const resync = useCallback(async (): Promise<boolean> => {
     if (!cloud || !user) return false;
     setSyncStatus('syncing');
+    // Validate/refresh the session ONCE up-front (lock-serialised) so the data
+    // queries below reuse a fresh access token instead of each triggering its own
+    // refresh. On a stale token that contention can end in a failed refresh and a
+    // spurious SIGNED_OUT — the "Se connecter réapparaît après resync" symptom. If
+    // the session is genuinely gone, abort cleanly instead of firing a storm of
+    // authenticated calls. (resync NEVER touches auth: it only clears the trees
+    // cache — localStorage 'suimini_trees' + the IndexedDB 'trees' store — never the
+    // Supabase session, which lives in cookies.)
+    if (supabase) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { setSyncStatus('error'); return false; }
+    }
     try {
       const { trees: remote, shared: sharedMeta } = await loadTreesFromSupabase(user.id);
       try {
-        await offlineStorage.clear();
-        localStorage.removeItem(STORAGE_KEY);
+        await offlineStorage.clear();              // IndexedDB 'trees' store only
+        localStorage.removeItem(STORAGE_KEY);      // 'suimini_trees' only — never the auth cookie
         for (const t of remote) await offlineStorage.setTree(t);
         if (remote.length) localStorage.setItem(STORAGE_KEY, JSON.stringify(remote));
       } catch { /* cache unavailable — non-fatal */ }
