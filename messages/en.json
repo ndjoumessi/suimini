@@ -1332,5 +1332,28 @@
     "saved": "Changes saved locally",
     "syncing": "Syncing...",
     "synced": "Synced ✓"
+  },
+  "pdf": {
+    "export": "Export booklet",
+    "title": "Export the family booklet",
+    "cancel": "Cancel",
+    "generate": "Generate PDF →",
+    "generating": "Generating...",
+    "download": "Download PDF",
+    "includePhotos": "Include photos",
+    "includeBios": "Include biographies",
+    "includeTimeline": "Include timeline",
+    "paperSize": "Paper size",
+    "theme": "Theme",
+    "themeAtelier": "Atelier",
+    "themeClassic": "Classic",
+    "themeMinimal": "Minimal",
+    "pages": "~{count} pages",
+    "success": "PDF generated successfully",
+    "error": "Error during generation",
+    "stepData": "Fetching data",
+    "stepLayout": "Laying out",
+    "stepRender": "Rendering PDF",
+    "stepDone": "Download ✓"
   }
 }

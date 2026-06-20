@@ -1332,5 +1332,28 @@
     "saved": "Modifications sauvegardées localement",
     "syncing": "Synchronisation en cours...",
     "synced": "Synchronisé ✓"
+  },
+  "pdf": {
+    "export": "Exporter le livret",
+    "title": "Exporter le livret de famille",
+    "cancel": "Annuler",
+    "generate": "Générer le PDF →",
+    "generating": "Génération en cours...",
+    "download": "Télécharger le PDF",
+    "includePhotos": "Inclure les photos",
+    "includeBios": "Inclure les biographies",
+    "includeTimeline": "Inclure la chronologie",
+    "paperSize": "Format papier",
+    "theme": "Thème",
+    "themeAtelier": "Atelier",
+    "themeClassic": "Classique",
+    "themeMinimal": "Minimal",
+    "pages": "~{count} pages",
+    "success": "PDF généré avec succès",
+    "error": "Erreur lors de la génération",
+    "stepData": "Récupération des données",
+    "stepLayout": "Mise en page",
+    "stepRender": "Rendu PDF",
+    "stepDone": "Téléchargement ✓"
   }
 }

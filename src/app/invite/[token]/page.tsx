@@ -15,6 +15,7 @@ type PageState =
   | { kind: 'unauthenticated'; invite: InvitationInfo }
   | { kind: 'valid'; invite: InvitationInfo }
   | { kind: 'accepting' }
+  | { kind: 'joined'; treeName: string }
   | { kind: 'expired' }
   | { kind: 'invalid' }
   | { kind: 'error'; message: string };
@@ -57,8 +58,16 @@ export default function InvitePage() {
     setState({ kind: 'accepting' });
     const res = await acceptInvitation(token);
     if (!res) { setState({ kind: 'error', message: t('joinExpired') }); return; }
-    router.replace('/app');
+    // Show a welcome confirmation, then redirect to the app (see effect below).
+    setState({ kind: 'joined', treeName: res.treeName });
   }
+
+  // After joining, briefly show the welcome message then redirect to the app.
+  useEffect(() => {
+    if (state.kind !== 'joined') return;
+    const id = setTimeout(() => router.replace('/app'), 2000);
+    return () => clearTimeout(id);
+  }, [state.kind, router]);
 
   function goToSignIn(invite: InvitationInfo) {
     // Stash the token so the app auto-accepts right after sign-in (see useAuth).
@@ -117,6 +126,21 @@ export default function InvitePage() {
 
   if (state.kind === 'accepting') {
     return <Shell><div style={{ ...mutedStyle, textAlign: 'center', padding: '8px 0' }} role="status"><span className="spinner" aria-hidden="true" /> {t('joinButton')}…</div></Shell>;
+  }
+
+  if (state.kind === 'joined') {
+    return (
+      <Shell>
+        <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+          <span style={iconCircle} aria-hidden="true"><UserPlus size={24} /></span>
+          <div role="status">
+            <h1 style={h1Style}>Vous avez rejoint l&apos;arbre «&nbsp;{state.treeName}&nbsp;» ! 🎉</h1>
+            <p style={{ margin: '0 0 8px' }}>Bienvenue dans la famille.</p>
+            <p style={{ margin: 0, ...mutedStyle }}><span className="spinner" aria-hidden="true" /> Redirection en cours…</p>
+          </div>
+        </div>
+      </Shell>
+    );
   }
 
   if (state.kind === 'expired') {

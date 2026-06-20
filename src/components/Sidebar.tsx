@@ -8,7 +8,7 @@ import { relativeSyncParts } from '@/lib/relativeTime';
 import { FamilyTree, ViewMode } from '@/types';
 import {
   Home, TreePine, Users, Calendar, Map, Images, BookOpen, Cake, Search, BarChart2, Settings,
-  Plus, Play, Share2, FolderOpen, Printer, Moon, Sun, ChevronDown, LogOut, LogIn, Cloud,
+  Plus, Play, Share2, FolderOpen, Printer, FileDown, Moon, Sun, ChevronDown, LogOut, LogIn, Cloud,
   Check, CloudOff, Shield, ArrowLeft, RefreshCw,
 } from 'lucide-react';
 import { BrandLockup } from './Brand';
@@ -58,6 +58,7 @@ interface Props {
   userRole?: 'owner' | 'admin' | 'editor' | 'viewer';
   onShowImportExport: () => void;
   onPrint?: () => void;
+  onExportPdf?: () => void;
   onShare?: () => void;
   onPresent?: () => void;
   birthdayAlertCount?: number;
@@ -88,9 +89,10 @@ function SyncIndicator({ status }: { status: 'idle' | 'saved' | 'syncing' | 'off
   return null; // idle → rien (notamment 0 arbre)
 }
 
-export default function Sidebar({ activeView, onViewChange, activeTree, trees, onShowTreeSelector, onAddPerson, canEdit = true, userRole, onShowImportExport, onPrint, onShare, onPresent, birthdayAlertCount = 0, dark, onToggleDark, isOpen, onClose, userEmail, displayName, isDemo, cloud, syncStatus = 'idle', lastSyncAt, onResync, presenceCount = 0, onSignIn, onSignOut, isAdmin = false, unreadCount = 0 }: Props) {
+export default function Sidebar({ activeView, onViewChange, activeTree, trees, onShowTreeSelector, onAddPerson, canEdit = true, userRole, onShowImportExport, onPrint, onExportPdf, onShare, onPresent, birthdayAlertCount = 0, dark, onToggleDark, isOpen, onClose, userEmail, displayName, isDemo, cloud, syncStatus = 'idle', lastSyncAt, onResync, presenceCount = 0, onSignIn, onSignOut, isAdmin = false, unreadCount = 0 }: Props) {
   const t = useTranslations('nav');
   const ts = useTranslations('sidebar');
+  const tPdf = useTranslations('pdf');
   const tr = useTranslations('roles');
   const tSync = useTranslations('sync');
   // Re-render every 60s so the "last sync X min ago" label stays current.
@@ -275,9 +277,14 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
             <FolderOpen size={14} /> {ts('import')}
           </button>
         </div>
-        <button onClick={onPrint} className="btn btn-secondary btn-sm" style={{ width: '100%' }}>
+        <button onClick={onPrint} className="btn btn-secondary btn-sm" style={{ width: '100%', marginBottom: '5px' }}>
           <Printer size={14} /> {ts('print')}
         </button>
+        {onExportPdf && (
+          <button onClick={onExportPdf} className="btn btn-secondary btn-sm" style={{ width: '100%' }}>
+            <FileDown size={14} /> {tPdf('export')}
+          </button>
+        )}
       </div>
 
       {/* Back to the public site */}

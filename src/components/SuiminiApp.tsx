@@ -36,6 +36,7 @@ import AdminDashboard from './AdminDashboard';
 import TreeSelectorModal from './TreeSelectorModal';
 import ImportExportModal from './ImportExportModal';
 import PrintModal from './PrintModal';
+import ExportPDFModal from './ExportPDFModal';
 import ShareModal from './ShareModal';
 import ToastStack, { ToastType, ToastItem } from './Toast';
 import { BrandLockup } from './Brand';
@@ -101,6 +102,7 @@ export default function SuiminiApp() {
   const [showTreeSelector, setShowTreeSelector] = useState(false);
   const [importExportTab, setImportExportTab] = useState<'export' | 'import' | null>(null);
   const [showPrint, setShowPrint] = useState(false);
+  const [showExportPdf, setShowExportPdf] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
   const [showPresentation, setShowPresentation] = useState(false);
@@ -357,14 +359,14 @@ export default function SuiminiApp() {
     // Don't interfere with tree panning or open modals.
     const target = e.target as HTMLElement;
     if (target.closest('.tree-svg')) return;
-    const anyModalOpen = showAddPerson || showTreeSelector || !!importExportTab || showPrint || showShare || showPalette || showPresentation || showNarrative || showAuth || showOnboarding || !!docScanner.open || !!photoAnalyzer.open;
+    const anyModalOpen = showAddPerson || showTreeSelector || !!importExportTab || showPrint || showExportPdf || showShare || showPalette || showPresentation || showNarrative || showAuth || showOnboarding || !!docScanner.open || !!photoAnalyzer.open;
     if (anyModalOpen) return;
     const idx = SWIPE_VIEWS.indexOf(view);
     if (idx === -1) return;
     if (dx < 0 && idx < SWIPE_VIEWS.length - 1) setView(SWIPE_VIEWS[idx + 1]);
     if (dx > 0 && idx > 0) setView(SWIPE_VIEWS[idx - 1]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, showAddPerson, showTreeSelector, importExportTab, showPrint, showShare, showPalette, showPresentation, showNarrative, showAuth, showOnboarding, docScanner.open, photoAnalyzer.open]);
+  }, [view, showAddPerson, showTreeSelector, importExportTab, showPrint, showExportPdf, showShare, showPalette, showPresentation, showNarrative, showAuth, showOnboarding, docScanner.open, photoAnalyzer.open]);
 
   // Global keyboard shortcuts: Cmd/Ctrl+K (palette), Cmd/Ctrl+Z (undo), Cmd/Ctrl+Shift+Z (redo)
   useEffect(() => {
@@ -435,6 +437,7 @@ export default function SuiminiApp() {
         userRole={userRole}
         onShowImportExport={() => setImportExportTab('export')}
         onPrint={() => setShowPrint(true)}
+        onExportPdf={() => setShowExportPdf(true)}
         onShare={() => setShowShare(true)}
         onPresent={() => setShowPresentation(true)}
         birthdayAlertCount={birthdayAlertCount}
@@ -680,6 +683,10 @@ export default function SuiminiApp() {
 
       {showPrint && store.activeTree && (
         <PrintModal tree={store.activeTree} onClose={() => setShowPrint(false)} />
+      )}
+
+      {showExportPdf && store.activeTree && (
+        <ExportPDFModal tree={store.activeTree} onClose={() => setShowExportPdf(false)} />
       )}
 
       {showShare && store.activeTree && (
