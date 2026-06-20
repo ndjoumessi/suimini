@@ -4,12 +4,12 @@
     "slug": "suimini",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/icon.png",
     "scheme": "suimini",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/splash.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#f4f1ea"
     },
@@ -27,8 +27,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#f4f1ea"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#bf4b2c"
       },
       "package": "app.suimini.mobile",
       "permissions": [
