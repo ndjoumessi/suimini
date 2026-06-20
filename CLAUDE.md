@@ -48,6 +48,8 @@ src/
   i18n/                # config.ts (constantes) + request.ts (locale depuis cookie)
 messages/              # fr.json + en.json
 supabase/              # schema.sql + migrations manuelles (share-public.sql, storage.sql…)
+  teda/                # scripts SQL de l'arbre famille TEDA (seed, enrichissement…)
+    pdf/               # sources du PDF de synthèse TEDA (teda_v2.html + render.mjs)
 e2e/                   # tests Playwright
 ```
 
@@ -60,6 +62,7 @@ e2e/                   # tests Playwright
 - `useFamilyStore` : source de vérité. Persiste en **localStorage** et synchronise avec **Supabase** quand connecté. Seede toujours l'arbre d'exemple **« Famille Dupont » (`tree1`)** pour les invités/démo.
 - `lib/supabaseSync.ts` : mappage lignes ↔ objets, chargement/sauvegarde, partage (`shareTree`, `setTreePublic`, `loadPublicTree`).
 - Schéma SQL dans `supabase/schema.sql` ; **les migrations s'exécutent manuellement** dans le SQL editor Supabase (ex. `supabase/share-public.sql`).
+- Arbre **famille TEDA** (`teda1`) : scripts SQL dans `supabase/teda/` (seed, enrichissement, branche étendue…). Le **PDF de synthèse** est généré depuis `supabase/teda/pdf/teda_v2.html` (HTML « Atelier » autonome) via `render.mjs` (rendu Chromium/Playwright, Node 22) — voir `supabase/teda/pdf/README.md`.
 
 ### i18n (next-intl, sans routing URL)
 - Mode **"without i18n routing"** : la locale vient du **cookie `NEXT_LOCALE`** (+ localStorage), **pas de l'URL** (pas de `/en`). `app/` n'est PAS restructuré.
