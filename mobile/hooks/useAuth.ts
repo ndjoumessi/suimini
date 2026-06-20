@@ -70,8 +70,13 @@ export function useAuth() {
   const signIn = useCallback(
     async (email: string, password: string): Promise<AuthResult> => {
       if (!supabase) return { error: 'Supabase non configuré' };
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      return error ? { error: error.message } : {};
+      try {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        return error ? { error: error.message } : {};
+      } catch (e: any) {
+        // signInWithPassword can throw on transport failures (network, bad URL).
+        return { error: e?.message ?? 'Connexion au serveur impossible.' };
+      }
     },
     [],
   );
@@ -83,20 +88,28 @@ export function useAuth() {
       displayName?: string,
     ): Promise<AuthResult> => {
       if (!supabase) return { error: 'Supabase non configuré' };
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: displayName ? { display_name: displayName } : undefined },
-      });
-      return error ? { error: error.message } : {};
+      try {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: displayName ? { display_name: displayName } : undefined },
+        });
+        return error ? { error: error.message } : {};
+      } catch (e: any) {
+        return { error: e?.message ?? 'Inscription impossible.' };
+      }
     },
     [],
   );
 
   const sendMagicLink = useCallback(async (email: string): Promise<AuthResult> => {
     if (!supabase) return { error: 'Supabase non configuré' };
-    const { error } = await supabase.auth.signInWithOtp({ email });
-    return error ? { error: error.message } : {};
+    try {
+      const { error } = await supabase.auth.signInWithOtp({ email });
+      return error ? { error: error.message } : {};
+    } catch (e: any) {
+      return { error: e?.message ?? 'Envoi du lien impossible.' };
+    }
   }, []);
 
   const startDemo = useCallback(() => {

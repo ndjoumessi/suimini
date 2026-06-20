@@ -33,13 +33,21 @@ export default function LoginScreen() {
     setError(null);
     setNotice(null);
     setLoading(true);
-    const res = magic
-      ? await sendMagicLink(email.trim())
-      : await signIn(email.trim(), password);
-    setLoading(false);
-    if (res.error) setError(res.error);
-    else if (magic) setNotice('Lien de connexion envoyé. Vérifiez vos emails.');
-    // On success the AuthGate handles navigation.
+    try {
+      const res = magic
+        ? await sendMagicLink(email.trim())
+        : await signIn(email.trim(), password);
+      if (res.error) setError(res.error);
+      else if (magic) setNotice('Lien de connexion envoyé. Vérifiez vos emails.');
+      // On success the AuthGate handles navigation.
+    } catch (e: any) {
+      // Should not happen (useAuth catches internally) but guards against an
+      // uncaught promise rejection if a transport error ever escapes.
+      console.error('LOGIN ERROR', JSON.stringify(e), e?.message, e?.status);
+      setError(e?.message ?? 'Connexion impossible. Réessayez.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const onDemo = () => {
