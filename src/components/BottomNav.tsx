@@ -26,7 +26,7 @@ export default function BottomNav({ activeView, onViewChange, onOpenMenu }: Prop
         const label = tn(item.navKey);
         return (
           <button key={item.view} onClick={() => onViewChange(item.view)} aria-current={active ? 'page' : undefined} aria-label={label}
-            className="bn-item" style={{ color: active ? 'var(--accent)' : 'var(--text-muted)' }}>
+            className={`bn-item ${active ? 'bn-item-active' : ''}`} style={{ color: active ? 'var(--accent)' : 'var(--text-muted)' }}>
             {active && <span className="bn-active" aria-hidden="true" />}
             <item.Icon size={20} aria-hidden="true" />
             <span className="bn-label">{label}</span>
@@ -52,6 +52,7 @@ export default function BottomNav({ activeView, onViewChange, onOpenMenu }: Prop
             background: none; border: none; cursor: pointer; padding: 8px 2px; min-height: 52px;
             font-family: var(--font-body); touch-action: manipulation; transition: color var(--t-fast);
           }
+          .bn-item-active { background: var(--accent-light); }
           .bn-label { font-size: 10px; font-weight: 700; letter-spacing: 0.2px; }
           .bn-active { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 30px; height: 3px; background: var(--accent); }
         }

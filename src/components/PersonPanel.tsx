@@ -6,9 +6,10 @@ import { getParents, getChildren, getSpouses, getSiblings, getAge, formatDate, f
 import { personEras, type HistoricalEvent } from '@/lib/history';
 import { fetchComments, addComment, subscribeComments, collaborationEnabled, type PersonComment, fetchPendingSuggestions, addSuggestion, resolveSuggestion, type PersonSuggestion } from '@/lib/collaboration';
 import { useAuth } from '@/hooks/useAuth';
+import { useIsMobile } from '@/hooks/useMediaQuery';
 import ReactMarkdown from 'react-markdown';
 import PersonForm from './PersonForm';
-import { X, Pencil, Trash2, User, Clock, Users, Calendar, StickyNote, BookOpen, Lightbulb, Link2, AlertCircle, Dna, FileText, Images, ScanFace, ScanLine, Landmark, MessageSquare, MapPin, Briefcase, Globe, GraduationCap, Church, Baby, Skull, Heart, Swords, Plane, GripVertical, CalendarDays } from 'lucide-react';
+import { X, Pencil, Trash2, User, Clock, Users, Calendar, StickyNote, BookOpen, Lightbulb, Link2, AlertCircle, Dna, FileText, Images, ScanFace, ScanLine, Landmark, MessageSquare, MapPin, Briefcase, Globe, GraduationCap, Church, Baby, Skull, Heart, Swords, Plane, GripVertical, CalendarDays, ArrowLeft } from 'lucide-react';
 
 interface Props {
   person: Person;
@@ -96,6 +97,9 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
   const to = useTranslations('ocr');
   const locale = useLocale();
   const { user } = useAuth();
+  // On phones the panel becomes a full-screen sheet (over the tree) with a
+  // "back" header; on desktop it stays the docked side-panel below.
+  const isMobile = useIsMobile();
   const relLabel = (type: RelationType) => t(REL_LABEL_KEYS[type]);
   const eventTypeLabel = (type: string) =>
     KNOWN_EVENT_TYPES.has(type) ? t(`event_${type}`) : (type.charAt(0).toUpperCase() + type.slice(1));
@@ -439,11 +443,29 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
   }
 
   return (
-    <aside className="person-panel" data-testid="person-panel" style={{
-      width:'360px', flexShrink:0, height:'100%', background:'var(--bg-card)',
-      borderLeft:'1px solid var(--border)', display:'flex', flexDirection:'column',
-      boxShadow:'var(--shadow-lg)', zIndex:60,
-    }}>
+    <aside className="person-panel" data-testid="person-panel" style={
+      isMobile
+        ? {
+            // Full-screen sheet on phones: covers the tree AND the bottom nav
+            // (z-index above --z-sticky/200 used by BottomNav), scrolls internally.
+            position:'fixed', inset:0, zIndex:300, background:'var(--bg)',
+            display:'flex', flexDirection:'column', overflowY:'auto',
+            paddingBottom:'env(safe-area-inset-bottom)',
+          }
+        : {
+            width:'360px', flexShrink:0, height:'100%', background:'var(--bg-card)',
+            borderLeft:'1px solid var(--border)', display:'flex', flexDirection:'column',
+            boxShadow:'var(--shadow-lg)', zIndex:60,
+          }
+    }>
+      {/* Mobile-only "back" header — returns to the tree via the existing close handler */}
+      {isMobile && (
+        <div style={{ flexShrink:0, position:'sticky', top:0, zIndex:3, display:'flex', alignItems:'center', gap:'8px', padding:'10px 14px', background:'var(--bg-card)', borderBottom:'1px solid var(--border)' }}>
+          <button onClick={onClose} className="btn btn-secondary btn-sm" style={{ gap:'6px' }} aria-label={t('close')}>
+            <ArrowLeft size={16} aria-hidden="true" /> {t('close')}
+          </button>
+        </div>
+      )}
       {/* Header (sticky) */}
       <div style={{ padding:'14px 16px', borderBottom:'1px solid var(--border)', flexShrink:0, position:'sticky', top:0, background:'var(--bg-card)', zIndex:2 }}>
         <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'10px' }}>

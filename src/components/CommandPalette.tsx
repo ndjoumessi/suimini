@@ -8,9 +8,11 @@ import { useOverlay } from '@/hooks/useOverlay';
 import {
   Search, SearchX, Clock, CornerDownLeft, User, UserPlus, Download, Upload, Play,
   Printer, Share2, TreePine, Users, Calendar, Map as MapIcon, Images, BookOpen, Cake, BarChart2, Settings, ScrollText,
-  SlidersHorizontal, Sparkles, RotateCcw, Loader2,
+  SlidersHorizontal, Sparkles, RotateCcw,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 interface Props {
   tree: FamilyTree | null;
@@ -420,7 +422,7 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
             }}
           >
             {aiState === 'loading'
-              ? <Loader2 size={13} aria-hidden="true" style={{ animation: 'spin 0.8s linear infinite' }} />
+              ? <LoadingSpinner size={13} />
               : <Sparkles size={13} aria-hidden="true" />}
             {aiState === 'loading' ? ts('aiSearching') : ts('aiSearch')}
           </button>
@@ -522,13 +524,16 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
 
         {/* Results */}
         <div ref={listRef} role="listbox" aria-label={t('dialogLabel')} aria-activedescendant={flat.length > 0 ? `cp-opt-${active}` : undefined} style={{ overflowY: 'auto', padding: '8px' }}>
-          {flat.length === 0 && (
-            <div style={{ padding: '36px 28px', textAlign: 'center', color: 'var(--text-muted)' }}>
-              <SearchX size={40} style={{ color: 'var(--text-light)', marginBottom: '10px' }} aria-hidden="true" />
-              <div style={{ fontSize: '14px' }}>
-                {aiResults ? ts('noMatch') : (hasFilters && !query) ? ts('noMatch') : t('noResults', { query })}
-              </div>
+          {aiState === 'loading' && (
+            <div role="status" aria-live="polite" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '36px 28px', color: 'var(--text-muted)', fontSize: '14px' }}>
+              <LoadingSpinner size={18} /> {ts('aiSearching')}
             </div>
+          )}
+          {aiState !== 'loading' && flat.length === 0 && (
+            <EmptyState
+              icon={SearchX}
+              title={aiResults ? ts('noMatch') : (hasFilters && !query) ? ts('noMatch') : t('noResults', { query })}
+            />
           )}
           {results.map(group => (
             <div key={group.title} style={{ marginBottom: '6px' }}>

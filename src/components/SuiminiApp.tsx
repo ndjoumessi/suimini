@@ -707,11 +707,11 @@ export default function SuiminiApp() {
       <style>{`
         @media (max-width: 768px) {
           .mobile-header { display: flex !important; }
-          .app-main { padding-bottom: 56px; }
-          .person-panel {
-            position: fixed !important; right: 0; top: 0; bottom: 0;
-            width: 100% !important; max-width: 420px; z-index: 1200 !important;
-          }
+          /* Leave room for the fixed BottomNav (56px + safe-area). PersonPanel
+             renders its own full-screen mobile sheet (inset:0) via the isMobile
+             branch, so it intentionally has NO override here anymore — the old
+             max-width:420px cap conflicted with the full-screen sheet. */
+          .app-main { padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)); }
         }
       `}</style>
     </div>

@@ -6,6 +6,8 @@ import type { FamilyTree, Gender } from '@/types';
 import { getDisplayName } from '@/lib/treeUtils';
 import { uploadAvatar } from '@/lib/uploadImage';
 import { useOverlay } from '@/hooks/useOverlay';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { ErrorMessage } from '@/components/ui/ErrorMessage';
 
 /** One detected face plus the user's assignment. */
 export interface FaceAssignment {
@@ -203,7 +205,11 @@ export default function PhotoAnalyzer({ tree, preselectPersonId, onClose, onConf
                 </div>
               )}
               <input ref={fileRef} type="file" accept="image/*" hidden onChange={e => { pickFile(e.target.files?.[0]); e.target.value = ''; }} />
-              {error && <p className="pa-error" role="alert">{error}</p>}
+              {error && (
+                <div style={{ marginTop: '12px' }}>
+                  <ErrorMessage message={error} onRetry={file ? analyze : undefined} />
+                </div>
+              )}
             </div>
           )}
 
@@ -285,8 +291,8 @@ export default function PhotoAnalyzer({ tree, preselectPersonId, onClose, onConf
 
               <div className="pa-actions pa-actions-end">
                 <button onClick={() => { setStep('upload'); setFaces([]); }} className="btn btn-ghost btn-sm">{t('back')}</button>
-                <button onClick={confirm} disabled={saving || taggedCount === 0} className="btn btn-primary">
-                  {saving ? <span className="spinner" aria-hidden="true" /> : <Check size={16} aria-hidden="true" />} {t('confirm')}
+                <button onClick={confirm} disabled={saving || taggedCount === 0} className="btn btn-primary" style={{ opacity: saving ? 0.7 : undefined }}>
+                  {saving ? <LoadingSpinner size={16} /> : <Check size={16} aria-hidden="true" />} {t('confirm')}
                 </button>
               </div>
             </div>
@@ -356,4 +362,5 @@ const PA_CSS = `
 .pa-row-desc { margin: 7px 0 0; font-size: 13px; color: var(--text-muted); }
 .pa-assign-label { display: block; margin: 10px 0 5px; color: var(--text-muted); }
 .pa-select { width: 100%; }
+.pa-modal .btn-primary svg.animate-spin { color: #fff !important; }
 `;

@@ -1,11 +1,13 @@
 'use client';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Mail, Lock, User, Eye, EyeOff, ArrowRight, Gamepad2, Check, X as XIcon, AlertCircle, ArrowLeft, Building2, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, ArrowRight, Gamepad2, Check, X as XIcon, ArrowLeft, Building2, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useOverlay } from '@/hooks/useOverlay';
 import { passwordChecks, strengthInfo } from '@/lib/password';
 import { BrandLockup } from './Brand';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { ErrorMessage } from '@/components/ui/ErrorMessage';
 
 type Tab = 'login' | 'signup';
 interface Props {
@@ -130,7 +132,7 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
             <h3 className="serif" style={{ margin: '0 0 4px', fontSize: '1.1rem' }}>{tr('forgotTitle')}</h3>
             <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 18px' }}>{tr('forgotDesc')}</p>
             <Field label={tr('email')} Icon={Mail} type="email" value={email} onChange={setEmail} placeholder={tr('emailPlaceholder')} autoComplete="email" autoFocus valid={email.length > 0 ? emailValid : undefined} ariaLabel="Email" />
-            {error && <ErrorMsg msg={error} />}
+            {error && <div className="animate-fade-in" style={{ margin: '6px 0 0' }}><ErrorMessage message={error} /></div>}
             <SubmitBtn loading={loading} disabled={!canSubmit} label={tr('sendLink')} style={{ marginTop: '16px' }} />
           </form>
         ) : (
@@ -214,7 +216,7 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
                 </label>
               )}
 
-              {error && <ErrorMsg msg={error} />}
+              {error && <div className="animate-fade-in" style={{ margin: '6px 0 12px' }}><ErrorMessage message={error} /></div>}
 
               <SubmitBtn loading={loading} disabled={!canSubmit} label={submitLabel} loadingLabel={tab === 'login' ? tr('loginLoading') : undefined} style={{ marginTop: '4px' }} />
             </form>
@@ -259,14 +261,10 @@ function Crit({ ok, label }: { ok: boolean; label: string }) {
   return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', color: ok ? 'var(--success)' : 'var(--text-light)' }}>{ok ? <Check size={12} /> : <XIcon size={12} />} {label}</span>;
 }
 
-function ErrorMsg({ msg }: { msg: string }) {
-  return <div role="alert" className="auth-error animate-fade-in"><AlertCircle size={14} style={{ flexShrink: 0 }} /> {msg}</div>;
-}
-
 function SubmitBtn({ loading, disabled, label, loadingLabel, style }: { loading: boolean; disabled: boolean; label: string; loadingLabel?: string; style?: React.CSSProperties }) {
   return (
-    <button type="submit" disabled={disabled || loading} className="auth-submit" style={style}>
-      {loading ? <><span className="spinner" style={{ borderColor: 'rgba(255,255,255,0.6)', borderRightColor: 'transparent' }} /> {loadingLabel || '…'}</> : <>{label} <ArrowRight size={18} /></>}
+    <button type="submit" disabled={disabled || loading} className="auth-submit" style={{ ...style, opacity: (disabled || loading) ? undefined : 1 }}>
+      {loading ? <><LoadingSpinner size={16} className="auth-submit-spinner" /> {loadingLabel || '…'}</> : <>{label} <ArrowRight size={18} /></>}
     </button>
   );
 }
@@ -294,6 +292,7 @@ const AUTH_CSS = `
 .auth-submit:hover:not(:disabled) { transform: translate(-2px,-2px); box-shadow: var(--shadow); background: var(--accent-hover); }
 .auth-submit:active:not(:disabled) { transform: translate(0,0); box-shadow: 1px 1px 0 var(--shadow-color); }
 .auth-submit:disabled { opacity: 0.45; cursor: not-allowed; }
+.auth-submit-spinner { color: #fff !important; }
 .auth-or { display: flex; align-items: center; gap: 12px; margin: 20px 0; }
 .auth-or span { flex: 1; height: var(--bw); background: var(--border-strong); }
 .auth-or small { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-light); }

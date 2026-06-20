@@ -5,7 +5,30 @@ import { FamilyTree, Person } from '@/types';
 import { getParents, getChildren, getSpouses, getSiblings, getDisplayName, formatYear, getAge, formatAge, personCompleteness, findRelationPath, describeRelation } from '@/lib/treeUtils';
 import { joinTreeCursors, presenceColor, collaborationEnabled, type CursorPeer } from '@/lib/collaboration';
 import { useAuth } from '@/hooks/useAuth';
+import { useIsMobile } from '@/hooks/useMediaQuery';
 import { Search, ZoomIn, ZoomOut, Crosshair, Info, Plus, Aperture, Sprout, Printer, Camera, CheckCircle2, FileText, Maximize2, MapPin, Crown } from 'lucide-react';
+
+/** Runtime node-layout dimensions. On desktop these are EXACTLY the historical
+ *  module constants (so desktop rendering is byte-for-byte unchanged); on phones
+ *  they shrink so the careful SVG layout stays legible on a small viewport. */
+interface Dims {
+  NODE_W: number; NODE_H: number; H_GAP: number; V_GAP: number;
+  AVA: number; AVA_X: number;
+  FONT_NAME: number; FONT_LAST: number; FONT_DATE: number;
+  AVA_INITIALS: number;
+}
+const DESKTOP_DIMS: Dims = {
+  NODE_W: 190, NODE_H: 88, H_GAP: 32, V_GAP: 76,
+  AVA: 36, AVA_X: 12,
+  FONT_NAME: 14, FONT_LAST: 12, FONT_DATE: 11,
+  AVA_INITIALS: 15,
+};
+const MOBILE_DIMS: Dims = {
+  NODE_W: 120, NODE_H: 60, H_GAP: 16, V_GAP: 48,
+  AVA: 28, AVA_X: 8,
+  FONT_NAME: 11, FONT_LAST: 10, FONT_DATE: 9,
+  AVA_INITIALS: 12,
+};
 
 /** Two-letter initials for the avatar fallback (same logic as PersonPanel/Sidebar). */
 function nodeInitials(p: Person): string {
@@ -14,10 +37,9 @@ function nodeInitials(p: Person): string {
 
 /** Node avatar: profile photo (square-clipped) with a per-node fallback to
  *  initials when the image is absent OR fails to load (broken URL/expired). */
-const AVA = 36;                 // avatar size (square, Atelier)
-const AVA_X = 12;               // avatar left inset
-function NodeAvatar({ person, clipId }: { person: Person; clipId: string }) {
+function NodeAvatar({ person, clipId, dims }: { person: Person; clipId: string; dims: Dims }) {
   const [broken, setBroken] = useState(false);
+  const { AVA, AVA_X, NODE_H } = dims;
   if (person.profilePhoto && !broken) {
     return (
       <image href={person.profilePhoto} x={AVA_X} y={(NODE_H - AVA) / 2} width={AVA} height={AVA}
@@ -27,7 +49,7 @@ function NodeAvatar({ person, clipId }: { person: Person; clipId: string }) {
   }
   return (
     <text x={AVA_X + AVA / 2} y={NODE_H / 2 + 5} textAnchor="middle"
-      fontFamily="var(--font-display)" fontSize={15} fontWeight={700} fill="var(--bg-card)">
+      fontFamily="var(--font-display)" fontSize={dims.AVA_INITIALS} fontWeight={700} fill="var(--bg-card)">
       {nodeInitials(person)}
     </text>
   );
@@ -35,10 +57,12 @@ function NodeAvatar({ person, clipId }: { person: Person; clipId: string }) {
 
 /** Corner indicator badges (decorative): photos, completeness, sources.
  *  Each badge sits on a small light chip and carries a <title> tooltip. */
-function NodeBadges({ person, labels }: {
+function NodeBadges({ person, labels, dims }: {
   person: Person;
   labels: { photos: string; complete: string; sources: string };
+  dims: Dims;
 }) {
+  const { NODE_W, NODE_H } = dims;
   const hasPhotos = !!(person.profilePhoto || person.photos?.length);
   const isComplete = personCompleteness(person) >= 80;
   const hasSources = !!(person.sources?.length || person.citations?.length);
@@ -102,10 +126,8 @@ interface Props {
 // "Album de famille relié" — register-card nodes (see DESIGN.md). Width/height stay
 // uniform so the elbow-bus layout maths (edges, centring, minimap) hold; the senior
 // UI pass widened the GAPS for legibility/breathing room rather than the cards.
-const NODE_W = 190;
-const NODE_H = 88;
-const H_GAP = 32;   // ↑ from 24 — more air between siblings/spouses
-const V_GAP = 76;   // ↑ from 64 — clearer generational banding
+// NODE_W/NODE_H/H_GAP/V_GAP are now RUNTIME dims (see Dims): desktop keeps the
+// historical 190/88/32/76; mobile shrinks them. SPINE/GRID are size-invariant.
 const SPINE = 5;    // role-coloured left spine width
 const GRID = 24; // canvas dot-grid spacing
 
@@ -113,6 +135,10 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
   const t = useTranslations('tree');
   const tc = useTranslations('collaboration');
   const { user } = useAuth();
+  // Responsive node-layout dims (desktop = historical constants, byte-for-byte).
+  const isMobile = useIsMobile();
+  const dims = isMobile ? MOBILE_DIMS : DESKTOP_DIMS;
+  const { NODE_W, NODE_H, H_GAP, V_GAP, AVA, AVA_X } = dims;
   // OTHER connected users on this tree (excludes the current user), each with
   // their latest cursor position. Empty when offline/guest or alone — the
   // cluster + cursors render nothing in that case. ONE channel powers both.
@@ -286,7 +312,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
     }
 
     return { nodes, edges, pearls };
-  }, [rootId, rootPerson, tree]);
+  }, [rootId, rootPerson, tree, NODE_W, NODE_H, H_GAP, V_GAP]);
 
   const { nodes, edges, pearls } = buildLayout();
 
@@ -490,19 +516,65 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
   // True while the user is dragging on the minimap (press-and-scrub navigation).
   const mmDragRef = useRef(false);
   const lastTouchRef = useRef<{ x: number; y: number } | null>(null);
+  // Last 2-finger pinch distance (null when not pinching). Used to zoom around
+  // the finger midpoint, mirroring handleWheel's zoom-to-point maths.
+  const pinchDistRef = useRef<number | null>(null);
+  const touchDist = (e: React.TouchEvent) => {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    return Math.hypot(dx, dy);
+  };
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length === 1) {
+    if (layoutMode === 'fan') return;
+    if (e.touches.length === 2) {
+      // Entering a pinch: stop single-finger panning and seed the distance.
+      pinchDistRef.current = touchDist(e);
+      lastTouchRef.current = null;
+      setDragMoved(true); // suppress the tap-to-select that would otherwise fire
+    } else if (e.touches.length === 1) {
+      pinchDistRef.current = null;
       lastTouchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
       setDragMoved(false);
     }
   };
   const handleTouchMove = (e: React.TouchEvent) => {
+    if (layoutMode === 'fan') return;
+    // 2-finger pinch-to-zoom (around the finger midpoint).
+    if (e.touches.length === 2 && pinchDistRef.current !== null) {
+      const dist = touchDist(e);
+      const prev = pinchDistRef.current;
+      if (prev > 0 && dist > 0) {
+        const rect = containerRef.current?.getBoundingClientRect();
+        if (rect) {
+          const mx = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+          const my = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+          const newScale = Math.max(0.25, Math.min(2.5, scale * (dist / prev)));
+          setOffset(o => ({
+            x: mx - (mx - o.x) * (newScale / scale),
+            y: my - (my - o.y) * (newScale / scale),
+          }));
+          setScale(newScale);
+        }
+      }
+      pinchDistRef.current = dist;
+      return;
+    }
     if (e.touches.length === 1 && lastTouchRef.current) {
       const dx = e.touches[0].clientX - lastTouchRef.current.x;
       const dy = e.touches[0].clientY - lastTouchRef.current.y;
       if (Math.abs(dx) > 4 || Math.abs(dy) > 4) setDragMoved(true);
       setOffset(o => ({ x: o.x + dx, y: o.y + dy }));
       lastTouchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    // Once fewer than 2 fingers remain, the pinch is over.
+    if (e.touches.length < 2) pinchDistRef.current = null;
+    // If one finger is still down (after lifting the other), re-seed the pan anchor.
+    if (e.touches.length === 1) {
+      lastTouchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    } else if (e.touches.length === 0) {
+      lastTouchRef.current = null;
     }
   };
 
@@ -609,14 +681,19 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
       `}</style>
       {/* Toolbar — compact 44px on desktop; wraps on narrow/mobile so no control is clipped */}
       <div style={{ minHeight: '44px', padding: '5px 12px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '6px', rowGap: '5px', flexWrap: 'wrap', flexShrink: 0 }}>
-        <h2 className="serif" style={{ margin: 0, fontSize: '1rem', color: 'var(--text)', flex: 1, minWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {tree.name}
-        </h2>
+        {/* Tree name: spacer that pushes controls right on desktop. Hidden on phones
+            (the name already shows in the mobile header) so the icon controls flow
+            into tidy compact rows instead of being shoved by a flex:1 title. */}
+        {!isMobile && (
+          <h2 className="serif" style={{ margin: 0, fontSize: '1rem', color: 'var(--text)', flex: 1, minWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {tree.name}
+          </h2>
+        )}
 
         {/* Change root */}
         <div style={{ position: 'relative' }}>
-          <button onClick={() => setShowSearch(!showSearch)} className="btn btn-secondary btn-sm" style={{ gap: '6px' }} aria-label={t('changeRoot')} aria-expanded={showSearch}>
-            <Search size={14} aria-hidden="true" /> {t('root')}
+          <button onClick={() => setShowSearch(!showSearch)} className="btn btn-secondary btn-sm" style={{ gap: '6px' }} title={t('changeRoot')} aria-label={t('changeRoot')} aria-expanded={showSearch}>
+            <Search size={14} aria-hidden="true" /> {!isMobile && t('root')}
           </button>
           {showSearch && (
             <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 200, marginTop: '4px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px', width: '240px', boxShadow: 'var(--shadow-lg)' }}>
@@ -648,8 +725,8 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
         </>}
 
         {sep}
-        <button onClick={() => setLayoutMode(m => m === 'fan' ? 'vertical' : 'fan')} className="btn btn-sm" style={{ gap: '6px', background: layoutMode === 'fan' ? 'var(--accent)' : 'var(--bg-muted)', color: layoutMode === 'fan' ? '#fff' : 'var(--text-muted)', border: '1px solid var(--border)' }} title={t('toggleFan')} aria-pressed={layoutMode === 'fan'}>
-          <Aperture size={14} aria-hidden="true" /> {t('fan')}
+        <button onClick={() => setLayoutMode(m => m === 'fan' ? 'vertical' : 'fan')} className="btn btn-sm" style={{ gap: '6px', background: layoutMode === 'fan' ? 'var(--accent)' : 'var(--bg-muted)', color: layoutMode === 'fan' ? '#fff' : 'var(--text-muted)', border: '1px solid var(--border)' }} title={t('toggleFan')} aria-label={t('fan')} aria-pressed={layoutMode === 'fan'}>
+          <Aperture size={14} aria-hidden="true" /> {!isMobile && t('fan')}
         </button>
         <button onClick={() => setShowLegend(l => !l)} className="btn btn-secondary btn-sm btn-icon" title={t('legend')} aria-label={t('legend')} aria-pressed={showLegend}>
           <Info size={14} aria-hidden="true" />
@@ -661,7 +738,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
             {onExport && (
               <button onClick={onExport} className="btn btn-secondary btn-sm btn-icon" title={t('exportPdf')} aria-label={t('exportPdf')}><Printer size={14} aria-hidden="true" /></button>
             )}
-            {!readOnly && <button onClick={onAddPerson} className="btn btn-primary btn-sm" style={{ gap: '6px' }}><Plus size={14} aria-hidden="true" /> {t('add')}</button>}
+            {!readOnly && <button onClick={onAddPerson} className="btn btn-primary btn-sm" style={{ gap: '6px' }} title={t('add')} aria-label={t('add')}><Plus size={14} aria-hidden="true" /> {!isMobile && t('add')}</button>}
           </>
         )}
       </div>
@@ -676,6 +753,8 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
         onMouseLeave={handleMouseUp}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
         style={{
           flex: 1, overflow: 'hidden', position: 'relative',
           cursor: layoutMode === 'fan' ? 'default' : isDragging ? 'grabbing' : 'grab',
@@ -790,37 +869,38 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                     <rect x={0} y={0} width={SPINE} height={NODE_H} fill={spineColor(node, isRoot)} />
                   </g>
 
-                  {/* Root crown — larger (×1.5) and lifted for the pivot ancestor */}
+                  {/* Root crown — larger (×1.5) and lifted for the pivot ancestor.
+                      Desktop keeps translate(NODE_W-30, 7) scale(1.5); mobile shrinks. */}
                   {isRoot && (
-                    <path transform={`translate(${NODE_W - 30}, 7) scale(1.5)`}
+                    <path transform={isMobile ? `translate(${NODE_W - 20}, 5) scale(1.1)` : `translate(${NODE_W - 30}, 7) scale(1.5)`}
                       d="M0 3 L3 7 L6 1.5 L9 7 L12 3 L11 10 L1 10 Z"
                       fill="var(--accent)" stroke="var(--bg-card)" strokeWidth={0.6} />
                   )}
 
-                  {/* Avatar — square (Atelier), 36px. The ROLE colour lives HERE (the
+                  {/* Avatar — square (Atelier). The ROLE colour lives HERE (the
                       avatar chip), not on the node face. Initials use --bg-card so they
                       auto-contrast: white-ish on the dark role colours in light theme,
                       dark on the lighter role colours in dark theme. */}
                   <clipPath id={`avatar-${p.id}`}><rect x={AVA_X} y={(NODE_H - AVA) / 2} width={AVA} height={AVA} /></clipPath>
                   <rect x={AVA_X} y={(NODE_H - AVA) / 2} width={AVA} height={AVA} fill={spineColor(node, isRoot)} stroke="var(--border-strong)" strokeWidth={0.75} />
-                  <NodeAvatar person={p} clipId={`avatar-${p.id}`} />
+                  <NodeAvatar person={p} clipId={`avatar-${p.id}`} dims={dims} />
 
                   {/* First name */}
-                  <text x={AVA_X + AVA + 10} y={NODE_H / 2 - 11} fontFamily="var(--font-display)" fontSize={14} fontWeight={700} fill="var(--text)">
-                    {p.firstName.length > 13 ? p.firstName.slice(0, 12) + '…' : p.firstName}
+                  <text x={AVA_X + AVA + (isMobile ? 7 : 10)} y={NODE_H / 2 + (isMobile ? -8 : -11)} fontFamily="var(--font-display)" fontSize={dims.FONT_NAME} fontWeight={700} fill="var(--text)">
+                    {p.firstName.length > (isMobile ? 10 : 13) ? p.firstName.slice(0, isMobile ? 9 : 12) + '…' : p.firstName}
                   </text>
                   {/* Last name */}
-                  <text x={AVA_X + AVA + 10} y={NODE_H / 2 + 5} fontFamily="var(--font-body)" fontSize={12} fontWeight={500} fill="var(--text-muted)">
-                    {p.lastName.length > 15 ? p.lastName.slice(0, 14) + '…' : p.lastName}
+                  <text x={AVA_X + AVA + (isMobile ? 7 : 10)} y={NODE_H / 2 + (isMobile ? 4 : 5)} fontFamily="var(--font-body)" fontSize={dims.FONT_LAST} fontWeight={500} fill="var(--text-muted)">
+                    {p.lastName.length > (isMobile ? 12 : 15) ? p.lastName.slice(0, isMobile ? 11 : 14) + '…' : p.lastName}
                   </text>
                   {/* Dates — body font (narrower than mono, so it can't collide with
                       the bottom-right badges), but larger + higher-contrast than before */}
-                  <text x={AVA_X + AVA + 10} y={NODE_H / 2 + 21} fontFamily="var(--font-body)" fontSize={11} fill="var(--text-muted)">
+                  <text x={AVA_X + AVA + (isMobile ? 7 : 10)} y={NODE_H / 2 + (isMobile ? 16 : 21)} fontFamily="var(--font-body)" fontSize={dims.FONT_DATE} fill="var(--text-muted)">
                     {dateLine(p)}
                   </text>
 
                   {/* Corner indicator badges (photos / completeness / sources) */}
-                  <NodeBadges person={p} labels={{ photos: t('badgePhotos'), complete: t('badgeComplete'), sources: t('badgeSources') }} />
+                  <NodeBadges person={p} labels={{ photos: t('badgePhotos'), complete: t('badgeComplete'), sources: t('badgeSources') }} dims={dims} />
                   </g>
                 </g>
               );

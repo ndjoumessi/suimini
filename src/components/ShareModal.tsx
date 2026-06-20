@@ -14,6 +14,8 @@ import {
   Mail, Copy, Check, MessageCircle, TreePine, Pencil, Eye, Globe, ExternalLink,
   Users, Trash2, UserPlus,
 } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { ErrorMessage } from '@/components/ui/ErrorMessage';
 
 /** URL-safe slug from the tree name + a short random suffix for uniqueness. */
 function makeSlug(name: string): string {
@@ -75,6 +77,7 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
   const [memberRole, setMemberRole] = useState<MemberRole>('viewer');
   const [inviting, setInviting] = useState(false);
   const [memberNotice, setMemberNotice] = useState<string | null>(null);
+  const [inviteError, setInviteError] = useState<string | null>(null);
 
   const refreshMembers = useCallback(async () => {
     const list = await getTreeMembers(tree.id);
@@ -97,17 +100,24 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
   const inviterName = (user?.user_metadata?.display_name as string | undefined) || user?.email || undefined;
 
   async function doInvite() {
-    if (!user) return;
+    if (!user || inviting) return;
     const email = memberEmail.trim().toLowerCase();
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { onToast?.('E-mail invalide', 'error'); return; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setInviteError('E-mail invalide'); onToast?.('E-mail invalide', 'error'); return; }
     setInviting(true);
-    const res = await inviteMember(tree.id, email, memberRole, user.id, inviterName, tree.name);
-    setInviting(false);
-    if (!res) { onToast?.('Échec de l’invitation', 'error'); return; }
-    setMemberEmail('');
-    setMemberRole('viewer');
-    await refreshMembers();
-    notify(tm('inviteSuccess', { email }));
+    setInviteError(null);
+    try {
+      const res = await inviteMember(tree.id, email, memberRole, user.id, inviterName, tree.name);
+      if (!res) { setInviteError('Échec de l’invitation'); onToast?.('Échec de l’invitation', 'error'); return; }
+      setMemberEmail('');
+      setMemberRole('viewer');
+      await refreshMembers();
+      notify(tm('inviteSuccess', { email }));
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Une erreur est survenue';
+      setInviteError(msg); onToast?.(msg, 'error');
+    } finally {
+      setInviting(false);
+    }
   }
 
   async function doRemoveMember(email: string) {
@@ -131,6 +141,7 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
   const [sharePerm, setSharePerm] = useState<'read' | 'write'>('read');
   const [shares, setShares] = useState<{ email: string; permission: string }[]>([]);
   const [sharing, setSharing] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
   const [isPublic, setIsPublic] = useState(false);
   const [publicSlug, setPublicSlug] = useState<string | null>(null);
   const [togglingPublic, setTogglingPublic] = useState(false);
@@ -157,15 +168,23 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
   }
 
   async function doShare() {
+    if (sharing) return;
     const email = shareEmail.trim().toLowerCase();
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { onToast?.('E-mail invalide', 'error'); return; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setShareError('E-mail invalide'); onToast?.('E-mail invalide', 'error'); return; }
     setSharing(true);
-    const { error } = await shareTree(tree.id, email, sharePerm);
-    setSharing(false);
-    if (error) { onToast?.('Échec du partage', 'error'); return; }
-    setShareEmail('');
-    setShares(await listShares(tree.id));
-    onToast?.(`Invitation envoyée à ${email}`, 'success');
+    setShareError(null);
+    try {
+      const { error } = await shareTree(tree.id, email, sharePerm);
+      if (error) { setShareError('Échec du partage'); onToast?.('Échec du partage', 'error'); return; }
+      setShareEmail('');
+      setShares(await listShares(tree.id));
+      onToast?.(`Invitation envoyée à ${email}`, 'success');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Une erreur est survenue';
+      setShareError(msg); onToast?.(msg, 'error');
+    } finally {
+      setSharing(false);
+    }
   }
   async function removeShare(email: string) {
     await unshareTree(tree.id, email);
@@ -277,8 +296,8 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
                     <option value="editor">{t('editor')}</option>
                     <option value="admin">{t('admin')}</option>
                   </select>
-                  <button onClick={doInvite} disabled={inviting} className="btn btn-primary btn-sm">
-                    {inviting ? '…' : t('invite')}
+                  <button onClick={doInvite} disabled={inviting} className="btn btn-primary btn-sm" style={{ opacity: inviting ? 0.7 : undefined }}>
+                    {inviting ? <LoadingSpinner size={14} /> : t('invite')}
                   </button>
                 </div>
                 {memberNotice && (
@@ -286,6 +305,7 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
                     <Check size={13} aria-hidden="true" /> {memberNotice}
                   </div>
                 )}
+                {inviteError && <div style={{ marginTop: '8px' }}><ErrorMessage message={inviteError} onRetry={doInvite} /></div>}
               </div>
 
               {/* Members list */}
@@ -359,8 +379,9 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
                     <option value="read">Lecture</option>
                     <option value="write">Écriture</option>
                   </select>
-                  <button onClick={doShare} disabled={sharing} className="btn btn-primary btn-sm">{sharing ? '…' : 'Inviter'}</button>
+                  <button onClick={doShare} disabled={sharing} className="btn btn-primary btn-sm" style={{ opacity: sharing ? 0.7 : undefined }}>{sharing ? <LoadingSpinner size={14} /> : 'Inviter'}</button>
                 </div>
+                {shareError && <div style={{ marginTop: '8px' }}><ErrorMessage message={shareError} onRetry={doShare} /></div>}
                 {shares.length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '8px' }}>
                     {shares.map(s => (
@@ -476,6 +497,7 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
             </span>
           </div>
         </div>
+        <style>{`.modal .btn-primary svg.animate-spin { color: #fff !important; }`}</style>
       </div>
     </div>
   );

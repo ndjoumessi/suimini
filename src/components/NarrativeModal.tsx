@@ -1,7 +1,9 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { FamilyTree } from '@/types';
-import { ScrollText, Copy, Download, RefreshCw, X, Check, AlertTriangle } from 'lucide-react';
+import { ScrollText, Copy, Download, RefreshCw, X, Check } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { ErrorMessage } from '@/components/ui/ErrorMessage';
 
 type State = 'idle' | 'loading' | 'result' | 'error';
 
@@ -89,21 +91,16 @@ export default function NarrativeModal({ tree, onClose }: { tree: FamilyTree; on
         {/* Body */}
         <div style={{ padding: '20px', overflowY: 'auto', flex: 1 }}>
           {state === 'loading' && (
-            <div role="status" aria-live="polite" style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
-              <span className="spinner" style={{ width: '22px', height: '22px', color: 'var(--accent)' }} />
+            <div role="status" aria-live="polite" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
+              <LoadingSpinner size={22} />
               <p style={{ marginTop: '14px' }}>Composition du récit familial…</p>
               <p style={{ fontSize: '12px', color: 'var(--text-light)' }}>Cela prend généralement quelques secondes.</p>
             </div>
           )}
 
           {state === 'error' && (
-            <div role="alert" style={{ textAlign: 'center', padding: '32px 20px', maxWidth: '420px', margin: '0 auto' }}>
-              <AlertTriangle size={40} strokeWidth={1.4} style={{ color: 'var(--danger)', marginBottom: '12px' }} aria-hidden="true" />
-              <h3 style={{ margin: '0 0 6px' }}>Génération impossible</h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '16px' }}>{error}</p>
-              <button onClick={generate} className="btn btn-primary btn-sm" style={{ gap: '6px' }}>
-                <RefreshCw size={14} aria-hidden="true" /> Réessayer
-              </button>
+            <div style={{ padding: '32px 20px', maxWidth: '420px', margin: '0 auto' }}>
+              <ErrorMessage message={error || 'Génération impossible.'} onRetry={generate} />
             </div>
           )}
 

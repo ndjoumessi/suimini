@@ -6,6 +6,8 @@ import type { FamilyTree } from '@/types';
 import { getDisplayName } from '@/lib/treeUtils';
 import { uploadAvatar } from '@/lib/uploadImage';
 import { useOverlay } from '@/hooks/useOverlay';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { ErrorMessage } from '@/components/ui/ErrorMessage';
 
 /** A row built from the edited OCR fields + the chosen assignment, handed to the parent. */
 export interface ImportItem {
@@ -265,7 +267,11 @@ export default function DocumentScanner({ tree, preselectPersonId, onClose, onIm
                 </div>
               )}
 
-              {error && <p className="ds-error" role="alert">{error}</p>}
+              {error && (
+                <div style={{ marginTop: '12px' }}>
+                  <ErrorMessage message={error} onRetry={file ? scan : undefined} />
+                </div>
+              )}
             </div>
           )}
 
@@ -396,8 +402,8 @@ export default function DocumentScanner({ tree, preselectPersonId, onClose, onIm
 
               <div className="ds-actions ds-actions-end">
                 <button onClick={() => { setStep('upload'); setPeople([]); setRawText(''); setShowRaw(false); }} className="btn btn-ghost btn-sm">{t('back')}</button>
-                <button onClick={runImport} disabled={importing || people.length === 0} className="btn btn-primary">
-                  {importing ? <span className="spinner" aria-hidden="true" /> : <ArrowRight size={16} aria-hidden="true" />} {t('import')}
+                <button onClick={runImport} disabled={importing || people.length === 0} className="btn btn-primary" style={{ opacity: importing ? 0.7 : undefined }}>
+                  {importing ? <LoadingSpinner size={16} /> : <ArrowRight size={16} aria-hidden="true" />} {t('import')}
                 </button>
               </div>
             </div>
@@ -468,4 +474,5 @@ const DS_CSS = `
 .ds-raw-toggle { display: inline-flex; align-items: center; gap: 6px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; padding: 10px 0; min-height: 44px; }
 .ds-raw-toggle:hover { color: var(--accent); }
 .ds-raw-text { margin: 8px 0 0; padding: 12px; font-size: 11px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto; border: 1px solid var(--border-strong); background: var(--bg-muted); color: var(--text-muted); border-radius: var(--radius); }
+.ds-modal .btn-primary svg.animate-spin { color: #fff !important; }
 `;

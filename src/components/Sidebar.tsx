@@ -285,6 +285,9 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         <Link href="/" className="sb-back-link" onClick={onClose}>
           <ArrowLeft size={14} aria-hidden="true" /> {ts('backToSite')}
         </Link>
+        <Link href="/confidentialite" className="sb-back-link" onClick={onClose}>
+          <Shield size={14} aria-hidden="true" /> Confidentialité
+        </Link>
       </div>
 
       {/* Account & sync */}

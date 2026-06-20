@@ -4,6 +4,8 @@ import { useTranslations } from 'next-intl';
 import { AlertCircle, FolderOpen, Plus, X, Dna, ImageUp, Images, Check } from 'lucide-react';
 import { Person, Gender } from '@/types';
 import { uploadAvatar } from '@/lib/uploadImage';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { ErrorMessage } from '@/components/ui/ErrorMessage';
 
 interface Props {
   initial?: Partial<Person>;
@@ -25,6 +27,8 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel }: P
   const [photoNote, setPhotoNote] = useState('');
   const [photoLoading, setPhotoLoading] = useState(false);
   const [galleryLoading, setGalleryLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
 
@@ -92,16 +96,25 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel }: P
   const nameMissing = !form.firstName?.trim() || !form.lastName?.trim();
   const blocked = nameMissing || dnaInvalid || dateInvalid;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (blocked) return;
+    if (blocked || saving) return; // guard against double-submit
     const cleanDna = dna.filter(d => d.region.trim());
     const cf = cfEntries.filter(c => c.key.trim()).reduce<Record<string, string>>((acc, c) => { acc[c.key.trim()] = c.value; return acc; }, {});
-    onSave({
-      ...form,
-      dnaOrigins: cleanDna.length ? cleanDna : undefined,
-      customFields: Object.keys(cf).length ? cf : undefined,
-    });
+    setSaving(true);
+    setSaveError(null);
+    try {
+      // onSave may be sync (returns void) or async — awaiting a non-promise is a no-op.
+      await onSave({
+        ...form,
+        dnaOrigins: cleanDna.length ? cleanDna : undefined,
+        customFields: Object.keys(cf).length ? cf : undefined,
+      });
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Une erreur est survenue');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -263,14 +276,14 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel }: P
             disabled={form.profilePhoto?.startsWith('data:')}
           />
           <input ref={fileRef} type="file" accept="image/*" onChange={handlePhotoFile} style={{ display: 'none' }} />
-          <button type="button" onClick={() => fileRef.current?.click()} disabled={photoLoading} className="btn btn-secondary btn-sm" style={{ flexShrink: 0 }}>
-            {photoLoading ? <span className="spinner" /> : <ImageUp size={14} />} {t('import')}
+          <button type="button" onClick={() => fileRef.current?.click()} disabled={photoLoading} className="btn btn-secondary btn-sm" style={{ flexShrink: 0, opacity: photoLoading ? 0.7 : undefined }}>
+            {photoLoading ? <LoadingSpinner size={14} /> : <ImageUp size={14} />} {t('import')}
           </button>
           {form.profilePhoto && (
             <button type="button" onClick={() => { set('profilePhoto', undefined); setPhotoNote(''); }} aria-label={t('removePhoto')} className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--danger)', flexShrink: 0 }}><X size={14} /></button>
           )}
         </div>
-        {photoError && <span style={{ color: 'var(--danger)', fontSize: '11px', textTransform: 'none', fontWeight: 400, display: 'flex', alignItems: 'center', gap: '4px' }}><AlertCircle size={11} /> {photoError}</span>}
+        {photoError && <div style={{ textTransform: 'none', fontWeight: 400, marginTop: '6px' }}><ErrorMessage message={photoError} /></div>}
         {photoNote && <span style={{ color: 'var(--text-light)', fontSize: '11px', textTransform: 'none', fontWeight: 400 }}>{photoNote}</span>}
       </div>
 
@@ -290,8 +303,8 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel }: P
           ))}
           <input ref={galleryRef} type="file" accept="image/*" onChange={handleGalleryFile} style={{ display: 'none' }} />
           <button type="button" onClick={() => galleryRef.current?.click()} disabled={galleryLoading}
-            style={{ width: '56px', height: '56px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-muted)', border: '1.5px dashed var(--border-strong)', borderRadius: 'var(--radius)', cursor: 'pointer', color: 'var(--text-muted)' }}>
-            {galleryLoading ? <span className="spinner" /> : <Plus size={18} />}
+            style={{ width: '56px', height: '56px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-muted)', border: '1.5px dashed var(--border-strong)', borderRadius: 'var(--radius)', cursor: 'pointer', color: 'var(--text-muted)', opacity: galleryLoading ? 0.7 : undefined }}>
+            {galleryLoading ? <LoadingSpinner size={18} /> : <Plus size={18} />}
           </button>
         </div>
         <input
@@ -389,16 +402,19 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel }: P
         </select>
       </label>
 
+      {saveError && <ErrorMessage message={saveError} />}
+
       <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '4px' }}>
         {onCancel && (
-          <button type="button" onClick={onCancel} className="btn btn-secondary">
+          <button type="button" onClick={onCancel} disabled={saving} className="btn btn-secondary">
             {t('cancel')}
           </button>
         )}
-        <button type="submit" className="btn btn-primary" disabled={blocked} style={{ opacity: blocked ? 0.5 : 1 }}>
-          <Check size={15} aria-hidden="true" /> {submitLabel ?? t('save')}
+        <button type="submit" className="btn btn-primary" disabled={blocked || saving} style={{ opacity: (blocked || saving) ? (saving ? 0.7 : 0.5) : 1 }}>
+          {saving ? <LoadingSpinner size={15} /> : <Check size={15} aria-hidden="true" />} {submitLabel ?? t('save')}
         </button>
       </div>
+      <style>{`form .btn-primary svg.animate-spin { color: #fff !important; }`}</style>
     </form>
   );
 }
