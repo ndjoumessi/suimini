@@ -5,7 +5,6 @@
 import { useColorScheme } from 'react-native';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { MMKV } from 'react-native-mmkv';
 import { useFonts } from 'expo-font';
 import { BricolageGrotesque_700Bold } from '@expo-google-fonts/bricolage-grotesque';
 import {
@@ -17,8 +16,9 @@ import {
   IBMPlexMono_600SemiBold,
 } from '@expo-google-fonts/ibm-plex-mono';
 import { palette, type ThemeName, type Palette } from '@/lib/theme';
+import { createKVStorage } from '@/lib/storage';
 
-const mmkv = new MMKV({ id: 'suimini-theme' });
+const mmkv = createKVStorage('suimini-theme');
 const themeStorage = {
   getItem: (k: string) => mmkv.getString(k) ?? null,
   setItem: (k: string, v: string) => mmkv.set(k, v),

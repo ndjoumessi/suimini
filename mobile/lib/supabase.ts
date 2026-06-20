@@ -2,13 +2,13 @@
  * Supabase client for mobile. Mirrors the web app: when the env vars are absent
  * the client is `null` and the app falls back to the local demo tree.
  *
- * Session persistence uses MMKV (fast, synchronous, encrypted-at-rest on device)
- * adapted to the async Storage interface Supabase expects.
+ * Session persistence uses MMKV when available (fast, synchronous), falling back
+ * to in-memory storage on Expo Go — see lib/storage.ts.
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { MMKV } from 'react-native-mmkv';
+import { createKVStorage } from './storage';
 
-const storage = new MMKV({ id: 'suimini-auth' });
+const storage = createKVStorage('suimini-auth');
 
 const mmkvStorage = {
   getItem: (key: string) => storage.getString(key) ?? null,

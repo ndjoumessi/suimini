@@ -5,12 +5,12 @@
  */
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { MMKV } from 'react-native-mmkv';
 import type { FamilyTree, Person, Relationship } from './types';
 import { sampleFamilyTree } from './sampleData';
 import { loadTreesFromSupabase } from './supabaseSync';
+import { createKVStorage } from './storage';
 
-const mmkv = new MMKV({ id: 'suimini-store' });
+const mmkv = createKVStorage('suimini-store');
 
 const zustandMmkvStorage = {
   getItem: (name: string) => mmkv.getString(name) ?? null,
