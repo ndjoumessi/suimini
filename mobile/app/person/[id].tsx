@@ -1,4 +1,5 @@
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Pencil } from 'lucide-react-native';
@@ -9,6 +10,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { useFamilyStore } from '@/hooks/useFamilyStore';
 
 export default function PersonScreen() {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -29,7 +31,7 @@ export default function PersonScreen() {
         <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
           <ChevronLeft size={22} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.topTitle, { color: colors.textMuted }]}>FICHE</Text>
+        <Text style={[styles.topTitle, { color: colors.textMuted }]}>{t('person.sheet')}</Text>
         <TouchableOpacity
           style={styles.iconBtn}
           onPress={() =>
@@ -54,9 +56,9 @@ export default function PersonScreen() {
         </ScrollView>
       ) : (
         <EmptyState
-          title="Fiche introuvable"
-          description="Cette personne n'existe plus dans l'arbre actif."
-          ctaLabel="Retour"
+          title={t('person.notFound')}
+          description={t('person.notFoundDesc')}
+          ctaLabel={t('common.back')}
           onCta={() => router.back()}
         />
       )}

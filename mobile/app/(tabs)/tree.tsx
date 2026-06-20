@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TreePine } from 'lucide-react-native';
@@ -11,6 +12,7 @@ import { useFamilyStore } from '@/hooks/useFamilyStore';
 import type { Person } from '@/lib/types';
 
 export default function TreeScreen() {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -22,15 +24,15 @@ export default function TreeScreen() {
   return (
     <View style={[styles.flex, { backgroundColor: colors.bg, paddingTop: insets.top }]}>
       <Header
-        eyebrow="Arbre"
-        title={activeTree?.name ?? 'Arbre'}
-        subtitle={`${persons.length} personnes · pincez pour zoomer`}
+        eyebrow={t('tree.title')}
+        title={activeTree?.name ?? t('tree.title')}
+        subtitle={t('tree.subtitle', { count: persons.length })}
       />
       {persons.length === 0 ? (
         <EmptyState
           icon={<TreePine size={32} color={colors.accent} />}
-          title="Arbre vide"
-          description="Ajoutez des personnes depuis le web pour voir l'arbre se dessiner."
+          title={t('tree.empty')}
+          description={t('tree.emptyDesc')}
         />
       ) : (
         <>
@@ -42,7 +44,7 @@ export default function TreeScreen() {
           />
           <View style={[styles.hint, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
             <Text style={[styles.hintText, { color: colors.textMuted }]}>
-              Glissez pour explorer · pincez pour zoomer · touchez une fiche
+              {t('tree.hint')}
             </Text>
           </View>
         </>

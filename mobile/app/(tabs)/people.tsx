@@ -1,4 +1,5 @@
 import { useMemo, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -24,6 +25,7 @@ type SortKey = 'name' | 'date' | 'gen';
 const PAGE = 50;
 
 export default function PeopleScreen() {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -73,7 +75,7 @@ export default function PeopleScreen() {
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.bg, paddingTop: insets.top }]}>
-      <Header eyebrow="Famille" title="Personnes" subtitle={`${filtered.length} fiches`} />
+      <Header eyebrow={t('nav.people')} title={t('people.title')} subtitle={t('people.count', { count: filtered.length })} />
 
       <View style={styles.controls}>
         <Input
@@ -82,7 +84,7 @@ export default function PeopleScreen() {
             setQuery(t);
             setLimit(PAGE);
           }}
-          placeholder="Rechercher un nom, métier, ville…"
+          placeholder={t('people.search')}
           autoCapitalize="none"
           style={{ paddingLeft: 40 }}
         />
@@ -92,7 +94,12 @@ export default function PeopleScreen() {
       <View style={styles.sortRow}>
         {(['name', 'date', 'gen'] as SortKey[]).map((key) => {
           const active = sort === key;
-          const label = key === 'name' ? 'Nom' : key === 'date' ? 'Naissance' : 'Génération';
+          const label =
+            key === 'name'
+              ? t('people.sortName')
+              : key === 'date'
+                ? t('people.sortBirth')
+                : t('people.sortGen');
           return (
             <TouchableOpacity
               key={key}
@@ -134,8 +141,8 @@ export default function PeopleScreen() {
         ListEmptyComponent={
           <EmptyState
             icon={<Users size={32} color={colors.accent} />}
-            title="Aucun résultat"
-            description={query ? `Rien ne correspond à « ${query} ».` : 'Aucune personne dans cet arbre.'}
+            title={t('people.noResult')}
+            description={query ? t('people.noMatch', { query }) : t('people.emptyTree')}
           />
         }
       />

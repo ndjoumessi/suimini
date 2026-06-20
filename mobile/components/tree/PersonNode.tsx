@@ -1,4 +1,5 @@
 import { G, Rect, Text as SvgText } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
 import type { Person } from '@/lib/types';
 import { getRoleColor } from '@/lib/theme';
 import { NODE_W, NODE_H } from '@/lib/treeLayout';
@@ -30,6 +31,7 @@ export function PersonNode({
   faint,
   accent,
 }: PersonNodeProps) {
+  const { t } = useTranslation();
   const spine = getRoleColor(person);
   const stroke = isRoot ? accent : ink;
 
@@ -61,7 +63,7 @@ export function PersonNode({
       </SvgText>
       {person.birthDate ? (
         <SvgText x={x + 16} y={y + 56} fontSize={9} fill={faint}>
-          {person.isAlive ? 'né·e ' : '✝ '}
+          {person.isAlive ? `${t('tree.born')} ` : '✝ '}
           {person.birthDate.slice(0, 4)}
           {!person.isAlive && person.deathDate
             ? `–${person.deathDate.slice(0, 4)}`

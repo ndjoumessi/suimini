@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -17,6 +18,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function LoginScreen() {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -38,13 +40,13 @@ export default function LoginScreen() {
         ? await sendMagicLink(email.trim())
         : await signIn(email.trim(), password);
       if (res.error) setError(res.error);
-      else if (magic) setNotice('Lien de connexion envoyé. Vérifiez vos emails.');
+      else if (magic) setNotice(t('auth.magicSent'));
       // On success the AuthGate handles navigation.
     } catch (e: any) {
       // Should not happen (useAuth catches internally) but guards against an
       // uncaught promise rejection if a transport error ever escapes.
       console.error('LOGIN ERROR', JSON.stringify(e), e?.message, e?.status);
-      setError(e?.message ?? 'Connexion impossible. Réessayez.');
+      setError(e?.message ?? t('common.connectionFailed'));
     } finally {
       setLoading(false);
     }
@@ -74,23 +76,23 @@ export default function LoginScreen() {
           </View>
           <Text style={[styles.wordmark, { color: colors.text }]}>Suimini</Text>
           <Text style={[styles.tagline, { color: colors.textMuted }]}>
-            Votre arbre généalogique, vivant et partagé
+            {t('auth.tagline')}
           </Text>
         </View>
 
         <View style={styles.form}>
           <Input
-            label="Email"
+            label={t('auth.email')}
             value={email}
             onChangeText={setEmail}
-            placeholder="vous@exemple.fr"
+            placeholder={t('auth.emailPlaceholder')}
             autoCapitalize="none"
             autoComplete="email"
             keyboardType="email-address"
           />
           {!magic ? (
             <Input
-              label="Mot de passe"
+              label={t('auth.password')}
               value={password}
               onChangeText={setPassword}
               placeholder="••••••••"
@@ -107,7 +109,7 @@ export default function LoginScreen() {
           ) : null}
 
           <Button
-            label={magic ? 'Envoyer le lien magique' : 'Se connecter'}
+            label={magic ? t('auth.magicSend') : t('auth.signIn')}
             onPress={onSubmit}
             loading={loading}
             style={{ marginTop: spacing.sm }}
@@ -115,17 +117,17 @@ export default function LoginScreen() {
 
           <TouchableOpacity onPress={() => setMagic((m) => !m)} style={styles.switch}>
             <Text style={[styles.switchText, { color: colors.accent }]}>
-              {magic ? 'Utiliser un mot de passe' : 'Recevoir un lien magique'}
+              {magic ? t('auth.usePassword') : t('auth.useMagic')}
             </Text>
           </TouchableOpacity>
         </View>
 
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-        <Button label="Continuer en démo" variant="secondary" onPress={onDemo} />
+        <Button label={t('auth.continueDemo')} variant="secondary" onPress={onDemo} />
         {!configured ? (
           <Text style={[styles.hint, { color: colors.textLight }]}>
-            Supabase non configuré — mode démo (arbre Famille Dupont).
+            {t('auth.demoHint')}
           </Text>
         ) : null}
 
@@ -134,9 +136,9 @@ export default function LoginScreen() {
           style={styles.registerLink}
         >
           <Text style={[styles.registerText, { color: colors.textMuted }]}>
-            Pas encore de compte ?{' '}
+            {t('auth.noAccount')}{' '}
             <Text style={{ color: colors.accent, fontFamily: fonts.bodyBold }}>
-              Créer un compte
+              {t('auth.createAccount')}
             </Text>
           </Text>
         </TouchableOpacity>

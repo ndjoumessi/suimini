@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
@@ -30,6 +31,7 @@ export function PersonDetail({
   relationships,
   onSelectRelative,
 }: PersonDetailProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const tint = getRoleColor(person);
   const age = getAge(person.birthDate, person.deathDate);
@@ -50,12 +52,18 @@ export function PersonDetail({
         </Text>
         <View style={styles.badges}>
           <Badge
-            label={person.isAlive ? 'Vivant·e' : 'Décédé·e'}
+            label={person.isAlive ? t('person.alive') : t('person.deceased')}
             color={person.isAlive ? colors.accent : colors.textMuted}
           />
           {person.gender !== 'unknown' ? (
             <Badge
-              label={person.gender === 'male' ? 'Homme' : person.gender === 'female' ? 'Femme' : 'Autre'}
+              label={
+                person.gender === 'male'
+                  ? t('person.male')
+                  : person.gender === 'female'
+                    ? t('person.female')
+                    : t('person.other')
+              }
               color={tint}
             />
           ) : null}
@@ -63,10 +71,10 @@ export function PersonDetail({
       </View>
 
       {/* Vital info */}
-      <Section title="Repères" colors={colors}>
+      <Section title={t('person.repere')} colors={colors}>
         {person.birthDate ? (
           <InfoRow
-            label="Naissance"
+            label={t('person.birth')}
             value={`${formatDate(person.birthDate, person.birthDateApprox)}${
               person.birthPlace?.city ? ` · ${person.birthPlace.city}` : ''
             }`}
@@ -75,7 +83,7 @@ export function PersonDetail({
         ) : null}
         {!person.isAlive && person.deathDate ? (
           <InfoRow
-            label="Décès"
+            label={t('person.death')}
             value={`${formatDate(person.deathDate, person.deathDateApprox)}${
               person.deathPlace?.city ? ` · ${person.deathPlace.city}` : ''
             }`}
@@ -84,23 +92,23 @@ export function PersonDetail({
         ) : null}
         {age != null ? (
           <InfoRow
-            label={person.isAlive ? 'Âge' : 'A vécu'}
+            label={person.isAlive ? t('person.age') : t('person.lived')}
             value={formatAge(age)}
             colors={colors}
           />
         ) : null}
         {person.occupation ? (
-          <InfoRow label="Profession" value={person.occupation} colors={colors} />
+          <InfoRow label={t('person.occupation')} value={person.occupation} colors={colors} />
         ) : null}
         {person.nationality ? (
-          <InfoRow label="Nationalité" value={person.nationality} colors={colors} />
+          <InfoRow label={t('person.nationality')} value={person.nationality} colors={colors} />
         ) : null}
       </Section>
 
       {/* Completeness */}
       <View style={styles.completeRow}>
         <Text style={[styles.completeLabel, { color: colors.textMuted }]}>
-          FICHE COMPLÉTÉE
+          {t('person.completeness')}
         </Text>
         <View style={[styles.bar, { backgroundColor: colors.bgMuted }]}>
           <View
@@ -117,24 +125,24 @@ export function PersonDetail({
 
       {/* Bio */}
       {person.bio ? (
-        <Section title="Biographie" colors={colors}>
+        <Section title={t('person.biography')} colors={colors}>
           <Text style={[styles.bio, { color: colors.text }]}>{person.bio}</Text>
         </Section>
       ) : null}
 
       {/* Family */}
       {parents.length + spouses.length + siblings.length + children.length > 0 ? (
-        <Section title="Famille" colors={colors}>
-          <RelativeGroup title="Parents" people={parents} onSelect={onSelectRelative} colors={colors} />
-          <RelativeGroup title="Conjoint·e·s" people={spouses} onSelect={onSelectRelative} colors={colors} />
-          <RelativeGroup title="Fratrie" people={siblings} onSelect={onSelectRelative} colors={colors} />
-          <RelativeGroup title="Enfants" people={children} onSelect={onSelectRelative} colors={colors} />
+        <Section title={t('person.family')} colors={colors}>
+          <RelativeGroup title={t('person.parents')} people={parents} onSelect={onSelectRelative} colors={colors} />
+          <RelativeGroup title={t('person.spouses')} people={spouses} onSelect={onSelectRelative} colors={colors} />
+          <RelativeGroup title={t('person.siblings')} people={siblings} onSelect={onSelectRelative} colors={colors} />
+          <RelativeGroup title={t('person.children')} people={children} onSelect={onSelectRelative} colors={colors} />
         </Section>
       ) : null}
 
       {/* DNA origins */}
       {person.dnaOrigins && person.dnaOrigins.length ? (
-        <Section title="Origines ADN" colors={colors}>
+        <Section title={t('person.dna')} colors={colors}>
           {person.dnaOrigins.map((o) => (
             <View key={o.region} style={styles.dnaRow}>
               <Text style={[styles.dnaLabel, { color: colors.text }]} numberOfLines={1}>
@@ -154,8 +162,8 @@ export function PersonDetail({
       {/* Tags */}
       {person.tags && person.tags.length ? (
         <View style={styles.tags}>
-          {person.tags.map((t) => (
-            <Badge key={t} label={t} color={colors.textMuted} />
+          {person.tags.map((tag) => (
+            <Badge key={tag} label={tag} color={colors.textMuted} />
           ))}
         </View>
       ) : null}

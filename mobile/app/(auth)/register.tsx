@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
 import { Button } from '@/components/ui/Button';
@@ -18,6 +19,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function RegisterScreen() {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -33,7 +35,7 @@ export default function RegisterScreen() {
   const onSubmit = async () => {
     setError(null);
     if (password.length < 8) {
-      setError('Le mot de passe doit faire au moins 8 caractères.');
+      setError(t('auth.register.passwordTooShort'));
       return;
     }
     setLoading(true);
@@ -57,25 +59,24 @@ export default function RegisterScreen() {
       >
         <TouchableOpacity style={styles.back} onPress={() => router.back()}>
           <ChevronLeft size={20} color={colors.text} />
-          <Text style={[styles.backText, { color: colors.text }]}>Retour</Text>
+          <Text style={[styles.backText, { color: colors.text }]}>{t('common.back')}</Text>
         </TouchableOpacity>
 
-        <Text style={[styles.title, { color: colors.text }]}>Créer un compte</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{t('auth.register.title')}</Text>
         <Text style={[styles.sub, { color: colors.textMuted }]}>
-          Votre compte sera validé par un administrateur avant activation.
+          {t('auth.register.subtitle')}
         </Text>
 
         {done ? (
           <View style={[styles.doneBox, { borderColor: colors.borderStrong, backgroundColor: colors.bgCard }]}>
             <Text style={[styles.doneTitle, { color: colors.accent }]}>
-              DEMANDE ENVOYÉE
+              {t('auth.register.sentTitle')}
             </Text>
             <Text style={[styles.doneText, { color: colors.text }]}>
-              Vérifiez vos emails pour confirmer votre adresse. Vous recevrez une
-              notification dès que votre compte sera approuvé.
+              {t('auth.register.sentBody')}
             </Text>
             <Button
-              label="Retour à la connexion"
+              label={t('auth.register.backToLogin')}
               onPress={() => router.replace('/(auth)/login')}
               style={{ marginTop: spacing.md }}
             />
@@ -83,26 +84,26 @@ export default function RegisterScreen() {
         ) : (
           <View style={styles.form}>
             <Input
-              label="Nom affiché"
+              label={t('auth.register.displayName')}
               value={name}
               onChangeText={setName}
-              placeholder="Votre nom"
+              placeholder={t('auth.register.displayNamePlaceholder')}
               autoCapitalize="words"
             />
             <Input
-              label="Email"
+              label={t('auth.email')}
               value={email}
               onChangeText={setEmail}
-              placeholder="vous@exemple.fr"
+              placeholder={t('auth.emailPlaceholder')}
               autoCapitalize="none"
               keyboardType="email-address"
               autoComplete="email"
             />
             <Input
-              label="Mot de passe"
+              label={t('auth.password')}
               value={password}
               onChangeText={setPassword}
-              placeholder="8 caractères minimum"
+              placeholder={t('auth.register.passwordHint')}
               secureTextEntry
               autoCapitalize="none"
             />
@@ -110,7 +111,7 @@ export default function RegisterScreen() {
               <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>
             ) : null}
             <Button
-              label="Créer mon compte"
+              label={t('auth.register.submit')}
               onPress={onSubmit}
               loading={loading}
               style={{ marginTop: spacing.sm }}

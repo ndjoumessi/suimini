@@ -10,6 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Trash2, Calendar } from 'lucide-react-native';
 import DateTimePicker, {
@@ -27,9 +28,9 @@ import type { Gender, Person } from '@/lib/types';
 const pad = (n: number) => String(n).padStart(2, '0');
 /** Date → ISO `AAAA-MM-JJ` (stored shape, Supabase-friendly). */
 const toISO = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-/** ISO → display `JJ/MM/AAAA`, or a placeholder when empty. */
+/** ISO → display `JJ/MM/AAAA`, or '' when empty (placeholder handled in JSX). */
 const formatFR = (iso: string) => {
-  if (!iso) return 'Non renseignée';
+  if (!iso) return '';
   const [y, m, d] = iso.split('-');
   return d && m && y ? `${d}/${m}/${y}` : iso;
 };
@@ -39,6 +40,7 @@ const parseISO = (iso: string): Date => {
 };
 
 export default function PersonEditScreen() {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -73,12 +75,12 @@ export default function PersonEditScreen() {
   const onSave = async () => {
     setError(null);
     if (!firstName.trim() && !lastName.trim()) {
-      setError('Renseignez au moins un prénom ou un nom.');
+      setError(t('person.errNameRequired'));
       return;
     }
     const treeId = activeTree?.id;
     if (!treeId) {
-      setError('Aucun arbre actif.');
+      setError(t('person.errNoTree'));
       return;
     }
     const now = new Date().toISOString();
@@ -102,7 +104,7 @@ export default function PersonEditScreen() {
     const res = await upsertPerson(treeId, person);
     setSaving(false);
     if (!res.ok) {
-      setError(res.error ?? 'Enregistrement impossible.');
+      setError(res.error ?? t('person.errSave'));
       return;
     }
     router.back();
@@ -111,17 +113,17 @@ export default function PersonEditScreen() {
   const onDelete = () => {
     if (!existing || !activeTree?.id) return;
     Alert.alert(
-      'Supprimer cette fiche ?',
-      `${existing.firstName} ${existing.lastName} sera retiré·e de l'arbre. Cette action est définitive.`,
+      t('person.deleteTitle'),
+      t('person.deleteBody', { name: `${existing.firstName} ${existing.lastName}`.trim() }),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Supprimer',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             const res = await removePerson(activeTree.id, existing.id);
             if (!res.ok) {
-              setError(res.error ?? 'Suppression impossible.');
+              setError(res.error ?? t('person.errDelete'));
               return;
             }
             router.replace('/(tabs)/people');
@@ -147,7 +149,7 @@ export default function PersonEditScreen() {
           <ChevronLeft size={22} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.topTitle, { color: colors.textMuted }]}>
-          {isEdit ? 'MODIFIER' : 'NOUVELLE FICHE'}
+          {isEdit ? t('person.edit') : t('person.newSheet')}
         </Text>
         {isEdit ? (
           <TouchableOpacity style={styles.iconBtn} onPress={onDelete}>
@@ -165,21 +167,31 @@ export default function PersonEditScreen() {
         {isDemo ? (
           <View style={[styles.demoBanner, { borderColor: colors.accent, backgroundColor: colors.accentLight }]}>
             <Text style={[styles.demoText, { color: colors.accent }]}>
-              MODE DÉMO — modifications locales, non sauvegardées sur le serveur.
+              {t('person.demoBanner')}
             </Text>
           </View>
         ) : null}
 
-        <Input label="Prénom" value={firstName} onChangeText={setFirstName} placeholder="Marie" />
-        <Input label="Nom" value={lastName} onChangeText={setLastName} placeholder="Dupont" />
+        <Input
+          label={t('person.firstName')}
+          value={firstName}
+          onChangeText={setFirstName}
+          placeholder={t('person.firstNamePlaceholder')}
+        />
+        <Input
+          label={t('person.lastName')}
+          value={lastName}
+          onChangeText={setLastName}
+          placeholder={t('person.lastNamePlaceholder')}
+        />
 
         {/* Gender toggle */}
         <View style={styles.field}>
-          <Text style={[styles.label, { color: colors.textMuted }]}>GENRE</Text>
+          <Text style={[styles.label, { color: colors.textMuted }]}>{t('person.gender')}</Text>
           <View style={styles.genderRow}>
             {([
-              { key: 'male', label: 'Homme' },
-              { key: 'female', label: 'Femme' },
+              { key: 'male', label: t('person.male') },
+              { key: 'female', label: t('person.female') },
             ] as { key: Gender; label: string }[]).map((g) => {
               const active = gender === g.key;
               return (
@@ -211,14 +223,14 @@ export default function PersonEditScreen() {
 
         {/* Date de naissance */}
         <View style={styles.field}>
-          <Text style={[styles.label, { color: colors.textMuted }]}>DATE DE NAISSANCE</Text>
+          <Text style={[styles.label, { color: colors.textMuted }]}>{t('person.birthDate')}</Text>
           <TouchableOpacity
             onPress={() => setPicker('birth')}
             activeOpacity={0.8}
             style={[styles.dateBtn, { borderColor: colors.borderStrong, backgroundColor: colors.bgCard }]}
           >
             <Text style={[styles.dateValue, { color: birthDate ? colors.text : colors.textLight }]}>
-              {formatFR(birthDate)}
+              {birthDate ? formatFR(birthDate) : t('person.notSet')}
             </Text>
             <Calendar size={18} color={colors.textMuted} />
           </TouchableOpacity>
@@ -227,7 +239,7 @@ export default function PersonEditScreen() {
         {/* Date de décès */}
         <View style={styles.field}>
           <Text style={[styles.label, { color: colors.textMuted }]}>
-            DATE DE DÉCÈS (VIDE SI VIVANT·E)
+            {t('person.deathDate')}
           </Text>
           <View style={styles.dateRow}>
             <TouchableOpacity
@@ -236,7 +248,7 @@ export default function PersonEditScreen() {
               style={[styles.dateBtn, styles.dateGrow, { borderColor: colors.borderStrong, backgroundColor: colors.bgCard }]}
             >
               <Text style={[styles.dateValue, { color: deathDate ? colors.text : colors.textLight }]}>
-                {formatFR(deathDate)}
+                {deathDate ? formatFR(deathDate) : t('person.notSet')}
               </Text>
               <Calendar size={18} color={colors.textMuted} />
             </TouchableOpacity>
@@ -245,7 +257,7 @@ export default function PersonEditScreen() {
                 onPress={() => setDeathDate('')}
                 style={[styles.clearBtn, { borderColor: colors.borderStrong }]}
               >
-                <Text style={[styles.clearText, { color: colors.danger }]}>Effacer</Text>
+                <Text style={[styles.clearText, { color: colors.danger }]}>{t('common.clear')}</Text>
               </TouchableOpacity>
             ) : null}
           </View>
@@ -262,17 +274,22 @@ export default function PersonEditScreen() {
               onChange={onPickerChange}
             />
             {Platform.OS === 'ios' ? (
-              <Button label="Terminé" variant="secondary" onPress={() => setPicker(null)} />
+              <Button label={t('common.done')} variant="secondary" onPress={() => setPicker(null)} />
             ) : null}
           </View>
         ) : null}
 
-        <Input label="Lieu de naissance" value={birthCity} onChangeText={setBirthCity} placeholder="Lyon" />
         <Input
-          label="Biographie"
+          label={t('person.birthPlace')}
+          value={birthCity}
+          onChangeText={setBirthCity}
+          placeholder={t('person.cityPlaceholder')}
+        />
+        <Input
+          label={t('person.bio')}
           value={bio}
           onChangeText={setBio}
-          placeholder="Quelques phrases…"
+          placeholder={t('person.bioPlaceholder')}
           multiline
           numberOfLines={4}
           style={styles.bioInput}
@@ -281,14 +298,14 @@ export default function PersonEditScreen() {
         {error ? <Text style={[styles.error, { color: colors.danger }]}>{error}</Text> : null}
 
         <Button
-          label={isEdit ? 'Enregistrer' : 'Créer la fiche'}
+          label={isEdit ? t('person.save') : t('person.create')}
           onPress={onSave}
           loading={saving}
           style={{ marginTop: spacing.md }}
         />
         {isEdit ? (
           <Button
-            label="Supprimer la fiche"
+            label={t('person.deleteSheet')}
             variant="secondary"
             icon={<Trash2 size={16} color={colors.danger} />}
             onPress={onDelete}

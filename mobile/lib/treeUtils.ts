@@ -9,6 +9,7 @@ import type {
   TreeStats,
   Anniversary,
 } from './types';
+import { currentLanguage } from './i18n';
 
 export function generateId(): string {
   return `id-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
@@ -34,18 +35,20 @@ export function getAge(birthDate?: string, deathDate?: string): number | null {
 
 export function formatDate(dateStr?: string, approx?: boolean): string {
   if (!dateStr) return '';
+  const en = currentLanguage() === 'en';
   const date = new Date(dateStr);
-  const formatted = date.toLocaleDateString('fr-FR', {
+  const formatted = date.toLocaleDateString(en ? 'en-US' : 'fr-FR', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
-  return approx ? `vers ${formatted}` : formatted;
+  if (!approx) return formatted;
+  return en ? `circa ${formatted}` : `vers ${formatted}`;
 }
 
 export function formatAge(age: number | null): string {
   if (age == null) return '';
-  return `${age} ans`;
+  return currentLanguage() === 'en' ? `${age} years` : `${age} ans`;
 }
 
 export function formatYear(dateStr?: string): string {

@@ -8,8 +8,9 @@ import {
   Switch,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Sun, Moon, Smartphone, LogOut, Check, RefreshCw, Bell } from 'lucide-react-native';
+import { Sun, Moon, Smartphone, LogOut, Check, RefreshCw, Bell, Globe } from 'lucide-react-native';
 import { Header } from '@/components/layout/Header';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -17,6 +18,7 @@ import { fonts, fontSize, spacing, borderWidth } from '@/lib/theme';
 import { useTheme, type ThemePreference } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
 import { useFamilyStore } from '@/hooks/useFamilyStore';
+import { changeLanguage, currentLanguage, type Lang } from '@/lib/i18n';
 import {
   registerForPushNotifications,
   savePushToken,
@@ -27,20 +29,19 @@ import {
   type PushPermission,
 } from '@/lib/notifications';
 
-const SYNC_LABEL: Record<string, string> = {
-  idle: 'Prêt',
-  saved: 'Synchronisé',
-  syncing: 'Synchronisation…',
-  offline: 'Hors-ligne (local)',
-  error: 'Erreur de sync',
-};
-
 export default function SettingsScreen() {
+  const { t } = useTranslation();
   const { colors, preference, setPreference } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user, isDemo, signOut, configured, session } = useAuth();
   const { trees, activeTreeId, setActiveTree, syncStatus, refreshFromRemote } = useFamilyStore();
+
+  // Language (persisted via i18n).
+  const [lang, setLang] = useState<Lang>(currentLanguage());
+  const onLanguage = useCallback((next: Lang) => {
+    changeLanguage(next).then(() => setLang(next));
+  }, []);
 
   // Push notifications state.
   const [pushOn, setPushOn] = useState(false);
@@ -88,37 +89,50 @@ export default function SettingsScreen() {
   };
 
   const themeOptions: { key: ThemePreference; label: string; icon: React.ReactNode }[] = [
-    { key: 'system', label: 'Système', icon: <Smartphone size={18} color={colors.text} /> },
-    { key: 'light', label: 'Clair', icon: <Sun size={18} color={colors.text} /> },
-    { key: 'dark', label: 'Sombre', icon: <Moon size={18} color={colors.text} /> },
+    { key: 'system', label: t('settings.system'), icon: <Smartphone size={18} color={colors.text} /> },
+    { key: 'light', label: t('settings.light'), icon: <Sun size={18} color={colors.text} /> },
+    { key: 'dark', label: t('settings.dark'), icon: <Moon size={18} color={colors.text} /> },
   ];
+
+  const langOptions: { key: Lang; label: string }[] = [
+    { key: 'fr', label: 'Français' },
+    { key: 'en', label: 'English' },
+  ];
+
+  const pushMeta = isDemo
+    ? t('settings.pushDemo')
+    : pushPerm === 'denied'
+      ? t('settings.pushDenied')
+      : pushOn && pushToken
+        ? t('settings.pushOn', { token: pushToken.slice(0, 14) })
+        : t('settings.pushDefault');
 
   return (
     <ScrollView
       style={{ backgroundColor: colors.bg }}
       contentContainerStyle={{ paddingTop: insets.top, paddingBottom: insets.bottom + spacing.xxl }}
     >
-      <Header eyebrow="Réglages" title="Paramètres" />
+      <Header eyebrow={t('settings.eyebrow')} title={t('settings.title')} />
 
       {/* Account */}
-      <Section title="Compte" colors={colors}>
+      <Section title={t('settings.account')} colors={colors}>
         <Card>
           <Text style={[styles.value, { color: colors.text }]}>
-            {isDemo ? 'Mode démo' : user?.email ?? 'Non connecté'}
+            {isDemo ? t('settings.demoMode') : user?.email ?? t('settings.notConnected')}
           </Text>
           <Text style={[styles.meta, { color: colors.textMuted }]}>
             {isDemo
-              ? 'Données locales (arbre Famille Dupont).'
+              ? t('settings.localData')
               : configured
-                ? 'Connecté via Supabase.'
-                : 'Supabase non configuré.'}
+                ? t('settings.connected')
+                : t('settings.supabaseMissing')}
           </Text>
         </Card>
       </Section>
 
       {/* Theme */}
-      <Section title="Apparence" colors={colors}>
-        <View style={styles.themeRow}>
+      <Section title={t('settings.appearance')} colors={colors}>
+        <View style={styles.chipRow}>
           {themeOptions.map((opt) => {
             const active = preference === opt.key;
             return (
@@ -127,7 +141,7 @@ export default function SettingsScreen() {
                 onPress={() => setPreference(opt.key)}
                 activeOpacity={0.8}
                 style={[
-                  styles.themeChip,
+                  styles.chip,
                   {
                     borderColor: active ? colors.accent : colors.borderStrong,
                     backgroundColor: active ? colors.accentLight : colors.bgCard,
@@ -135,7 +149,34 @@ export default function SettingsScreen() {
                 ]}
               >
                 {opt.icon}
-                <Text style={[styles.themeLabel, { color: colors.text }]}>{opt.label}</Text>
+                <Text style={[styles.chipLabel, { color: colors.text }]}>{opt.label}</Text>
+                {active ? <Check size={14} color={colors.accent} /> : null}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </Section>
+
+      {/* Language */}
+      <Section title={t('settings.language')} colors={colors}>
+        <View style={styles.chipRow}>
+          {langOptions.map((opt) => {
+            const active = lang === opt.key;
+            return (
+              <TouchableOpacity
+                key={opt.key}
+                onPress={() => onLanguage(opt.key)}
+                activeOpacity={0.8}
+                style={[
+                  styles.chip,
+                  {
+                    borderColor: active ? colors.accent : colors.borderStrong,
+                    backgroundColor: active ? colors.accentLight : colors.bgCard,
+                  },
+                ]}
+              >
+                <Globe size={18} color={colors.text} />
+                <Text style={[styles.chipLabel, { color: colors.text }]}>{opt.label}</Text>
                 {active ? <Check size={14} color={colors.accent} /> : null}
               </TouchableOpacity>
             );
@@ -145,16 +186,16 @@ export default function SettingsScreen() {
 
       {/* Trees */}
       {trees.length > 1 ? (
-        <Section title="Arbres" colors={colors}>
-          {trees.map((t) => {
-            const active = t.id === activeTreeId;
+        <Section title={t('settings.trees')} colors={colors}>
+          {trees.map((tree) => {
+            const active = tree.id === activeTreeId;
             return (
-              <Card key={t.id} onPress={() => setActiveTree(t.id)} style={styles.treeItem}>
+              <Card key={tree.id} onPress={() => setActiveTree(tree.id)} style={styles.treeItem}>
                 <View style={styles.treeRow}>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.value, { color: colors.text }]}>{t.name}</Text>
+                    <Text style={[styles.value, { color: colors.text }]}>{tree.name}</Text>
                     <Text style={[styles.meta, { color: colors.textMuted }]}>
-                      {t.persons.length} personnes
+                      {t('settings.personsCount', { count: tree.persons.length })}
                     </Text>
                   </View>
                   {active ? <Check size={20} color={colors.accent} /> : null}
@@ -166,11 +207,11 @@ export default function SettingsScreen() {
       ) : null}
 
       {/* Sync */}
-      <Section title="Synchronisation" colors={colors}>
+      <Section title={t('settings.sync')} colors={colors}>
         <Card>
           <View style={styles.syncRow}>
             <Text style={[styles.value, { color: colors.text }]}>
-              {SYNC_LABEL[syncStatus] ?? syncStatus}
+              {t(`settings.syncStatus.${syncStatus}`, { defaultValue: syncStatus })}
             </Text>
             <TouchableOpacity onPress={() => refreshFromRemote()} disabled={!configured}>
               <RefreshCw size={18} color={configured ? colors.accent : colors.textLight} />
@@ -180,24 +221,16 @@ export default function SettingsScreen() {
       </Section>
 
       {/* Notifications */}
-      <Section title="Notifications" colors={colors}>
+      <Section title={t('settings.notifications')} colors={colors}>
         <Card>
           <View style={styles.notifRow}>
             <View style={styles.notifLeft}>
               <Bell size={18} color={pushOn ? colors.accent : colors.textMuted} />
               <View style={{ flex: 1 }}>
                 <Text style={[styles.value, { color: colors.text }]}>
-                  Notifications push
+                  {t('settings.pushTitle')}
                 </Text>
-                <Text style={[styles.meta, { color: colors.textMuted }]}>
-                  {isDemo
-                    ? 'Indisponible en mode démo.'
-                    : pushPerm === 'denied'
-                      ? 'Autorisation refusée — activez-la dans les réglages système.'
-                      : pushOn && pushToken
-                        ? `Activées · token ${pushToken.slice(0, 14)}…`
-                        : 'Anniversaires et activité de la famille.'}
-                </Text>
+                <Text style={[styles.meta, { color: colors.textMuted }]}>{pushMeta}</Text>
               </View>
             </View>
             <Switch
@@ -214,13 +247,13 @@ export default function SettingsScreen() {
       {/* About + sign out */}
       <View style={styles.footer}>
         <Button
-          label={isDemo ? 'Quitter la démo' : 'Se déconnecter'}
+          label={isDemo ? t('settings.exitDemo') : t('settings.signOut')}
           variant="secondary"
           icon={<LogOut size={16} color={colors.text} />}
           onPress={onSignOut}
         />
         <Text style={[styles.version, { color: colors.textLight }]}>
-          Suimini Mobile v1.0.0 · Design « Atelier »
+          {t('settings.version')}
         </Text>
       </View>
     </ScrollView>
@@ -249,15 +282,15 @@ const styles = StyleSheet.create({
   sectionTitle: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 1.5 },
   value: { fontFamily: fonts.bodyBold, fontSize: fontSize.base },
   meta: { fontFamily: fonts.body, fontSize: fontSize.sm, marginTop: 2 },
-  themeRow: { flexDirection: 'row', gap: spacing.sm },
-  themeChip: {
+  chipRow: { flexDirection: 'row', gap: spacing.sm },
+  chip: {
     flex: 1,
     borderWidth,
     paddingVertical: spacing.md,
     alignItems: 'center',
     gap: spacing.xs,
   },
-  themeLabel: { fontFamily: fonts.body, fontSize: fontSize.sm },
+  chipLabel: { fontFamily: fonts.body, fontSize: fontSize.sm },
   treeItem: { marginBottom: spacing.xs },
   treeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   syncRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

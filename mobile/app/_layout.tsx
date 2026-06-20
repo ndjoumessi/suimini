@@ -5,6 +5,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { View } from 'react-native';
+import { I18nextProvider } from 'react-i18next';
+import i18n from '@/lib/i18n';
 import { useAppFonts, useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
 import { useStore } from '@/lib/store';
@@ -72,7 +74,8 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
+      <I18nextProvider i18n={i18n}>
+        <SafeAreaProvider>
         <View style={{ flex: 1, backgroundColor: colors.bg }}>
           <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
           <AuthGate>
@@ -97,7 +100,8 @@ export default function RootLayout() {
             </Stack>
           </AuthGate>
         </View>
-      </SafeAreaProvider>
+        </SafeAreaProvider>
+      </I18nextProvider>
     </GestureHandlerRootView>
   );
 }

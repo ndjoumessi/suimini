@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, SectionList, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,19 +20,8 @@ interface TimelineItem {
   person: Person;
 }
 
-const EVENT_LABEL: Record<string, string> = {
-  birth: 'Naissance',
-  death: 'Décès',
-  marriage: 'Mariage',
-  divorce: 'Divorce',
-  baptism: 'Baptême',
-  graduation: 'Diplôme',
-  military: 'Service',
-  immigration: 'Immigration',
-  other: 'Événement',
-};
-
 export default function TimelineScreen() {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -54,7 +44,9 @@ export default function TimelineScreen() {
           id: `${p.id}-${e.id}`,
           date: e.date,
           year: e.date.slice(0, 4),
-          label: e.description || EVENT_LABEL[e.type] || 'Événement',
+          label:
+            e.description ||
+            t(`timeline.events.${e.type}`, { defaultValue: t('timeline.events.other') }),
           person: p,
         });
       });
@@ -69,11 +61,11 @@ export default function TimelineScreen() {
       byDecade.get(decade)!.push(it);
     });
     return Array.from(byDecade.entries()).map(([title, data]) => ({ title, data }));
-  }, [persons]);
+  }, [persons, t]);
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.bg, paddingTop: insets.top }]}>
-      <Header eyebrow="Chronologie" title="Au fil du temps" />
+      <Header eyebrow={t('timeline.eyebrow')} title={t('timeline.title')} />
       <SectionList
         sections={sections}
         keyExtractor={(item) => item.id}
@@ -107,8 +99,8 @@ export default function TimelineScreen() {
         ListEmptyComponent={
           <EmptyState
             icon={<Clock size={32} color={colors.accent} />}
-            title="Pas encore d'événements"
-            description="Les naissances, mariages et autres jalons apparaîtront ici."
+            title={t('timeline.empty')}
+            description={t('timeline.emptyDesc')}
           />
         }
       />
