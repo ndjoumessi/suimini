@@ -8,12 +8,17 @@ import { View } from 'react-native';
 import { useAppFonts, useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
 import { useStore } from '@/lib/store';
+import {
+  registerForPushNotifications,
+  savePushToken,
+  setupNotificationListeners,
+} from '@/lib/notifications';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 /** Redirects between the (auth) and (tabs) groups based on session state. */
 function AuthGate({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isDemo, loading } = useAuth();
+  const { isAuthenticated, isDemo, loading, session } = useAuth();
   const segments = useSegments();
   const router = useRouter();
   const refreshFromRemote = useStore((s) => s.refreshFromRemote);
@@ -22,6 +27,23 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     seedDemo();
   }, [seedDemo]);
+
+  // Notification listeners live for the whole app session (foreground + tap).
+  useEffect(() => setupNotificationListeners(), []);
+
+  // Register for push once a REAL session exists. Demo mode skips silently.
+  useEffect(() => {
+    const accessToken = session?.access_token;
+    if (isDemo || !accessToken) return;
+    let active = true;
+    (async () => {
+      const token = await registerForPushNotifications();
+      if (active && token) await savePushToken(token, accessToken);
+    })();
+    return () => {
+      active = false;
+    };
+  }, [isDemo, session?.access_token]);
 
   useEffect(() => {
     if (loading) return;
