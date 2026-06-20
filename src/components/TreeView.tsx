@@ -5,7 +5,7 @@ import { FamilyTree, Person } from '@/types';
 import { getParents, getChildren, getSpouses, getSiblings, getDisplayName, formatYear, getAge, formatAge, personCompleteness, findRelationPath, describeRelation } from '@/lib/treeUtils';
 import { joinTreeCursors, presenceColor, collaborationEnabled, type CursorPeer } from '@/lib/collaboration';
 import { useAuth } from '@/hooks/useAuth';
-import { Search, ZoomIn, ZoomOut, Crosshair, Info, Plus, Aperture, Sprout, Printer, Camera, CheckCircle2, FileText, Maximize2 } from 'lucide-react';
+import { Search, ZoomIn, ZoomOut, Crosshair, Info, Plus, Aperture, Sprout, Printer, Camera, CheckCircle2, FileText, Maximize2, MapPin, Crown } from 'lucide-react';
 
 /** Two-letter initials for the avatar fallback (same logic as PersonPanel/Sidebar). */
 function nodeInitials(p: Person): string {
@@ -880,10 +880,13 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                 {getDisplayName(hp)}
               </div>
               {dl && <div style={{ opacity: 0.85 }}>{dl}</div>}
-              {place && <div style={{ opacity: 0.85 }}>📍 {place}</div>}
-              <div style={{ opacity: 0.85 }}>
-                {hp.id === rootId ? `👑 ${t('root')}` : kin ? kin : ''}
-                {childCount > 0 ? `${hp.id === rootId || kin ? ' · ' : ''}${childCount} ${childCount > 1 ? t('children') : t('child')}` : ''}
+              {place && <div style={{ opacity: 0.85, display: 'flex', alignItems: 'center', gap: '4px' }}><MapPin size={11} aria-hidden="true" /> {place}</div>}
+              <div style={{ opacity: 0.85, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                {hp.id === rootId && <Crown size={11} aria-hidden="true" />}
+                <span>
+                  {hp.id === rootId ? t('root') : kin ? kin : ''}
+                  {childCount > 0 ? `${hp.id === rootId || kin ? ' · ' : ''}${childCount} ${childCount > 1 ? t('children') : t('child')}` : ''}
+                </span>
               </div>
             </div>
           );

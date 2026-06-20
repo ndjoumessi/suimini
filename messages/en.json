@@ -1261,6 +1261,18 @@
     "later": "Later",
     "expiresOn": "EXPIRES"
   },
+  "gedcom": {
+    "dropZone": "Drop a .ged file or click",
+    "options": "Import options",
+    "newTreeOption": "Create a new tree",
+    "mergeOption": "Merge into current tree",
+    "duplicateOption": "Detect and merge duplicates",
+    "confirm": "Import",
+    "importing": "Importing…",
+    "imported": "{count} people imported",
+    "unsupported": "Unsupported format (.json, .ged, .gedcom)",
+    "error": "Error:"
+  },
   "ocr": {
     "title": "Scan a document",
     "subtitle": "Birth, marriage, death records...",

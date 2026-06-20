@@ -207,7 +207,7 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
   const overlayRef = useOverlay(onClose);
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div ref={overlayRef} tabIndex={-1} className="modal" style={{ maxWidth: '520px' }}>
+      <div ref={overlayRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Partager l'arbre" className="modal" style={{ maxWidth: '520px' }}>
         <div style={{ padding: '20px 24px', borderBottom: 'var(--bw) solid var(--border-strong)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 className="serif" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}><Share2 size={20} aria-hidden="true" /> Partager l&apos;arbre</h2>
           <button onClick={onClose} aria-label="Fermer" className="btn btn-ghost btn-sm btn-icon"><X size={16} /></button>

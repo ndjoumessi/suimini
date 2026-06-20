@@ -671,6 +671,7 @@ export default function SuiminiApp() {
           tree={store.activeTree}
           initialTab={importExportTab}
           onImport={(t) => { store.importTree(t); showToast(`Arbre « ${t.name} » importé`); }}
+          onMerge={(t) => { store.updateTree(t); showToast(`Arbre « ${t.name} » mis à jour`); }}
           onClose={() => setImportExportTab(null)}
           onScanDocument={() => openDocumentScanner()}
         />

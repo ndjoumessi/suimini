@@ -243,7 +243,7 @@ export default function DashboardView({ trees, displayName, userEmail, onNavigat
         <Card eyebrow={t('quickAccessEyebrow')} title={t('quickAccess')} Icon={Home} delay={0.4}>
           <div className="dash-quick" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
             {QUICK.map(q => (
-              <button key={q.view} onClick={() => onNavigate(q.view)} className="btn btn-secondary btn-sm" style={{ flexDirection: 'column', gap: '6px', padding: '12px 6px', height: 'auto' }}>
+              <button key={q.view} onClick={() => onNavigate(q.view)} className="btn btn-secondary btn-sm" style={{ flexDirection: 'column', gap: '6px', padding: '12px 6px', minHeight: '56px' }}>
                 <q.Icon size={18} aria-hidden="true" />
                 <span style={{ fontSize: '12px' }}>{tn(q.navKey)}</span>
               </button>

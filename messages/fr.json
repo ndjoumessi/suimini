@@ -1261,6 +1261,18 @@
     "later": "Plus tard",
     "expiresOn": "EXPIRE LE"
   },
+  "gedcom": {
+    "dropZone": "Déposez un fichier .ged ou cliquez",
+    "options": "Options d'import",
+    "newTreeOption": "Créer un nouvel arbre",
+    "mergeOption": "Fusionner avec l'arbre actuel",
+    "duplicateOption": "Détecter et fusionner les doublons",
+    "confirm": "Importer",
+    "importing": "Import en cours…",
+    "imported": "{count} personnes importées",
+    "unsupported": "Format non supporté (.json, .ged, .gedcom)",
+    "error": "Erreur :"
+  },
   "ocr": {
     "title": "Scanner un document",
     "subtitle": "Actes de naissance, mariage, décès...",
