@@ -5,7 +5,8 @@ import { ColorThemeId, FamilyTree } from '@/types';
 import { COLOR_THEMES } from '@/lib/themes';
 import { ThemeMode } from '@/hooks/useDarkMode';
 import { supabase } from '@/lib/supabase';
-import { Sun, Moon, Monitor, Settings as SettingsIcon, Check, KeyRound, LogOut, Download, Trash2, ShieldAlert, Save } from 'lucide-react';
+import { relativeSyncParts } from '@/lib/relativeTime';
+import { Sun, Moon, Monitor, Settings as SettingsIcon, Check, KeyRound, LogOut, Download, Trash2, ShieldAlert, Save, RefreshCw } from 'lucide-react';
 
 interface Props {
   themeId: ColorThemeId;
@@ -20,6 +21,9 @@ interface Props {
   cloud?: boolean;
   trees?: FamilyTree[];
   onToast?: (msg: string, type?: string) => void;
+  /** Force a full resync from Supabase (wipes the local cache first). */
+  onResync?: () => void | Promise<void>;
+  lastSyncAt?: number | null;
 }
 
 const MODE_OPTS: { id: ThemeMode; labelKey: 'modeLight' | 'modeDark' | 'modeSystem'; Icon: typeof Sun }[] = [
@@ -41,13 +45,15 @@ function initials(name?: string | null, email?: string | null): string {
   return ((parts[0]?.[0] || '?') + (parts[1]?.[0] || '')).toUpperCase().slice(0, 2);
 }
 
-export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, onCancelPreview, mode, onSetMode, userEmail, displayName, trees = [], onToast }: Props) {
+export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, onCancelPreview, mode, onSetMode, userEmail, displayName, cloud, trees = [], onToast, onResync, lastSyncAt }: Props) {
   const [name, setName] = useState(displayName || '');
+  const [resyncing, setResyncing] = useState(false);
   const [savingName, setSavingName] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [confirmText, setConfirmText] = useState('');
   const [busy, setBusy] = useState(false);
   const t = useTranslations('settings');
+  const tSync = useTranslations('sync');
   const toast = (m: string, type?: string) => onToast?.(m, type);
 
   async function saveName() {
@@ -228,6 +234,15 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
             {t('dataHint')}
           </p>
           <div className="card" style={{ padding: '16px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {cloud && onResync && (
+              <button
+                className="btn btn-secondary btn-sm" style={{ gap: '6px' }} disabled={resyncing}
+                onClick={async () => { setResyncing(true); try { await onResync(); } finally { setResyncing(false); } }}
+              >
+                <RefreshCw size={14} aria-hidden="true" style={{ animation: resyncing ? 'spin 0.8s linear infinite' : undefined }} />
+                {resyncing ? tSync('resyncing') : tSync('resync')}
+              </button>
+            )}
             <button className="btn btn-secondary btn-sm" style={{ gap: '6px' }} onClick={exportData} disabled={trees.length === 0}>
               <Download size={14} aria-hidden="true" /> {t('exportAll')}{trees.length ? ` (${trees.length})` : ''}
             </button>
@@ -235,6 +250,15 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
               <Trash2 size={14} aria-hidden="true" /> {t('clearCache')}
             </button>
           </div>
+          {cloud && lastSyncAt != null && (() => {
+            const { key, count } = relativeSyncParts(lastSyncAt);
+            const time = count != null ? tSync(key, { count }) : tSync(key);
+            return (
+              <p style={{ color: 'var(--text-light)', fontSize: '12px', marginTop: '8px' }}>
+                {tSync('lastSync', { time })}
+              </p>
+            );
+          })()}
         </section>
 
         {/* Danger zone (signed-in only) */}

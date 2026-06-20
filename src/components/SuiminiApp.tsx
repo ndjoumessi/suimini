@@ -405,6 +405,11 @@ export default function SuiminiApp() {
     ? store.activeTree?.persons.find(p => p.id === selectedPersonId) || null
     : null;
 
+  const handleResync = async () => {
+    const ok = await store.resync();
+    showToast(ok ? 'Synchronisation terminée' : 'Échec de la synchronisation', ok ? 'success' : 'error');
+  };
+
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg)' }}
       onTouchStart={handleSwipeStart}
@@ -437,6 +442,8 @@ export default function SuiminiApp() {
         displayName={(user?.user_metadata?.display_name as string | undefined) || null}
         cloud={store.cloud}
         syncStatus={store.syncStatus}
+        lastSyncAt={store.lastSyncAt}
+        onResync={handleResync}
         presenceCount={store.cloud ? presenceCount : 0}
         onSignIn={() => openAuth('login')}
         isDemo={isDemo}
@@ -510,6 +517,8 @@ export default function SuiminiApp() {
                 cloud={store.cloud}
                 trees={store.trees}
                 onToast={showToast}
+                onResync={handleResync}
+                lastSyncAt={store.lastSyncAt}
               />
             )}
 

@@ -4,11 +4,12 @@ import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import LanguageSwitcher from './LanguageSwitcher';
 import { countPendingSuggestions } from '@/lib/collaboration';
+import { relativeSyncParts } from '@/lib/relativeTime';
 import { FamilyTree, ViewMode } from '@/types';
 import {
   Home, TreePine, Users, Calendar, Map, Images, BookOpen, Cake, Search, BarChart2, Settings,
   Plus, Play, Share2, FolderOpen, Printer, Moon, Sun, ChevronDown, LogOut, LogIn, Cloud,
-  Check, CloudOff, Shield, ArrowLeft,
+  Check, CloudOff, Shield, ArrowLeft, RefreshCw,
 } from 'lucide-react';
 import { BrandLockup } from './Brand';
 
@@ -70,6 +71,8 @@ interface Props {
   isDemo?: boolean;
   cloud?: boolean;
   syncStatus?: 'idle' | 'saved' | 'syncing' | 'offline' | 'error';
+  lastSyncAt?: number | null;
+  onResync?: () => void | Promise<void>;
   presenceCount?: number;
   onSignIn?: () => void;
   onSignOut?: () => void;
@@ -86,9 +89,17 @@ function SyncIndicator({ status }: { status: 'idle' | 'saved' | 'syncing' | 'off
   return null; // idle → rien (notamment 0 arbre)
 }
 
-export default function Sidebar({ activeView, onViewChange, activeTree, trees, onShowTreeSelector, onAddPerson, canEdit = true, onShowImportExport, onPrint, onShare, onPresent, birthdayAlertCount = 0, dark, onToggleDark, isOpen, onClose, userEmail, displayName, isDemo, cloud, syncStatus = 'idle', presenceCount = 0, onSignIn, onSignOut, isAdmin = false, unreadCount = 0 }: Props) {
+export default function Sidebar({ activeView, onViewChange, activeTree, trees, onShowTreeSelector, onAddPerson, canEdit = true, onShowImportExport, onPrint, onShare, onPresent, birthdayAlertCount = 0, dark, onToggleDark, isOpen, onClose, userEmail, displayName, isDemo, cloud, syncStatus = 'idle', lastSyncAt, onResync, presenceCount = 0, onSignIn, onSignOut, isAdmin = false, unreadCount = 0 }: Props) {
   const t = useTranslations('nav');
   const ts = useTranslations('sidebar');
+  const tSync = useTranslations('sync');
+  // Re-render every 60s so the "last sync X min ago" label stays current.
+  const [, setSyncTick] = useState(0);
+  useEffect(() => {
+    if (!cloud || lastSyncAt == null) return;
+    const id = setInterval(() => setSyncTick(n => n + 1), 60000);
+    return () => clearInterval(id);
+  }, [cloud, lastSyncAt]);
 
   // Pending edit-suggestions on the active tree (owner alert). Polls every 60s.
   const [pendingSuggestions, setPendingSuggestions] = useState(0);
@@ -286,6 +297,26 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
             {cloud && syncStatus !== 'idle' && (
               <div style={{ fontSize: '10px', marginTop: '5px', textAlign: 'center' }}><SyncIndicator status={syncStatus} /></div>
             )}
+            {cloud && onResync && lastSyncAt != null && (() => {
+              const { key, count } = relativeSyncParts(lastSyncAt);
+              const time = count != null ? tSync(key, { count }) : tSync(key);
+              return (
+                <button
+                  onClick={() => onResync()}
+                  disabled={syncStatus === 'syncing'}
+                  title={tSync('resync')}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
+                    width: '100%', marginTop: '5px', padding: '4px', background: 'none', border: 'none',
+                    cursor: syncStatus === 'syncing' ? 'wait' : 'pointer', color: 'var(--text-light)',
+                    fontFamily: 'var(--font-mono)', fontSize: '10px',
+                  }}
+                >
+                  <RefreshCw size={10} aria-hidden="true" style={{ animation: syncStatus === 'syncing' ? 'spin 0.8s linear infinite' : undefined }} />
+                  {tSync('lastSync', { time })}
+                </button>
+              );
+            })()}
             {presenceCount > 1 && (
               <div style={{ fontSize: '10px', color: 'var(--accent)', textAlign: 'center', marginTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                 <Users size={11} /> {ts('presence', { count: presenceCount })}

@@ -421,6 +421,15 @@
     "createWithoutRelation": "Create without relationship",
     "createWithRelation": "Create with relationship"
   },
+  "sync": {
+    "resync": "Sync now",
+    "resyncing": "Syncing…",
+    "lastSync": "Last sync: {time}",
+    "justNow": "just now",
+    "minutesAgo": "{count} min ago",
+    "hoursAgo": "{count} h ago",
+    "daysAgo": "{count} d ago"
+  },
   "settings": {
     "title": "Settings",
     "subtitle": "Appearance, account and data for Suimini. Your display preferences are saved on this device.",

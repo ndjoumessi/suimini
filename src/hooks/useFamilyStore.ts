@@ -47,6 +47,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
   const [shared, setShared] = useState<Record<string, SharedMeta>>({});
   const [migrationPending, setMigrationPending] = useState(false);
+  const [lastSyncAt, setLastSyncAt] = useState<number | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const localCacheRef = useRef<FamilyTree[]>([]);
   // Timestamp of the last cloud push made by THIS client. Realtime echoes our own
@@ -143,15 +144,18 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
           setTrees(remote);
           setActiveTreeId(prev => (remote.find(t => t.id === prev) ? prev : remote[0]?.id || null));
           setSyncStatus('saved');
-          // WRITE-THROUGH: Supabase is the source of truth → refresh the local cache
-          // AFTER the fetch (never the reverse). IndexedDB/localStorage are only a
-          // cache for offline use; they must never shadow the cloud data. We upsert
-          // (no prune) so an offline-created tree not yet pushed is not lost.
+          setLastSyncAt(Date.now());
+          // HARD REFRESH of the local cache: Supabase is the source of truth, so we
+          // REPLACE IndexedDB (clear + rewrite) rather than merge — this is what makes
+          // SQL-side changes appear on next login without manually wiping storage.
           localCacheRef.current = remote;
-          try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(remote));
-            await Promise.all(remote.map(t => offlineStorage.setTree(t)));
-          } catch { /* IndexedDB/localStorage unavailable — non-fatal, cloud state already set */ }
+          if (active) {
+            try {
+              await offlineStorage.clear();
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(remote));
+              for (const t of remote) await offlineStorage.setTree(t);
+            } catch { /* IndexedDB/localStorage unavailable — non-fatal, cloud state already set */ }
+          }
         } else if (hasRealLocal) {
           // Cloud empty but genuine local data → show it + offer migration (never the sample),
           // UNLESS the user already imported or dismissed the prompt on this browser.
@@ -232,6 +236,35 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
       localCacheRef.current = localCacheRef.current.map(t => t.id === treeId ? fresh : t);
     }
   }, [cloud]);
+
+  // Force a full resync: wipe the local cache (localStorage + IndexedDB) and reload
+  // everything from Supabase. Lets the user pull SQL-side changes on demand without
+  // manually clearing storage. Returns true on success.
+  const resync = useCallback(async (): Promise<boolean> => {
+    if (!cloud || !user) return false;
+    setSyncStatus('syncing');
+    try {
+      const { trees: remote, shared: sharedMeta } = await loadTreesFromSupabase(user.id);
+      try {
+        await offlineStorage.clear();
+        localStorage.removeItem(STORAGE_KEY);
+        for (const t of remote) await offlineStorage.setTree(t);
+        if (remote.length) localStorage.setItem(STORAGE_KEY, JSON.stringify(remote));
+      } catch { /* cache unavailable — non-fatal */ }
+      localCacheRef.current = remote;
+      setShared(sharedMeta);
+      setTrees(remote);
+      setActiveTreeId(prev => (remote.find(t => t.id === prev) ? prev : remote[0]?.id || null));
+      setMigrationPending(false);
+      setLastSyncAt(Date.now());
+      setSyncStatus('saved');
+      return true;
+    } catch (err) {
+      console.error('[store] Resync échouée:', err);
+      setSyncStatus('error');
+      return false;
+    }
+  }, [cloud, user]);
 
   // Migrate local trees to the cloud (on user confirmation).
   const runMigration = useCallback(async () => {
@@ -506,5 +539,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     dismissMigration,
     reloadTreeFromCloud,
     lastLocalWriteRef,
+    resync,
+    lastSyncAt,
   };
 }
