@@ -20,7 +20,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "app.suimini.mobile",
       "infoPlist": {
-        "UIBackgroundModes": ["remote-notification"]
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
       }
     },
     "android": {
@@ -51,6 +53,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "3e49564a-b34b-4180-8209-f0c32bd878f7"
+      }
+    },
+    "owner": "ndjoumessi"
   }
 }
