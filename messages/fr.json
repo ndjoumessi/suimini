@@ -422,10 +422,13 @@
     "createWithRelation": "Créer avec la relation"
   },
   "sync": {
+    "syncing": "Synchronisation...",
+    "saved": "Sauvegardé",
+    "error": "Erreur sync",
     "resync": "Synchroniser",
-    "resyncing": "Synchronisation…",
+    "resyncing": "Synchronisation...",
     "lastSync": "Dernière sync : {time}",
-    "justNow": "à l'instant",
+    "justNow": "À l'instant",
     "minutesAgo": "il y a {count} min",
     "hoursAgo": "il y a {count} h",
     "daysAgo": "il y a {count} j"
@@ -602,11 +605,6 @@
     "banner": "Mode démo · données non sauvegardées",
     "quit": "Quitter la démo",
     "createAccount": "Créer un compte"
-  },
-  "sync": {
-    "syncing": "Synchronisation...",
-    "saved": "Sauvegardé",
-    "error": "Erreur sync"
   },
   "language": {
     "label": "Langue",

@@ -422,10 +422,13 @@
     "createWithRelation": "Create with relationship"
   },
   "sync": {
+    "syncing": "Syncing...",
+    "saved": "Saved",
+    "error": "Sync error",
     "resync": "Sync now",
-    "resyncing": "Syncing…",
+    "resyncing": "Syncing...",
     "lastSync": "Last sync: {time}",
-    "justNow": "just now",
+    "justNow": "Just now",
     "minutesAgo": "{count} min ago",
     "hoursAgo": "{count} h ago",
     "daysAgo": "{count} d ago"
@@ -602,11 +605,6 @@
     "banner": "Demo mode · data not saved",
     "quit": "Exit demo",
     "createAccount": "Create account"
-  },
-  "sync": {
-    "syncing": "Syncing...",
-    "saved": "Saved",
-    "error": "Sync error"
   },
   "language": {
     "label": "Language",
