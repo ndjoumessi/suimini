@@ -11,7 +11,10 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, Trash2 } from 'lucide-react-native';
+import { ChevronLeft, Trash2, Calendar } from 'lucide-react-native';
+import DateTimePicker, {
+  type DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { fonts, fontSize, spacing, borderWidth } from '@/lib/theme';
@@ -20,6 +23,20 @@ import { useAuth } from '@/hooks/useAuth';
 import { useFamilyStore } from '@/hooks/useFamilyStore';
 import { generateId } from '@/lib/treeUtils';
 import type { Gender, Person } from '@/lib/types';
+
+const pad = (n: number) => String(n).padStart(2, '0');
+/** Date → ISO `AAAA-MM-JJ` (stored shape, Supabase-friendly). */
+const toISO = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+/** ISO → display `JJ/MM/AAAA`, or a placeholder when empty. */
+const formatFR = (iso: string) => {
+  if (!iso) return 'Non renseignée';
+  const [y, m, d] = iso.split('-');
+  return d && m && y ? `${d}/${m}/${y}` : iso;
+};
+const parseISO = (iso: string): Date => {
+  const d = iso ? new Date(`${iso}T00:00:00`) : new Date();
+  return isNaN(d.getTime()) ? new Date() : d;
+};
 
 export default function PersonEditScreen() {
   const { colors } = useTheme();
@@ -42,6 +59,16 @@ export default function PersonEditScreen() {
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [picker, setPicker] = useState<null | 'birth' | 'death'>(null);
+
+  const onPickerChange = (event: DateTimePickerEvent, date?: Date) => {
+    const field = picker;
+    if (Platform.OS !== 'ios') setPicker(null); // Android closes the dialog itself
+    if (event.type === 'dismissed' || !date) return;
+    const iso = toISO(date);
+    if (field === 'birth') setBirthDate(iso);
+    else if (field === 'death') setDeathDate(iso);
+  };
 
   const onSave = async () => {
     setError(null);
@@ -182,20 +209,64 @@ export default function PersonEditScreen() {
           </View>
         </View>
 
-        <Input
-          label="Date de naissance"
-          value={birthDate}
-          onChangeText={setBirthDate}
-          placeholder="AAAA-MM-JJ"
-          autoCapitalize="none"
-        />
-        <Input
-          label="Date de décès (laisser vide si vivant·e)"
-          value={deathDate}
-          onChangeText={setDeathDate}
-          placeholder="AAAA-MM-JJ"
-          autoCapitalize="none"
-        />
+        {/* Date de naissance */}
+        <View style={styles.field}>
+          <Text style={[styles.label, { color: colors.textMuted }]}>DATE DE NAISSANCE</Text>
+          <TouchableOpacity
+            onPress={() => setPicker('birth')}
+            activeOpacity={0.8}
+            style={[styles.dateBtn, { borderColor: colors.borderStrong, backgroundColor: colors.bgCard }]}
+          >
+            <Text style={[styles.dateValue, { color: birthDate ? colors.text : colors.textLight }]}>
+              {formatFR(birthDate)}
+            </Text>
+            <Calendar size={18} color={colors.textMuted} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Date de décès */}
+        <View style={styles.field}>
+          <Text style={[styles.label, { color: colors.textMuted }]}>
+            DATE DE DÉCÈS (VIDE SI VIVANT·E)
+          </Text>
+          <View style={styles.dateRow}>
+            <TouchableOpacity
+              onPress={() => setPicker('death')}
+              activeOpacity={0.8}
+              style={[styles.dateBtn, styles.dateGrow, { borderColor: colors.borderStrong, backgroundColor: colors.bgCard }]}
+            >
+              <Text style={[styles.dateValue, { color: deathDate ? colors.text : colors.textLight }]}>
+                {formatFR(deathDate)}
+              </Text>
+              <Calendar size={18} color={colors.textMuted} />
+            </TouchableOpacity>
+            {deathDate ? (
+              <TouchableOpacity
+                onPress={() => setDeathDate('')}
+                style={[styles.clearBtn, { borderColor: colors.borderStrong }]}
+              >
+                <Text style={[styles.clearText, { color: colors.danger }]}>Effacer</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </View>
+
+        {/* Picker (inline iOS, dialog Android) */}
+        {picker !== null ? (
+          <View>
+            <DateTimePicker
+              value={parseISO(picker === 'birth' ? birthDate : deathDate)}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'inline' : 'spinner'}
+              maximumDate={new Date()}
+              onChange={onPickerChange}
+            />
+            {Platform.OS === 'ios' ? (
+              <Button label="Terminé" variant="secondary" onPress={() => setPicker(null)} />
+            ) : null}
+          </View>
+        ) : null}
+
         <Input label="Lieu de naissance" value={birthCity} onChangeText={setBirthCity} placeholder="Lyon" />
         <Input
           label="Biographie"
@@ -253,6 +324,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   genderLabel: { fontFamily: fonts.bodyBold, fontSize: fontSize.base },
+  dateRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'stretch' },
+  dateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth,
+    paddingVertical: spacing.md - 2,
+    paddingHorizontal: spacing.md,
+  },
+  dateGrow: { flex: 1 },
+  dateValue: { fontFamily: fonts.body, fontSize: fontSize.base },
+  clearBtn: {
+    borderWidth,
+    paddingHorizontal: spacing.md,
+    justifyContent: 'center',
+  },
+  clearText: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 0.5 },
   bioInput: { minHeight: 100, textAlignVertical: 'top' },
   error: { fontFamily: fonts.mono, fontSize: fontSize.sm },
 });

@@ -31,11 +31,13 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   // Notification listeners live for the whole app session (foreground + tap).
   useEffect(() => setupNotificationListeners(), []);
 
-  // Register for push once a REAL session exists. Demo mode skips silently.
+  // A REAL session (launch with a restored session OR fresh login) loads the
+  // user's own trees from Supabase and registers for push. Demo skips silently.
   useEffect(() => {
     const accessToken = session?.access_token;
     if (isDemo || !accessToken) return;
     let active = true;
+    refreshFromRemote();
     (async () => {
       const token = await registerForPushNotifications();
       if (active && token) await savePushToken(token, accessToken);
@@ -43,7 +45,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     return () => {
       active = false;
     };
-  }, [isDemo, session?.access_token]);
+  }, [isDemo, session?.access_token, refreshFromRemote]);
 
   useEffect(() => {
     if (loading) return;
@@ -52,10 +54,8 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       router.replace('/(auth)/login');
     } else if (isAuthenticated && inAuthGroup) {
       router.replace('/(tabs)/home');
-      // Demo is fully local — never hit Supabase.
-      if (!isDemo) refreshFromRemote();
     }
-  }, [isAuthenticated, isDemo, loading, segments, router, refreshFromRemote]);
+  }, [isAuthenticated, isDemo, loading, segments, router]);
 
   return <>{children}</>;
 }

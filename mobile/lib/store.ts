@@ -12,6 +12,7 @@ import {
   upsertPersonRemote,
   deletePersonRemote,
 } from './supabaseSync';
+import { isSupabaseConfigured } from './supabase';
 import { createKVStorage } from './storage';
 
 const mmkv = createKVStorage('suimini-store');
@@ -53,13 +54,6 @@ interface FamilyState {
 
 export interface WriteOutcome { ok: boolean; error?: string }
 
-function mergeTrees(local: FamilyTree[], remote: FamilyTree[]): FamilyTree[] {
-  const byId = new Map<string, FamilyTree>();
-  local.forEach((t) => byId.set(t.id, t));
-  remote.forEach((t) => byId.set(t.id, t)); // remote wins
-  return Array.from(byId.values());
-}
-
 export const useStore = create<FamilyState>()(
   persist(
     (set, get) => ({
@@ -89,21 +83,27 @@ export const useStore = create<FamilyState>()(
       setActiveTree: (id) => set({ activeTreeId: id }),
 
       refreshFromRemote: async () => {
+        // Demo / unconfigured → purely local, no network.
+        if (get().isDemo || !isSupabaseConfigured) {
+          set({ syncStatus: 'offline' });
+          return;
+        }
         set({ syncStatus: 'syncing' });
         try {
           const remote = await loadTreesFromSupabase();
-          if (remote.length === 0) {
-            set({ syncStatus: 'offline' });
-            return;
-          }
-          const merged = mergeTrees(get().trees, remote);
+          // Connected user: REPLACE the store with their own trees (the demo
+          // seed must not bleed in). Keep the active tree if it still exists.
+          const current = get().activeTreeId;
+          const keepActive = remote.some((t) => t.id === current);
           set({
-            trees: merged,
-            activeTreeId: get().activeTreeId ?? remote[0].id,
+            trees: remote,
+            activeTreeId: keepActive ? current : (remote[0]?.id ?? null),
+            isDemo: false,
             syncStatus: 'saved',
           });
         } catch {
-          set({ syncStatus: 'error' });
+          // Fetch failed → keep whatever is local, mark offline.
+          set({ syncStatus: 'offline' });
         }
       },
 

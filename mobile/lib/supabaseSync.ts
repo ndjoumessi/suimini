@@ -107,7 +107,10 @@ export async function loadTreesFromSupabase(): Promise<FamilyTree[]> {
   if (!supabase) return [];
 
   const { data: treeRows, error } = await supabase.from('trees').select('*');
-  if (error || !treeRows) return [];
+  // Throw on a real query error so callers can tell failure (→ stay offline,
+  // keep local) from a genuine empty result (user simply has no trees).
+  if (error) throw new Error(error.message);
+  if (!treeRows) return [];
 
   const treeIds = treeRows.map((t: any) => t.id);
   const empty = Promise.resolve({ data: [] as any[] });
