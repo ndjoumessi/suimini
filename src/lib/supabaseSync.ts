@@ -88,12 +88,19 @@ export async function loadTreesFromSupabase(userId: string): Promise<LoadResult>
   const treeIds = treeRows.map(t => t.id);
   const shared: Record<string, SharedMeta> = {};
 
-  // Bulk-load children for all accessible trees.
+  // Bulk-load children for all accessible trees. NOTE: `treeIds` only contains the
+  // trees the caller can SEE (trees_select = owner_id = auth.uid()). A tree whose
+  // owner_id ≠ the connected account is excluded HERE, so none of its persons are
+  // fetched — that, not a row limit, is why a mis-owned tree shows ~0 of its people.
   const [persons, rels, journal] = await Promise.all([
     treeIds.length ? supabase.from('persons').select('*').in('tree_id', treeIds) : Promise.resolve({ data: [] as any[] }),
     treeIds.length ? supabase.from('relationships').select('*').in('tree_id', treeIds) : Promise.resolve({ data: [] as any[] }),
     treeIds.length ? supabase.from('journal_entries').select('*').in('tree_id', treeIds) : Promise.resolve({ data: [] as any[] }),
   ]);
+  // Surface child-load errors instead of silently returning partial data.
+  if ((persons as any).error) console.error('[sync] load persons échoué:', (persons as any).error.message);
+  if ((rels as any).error) console.error('[sync] load relationships échoué:', (rels as any).error.message);
+  if ((journal as any).error) console.error('[sync] load journal échoué:', (journal as any).error.message);
 
   // Owner display names for shared trees.
   const otherOwners = Array.from(new Set(treeRows.filter(t => t.owner_id !== userId).map(t => t.owner_id)));
