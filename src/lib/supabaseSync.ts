@@ -185,12 +185,34 @@ export async function saveTreeToSupabase(tree: FamilyTree, ownerId: string, isOw
   if (!supabase) return;
   // For shared trees the recipient may only write children, never the owning `trees` row.
   if (isOwner) {
-    const { error } = await supabase.from('trees').upsert({
-      id: tree.id, owner_id: ownerId, name: tree.name, description: tree.description ?? null,
+    // owner_id must be set EXACTLY ONCE, at creation. A plain upsert re-sent
+    // `owner_id: ownerId` on every save, so a write triggered while a *different*
+    // account was connected could rewrite the rightful owner — the tree then
+    // disappeared for its real owner after a refresh. We therefore split the write:
+    // INSERT sets owner_id (first save only); UPDATE never touches it.
+    const { data: existing, error: selErr } = await supabase
+      .from('trees').select('id').eq('id', tree.id).maybeSingle();
+    if (selErr) { console.error('[sync] lecture tree échouée:', selErr.message, selErr.code ?? ''); throw selErr; }
+
+    // Mutable fields, shared by both paths — never includes owner_id.
+    const fields = {
+      name: tree.name,
+      description: tree.description ?? null,
       settings: { ...(tree.settings || {}), rootPersonId: tree.rootPersonId },
-      created_at: tree.createdAt, updated_at: new Date().toISOString(),
-    });
-    if (error) { console.error('[sync] upsert tree échoué:', error.message, error.code ?? ''); throw error; }
+      updated_at: new Date().toISOString(),
+    };
+
+    if (existing) {
+      // UPDATE — owner_id and created_at are left exactly as they are in the row.
+      const { error } = await supabase.from('trees').update(fields).eq('id', tree.id);
+      if (error) { console.error('[sync] update tree échoué:', error.message, error.code ?? ''); throw error; }
+    } else {
+      // INSERT — the only place owner_id is ever written.
+      const { error } = await supabase.from('trees').insert({
+        id: tree.id, owner_id: ownerId, created_at: tree.createdAt, ...fields,
+      });
+      if (error) { console.error('[sync] insert tree échoué:', error.message, error.code ?? ''); throw error; }
+    }
   }
   await syncChildTable('persons', tree.id, tree.persons.map(p => personToRow(p, tree.id)));
   await syncChildTable('relationships', tree.id, tree.relationships.map(r => relToRow(r, tree.id)));
