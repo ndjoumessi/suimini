@@ -125,8 +125,11 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
   // NOTE: callers must pass a STABLE `user` reference (memoized) — otherwise this
   // effect re-runs every render and `syncStatus` stays stuck on 'syncing'.
   useEffect(() => {
-    if (!cloud || !user) { setSyncStatus('idle'); setShared({}); setMigrationPending(false); return; }
+    // Only load once auth is fully resolved AND a user is present. Guarding on
+    // authReady (not just user) avoids firing against a half-initialised client.
+    if (!authReady || !cloud || !user) { setSyncStatus('idle'); setShared({}); setMigrationPending(false); return; }
     let active = true;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
     setSyncStatus('syncing');
     // Safety net: never leave the indicator stuck on "syncing" (slow/hung network).
     const safety = setTimeout(() => { if (active) setSyncStatus(s => (s === 'syncing' ? 'idle' : s)); }, 10000);
@@ -134,7 +137,13 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     const localTrees = localCacheRef.current;
     const onlySample = localTrees.length === 1 && localTrees[0].id === 'tree1';
     const hasRealLocal = localTrees.length > 0 && !onlySample;
-    (async () => {
+
+    // On a cold load the access token may not be attached to the FIRST REST call
+    // yet → RLS returns [] and the app looked empty until a manual refresh. Retry a
+    // few times before concluding the account is genuinely empty. The loading screen
+    // stays up across retries (we don't flip `loaded`), so there is no empty flash.
+    const MAX_ATTEMPTS = 3;
+    const run = async (attempt: number) => {
       try {
         const { trees: remote, shared: sharedMeta } = await loadTreesFromSupabase(user.id);
         if (!active) return;
@@ -149,40 +158,52 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
           // REPLACE IndexedDB (clear + rewrite) rather than merge — this is what makes
           // SQL-side changes appear on next login without manually wiping storage.
           localCacheRef.current = remote;
-          if (active) {
-            try {
-              await offlineStorage.clear();
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(remote));
-              for (const t of remote) await offlineStorage.setTree(t);
-            } catch { /* IndexedDB/localStorage unavailable — non-fatal, cloud state already set */ }
-          }
-        } else if (hasRealLocal) {
-          // Cloud empty but genuine local data → show it + offer migration (never the sample),
-          // UNLESS the user already imported or dismissed the prompt on this browser.
+          try {
+            await offlineStorage.clear();
+            if (!active) return;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(remote));
+            for (const t of remote) await offlineStorage.setTree(t);
+          } catch { /* IndexedDB/localStorage unavailable — non-fatal */ }
+          if (active) setLoaded(true);
+          return;
+        }
+        if (hasRealLocal) {
+          // Cloud empty but genuine local data → show it + offer migration (never the
+          // sample), UNLESS already imported/dismissed on this browser.
           setMigrationPending(!importPromptSuppressed());
           setTrees(localTrees);
           setActiveTreeId(localTrees[0]?.id || null);
           setSyncStatus('saved');
-        } else {
-          // Cloud empty, no real local data → empty state / onboarding (NOT the sample).
-          // Nothing to sync → idle (no "Synchronisation…" forever for a 0-tree account).
-          setMigrationPending(false);
-          setTrees([]);
-          setActiveTreeId(null);
-          setSyncStatus('idle');
+          if (active) setLoaded(true);
+          return;
         }
-      } catch {
+        // Empty + no local data: could be a token-not-ready race → retry, else onboard.
+        if (attempt < MAX_ATTEMPTS) {
+          retryTimer = setTimeout(() => { if (active) run(attempt + 1); }, 400 * attempt);
+          return; // keep the loading screen up; do NOT flip `loaded` yet
+        }
+        setMigrationPending(false);
+        setTrees([]);
+        setActiveTreeId(null);
+        setSyncStatus('idle');
+        if (active) setLoaded(true);
+      } catch (err) {
         if (!active) return;
-        // Failure: fall back to real local data if any, otherwise empty — never the sample.
+        if (attempt < MAX_ATTEMPTS) {
+          retryTimer = setTimeout(() => { if (active) run(attempt + 1); }, 400 * attempt);
+          return;
+        }
+        console.error('[store] Chargement cloud échoué après retries:', err);
+        // Fall back to real local data if any, otherwise empty — never the sample.
         if (hasRealLocal) { setTrees(localTrees); setActiveTreeId(localTrees[0]?.id || null); }
         else { setTrees([]); setActiveTreeId(null); }
         setSyncStatus('error');
-      } finally {
         if (active) setLoaded(true);
       }
-    })();
-    return () => { active = false; clearTimeout(safety); };
-  }, [cloud, user]);
+    };
+    run(1);
+    return () => { active = false; clearTimeout(safety); if (retryTimer) clearTimeout(retryTimer); };
+  }, [authReady, cloud, user]);
 
   // Debounced push of the active tree to the cloud after any change.
   // (declared after activeTree below)

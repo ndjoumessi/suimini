@@ -390,7 +390,10 @@ export default function SuiminiApp() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [store]);
 
-  if (!store.loaded) {
+  // Hold the loading screen until auth is resolved (isLoading) AND the store has
+  // loaded (store.loaded). This avoids a flash of empty/guest content while the
+  // Supabase session restores and the cloud fetch (with retries) completes.
+  if (isLoading || !store.loaded) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
         <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
