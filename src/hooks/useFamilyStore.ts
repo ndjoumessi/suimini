@@ -143,6 +143,15 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
           setTrees(remote);
           setActiveTreeId(prev => (remote.find(t => t.id === prev) ? prev : remote[0]?.id || null));
           setSyncStatus('saved');
+          // WRITE-THROUGH: Supabase is the source of truth → refresh the local cache
+          // AFTER the fetch (never the reverse). IndexedDB/localStorage are only a
+          // cache for offline use; they must never shadow the cloud data. We upsert
+          // (no prune) so an offline-created tree not yet pushed is not lost.
+          localCacheRef.current = remote;
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(remote));
+            await Promise.all(remote.map(t => offlineStorage.setTree(t)));
+          } catch { /* IndexedDB/localStorage unavailable — non-fatal, cloud state already set */ }
         } else if (hasRealLocal) {
           // Cloud empty but genuine local data → show it + offer migration (never the sample),
           // UNLESS the user already imported or dismissed the prompt on this browser.
