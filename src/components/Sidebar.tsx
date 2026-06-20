@@ -57,6 +57,8 @@ interface Props {
   onShowTreeSelector: () => void;
   onAddPerson: () => void;
   canEdit?: boolean;
+  /** Effective role on the active tree, for the badge under "Arbre actif". */
+  userRole?: 'owner' | 'admin' | 'editor' | 'viewer';
   onShowImportExport: () => void;
   onPrint?: () => void;
   onShare?: () => void;
@@ -89,9 +91,10 @@ function SyncIndicator({ status }: { status: 'idle' | 'saved' | 'syncing' | 'off
   return null; // idle → rien (notamment 0 arbre)
 }
 
-export default function Sidebar({ activeView, onViewChange, activeTree, trees, onShowTreeSelector, onAddPerson, canEdit = true, onShowImportExport, onPrint, onShare, onPresent, birthdayAlertCount = 0, dark, onToggleDark, isOpen, onClose, userEmail, displayName, isDemo, cloud, syncStatus = 'idle', lastSyncAt, onResync, presenceCount = 0, onSignIn, onSignOut, isAdmin = false, unreadCount = 0 }: Props) {
+export default function Sidebar({ activeView, onViewChange, activeTree, trees, onShowTreeSelector, onAddPerson, canEdit = true, userRole, onShowImportExport, onPrint, onShare, onPresent, birthdayAlertCount = 0, dark, onToggleDark, isOpen, onClose, userEmail, displayName, isDemo, cloud, syncStatus = 'idle', lastSyncAt, onResync, presenceCount = 0, onSignIn, onSignOut, isAdmin = false, unreadCount = 0 }: Props) {
   const t = useTranslations('nav');
   const ts = useTranslations('sidebar');
+  const tr = useTranslations('roles');
   const tSync = useTranslations('sync');
   // Re-render every 60s so the "last sync X min ago" label stays current.
   const [, setSyncTick] = useState(0);
@@ -163,6 +166,17 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
           <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px' }}>
             {ts('treeMeta', { persons: activeTree.persons.length, links: activeTree.relationships.length })}
           </div>
+        )}
+        {activeTree && userRole && (
+          <span title={tr('yourRole', { role: tr(userRole) })}
+            style={{
+              marginTop: '6px', display: 'inline-block', fontFamily: 'var(--font-mono)',
+              fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em',
+              padding: '2px 7px', borderRadius: '2px', border: '1.5px solid currentColor',
+              color: userRole === 'viewer' ? 'var(--text-muted)' : userRole === 'editor' ? 'var(--success)' : 'var(--accent)',
+            }}>
+            {tr(userRole)}
+          </span>
         )}
       </button>
 

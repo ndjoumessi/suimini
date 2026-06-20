@@ -11,11 +11,18 @@ import AuthModal from '@/components/AuthModal';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { BrandLockup } from '@/components/Brand';
 
-/* Atelier palette — landing is a controlled, always-light marketing surface. */
-const BONE = '#f4f1ea';
-const PAPER = '#ffffff';
-const INK = '#1b1b1b';
-const ACCENT = '#bf4b2c';
+/* Atelier palette as THEME-AWARE CSS vars so the landing follows dark mode.
+   The footer and the "ink" feature sections stay intentionally dark in both
+   themes — those use the DARK / ON_DARK literals. */
+const BONE = 'var(--bg)';            // page background (bone light / near-black dark)
+const PAPER = 'var(--bg-card)';      // card surfaces
+const INK = 'var(--text)';           // primary text
+const LINE = 'var(--border-strong)'; // structural borders + hard shadows
+const ACCENT = 'var(--accent)';      // terracotta in both themes
+const MUTED = 'var(--text-muted)';   // secondary text
+const FAINT = 'var(--text-light)';   // tertiary text
+const DARK = '#161412';              // always-dark surfaces (ink sections)
+const ON_DARK = '#f4f1ea';           // text on always-dark surfaces
 
 /* ---------- Scroll reveal (Intersection Observer, no lib) ---------- */
 function Reveal({ children, delay = 0, style }: { children: React.ReactNode; delay?: number; style?: React.CSSProperties }) {
@@ -85,7 +92,7 @@ function Testimonials() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={`https://api.dicebear.com/7.x/personas/svg?seed=${t.seed}`} alt="" width={72} height={72}
           loading="lazy" decoding="async"
-          style={{ border: `2px solid ${INK}`, background: PAPER, marginBottom: '20px' }} />
+          style={{ border: `2px solid ${LINE}`, background: PAPER, marginBottom: '20px' }} />
         <p className="serif" style={{ fontSize: 'clamp(1.3rem, 3vw, 2rem)', lineHeight: 1.18, letterSpacing: '-0.02em', margin: '0 0 18px' }}>
           « {t.quote} »
         </p>
@@ -99,7 +106,7 @@ function Testimonials() {
         <button className="lp-icon-btn" aria-label="Témoignage précédent" onClick={() => setI(p => (p - 1 + TESTIMONIALS.length) % TESTIMONIALS.length)}><ChevronLeft size={18} /></button>
         {TESTIMONIALS.map((_, k) => (
           <button key={k} aria-label={`Aller au témoignage ${k + 1}`} onClick={() => setI(k)}
-            style={{ width: k === i ? '24px' : '10px', height: '10px', border: `1.5px solid ${INK}`, cursor: 'pointer', padding: 0, background: k === i ? ACCENT : PAPER, transition: 'all 0.25s' }} />
+            style={{ width: k === i ? '24px' : '10px', height: '10px', border: `1.5px solid ${LINE}`, cursor: 'pointer', padding: 0, background: k === i ? ACCENT : PAPER, transition: 'all 0.25s' }} />
         ))}
         <button className="lp-icon-btn" aria-label="Témoignage suivant" onClick={() => setI(p => (p + 1) % TESTIMONIALS.length)}><ChevronRight size={18} /></button>
       </div>
@@ -107,18 +114,19 @@ function Testimonials() {
   );
 }
 
-function FaqItem({ q, a }: { q: string; a: string }) {
+function FaqItem({ q, a, idx }: { q: string; a: string; idx: number }) {
   const [open, setOpen] = useState(false);
+  const panelId = `faq-answer-${idx}`;
   return (
-    <div style={{ borderTop: `1.5px solid ${INK}` }}>
-      <button onClick={() => setOpen(o => !o)} aria-expanded={open}
+    <div style={{ borderTop: `1.5px solid ${LINE}` }}>
+      <button onClick={() => setOpen(o => !o)} aria-expanded={open} aria-controls={panelId}
         style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '20px 4px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '17px', fontWeight: 700, color: INK, fontFamily: "var(--font-display)", letterSpacing: '-0.01em' }}>
         {q}
         <ChevronDown size={20} style={{ flexShrink: 0, transition: 'transform 0.3s ease', transform: open ? 'rotate(180deg)' : 'none', color: ACCENT }} />
       </button>
-      <div style={{ display: 'grid', gridTemplateRows: open ? '1fr' : '0fr', transition: 'grid-template-rows 0.3s ease' }}>
+      <div id={panelId} role="region" style={{ display: 'grid', gridTemplateRows: open ? '1fr' : '0fr', transition: 'grid-template-rows 0.3s ease' }}>
         <div style={{ overflow: 'hidden' }}>
-          <p style={{ margin: 0, padding: '0 4px 20px', color: '#4a4742', lineHeight: 1.7, fontSize: '15px', maxWidth: '70ch' }}>{a}</p>
+          <p style={{ margin: 0, padding: '0 4px 20px', color: MUTED, lineHeight: 1.7, fontSize: '15px', maxWidth: '70ch' }}>{a}</p>
         </div>
       </div>
     </div>
@@ -269,7 +277,7 @@ export default function Landing() {
       {/* ===================== SCREENSHOT MOCKUP ===================== */}
       <section className="lp-section lp-section-ink">
         <Reveal><div className="lp-eyebrow lp-eyebrow-center" style={{ color: ACCENT }}>L’interface</div></Reveal>
-        <Reveal delay={60}><h2 className="serif lp-h2" style={{ color: BONE }}>Une interface qui donne vie à votre lignée</h2></Reveal>
+        <Reveal delay={60}><h2 className="serif lp-h2" style={{ color: ON_DARK }}>Une interface qui donne vie à votre lignée</h2></Reveal>
         <Reveal delay={120}>
           <div className="lp-mockup">
             <div className="lp-browser">
@@ -286,19 +294,19 @@ export default function Landing() {
                   </g>
                   {[
                     { x: 290, y: 30, c: ACCENT, d: 0 },
-                    { x: 150, y: 150, c: '#2c5f8a', d: 1 },
-                    { x: 430, y: 150, c: '#a8456b', d: 2 },
-                    { x: 80, y: 270, c: '#2c5f8a', d: 3 },
-                    { x: 220, y: 270, c: '#a8456b', d: 4 },
-                    { x: 360, y: 270, c: '#2c5f8a', d: 5 },
-                    { x: 500, y: 270, c: '#a8456b', d: 6 },
+                    { x: 150, y: 150, c: 'var(--male)', d: 1 },
+                    { x: 430, y: 150, c: 'var(--female)', d: 2 },
+                    { x: 80, y: 270, c: 'var(--male)', d: 3 },
+                    { x: 220, y: 270, c: 'var(--female)', d: 4 },
+                    { x: 360, y: 270, c: 'var(--male)', d: 5 },
+                    { x: 500, y: 270, c: 'var(--female)', d: 6 },
                   ].map((n, k) => (
                     <g key={k} className="lp-node" style={{ animationDelay: `${n.d * 0.13}s` }}>
                       <rect x={n.x} y={n.y} width="62" height="42" fill={PAPER} stroke={INK} strokeWidth="2.5" />
                       <rect x={n.x} y={n.y} width="62" height="6" fill={n.c} />
                       <rect x={n.x + 9} y={n.y + 17} width="14" height="14" fill={n.c} />
-                      <rect x={n.x + 29} y={n.y + 18} width="24" height="4" fill="#6e6a62" />
-                      <rect x={n.x + 29} y={n.y + 27} width="17" height="3" fill="#d8d2c6" />
+                      <rect x={n.x + 29} y={n.y + 18} width="24" height="4" fill="var(--text-light)" />
+                      <rect x={n.x + 29} y={n.y + 27} width="17" height="3" fill="var(--border)" />
                     </g>
                   ))}
                 </svg>
@@ -364,7 +372,7 @@ export default function Landing() {
         <Reveal delay={60}><h2 className="serif lp-h2">Tout ce que vous voulez savoir</h2></Reveal>
         <Reveal delay={120}>
           <div className="lp-faq">
-            {FAQS.map(f => <FaqItem key={f.q} {...f} />)}
+            {FAQS.map((f, i) => <FaqItem key={f.q} {...f} idx={i} />)}
           </div>
         </Reveal>
       </section>
@@ -392,7 +400,7 @@ export default function Landing() {
       <footer className="lp-footer">
         <div className="lp-footer-grid">
           <div style={{ maxWidth: '280px' }}>
-            <BrandLockup size={26} color={BONE} accent={ACCENT} surface="#0f0d0b" fontSize={20} style={{ marginBottom: '12px' }} />
+            <BrandLockup size={26} color={ON_DARK} accent={ACCENT} surface="#0f0d0b" fontSize={20} style={{ marginBottom: '12px' }} />
             <p style={{ color: '#b8b2a6', fontSize: '13px', lineHeight: 1.6 }}>L’arbre généalogique moderne : structuré, collaboratif, et toujours avec vous.</p>
           </div>
           <div className="lp-footer-links">
@@ -459,8 +467,8 @@ const LANDING_CSS = `
 .lp-eyebrow { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 2.5px; font-size: 12px; font-weight: 700; color: ${ACCENT}; }
 .lp-eyebrow-center { text-align: center; display: block; margin: 0 auto 14px; }
 
-/* Nav */
-.lp-nav { position: sticky; top: 0; z-index: 50; display: flex; align-items: center; gap: 16px; justify-content: space-between; padding: 14px 24px; background: rgba(244,241,234,0.9); backdrop-filter: blur(8px); border-bottom: 1.5px solid ${INK}; }
+/* Nav — translucent themed backdrop (color-mix keeps the blur in both themes) */
+.lp-nav { position: sticky; top: 0; z-index: 50; display: flex; align-items: center; gap: 16px; justify-content: space-between; padding: 14px 24px; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1.5px solid ${LINE}; }
 .lp-nav-links { display: flex; gap: 26px; }
 .lp-nav-links a { color: ${INK}; text-decoration: none; font-size: 14px; font-weight: 600; transition: color 0.15s; }
 .lp-nav-links a:hover { color: ${ACCENT}; }
@@ -470,36 +478,36 @@ const LANDING_CSS = `
 .lp-btn-primary, .lp-btn-secondary, .lp-btn-outline-light, .lp-btn-ghost {
   display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
   font-family: var(--font-body); font-weight: 700; font-size: 15px;
-  border-radius: 2px; padding: 12px 22px; border: 2px solid ${INK};
+  border-radius: 2px; padding: 12px 22px; border: 2px solid ${LINE};
   transition: transform 0.15s cubic-bezier(0.22,1,0.36,1), box-shadow 0.15s cubic-bezier(0.22,1,0.36,1), background 0.15s; text-decoration: none;
 }
-.lp-btn-primary { background: ${ACCENT}; color: #fff; box-shadow: 4px 4px 0 ${INK}; }
-.lp-btn-primary:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 ${INK}; background: ${ACCENT}; }
-.lp-btn-primary:active { transform: translate(0,0); box-shadow: 2px 2px 0 ${INK}; }
-.lp-btn-secondary { background: ${PAPER}; color: ${INK}; box-shadow: 4px 4px 0 ${INK}; }
-.lp-btn-secondary:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 ${INK}; }
-.lp-btn-secondary:active { transform: translate(0,0); box-shadow: 2px 2px 0 ${INK}; }
-.lp-btn-outline-light { background: transparent; color: ${BONE}; border-color: ${BONE}; }
-.lp-btn-outline-light:hover { background: ${BONE}; color: ${INK}; }
+.lp-btn-primary { background: ${ACCENT}; color: #fff; box-shadow: 4px 4px 0 ${LINE}; }
+.lp-btn-primary:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 ${LINE}; background: ${ACCENT}; }
+.lp-btn-primary:active { transform: translate(0,0); box-shadow: 2px 2px 0 ${LINE}; }
+.lp-btn-secondary { background: ${PAPER}; color: ${INK}; box-shadow: 4px 4px 0 ${LINE}; }
+.lp-btn-secondary:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 ${LINE}; }
+.lp-btn-secondary:active { transform: translate(0,0); box-shadow: 2px 2px 0 ${LINE}; }
+.lp-btn-outline-light { background: transparent; color: ${ON_DARK}; border-color: ${ON_DARK}; }
+.lp-btn-outline-light:hover { background: ${ON_DARK}; color: ${DARK}; }
 .lp-btn-ghost { background: transparent; color: ${INK}; border-color: transparent; padding: 9px 14px; font-size: 14px; }
 .lp-btn-ghost:hover { color: ${ACCENT}; }
-.lp-btn-nav { padding: 9px 16px; font-size: 14px; box-shadow: 3px 3px 0 ${INK}; }
+.lp-btn-nav { padding: 9px 16px; font-size: 14px; box-shadow: 3px 3px 0 ${LINE}; }
 .lp-btn-hero { padding: 14px 26px; font-size: 16px; }
 
 /* Text links (secondary actions) */
 .lp-link { background: none; border: none; padding: 0; color: ${ACCENT}; font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; font-family: var(--font-body); font-size: inherit; }
 .lp-link:hover { color: ${INK}; }
-.lp-link-light { background: none; border: none; padding: 0; color: ${BONE}; font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; font-family: var(--font-body); font-size: 15px; opacity: 0.85; }
+.lp-link-light { background: none; border: none; padding: 0; color: ${ON_DARK}; font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; font-family: var(--font-body); font-size: 15px; opacity: 0.85; }
 .lp-link-light:hover { opacity: 1; color: #fff; }
-.lp-hero-login { margin-top: 18px; font-size: 15px; color: #4a4742; }
+.lp-hero-login { margin-top: 18px; font-size: 15px; color: ${MUTED}; }
 .lp-trust { margin-top: 30px; display: flex; gap: 22px; flex-wrap: wrap; justify-content: center; }
-.lp-trust span { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: #4a4742; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.5px; }
+.lp-trust span { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: ${MUTED}; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.5px; }
 .lp-trust svg { color: ${ACCENT}; flex-shrink: 0; }
 
 /* Demo panel */
-.lp-demo-panel { max-width: 760px; margin: 0 auto; text-align: center; background: ${PAPER}; border: 2px solid ${INK}; box-shadow: 8px 8px 0 ${ACCENT}; padding: clamp(40px, 6vw, 64px) 28px; }
-.lp-demo-sub { font-size: clamp(1rem, 2vw, 1.15rem); color: #4a4742; max-width: 520px; margin: 14px auto 28px; line-height: 1.6; }
-.lp-icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border: 1.5px solid ${INK}; background: ${PAPER}; color: ${INK}; cursor: pointer; transition: background 0.15s; }
+.lp-demo-panel { max-width: 760px; margin: 0 auto; text-align: center; background: ${PAPER}; border: 2px solid ${LINE}; box-shadow: 8px 8px 0 ${ACCENT}; padding: clamp(40px, 6vw, 64px) 28px; }
+.lp-demo-sub { font-size: clamp(1rem, 2vw, 1.15rem); color: ${MUTED}; max-width: 520px; margin: 14px auto 28px; line-height: 1.6; }
+.lp-icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border: 1.5px solid ${LINE}; background: ${PAPER}; color: ${INK}; cursor: pointer; transition: background 0.15s; }
 .lp-icon-btn:hover { background: ${ACCENT}; color: #fff; }
 
 /* Hero */
@@ -509,71 +517,71 @@ const LANDING_CSS = `
 .lp-hero-inner { position: relative; z-index: 2; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 56px 24px 80px; max-width: 980px; margin: 0 auto; }
 .lp-tagline { font-size: clamp(2.4rem, 7vw, 5rem); line-height: 0.98; letter-spacing: -0.035em; margin: 16px 0 18px; }
 .lp-tagline-accent { color: ${ACCENT}; }
-.lp-subtitle { font-size: clamp(1rem, 2.2vw, 1.25rem); color: #4a4742; max-width: 560px; margin: 0 auto 30px; line-height: 1.6; }
+.lp-subtitle { font-size: clamp(1rem, 2.2vw, 1.25rem); color: ${MUTED}; max-width: 560px; margin: 0 auto 30px; line-height: 1.6; }
 .lp-cta-row { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
-.lp-hero-welcome { margin: 0; font-size: clamp(1.05rem, 2.4vw, 1.35rem); line-height: 1.5; color: #4a4742; }
+.lp-hero-welcome { margin: 0; font-size: clamp(1.05rem, 2.4vw, 1.35rem); line-height: 1.5; color: ${MUTED}; }
 .lp-hero-welcome strong { font-family: var(--font-display); font-weight: 700; color: ${INK}; letter-spacing: -0.01em; }
-.lp-demo-note { margin-top: 14px; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: #6e6a62; }
+.lp-demo-note { margin-top: 14px; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: ${FAINT}; }
 .lp-scroll { position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); color: ${ACCENT}; z-index: 2; animation: lpBounce 1.8s ease-in-out infinite; }
 @keyframes lpBounce { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 10px); } }
 
 /* Sections */
 .lp-section { padding: clamp(64px, 9vw, 120px) 24px; }
-.lp-section-ink { background: ${INK}; color: ${BONE}; }
-.lp-section-muted { background: #ece7dc; border-top: 1.5px solid ${INK}; border-bottom: 1.5px solid ${INK}; }
+.lp-section-ink { background: ${DARK}; color: ${ON_DARK}; }
+.lp-section-muted { background: var(--bg-muted); border-top: 1.5px solid ${LINE}; border-bottom: 1.5px solid ${LINE}; }
 .lp-h2 { font-size: clamp(1.7rem, 4.2vw, 2.8rem); text-align: center; margin: 0 auto; max-width: 800px; line-height: 1.08; }
 
 /* Bento */
 .lp-bento { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; max-width: 1140px; margin: 48px auto 0; }
-.lp-card { position: relative; height: 100%; background: ${PAPER}; border: 1.5px solid ${INK}; padding: 22px; transition: transform 0.18s cubic-bezier(0.22,1,0.36,1), box-shadow 0.18s cubic-bezier(0.22,1,0.36,1); }
-.lp-card:hover { transform: translate(-4px,-4px); box-shadow: 7px 7px 0 ${INK}; }
+.lp-card { position: relative; height: 100%; background: ${PAPER}; border: 1.5px solid ${LINE}; padding: 22px; transition: transform 0.18s cubic-bezier(0.22,1,0.36,1), box-shadow 0.18s cubic-bezier(0.22,1,0.36,1); }
+.lp-card:hover { transform: translate(-4px,-4px); box-shadow: 7px 7px 0 ${LINE}; }
 .lp-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
-.lp-card-icon { width: 46px; height: 46px; border: 1.5px solid ${INK}; background: ${BONE}; color: ${ACCENT}; display: flex; align-items: center; justify-content: center; }
-.lp-card-num { font-size: 12px; font-weight: 700; color: #6e6a62; }
+.lp-card-icon { width: 46px; height: 46px; border: 1.5px solid ${LINE}; background: ${BONE}; color: ${ACCENT}; display: flex; align-items: center; justify-content: center; }
+.lp-card-num { font-size: 12px; font-weight: 700; color: ${FAINT}; }
 .lp-card-title { font-size: 1.15rem; margin: 0 0 7px; }
-.lp-card-desc { font-size: 14px; color: #4a4742; line-height: 1.6; margin: 0; }
-.lp-badge { position: absolute; top: -10px; right: 14px; background: ${ACCENT}; color: #fff; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; padding: 3px 9px; border: 1.5px solid ${INK}; }
+.lp-card-desc { font-size: 14px; color: ${MUTED}; line-height: 1.6; margin: 0; }
+.lp-badge { position: absolute; top: -10px; right: 14px; background: ${ACCENT}; color: #fff; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; padding: 3px 9px; border: 1.5px solid ${LINE}; }
 
 /* Mockup */
 .lp-mockup { max-width: 880px; margin: 48px auto 0; }
-.lp-browser { background: ${PAPER}; border: 2px solid ${INK}; box-shadow: 10px 10px 0 ${ACCENT}; overflow: hidden; }
-.lp-browser-bar { display: flex; align-items: center; gap: 8px; padding: 11px 14px; background: ${BONE}; border-bottom: 1.5px solid ${INK}; }
-.lp-dot { width: 11px; height: 11px; border: 1.5px solid ${INK}; background: ${PAPER}; }
-.lp-url { margin-left: 12px; font-size: 12px; color: ${INK}; background: ${PAPER}; padding: 4px 12px; border: 1.5px solid ${INK}; }
+.lp-browser { background: ${PAPER}; border: 2px solid ${LINE}; box-shadow: 10px 10px 0 ${ACCENT}; overflow: hidden; }
+.lp-browser-bar { display: flex; align-items: center; gap: 8px; padding: 11px 14px; background: ${BONE}; border-bottom: 1.5px solid ${LINE}; }
+.lp-dot { width: 11px; height: 11px; border: 1.5px solid ${LINE}; background: ${PAPER}; }
+.lp-url { margin-left: 12px; font-size: 12px; color: ${INK}; background: ${PAPER}; padding: 4px 12px; border: 1.5px solid ${LINE}; }
 .lp-browser-body { padding: 28px; background: radial-gradient(${INK} 1px, transparent 1px); background-size: 22px 22px; background-color: ${BONE}; }
 .lp-node { opacity: 0; animation: lpNodeIn 0.5s ease-out forwards; }
 @keyframes lpNodeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 
 /* Steps */
 .lp-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 1000px; margin: 52px auto 0; }
-.lp-step { position: relative; background: ${PAPER}; border: 1.5px solid ${INK}; padding: 28px 24px; text-align: left; }
+.lp-step { position: relative; background: ${PAPER}; border: 1.5px solid ${LINE}; padding: 28px 24px; text-align: left; }
 .lp-step-num { font-size: 3.2rem; line-height: 1; color: ${ACCENT}; margin-bottom: 6px; }
-.lp-step-icon { width: 48px; height: 48px; border: 1.5px solid ${INK}; background: ${BONE}; color: ${INK}; display: flex; align-items: center; justify-content: center; margin: 8px 0 16px; }
+.lp-step-icon { width: 48px; height: 48px; border: 1.5px solid ${LINE}; background: ${BONE}; color: ${INK}; display: flex; align-items: center; justify-content: center; margin: 8px 0 16px; }
 
 /* Pricing */
 .lp-pricing { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; max-width: 1000px; margin: 52px auto 0; align-items: stretch; }
-.lp-plan { position: relative; height: 100%; background: ${PAPER}; border: 2px solid ${INK}; box-shadow: 4px 4px 0 ${INK}; padding: 30px 26px; display: flex; flex-direction: column; transition: transform 0.2s cubic-bezier(0.22,1,0.36,1), box-shadow 0.2s cubic-bezier(0.22,1,0.36,1); }
-.lp-plan:hover { transform: translateY(-4px); box-shadow: 6px 8px 0 ${INK}; }
-.lp-plan-popular { background: ${ACCENT}; color: #fff; box-shadow: 6px 6px 0 ${INK}; }
-.lp-plan-popular:hover { box-shadow: 8px 10px 0 ${INK}; }
-.lp-plan-badge { position: absolute; top: -12px; left: 26px; background: ${INK}; color: ${BONE}; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; padding: 4px 12px; border: 1.5px solid ${INK}; }
+.lp-plan { position: relative; height: 100%; background: ${PAPER}; border: 2px solid ${LINE}; box-shadow: 4px 4px 0 ${LINE}; padding: 30px 26px; display: flex; flex-direction: column; transition: transform 0.2s cubic-bezier(0.22,1,0.36,1), box-shadow 0.2s cubic-bezier(0.22,1,0.36,1); }
+.lp-plan:hover { transform: translateY(-4px); box-shadow: 6px 8px 0 ${LINE}; }
+.lp-plan-popular { background: ${ACCENT}; color: #fff; box-shadow: 6px 6px 0 ${LINE}; }
+.lp-plan-popular:hover { box-shadow: 8px 10px 0 ${LINE}; }
+.lp-plan-badge { position: absolute; top: -12px; left: 26px; background: ${INK}; color: ${BONE}; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; padding: 4px 12px; border: 1.5px solid ${LINE}; }
 .lp-plan-name { font-size: 1.4rem; margin: 0 0 10px; }
 .lp-plan-price { margin-bottom: 20px; display: flex; align-items: baseline; gap: 4px; }
 .lp-plan-price span { font-size: 2.6rem; }
-.lp-plan-price small { color: #6e6a62; font-size: 13px; }
-.lp-plan-features { list-style: none; padding: 0; margin: 0 0 24px; flex: 1; display: flex; flex-direction: column; gap: 11px; border-top: 1.5px solid ${INK}; padding-top: 18px; }
-.lp-plan-features li { display: flex; gap: 9px; align-items: center; font-size: 14px; color: #4a4742; }
+.lp-plan-price small { color: ${FAINT}; font-size: 13px; }
+.lp-plan-features { list-style: none; padding: 0; margin: 0 0 24px; flex: 1; display: flex; flex-direction: column; gap: 11px; border-top: 1.5px solid ${LINE}; padding-top: 18px; }
+.lp-plan-features li { display: flex; gap: 9px; align-items: center; font-size: 14px; color: ${MUTED}; }
 .lp-plan-popular .lp-plan-price span, .lp-plan-popular .lp-plan-name { color: #fff; }
 .lp-plan-popular .lp-plan-price small { color: rgba(255,255,255,0.85); }
 .lp-plan-popular .lp-plan-features { border-top-color: rgba(255,255,255,0.45); }
 .lp-plan-popular .lp-plan-features li { color: #fff; }
 
 /* FAQ */
-.lp-faq { max-width: 800px; margin: 44px auto 0; border-bottom: 1.5px solid ${INK}; }
+.lp-faq { max-width: 800px; margin: 44px auto 0; border-bottom: 1.5px solid ${LINE}; }
 
 /* CTA banner */
-.lp-cta-banner { text-align: center; border-top: 2px solid ${INK}; }
-.lp-cta-title { font-size: clamp(2rem, 5vw, 3.4rem); color: ${BONE}; line-height: 1; }
+.lp-cta-banner { text-align: center; border-top: 2px solid ${LINE}; }
+.lp-cta-title { font-size: clamp(2rem, 5vw, 3.4rem); color: ${ON_DARK}; line-height: 1; }
 
 /* Footer */
 .lp-footer { background: #0f0d0b; color: #d8d2c8; padding: 56px 24px 28px; border-top: 2px solid ${ACCENT}; }

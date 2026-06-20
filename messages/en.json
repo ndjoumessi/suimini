@@ -828,6 +828,7 @@
     "unknownPerson": "(unknown person)",
     "addRelation": "Add a relationship",
     "choosePerson": "Choose a person...",
+    "relationType": "Relationship type",
     "noEvents": "No events recorded",
     "dragToReorder": "Drag to reorder",
     "sortByDate": "Sort by date",
@@ -1260,6 +1261,13 @@
   "invite": {
     "later": "Later",
     "expiresOn": "EXPIRES"
+  },
+  "roles": {
+    "owner": "Owner",
+    "admin": "Administrator",
+    "editor": "Editor",
+    "viewer": "Viewer",
+    "yourRole": "Your role: {role}"
   },
   "gedcom": {
     "dropZone": "Drop a .ged file or click",

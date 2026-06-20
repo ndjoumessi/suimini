@@ -432,6 +432,7 @@ export default function SuiminiApp() {
         onShowTreeSelector={() => setShowTreeSelector(true)}
         onAddPerson={() => setShowAddPerson(true)}
         canEdit={canEdit}
+        userRole={userRole}
         onShowImportExport={() => setImportExportTab('export')}
         onPrint={() => setShowPrint(true)}
         onShare={() => setShowShare(true)}

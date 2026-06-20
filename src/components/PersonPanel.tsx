@@ -688,14 +688,14 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
             ) : (
               <div style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)' }} className="animate-fade-in">
                 <div style={{ display:'flex', flexDirection:'column', gap:'8px', marginBottom:'8px' }}>
-                  <select value={newRelType} onChange={e=>setNewRelType(e.target.value as RelationType)} className="input">
+                  <select aria-label={t('relationType')} value={newRelType} onChange={e=>setNewRelType(e.target.value as RelationType)} className="input">
                     <option value="spouse">{t('relSpouse')}</option>
                     <option value="partner">{t('relPartner')}</option>
                     <option value="parent">{t('relIsParentOf')}</option>
                     <option value="child">{t('relIsChildOf')}</option>
                     <option value="sibling">{t('relSibling')}</option>
                   </select>
-                  <select value={newRelPersonId} onChange={e=>setNewRelPersonId(e.target.value)} className="input">
+                  <select aria-label={t('choosePerson')} value={newRelPersonId} onChange={e=>setNewRelPersonId(e.target.value)} className="input">
                     <option value="">{t('choosePerson')}</option>
                     {availablePersons.map(p=><option key={p.id} value={p.id}>{getDisplayName(p)}</option>)}
                   </select>
@@ -783,7 +783,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
               <div style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)' }} className="animate-fade-in">
                 <h4 style={{ margin:'0 0 10px', fontSize:'13px' }}>{t('newEvent')}</h4>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'8px' }}>
-                  <select value={customEventType ? '__custom__' : newEvent.type} onChange={e=>{ if(e.target.value==='__custom__'){ setCustomEventType(' '); } else { setCustomEventType(''); setNewEvent(v=>({...v,type:e.target.value as EventType})); } }} className="input">
+                  <select aria-label={t('newEvent')} value={customEventType ? '__custom__' : newEvent.type} onChange={e=>{ if(e.target.value==='__custom__'){ setCustomEventType(' '); } else { setCustomEventType(''); setNewEvent(v=>({...v,type:e.target.value as EventType})); } }} className="input">
                     {EVENT_TYPES.map(et=><option key={et} value={et}>{EVENT_ICONS[et]} {eventTypeLabel(et)}</option>)}
                     <option value="__custom__">✎ {t('customType')}</option>
                   </select>
@@ -1344,7 +1344,10 @@ function CompletionDonut({ score, color }: { score: number; color: string }) {
   );
 }
 
-const DNA_COLORS = ['#bf4b2c','#2c5f8a','#0e6e63','#a8456b','#c77d1a','#4a5a66','#7a4a6a','#4338ca'];
+// Categorical palette for the DNA donut. Distinct hues that read on both light
+// and dark donuts (each slice stroke is var(--bg-card), which adapts). The lead
+// slice uses the brand token; the rest stay fixed so categories never collide.
+const DNA_COLORS = ['var(--accent)','#2c5f8a','#0e6e63','#a8456b','#c77d1a','#4a5a66','#7a4a6a','#4338ca'];
 
 function DnaPie({ origins }: { origins: DnaOrigin[] }) {
   const total = origins.reduce((s, o) => s + (o.percent || 0), 0) || 1;
