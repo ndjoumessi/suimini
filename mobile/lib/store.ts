@@ -25,9 +25,19 @@ interface FamilyState {
   activeTreeId: string | null;
   syncStatus: SyncStatus;
   hydrated: boolean;
+  /**
+   * Demo session flag. Lives in the store (not in useAuth's local state) so it
+   * is shared across every component — notably the AuthGate in _layout.tsx,
+   * which would otherwise never see a demo started from the login screen.
+   */
+  isDemo: boolean;
 
   /** Ensure the demo tree exists; pick an active tree if none selected. */
   seedDemo: () => void;
+  /** Enter demo mode: seed the sample tree and flip the demo flag (no Supabase). */
+  startDemo: () => void;
+  /** Leave demo mode (e.g. on real sign-in / sign-out). */
+  exitDemo: () => void;
   setActiveTree: (id: string) => void;
   /** Pull trees from Supabase (no-op without a configured client). */
   refreshFromRemote: () => Promise<void>;
@@ -49,6 +59,7 @@ export const useStore = create<FamilyState>()(
       activeTreeId: null,
       syncStatus: 'idle',
       hydrated: false,
+      isDemo: false,
 
       seedDemo: () => {
         const { trees, activeTreeId } = get();
@@ -59,6 +70,13 @@ export const useStore = create<FamilyState>()(
           activeTreeId: activeTreeId ?? next[0]?.id ?? sampleFamilyTree.id,
         });
       },
+
+      startDemo: () => {
+        get().seedDemo();
+        set({ isDemo: true, syncStatus: 'offline' });
+      },
+
+      exitDemo: () => set({ isDemo: false }),
 
       setActiveTree: (id) => set({ activeTreeId: id }),
 

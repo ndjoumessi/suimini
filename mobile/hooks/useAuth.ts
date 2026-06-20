@@ -8,12 +8,12 @@
 import { useEffect, useState, useCallback } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { useStore } from '@/lib/store';
 
 export interface AuthState {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  isDemo: boolean;
   configured: boolean;
 }
 
@@ -26,9 +26,14 @@ export function useAuth() {
     user: null,
     session: null,
     loading: true,
-    isDemo: false,
     configured: supabase !== null,
   });
+
+  // Demo flag lives in the shared store so the AuthGate (a different useAuth
+  // instance) sees a demo started from the login screen.
+  const isDemo = useStore((s) => s.isDemo);
+  const startDemoStore = useStore((s) => s.startDemo);
+  const exitDemoStore = useStore((s) => s.exitDemo);
 
   useEffect(() => {
     if (!supabase) {
@@ -51,11 +56,12 @@ export function useAuth() {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       setTimeout(() => {
         if (!active) return;
+        // A real session supersedes any demo session.
+        if (session) exitDemoStore();
         setState((s) => ({
           ...s,
           session,
           user: session?.user ?? null,
-          isDemo: false,
           loading: false,
         }));
       }, 0);
@@ -113,18 +119,23 @@ export function useAuth() {
   }, []);
 
   const startDemo = useCallback(() => {
-    setState((s) => ({ ...s, isDemo: true, loading: false }));
-  }, []);
+    // Pure local bypass — no Supabase call. Seeds the sample tree + flips the
+    // shared demo flag so the AuthGate lets the user through.
+    startDemoStore();
+    setState((s) => ({ ...s, loading: false }));
+  }, [startDemoStore]);
 
   const signOut = useCallback(async () => {
+    exitDemoStore();
     if (supabase) await supabase.auth.signOut();
-    setState((s) => ({ ...s, user: null, session: null, isDemo: false }));
-  }, []);
+    setState((s) => ({ ...s, user: null, session: null }));
+  }, [exitDemoStore]);
 
-  const isAuthenticated = !!state.user || state.isDemo;
+  const isAuthenticated = !!state.user || isDemo;
 
   return {
     ...state,
+    isDemo,
     isAuthenticated,
     signIn,
     signUp,

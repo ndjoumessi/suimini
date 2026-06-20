@@ -13,7 +13,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 
 /** Redirects between the (auth) and (tabs) groups based on session state. */
 function AuthGate({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, isDemo, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
   const refreshFromRemote = useStore((s) => s.refreshFromRemote);
@@ -30,9 +30,10 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       router.replace('/(auth)/login');
     } else if (isAuthenticated && inAuthGroup) {
       router.replace('/(tabs)/home');
-      refreshFromRemote();
+      // Demo is fully local — never hit Supabase.
+      if (!isDemo) refreshFromRemote();
     }
-  }, [isAuthenticated, loading, segments, router, refreshFromRemote]);
+  }, [isAuthenticated, isDemo, loading, segments, router, refreshFromRemote]);
 
   return <>{children}</>;
 }
