@@ -2,6 +2,7 @@
 import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { BookOpen, Plus, Pencil, Trash2, Check } from 'lucide-react';
+import { EmptyState } from './ui/EmptyState';
 import { FamilyTree, JournalEntry } from '@/types';
 import { getDisplayName, formatDate, safeHttpUrl } from '@/lib/treeUtils';
 
@@ -115,12 +116,12 @@ export default function JournalView({ tree, onSelectPerson, onAdd, onUpdate, onD
         )}
 
         {entries.length === 0 && editingId !== 'new' ? (
-          <div style={{ textAlign: 'center', padding: '50px 20px', maxWidth: '420px', margin: '0 auto' }}>
-            <BookOpen size={48} strokeWidth={1.25} style={{ color: 'var(--text-light)', marginBottom: '12px' }} aria-hidden="true" />
-            <h3 style={{ margin: '0 0 6px' }}>{t('emptyTitle')}</h3>
-            <p style={{ color: 'var(--text-muted)' }}>{filterPersonId ? t('emptyFiltered') : t('emptyDescription')}</p>
-            {!filterPersonId && <button onClick={startAdd} className="btn btn-primary" style={{ marginTop: '12px', gap: '6px' }}><Plus size={16} aria-hidden="true" /> {t('firstEntry')}</button>}
-          </div>
+          <EmptyState
+            icon={BookOpen}
+            title={t('emptyTitle')}
+            description={filterPersonId ? t('emptyFiltered') : t('emptyDescription')}
+            action={!filterPersonId ? { label: t('firstEntry'), onClick: startAdd } : undefined}
+          />
         ) : (
           <div style={{ position: 'relative', paddingLeft: '20px' }}>
             {/* Timeline rail */}

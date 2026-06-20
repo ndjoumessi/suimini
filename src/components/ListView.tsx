@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { FamilyTree, SearchFilters } from '@/types';
 import { searchPersons, getAge, formatYear, getDisplayName } from '@/lib/treeUtils';
 import { UsersRound, Plus, ChevronDown, Filter, X, MapPin, User } from 'lucide-react';
+import { EmptyState } from './ui/EmptyState';
 
 interface Props {
   tree: FamilyTree;
@@ -115,18 +116,18 @@ export default function ListView({ tree, onSelectPerson, onAddPerson, canEdit = 
       {/* List */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
         {sorted.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '56px 24px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-            <UsersRound size={56} strokeWidth={1.25} style={{ color: 'var(--text-light)' }} aria-hidden="true" />
-            <div>
-              <h3 style={{ margin: '0 0 4px' }}>{t('emptyTitle')}</h3>
-              <p style={{ margin: 0 }}>{tree.persons.length === 0 ? t('emptyTree') : t('emptyNoResults')}</p>
-            </div>
-            {(canEdit || tree.persons.length > 0) && (
-              <button onClick={tree.persons.length === 0 ? onAddPerson : () => setFilters({})} className="btn btn-primary btn-sm">
-                {tree.persons.length === 0 ? <><Plus size={14} aria-hidden="true" /> {t('addPerson')}</> : t('resetFilters')}
-              </button>
-            )}
-          </div>
+          <EmptyState
+            icon={UsersRound}
+            title={t('emptyTitle')}
+            description={tree.persons.length === 0 ? t('emptyTree') : t('emptyNoResults')}
+            action={
+              (canEdit || tree.persons.length > 0)
+                ? (tree.persons.length === 0
+                    ? { label: t('addPerson'), onClick: onAddPerson }
+                    : { label: t('resetFilters'), onClick: () => setFilters({}) })
+                : undefined
+            }
+          />
         ) : (
           <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden', background: 'var(--bg-card)', maxWidth: '760px', margin: '0 auto' }}>
             {visible.map((person, idx) => {

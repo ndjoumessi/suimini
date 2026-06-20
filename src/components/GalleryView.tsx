@@ -2,6 +2,7 @@
 import { useState, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Images, LayoutGrid, Rows3, ImageOff, X, ImageUp, Plus, ScanFace } from 'lucide-react';
+import { EmptyState } from './ui/EmptyState';
 import { FamilyTree, Person } from '@/types';
 import { getDisplayName, formatYear } from '@/lib/treeUtils';
 import { uploadAvatar } from '@/lib/uploadImage';
@@ -129,22 +130,18 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
       {/* Gallery */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
         {photos.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 24px', maxWidth: '420px', margin: '0 auto' }}>
-            <ImageOff size={48} strokeWidth={1.25} style={{ color: 'var(--text-light)', marginBottom: '14px' }} aria-hidden="true" />
-            <h3 style={{ margin: '0 0 6px' }}>{filterPersonId ? t('emptyFilteredTitle') : t('emptyTitle')}</h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: '0 0 16px' }}>
-              {filterPersonId
-                ? t('emptyFilteredText')
-                : t('emptyText')}
-            </p>
-            {filterPersonId ? (
-              <button className="btn btn-secondary btn-sm" onClick={() => setFilterPersonId('')}>{t('seeAllPeople')}</button>
-            ) : (onUpdatePerson && tree.persons.length > 0 && (
-              <button className="btn btn-primary btn-sm" onClick={() => { setShowAdd(true); setAddPersonId(''); }} style={{ gap: '6px' }}>
-                <Plus size={14} aria-hidden="true" /> {t('addPhoto')}
-              </button>
-            ))}
-          </div>
+          <EmptyState
+            icon={ImageOff}
+            title={filterPersonId ? t('emptyFilteredTitle') : t('emptyTitle')}
+            description={filterPersonId ? t('emptyFilteredText') : t('emptyText')}
+            action={
+              filterPersonId
+                ? { label: t('seeAllPeople'), onClick: () => setFilterPersonId('') }
+                : (onUpdatePerson && tree.persons.length > 0
+                    ? { label: t('addPhoto'), onClick: () => { setShowAdd(true); setAddPersonId(''); } }
+                    : undefined)
+            }
+          />
         ) : (
           <div style={layout === 'grid'
             ? { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '10px' }

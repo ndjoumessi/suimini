@@ -1,9 +1,9 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import {
-  TreePine, Map, Cloud, Search, BookOpen, Play, BarChart2, Dna,
-  ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Check, Mail,
-  KeyRound, UserPlus, Share2, ShieldCheck, Star, Gamepad2, X,
+  TreePine, Sparkles, Camera, Users, Smartphone, Shield,
+  ArrowRight, ChevronDown, Check, Mail,
+  KeyRound, UserPlus, Share2, ShieldCheck, Gamepad2, X,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/hooks/useAuth';
@@ -43,14 +43,12 @@ function Reveal({ children, delay = 0, style }: { children: React.ReactNode; del
 }
 
 const FEATURES = [
-  { Icon: TreePine, title: 'Arbre interactif', desc: 'Visualisez 5 générations d’un seul coup d’œil.', badge: false },
-  { Icon: Map, title: 'Carte des origines', desc: 'Découvrez d’où vient votre famille.', badge: false },
-  { Icon: Cloud, title: 'Sync cloud', desc: 'Accessible sur tous vos appareils, toujours sauvegardé.', badge: true },
-  { Icon: Search, title: 'Exploration', desc: 'Trouvez les liens entre n’importe quels membres.', badge: false },
-  { Icon: BookOpen, title: 'Journal familial', desc: 'Racontez l’histoire en mots et en photos.', badge: true },
-  { Icon: Play, title: 'Mode présentation', desc: 'Partagez lors des réunions de famille.', badge: false },
-  { Icon: BarChart2, title: 'Statistiques', desc: 'Analysez les tendances de votre lignée.', badge: false },
-  { Icon: Dna, title: 'Profil ADN', desc: 'Visualisez vos origines ethniques.', badge: true },
+  { Icon: TreePine, title: 'Arbre interactif', desc: 'Visualisez et naviguez dans votre lignée sur 7 générations.' },
+  { Icon: Sparkles, title: 'Récit IA', desc: 'Claude génère automatiquement l’histoire narrative de votre famille.' },
+  { Icon: Camera, title: 'Reconnaissance photos', desc: 'Identifiez les personnes dans vos photos de famille avec l’IA.' },
+  { Icon: Users, title: 'Collaboration temps réel', desc: 'Invitez votre famille à contribuer simultanément.' },
+  { Icon: Smartphone, title: 'Application mobile PWA', desc: 'Installez Suimini sur votre téléphone, fonctionne hors connexion.' },
+  { Icon: Shield, title: 'RGPD · Données en Europe', desc: 'Vos données hébergées en Europe, conformes au RGPD.' },
 ];
 
 const STEPS = [
@@ -60,9 +58,9 @@ const STEPS = [
 ];
 
 const TESTIMONIALS = [
-  { name: 'Awa Diallo', loc: 'Dakar → Lyon', seed: 'Awa', quote: 'J’ai retrouvé le village de mon arrière-grand-père et relié quatre générations. Émouvant.' },
-  { name: 'Mathieu Lefèvre', loc: 'Nantes', seed: 'Mathieu', quote: 'Enfin un outil élégant. Toute la famille collabore sur le même arbre, en temps réel.' },
-  { name: 'Sofia Romano', loc: 'Milan → Bruxelles', seed: 'Sofia', quote: 'La carte des origines m’a fait découvrir des branches italiennes que j’ignorais totalement.' },
+  { name: 'Marie L.', loc: 'Paris', seed: 'Marie L.', quote: 'L’arbre le plus élégant que j’aie vu. Le récit IA m’a ému aux larmes.' },
+  { name: 'Jean-Pierre M.', loc: 'Lyon', seed: 'Jean-Pierre M.', quote: 'Enfin un outil moderne pour la généalogie. On a importé 3 générations en 10 minutes.' },
+  { name: 'Sophie D.', loc: 'Bordeaux', seed: 'Sophie D.', quote: 'La collaboration en temps réel a permis à toute notre famille de contribuer.' },
 ];
 
 const PLANS = [
@@ -82,37 +80,6 @@ const FAQS = [
   { q: 'Puis-je exporter mon arbre ?', a: 'Oui : export JSON (sauvegarde complète), GEDCOM (standard universel) et PDF (liste, fiches, résumé ou arbre visuel A3).' },
   { q: 'Suimini est-il payant ?', a: 'Le plan Gratuit suffit pour démarrer. Les plans Famille et Pro débloquent la synchronisation cloud, le partage et la collaboration temps réel.' },
 ];
-
-function Testimonials() {
-  const [i, setI] = useState(0);
-  const t = TESTIMONIALS[i];
-  return (
-    <div style={{ maxWidth: '720px', margin: '0 auto', textAlign: 'center', position: 'relative' }}>
-      <div className="lp-fade" key={i}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={`https://api.dicebear.com/7.x/personas/svg?seed=${t.seed}`} alt="" width={72} height={72}
-          loading="lazy" decoding="async"
-          style={{ border: `2px solid ${LINE}`, background: PAPER, marginBottom: '20px' }} />
-        <p className="serif" style={{ fontSize: 'clamp(1.3rem, 3vw, 2rem)', lineHeight: 1.18, letterSpacing: '-0.02em', margin: '0 0 18px' }}>
-          « {t.quote} »
-        </p>
-        <div style={{ display: 'flex', gap: '3px', justifyContent: 'center', marginBottom: '10px', color: ACCENT }}>
-          {[0, 1, 2, 3, 4].map(s => <Star key={s} size={15} fill={ACCENT} />)}
-        </div>
-        <div className="lp-mono" style={{ fontWeight: 700 }}>{t.name}</div>
-        <div className="lp-mono" style={{ fontSize: '12px', color: ACCENT, marginTop: '2px' }}>{t.loc}</div>
-      </div>
-      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '24px', alignItems: 'center' }}>
-        <button className="lp-icon-btn" aria-label="Témoignage précédent" onClick={() => setI(p => (p - 1 + TESTIMONIALS.length) % TESTIMONIALS.length)}><ChevronLeft size={18} /></button>
-        {TESTIMONIALS.map((_, k) => (
-          <button key={k} aria-label={`Aller au témoignage ${k + 1}`} onClick={() => setI(k)}
-            style={{ width: k === i ? '24px' : '10px', height: '10px', border: `1.5px solid ${LINE}`, cursor: 'pointer', padding: 0, background: k === i ? ACCENT : PAPER, transition: 'all 0.25s' }} />
-        ))}
-        <button className="lp-icon-btn" aria-label="Témoignage suivant" onClick={() => setI(p => (p + 1) % TESTIMONIALS.length)}><ChevronRight size={18} /></button>
-      </div>
-    </div>
-  );
-}
 
 function FaqItem({ q, a, idx }: { q: string; a: string; idx: number }) {
   const [open, setOpen] = useState(false);
@@ -247,17 +214,13 @@ export default function Landing() {
       <section id="features" className="lp-section">
         <Reveal><div className="lp-eyebrow lp-eyebrow-center">Les fonctions</div></Reveal>
         <Reveal delay={60}><h2 className="serif lp-h2">Tout ce qu’il faut pour votre histoire familiale</h2></Reveal>
-        <div className="lp-bento">
+        <div className="lp-features">
           {FEATURES.map((f, k) => (
             <Reveal key={f.title} delay={k * 50} style={{ height: '100%' }}>
-              <div className="lp-card">
-                <div className="lp-card-top">
-                  <div className="lp-card-icon"><f.Icon size={22} /></div>
-                  <span className="lp-mono lp-card-num">N°{String(k + 1).padStart(2, '0')}</span>
-                </div>
-                {f.badge && <span className="lp-badge lp-mono">Nouveau</span>}
-                <h3 className="serif lp-card-title">{f.title}</h3>
-                <p className="lp-card-desc">{f.desc}</p>
+              <div className="lp-feature">
+                <div className="lp-feature-icon"><f.Icon size={32} strokeWidth={1.6} /></div>
+                <h3 className="serif lp-feature-title">{f.title}</h3>
+                <p className="lp-feature-desc">{f.desc}</p>
               </div>
             </Reveal>
           ))}
@@ -339,9 +302,26 @@ export default function Landing() {
 
       {/* ===================== TESTIMONIALS ===================== */}
       <section className="lp-section lp-section-muted">
-        <Reveal><div className="lp-eyebrow lp-eyebrow-center">Témoignages</div></Reveal>
-        <Reveal delay={60}><h2 className="serif lp-h2" style={{ marginBottom: '40px' }}>Ils ont retrouvé leurs racines</h2></Reveal>
-        <Reveal delay={120}><Testimonials /></Reveal>
+        <Reveal><div className="lp-eyebrow lp-eyebrow-center">Ils nous font confiance</div></Reveal>
+        <Reveal delay={60}><h2 className="serif lp-h2">Des familles qui préservent leur histoire</h2></Reveal>
+        <div className="lp-testimonials">
+          {TESTIMONIALS.map((t, k) => (
+            <Reveal key={t.name} delay={k * 70} style={{ height: '100%' }}>
+              <figure className="lp-testimonial">
+                <blockquote className="lp-testimonial-quote">{t.quote}</blockquote>
+                <figcaption className="lp-testimonial-foot">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={`https://api.dicebear.com/7.x/personas/svg?seed=${t.seed}`} alt="" width={44} height={44}
+                    loading="lazy" decoding="async" className="lp-testimonial-avatar" />
+                  <div>
+                    <div className="lp-testimonial-name">{t.name}</div>
+                    <div className="lp-mono lp-testimonial-loc">{t.loc} · 2026</div>
+                  </div>
+                </figcaption>
+              </figure>
+            </Reveal>
+          ))}
+        </div>
       </section>
 
       {/* ===================== TARIFS ===================== */}
@@ -402,27 +382,34 @@ export default function Landing() {
       {/* ===================== FOOTER ===================== */}
       <footer className="lp-footer">
         <div className="lp-footer-grid">
-          <div style={{ maxWidth: '280px' }}>
-            <BrandLockup size={26} color={ON_DARK} accent={ACCENT} surface="#0f0d0b" fontSize={20} style={{ marginBottom: '12px' }} />
-            <p style={{ color: '#b8b2a6', fontSize: '13px', lineHeight: 1.6 }}>L’arbre généalogique moderne : structuré, collaboratif, et toujours avec vous.</p>
+          <div className="lp-footer-brand">
+            <BrandLockup size={26} color={ON_DARK} accent={ACCENT} surface="#0f0d0b" fontSize={20} style={{ marginBottom: '14px' }} />
+            <p style={{ color: '#b8b2a6', fontSize: '13px', lineHeight: 1.6, margin: '0 0 16px', maxWidth: '300px' }}>Préservez l’histoire de votre famille, génération après génération.</p>
+            <span className="lp-footer-badge lp-mono">🇪🇺 Données hébergées en Europe</span>
           </div>
           <div className="lp-footer-links">
-            <span className="lp-foot-h lp-mono">Liens utiles</span>
+            <span className="lp-foot-h lp-mono">Produit</span>
             <a href="#features">Fonctions</a>
             <a href="#tarifs">Tarifs</a>
             <a href="#faq">FAQ</a>
-            <a href="/confidentialite">Confidentialité</a>
-            <a href="/cgu">CGU</a>
+            <button onClick={startDemo} className="lp-footer-linkbtn">Essayer la démo</button>
           </div>
           <div className="lp-footer-links">
-            <span className="lp-foot-h lp-mono">Suimini</span>
-            <a href="/app">Ouvrir l’app</a>
+            <span className="lp-foot-h lp-mono">Légal</span>
+            <a href="/cgu">Conditions générales</a>
+            <a href="/confidentialite">Confidentialité</a>
+            <a href="/cgu">Mentions légales</a>
+          </div>
+          <div className="lp-footer-links">
+            <span className="lp-foot-h lp-mono">Contact</span>
             <a href="mailto:hello@suimini.app"><Mail size={13} /> hello@suimini.app</a>
+            <a href="#">GitHub</a>
+            <a href="#">Twitter/X @suimini</a>
           </div>
         </div>
         <div className="lp-footer-bottom lp-mono">
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><ShieldCheck size={14} /> Données hébergées en Europe · Chiffrement SSL</span>
           <span>© 2026 Suimini · Tous droits réservés</span>
+          <span>Fait avec ❤️ en France</span>
         </div>
       </footer>
 
@@ -510,8 +497,6 @@ const LANDING_CSS = `
 /* Demo panel */
 .lp-demo-panel { max-width: 760px; margin: 0 auto; text-align: center; background: ${PAPER}; border: 2px solid ${LINE}; box-shadow: 8px 8px 0 ${ACCENT}; padding: clamp(40px, 6vw, 64px) 28px; }
 .lp-demo-sub { font-size: clamp(1rem, 2vw, 1.15rem); color: ${MUTED}; max-width: 520px; margin: 14px auto 28px; line-height: 1.6; }
-.lp-icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border: 1.5px solid ${LINE}; background: ${PAPER}; color: ${INK}; cursor: pointer; transition: background 0.15s; }
-.lp-icon-btn:hover { background: ${ACCENT}; color: #fff; }
 
 /* Hero */
 .lp-hero { position: relative; min-height: 92vh; display: flex; flex-direction: column; overflow: hidden; }
@@ -534,16 +519,27 @@ const LANDING_CSS = `
 .lp-section-muted { background: var(--bg-muted); border-top: 1.5px solid ${LINE}; border-bottom: 1.5px solid ${LINE}; }
 .lp-h2 { font-size: clamp(1.7rem, 4.2vw, 2.8rem); text-align: center; margin: 0 auto; max-width: 800px; line-height: 1.08; }
 
-/* Bento */
-.lp-bento { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; max-width: 1140px; margin: 48px auto 0; }
-.lp-card { position: relative; height: 100%; background: ${PAPER}; border: 1.5px solid ${LINE}; padding: 22px; transition: transform 0.18s cubic-bezier(0.22,1,0.36,1), box-shadow 0.18s cubic-bezier(0.22,1,0.36,1); }
-.lp-card:hover { transform: translate(-4px,-4px); box-shadow: 7px 7px 0 ${LINE}; }
-.lp-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
-.lp-card-icon { width: 46px; height: 46px; border: 1.5px solid ${LINE}; background: ${BONE}; color: ${ACCENT}; display: flex; align-items: center; justify-content: center; }
-.lp-card-num { font-size: 12px; font-weight: 700; color: ${FAINT}; }
+/* Card title/desc (shared by steps) */
 .lp-card-title { font-size: 1.15rem; margin: 0 0 7px; }
 .lp-card-desc { font-size: 14px; color: ${MUTED}; line-height: 1.6; margin: 0; }
-.lp-badge { position: absolute; top: -10px; right: 14px; background: ${ACCENT}; color: #fff; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; padding: 3px 9px; border: 1.5px solid ${LINE}; }
+
+/* Features 3×2 grid */
+.lp-features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 1100px; margin: 48px auto 0; }
+.lp-feature { height: 100%; background: ${PAPER}; border: 1px solid ${LINE}; padding: 28px 24px; transition: transform 0.15s cubic-bezier(0.22,1,0.36,1), box-shadow 0.15s cubic-bezier(0.22,1,0.36,1); }
+.lp-feature:hover { transform: translateY(-2px); box-shadow: 4px 4px 0 ${LINE}; }
+.lp-feature-icon { color: ${ACCENT}; margin-bottom: 16px; }
+.lp-feature-title { font-size: 16px; margin: 0 0 8px; }
+.lp-feature-desc { font-size: 13px; color: ${MUTED}; line-height: 1.55; margin: 0; }
+
+/* Testimonials grid */
+.lp-testimonials { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 1100px; margin: 48px auto 0; }
+.lp-testimonial { position: relative; height: 100%; background: ${PAPER}; border: 1px solid ${LINE}; padding: 28px; margin: 0; display: flex; flex-direction: column; }
+.lp-testimonial::before { content: '❝'; position: absolute; top: 10px; left: 18px; font-size: 48px; line-height: 1; color: ${ACCENT}; opacity: 0.3; pointer-events: none; }
+.lp-testimonial-quote { position: relative; z-index: 1; margin: 18px 0 22px; font-size: 15px; line-height: 1.6; color: ${INK}; flex: 1; }
+.lp-testimonial-foot { display: flex; align-items: center; gap: 12px; }
+.lp-testimonial-avatar { border: 1.5px solid ${LINE}; background: ${BONE}; flex-shrink: 0; }
+.lp-testimonial-name { font-family: var(--font-display); font-weight: 700; font-size: 14px; color: ${INK}; }
+.lp-testimonial-loc { font-size: 12px; color: ${ACCENT}; margin-top: 2px; }
 
 /* Mockup */
 .lp-mockup { max-width: 880px; margin: 48px auto 0; }
@@ -588,20 +584,24 @@ const LANDING_CSS = `
 
 /* Footer */
 .lp-footer { background: #0f0d0b; color: #d8d2c8; padding: 56px 24px 28px; border-top: 2px solid ${ACCENT}; }
-.lp-footer-grid { max-width: 1140px; margin: 0 auto; display: flex; justify-content: space-between; gap: 32px; flex-wrap: wrap; padding-bottom: 28px; border-bottom: 1px solid rgba(255,255,255,0.12); }
-.lp-footer-links { display: flex; flex-direction: column; gap: 9px; font-size: 14px; }
-.lp-footer-links a { color: #b8b2a6; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: color 0.15s; }
-.lp-footer-links a:hover { color: ${ACCENT}; }
+.lp-footer-grid { max-width: 1140px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; padding-bottom: 28px; border-bottom: 1px solid rgba(255,255,255,0.12); }
+.lp-footer-brand { min-width: 0; }
+.lp-footer-badge { display: inline-block; font-size: 11px; letter-spacing: 0.5px; color: #b8b2a6; border: 1px solid rgba(255,255,255,0.18); padding: 5px 10px; }
+.lp-footer-links { display: flex; flex-direction: column; align-items: flex-start; gap: 9px; font-size: 14px; }
+.lp-footer-links a, .lp-footer-linkbtn { color: #b8b2a6; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: color 0.15s; }
+.lp-footer-links a:hover, .lp-footer-linkbtn:hover { color: ${ACCENT}; }
+.lp-footer-linkbtn { background: none; border: none; padding: 0; cursor: pointer; font-family: var(--font-body); font-size: 14px; text-align: left; }
 .lp-foot-h { font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: #8a8276; font-weight: 700; margin-bottom: 4px; }
 .lp-footer-bottom { max-width: 1140px; margin: 20px auto 0; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 11px; letter-spacing: 0.5px; color: #8a8276; text-transform: uppercase; }
+@media (max-width: 768px) { .lp-footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; } .lp-footer-brand { grid-column: 1 / -1; } }
 
-/* Testimonials fade */
-.lp-fade { animation: lpFade 0.4s ease-out; }
-@keyframes lpFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-
-@media (max-width: 1024px) { .lp-bento { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 1024px) {
+  .lp-features { grid-template-columns: repeat(2, 1fr); }
+  .lp-testimonials { grid-template-columns: repeat(2, 1fr); }
+}
 @media (max-width: 768px) {
-  .lp-bento { grid-template-columns: 1fr; }
+  .lp-features { grid-template-columns: 1fr; }
+  .lp-testimonials { grid-template-columns: 1fr; }
   .lp-pricing { grid-template-columns: 1fr; }
   .lp-steps { grid-template-columns: 1fr; }
 }

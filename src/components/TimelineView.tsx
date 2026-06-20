@@ -2,6 +2,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { CalendarDays, MapPin } from 'lucide-react';
+import { EmptyState } from './ui/EmptyState';
 import { FamilyTree, EventType, Person } from '@/types';
 import { getDisplayName, formatDate, getChildren, getParents } from '@/lib/treeUtils';
 import { eventsOverlapping, type HistoricalEvent } from '@/lib/history';
@@ -332,11 +333,8 @@ export default function TimelineView({ tree, onSelectPerson }: Props) {
 
       {/* Body */}
       {isEmpty ? (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '12px', padding: '24px', textAlign: 'center' }}>
-          <CalendarDays size={44} strokeWidth={1.25} style={{ color: 'var(--text-light)' }} aria-hidden="true" />
-          <p style={{ color: 'var(--text-muted)', margin: 0, maxWidth: '32ch' }}>
-            {t('empty')}
-          </p>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <EmptyState icon={CalendarDays} title={t('empty')} />
         </div>
       ) : view === 'list' ? (
         /* ─── LIST VIEW (existing) ───────────────────────────────────────── */
