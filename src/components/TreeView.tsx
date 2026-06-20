@@ -2,10 +2,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { FamilyTree, Person } from '@/types';
-import { getParents, getChildren, getSpouses, getSiblings, getDisplayName, formatYear, getAge, formatAge, personCompleteness } from '@/lib/treeUtils';
+import { getParents, getChildren, getSpouses, getSiblings, getDisplayName, formatYear, getAge, formatAge, personCompleteness, findRelationPath, describeRelation } from '@/lib/treeUtils';
 import { joinTreeCursors, presenceColor, collaborationEnabled, type CursorPeer } from '@/lib/collaboration';
 import { useAuth } from '@/hooks/useAuth';
-import { Search, ZoomIn, ZoomOut, Crosshair, Info, Plus, Aperture, Sprout, Printer, Camera, CheckCircle2, FileText } from 'lucide-react';
+import { Search, ZoomIn, ZoomOut, Crosshair, Info, Plus, Aperture, Sprout, Printer, Camera, CheckCircle2, FileText, Maximize2 } from 'lucide-react';
 
 /** Two-letter initials for the avatar fallback (same logic as PersonPanel/Sidebar). */
 function nodeInitials(p: Person): string {
@@ -14,18 +14,20 @@ function nodeInitials(p: Person): string {
 
 /** Node avatar: profile photo (square-clipped) with a per-node fallback to
  *  initials when the image is absent OR fails to load (broken URL/expired). */
+const AVA = 36;                 // avatar size (square, Atelier)
+const AVA_X = 12;               // avatar left inset
 function NodeAvatar({ person, clipId }: { person: Person; clipId: string }) {
   const [broken, setBroken] = useState(false);
   if (person.profilePhoto && !broken) {
     return (
-      <image href={person.profilePhoto} x={8} y={NODE_H / 2 - 16} width={32} height={32}
+      <image href={person.profilePhoto} x={AVA_X} y={(NODE_H - AVA) / 2} width={AVA} height={AVA}
         clipPath={`url(#${clipId})`} preserveAspectRatio="xMidYMid slice"
         onError={() => setBroken(true)} />
     );
   }
   return (
-    <text x={24} y={NODE_H / 2 + 4} textAnchor="middle"
-      fontFamily="var(--font-display)" fontSize={13} fontWeight={700} fill="var(--accent)">
+    <text x={AVA_X + AVA / 2} y={NODE_H / 2 + 5} textAnchor="middle"
+      fontFamily="var(--font-display)" fontSize={15} fontWeight={700} fill="var(--accent)">
       {nodeInitials(person)}
     </text>
   );
@@ -42,12 +44,12 @@ function NodeBadges({ person, labels }: {
   const hasSources = !!(person.sources?.length || person.citations?.length);
 
   const items: { key: string; title: string; color: string; icon: React.ReactNode }[] = [];
-  if (hasPhotos) items.push({ key: 'photos', title: labels.photos, color: 'var(--accent)', icon: <Camera size={12} /> });
-  if (isComplete) items.push({ key: 'complete', title: labels.complete, color: 'var(--success)', icon: <CheckCircle2 size={12} /> });
-  if (hasSources) items.push({ key: 'sources', title: labels.sources, color: 'var(--text-muted)', icon: <FileText size={12} /> });
+  if (hasPhotos) items.push({ key: 'photos', title: labels.photos, color: 'var(--accent)', icon: <Camera size={13} /> });
+  if (isComplete) items.push({ key: 'complete', title: labels.complete, color: 'var(--success)', icon: <CheckCircle2 size={13} /> });
+  if (hasSources) items.push({ key: 'sources', title: labels.sources, color: 'var(--text-muted)', icon: <FileText size={13} /> });
   if (items.length === 0) return null;
 
-  const CHIP = 16, GAP = 3;
+  const CHIP = 18, GAP = 3;
   // Row anchored to the BOTTOM-right corner, growing leftwards. Bottom-right keeps
   // clear of the avatar (left), the name/date text (left), and the root crown (top-right).
   const startX = NODE_W - 6 - CHIP - (items.length - 1) * (CHIP + GAP);
@@ -83,7 +85,7 @@ function taupeScale(t: number): string {
   return `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
 }
 
-interface TreeNode { person: Person; x: number; y: number; }
+interface TreeNode { person: Person; x: number; y: number; role?: 'spouse' }
 interface Edge { x1: number; y1: number; x2: number; y2: number; type: string; }
 interface Pearl { x: number; y: number; }
 
@@ -97,11 +99,14 @@ interface Props {
   readOnly?: boolean;
 }
 
-// "Album de famille relié" — compact register-card nodes (see DESIGN.md).
+// "Album de famille relié" — register-card nodes (see DESIGN.md). Width/height stay
+// uniform so the elbow-bus layout maths (edges, centring, minimap) hold; the senior
+// UI pass widened the GAPS for legibility/breathing room rather than the cards.
 const NODE_W = 190;
 const NODE_H = 88;
-const H_GAP = 24;
-const V_GAP = 64;
+const H_GAP = 32;   // ↑ from 24 — more air between siblings/spouses
+const V_GAP = 76;   // ↑ from 64 — clearer generational banding
+const SPINE = 5;    // role-coloured left spine width
 const GRID = 24; // canvas dot-grid spacing
 
 export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAddPerson, onExport, readOnly = false }: Props) {
@@ -132,6 +137,9 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
   const [layoutMode, setLayoutMode] = useState<'vertical' | 'fan'>('vertical');
   // Focus mode: when set, dims everyone outside the focus person's close family.
   const [focusId, setFocusId] = useState<string | null>(null);
+  // Rich hover tooltip: the person under the pointer + its container-relative anchor.
+  // Null when nothing is hovered or while panning (cleared on drag start).
+  const [hover, setHover] = useState<{ id: string; x: number; y: number } | null>(null);
 
   const rootPerson = tree.persons.find(p => p.id === rootId);
 
@@ -186,7 +194,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
       spouses.forEach(spouse => {
         visited.add(spouse.id);
         const sx = prevNodeX + NODE_W + H_GAP;
-        nodes.push({ person: spouse, x: sx, y: genY });
+        nodes.push({ person: spouse, x: sx, y: genY, role: 'spouse' });
         const lineY = genY + NODE_H / 2;
         edges.push({ x1: prevNodeX + NODE_W, y1: lineY, x2: sx, y2: lineY, type: 'spouse' });
         pearls.push({ x: prevNodeX + NODE_W + H_GAP / 2, y: lineY });
@@ -338,6 +346,30 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
   };
   const recenter = () => centerOn(rootId);
 
+  // Fit-to-screen: scale + offset so the WHOLE tree fits the viewport with padding.
+  // The real cure for wide sibling rows (e.g. TSANA Sébastien's 11 children) running
+  // off-screen — one click frames everything instead of manual panning.
+  const fitToScreen = () => {
+    const el = containerRef.current;
+    if (!el || !nodes.length) return;
+    const { clientWidth: cw, clientHeight: ch } = el;
+    if (cw === 0 || ch === 0) return;
+    const pad = 56;
+    const s = Math.max(0.2, Math.min((cw - pad) / svgW, (ch - pad) / svgH, 1.6));
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    setScale(s);
+    setOffset({ x: cw / 2 - cx * s, y: ch / 2 - cy * s });
+  };
+
+  // Kinship label between a person and the current root, for the hover tooltip.
+  const relationToRoot = (id: string): string | null => {
+    if (!rootId || id === rootId) return null;
+    const path = findRelationPath(rootId, id, tree.relationships, tree.persons);
+    if (!path) return null;
+    return describeRelation(rootId, id, path, tree.relationships, tree.persons);
+  };
+
   // Centre on root: the root is fixed at content (0,0), so screen-centre = offset.
   // Centre the root once the container has a real size. On a hard refresh the
   // container can report clientWidth/Height = 0 when this runs, which would pin
@@ -428,6 +460,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
     if (e.button === 0) {
       setIsDragging(true);
       setDragMoved(false);
+      setHover(null); // hide tooltip while panning
       setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
     }
   };
@@ -454,6 +487,8 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
   };
   const handleMouseUp = () => setIsDragging(false);
 
+  // True while the user is dragging on the minimap (press-and-scrub navigation).
+  const mmDragRef = useRef(false);
   const lastTouchRef = useRef<{ x: number; y: number } | null>(null);
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 1) {
@@ -482,6 +517,12 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
 
   const genderColor = (g: string) =>
     g === 'male' ? 'var(--male)' : g === 'female' ? 'var(--female)' : 'var(--text-muted)';
+
+  // Left-spine colour encodes ROLE (not just gender): the pivot/root reads as
+  // terracotta, married-in spouses as green (--success), everyone else by gender.
+  // This is what visually separates "épouses" from blood descendants in a couple row.
+  const spineColor = (node: TreeNode, isRoot: boolean) =>
+    isRoot ? 'var(--accent)' : node.role === 'spouse' ? 'var(--success)' : genderColor(node.person.gender);
 
   const filteredPersons = showSearch && searchQ
     ? tree.persons.filter(p => getDisplayName(p).toLowerCase().includes(searchQ.toLowerCase()))
@@ -600,6 +641,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
         {layoutMode === 'vertical' && <>
           {sep}
           <button onClick={recenter} className="btn btn-secondary btn-sm btn-icon" title={t('centerOnRoot')} aria-label={t('center')}><Crosshair size={14} aria-hidden="true" /></button>
+          <button onClick={fitToScreen} className="btn btn-secondary btn-sm btn-icon" title={t('fitToScreen')} aria-label={t('fitToScreen')}><Maximize2 size={14} aria-hidden="true" /></button>
           <button onClick={() => setScale(s => Math.max(0.25, s * 0.8))} className="btn btn-secondary btn-sm btn-icon" title={t('zoomOut')} aria-label={t('zoomOut')}><ZoomOut size={14} aria-hidden="true" /></button>
           <button onClick={() => setScale(1)} className="btn btn-secondary btn-sm" style={{ minWidth: '46px' }} title={t('resetZoom')} aria-label={t('resetZoom')}>{Math.round(scale * 100)}%</button>
           <button onClick={() => setScale(s => Math.min(2.5, s * 1.2))} className="btn btn-secondary btn-sm btn-icon" title={t('zoomIn')} aria-label={t('zoomIn')}><ZoomIn size={14} aria-hidden="true" /></button>
@@ -662,21 +704,27 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
             {/* Edges (elbow filiation + dashed spouse) */}
             {edges.map((edge, i) => {
               const isSpouse = edge.type === 'spouse';
+              // Union (spouse): thick SOLID terracotta horizontal bar. Filiation
+              // (parent): thinner solid ink elbow. Differentiated by weight + colour
+              // + the union losange below — never by dashing (both read as solid).
               return (
                 <line key={i}
                   x1={edge.x1} y1={edge.y1} x2={edge.x2} y2={edge.y2}
-                  stroke={isSpouse ? 'var(--accent)' : 'var(--border)'}
-                  strokeWidth={isSpouse ? 1.5 : 1.2}
-                  strokeDasharray={isSpouse ? '4,3' : 'none'}
-                  opacity={isSpouse ? 0.35 : 1}
+                  stroke={isSpouse ? 'var(--accent)' : 'var(--ink)'}
+                  strokeWidth={isSpouse ? 2.25 : 1.6}
+                  strokeLinecap="round"
+                  opacity={isSpouse ? 0.75 : 0.34}
                 />
               );
             })}
 
-            {/* Spouse pearls */}
+            {/* Union marker — a small terracotta losange (◆) centred on each couple's bar */}
             {pearls.map((p, i) => (
-              <circle key={`pearl-${i}`} cx={p.x} cy={p.y} r={3}
-                fill="var(--bg-card)" stroke="var(--accent)" strokeWidth={1} style={{ pointerEvents: 'none' }} />
+              <rect key={`pearl-${i}`}
+                x={p.x - 4} y={p.y - 4} width={8} height={8}
+                transform={`rotate(45 ${p.x} ${p.y})`}
+                fill="var(--bg-card)" stroke="var(--accent)" strokeWidth={1.5}
+                style={{ pointerEvents: 'none' }} />
             ))}
             </g>{/* /edge+pearl focus layer */}
 
@@ -699,6 +747,12 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                   transform={`translate(${node.x}, ${node.y})`}
                   onClick={() => handleNodeClick(p.id)}
                   onDoubleClick={() => handleNodeDoubleClick(p.id)}
+                  onMouseEnter={(e) => {
+                    if (isDragging || dimmed) return;
+                    const r = containerRef.current?.getBoundingClientRect();
+                    if (r) setHover({ id: p.id, x: e.clientX - r.left, y: e.clientY - r.top });
+                  }}
+                  onMouseLeave={() => setHover(h => (h?.id === p.id ? null : h))}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleNodeClick(p.id); } }}
                   opacity={dimmed ? 0.15 : (p.isAlive ? 1 : 0.72)}
                   style={{
@@ -713,39 +767,50 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                   <g className="tv-node-inner" style={{ animationDelay: `${delay}ms` }}>
                   <clipPath id={`card-${p.id}`}><rect width={NODE_W} height={NODE_H} rx={0} ry={0} /></clipPath>
 
-                  {/* Card */}
-                  <rect className="tv-node-card" width={NODE_W} height={NODE_H} rx={0} ry={0}
-                    fill={isSelected ? 'var(--accent-light)' : 'var(--bg-card)'}
-                    stroke={isSelected ? 'var(--accent)' : 'var(--border)'}
-                    strokeWidth={isSelected ? 2 : 1} />
-
-                  {/* Gender spine (clipped to the rounded card) */}
-                  <g clipPath={`url(#card-${p.id})`}>
-                    <rect x={0} y={0} width={4} height={NODE_H} fill={genderColor(p.gender)} />
-                  </g>
-
-                  {/* Root crown (inline path, no React component in SVG) */}
-                  {isRoot && (
-                    <path transform={`translate(${NODE_W - 24}, 9)`}
-                      d="M0 3 L3 7 L6 1.5 L9 7 L12 3 L11 10 L1 10 Z"
-                      fill="var(--accent)" />
+                  {/* Hard offset shadow (Atelier) — only on the pivot/root and the
+                      selected node, to give them depth and lift them off the page
+                      without muddying every card. Accent shadow for the root. */}
+                  {(isRoot || isSelected) && (
+                    <rect x={isRoot ? 4 : 3} y={isRoot ? 4 : 3} width={NODE_W} height={NODE_H}
+                      fill={isRoot ? 'var(--accent)' : 'var(--border-strong)'}
+                      opacity={isRoot ? 0.9 : 0.16} />
                   )}
 
-                  {/* Avatar — square (Atelier) */}
-                  <clipPath id={`avatar-${p.id}`}><rect x={8} y={NODE_H / 2 - 16} width={32} height={32} /></clipPath>
-                  <rect x={8} y={NODE_H / 2 - 16} width={32} height={32} fill="var(--accent-light)" />
+                  {/* Card — root gets an accent outline + faint accent wash even when
+                      not selected, so the pivot ancestor always stands out. */}
+                  <rect className="tv-node-card" width={NODE_W} height={NODE_H} rx={0} ry={0}
+                    fill={isSelected || isRoot ? 'var(--accent-light)' : 'var(--bg-card)'}
+                    stroke={isSelected || isRoot ? 'var(--accent)' : 'var(--border-strong)'}
+                    strokeWidth={isRoot ? 2.5 : isSelected ? 2 : 1.25} />
+
+                  {/* Role spine (clipped to the card): pivot=terracotta, spouse=green, else gender */}
+                  <g clipPath={`url(#card-${p.id})`}>
+                    <rect x={0} y={0} width={SPINE} height={NODE_H} fill={spineColor(node, isRoot)} />
+                  </g>
+
+                  {/* Root crown — larger (×1.5) and lifted for the pivot ancestor */}
+                  {isRoot && (
+                    <path transform={`translate(${NODE_W - 30}, 7) scale(1.5)`}
+                      d="M0 3 L3 7 L6 1.5 L9 7 L12 3 L11 10 L1 10 Z"
+                      fill="var(--accent)" stroke="var(--bg-card)" strokeWidth={0.6} />
+                  )}
+
+                  {/* Avatar — square (Atelier), 36px */}
+                  <clipPath id={`avatar-${p.id}`}><rect x={AVA_X} y={(NODE_H - AVA) / 2} width={AVA} height={AVA} /></clipPath>
+                  <rect x={AVA_X} y={(NODE_H - AVA) / 2} width={AVA} height={AVA} fill="var(--accent-light)" stroke="var(--border)" strokeWidth={0.75} />
                   <NodeAvatar person={p} clipId={`avatar-${p.id}`} />
 
                   {/* First name */}
-                  <text x={48} y={NODE_H / 2 - 9} fontFamily="var(--font-display)" fontSize={13} fontWeight={600} fill="var(--text)">
-                    {p.firstName.length > 14 ? p.firstName.slice(0, 13) + '…' : p.firstName}
+                  <text x={AVA_X + AVA + 10} y={NODE_H / 2 - 11} fontFamily="var(--font-display)" fontSize={14} fontWeight={700} fill="var(--text)">
+                    {p.firstName.length > 13 ? p.firstName.slice(0, 12) + '…' : p.firstName}
                   </text>
                   {/* Last name */}
-                  <text x={48} y={NODE_H / 2 + 5} fontFamily="var(--font-body)" fontSize={11} fill="var(--text-muted)">
-                    {p.lastName.length > 16 ? p.lastName.slice(0, 15) + '…' : p.lastName}
+                  <text x={AVA_X + AVA + 10} y={NODE_H / 2 + 5} fontFamily="var(--font-body)" fontSize={12} fontWeight={500} fill="var(--text-muted)">
+                    {p.lastName.length > 15 ? p.lastName.slice(0, 14) + '…' : p.lastName}
                   </text>
-                  {/* Dates */}
-                  <text x={48} y={NODE_H / 2 + 19} fontFamily="var(--font-body)" fontSize={10} fill="var(--text-light)">
+                  {/* Dates — body font (narrower than mono, so it can't collide with
+                      the bottom-right badges), but larger + higher-contrast than before */}
+                  <text x={AVA_X + AVA + 10} y={NODE_H / 2 + 21} fontFamily="var(--font-body)" fontSize={11} fill="var(--text-muted)">
                     {dateLine(p)}
                   </text>
 
@@ -787,6 +852,38 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
         </svg>
         )}
 
+        {/* Rich hover tooltip (Atelier: ink card, mono, hard accent shadow). Floats
+            above the pointer; pointer-events:none so it never blocks the node beneath.
+            Only in the vertical layout and never while panning. */}
+        {hover && layoutMode === 'vertical' && !isDragging && (() => {
+          const hp = tree.persons.find(pp => pp.id === hover.id);
+          if (!hp) return null;
+          const place = [hp.birthPlace?.city, hp.birthPlace?.country].filter(Boolean).join(', ');
+          const childCount = getChildren(hp.id, tree.relationships, tree.persons).length;
+          const kin = relationToRoot(hp.id);
+          const dl = dateLine(hp);
+          return (
+            <div style={{
+              position: 'absolute', left: hover.x, top: hover.y,
+              transform: 'translate(-50%, calc(-100% - 16px))',
+              maxWidth: '260px', zIndex: 'var(--z-dropdown)', pointerEvents: 'none',
+              background: 'var(--ink)', color: 'var(--bg)',
+              padding: '9px 12px', boxShadow: '3px 3px 0 var(--accent)',
+              fontFamily: 'var(--font-mono)', fontSize: '11px', lineHeight: 1.5,
+            }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', marginBottom: '3px' }}>
+                {getDisplayName(hp)}
+              </div>
+              {dl && <div style={{ opacity: 0.85 }}>{dl}</div>}
+              {place && <div style={{ opacity: 0.85 }}>📍 {place}</div>}
+              <div style={{ opacity: 0.85 }}>
+                {hp.id === rootId ? `👑 ${t('root')}` : kin ? kin : ''}
+                {childCount > 0 ? `${hp.id === rootId || kin ? ' · ' : ''}${childCount} ${childCount > 1 ? t('children') : t('child')}` : ''}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Focus mode: floating "full view" escape, shown only while focused */}
         {focusId && layoutMode === 'vertical' && (
           <button
@@ -804,24 +901,34 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
             <div className="label" style={{ marginBottom: '8px', color: 'var(--text)' }}>{t('legend')}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '4px', height: '14px', background: 'var(--male)', borderRadius: '2px', flexShrink: 0 }} /> {t('male')}
+                <span style={{ width: '5px', height: '14px', background: 'var(--male)', flexShrink: 0 }} /> {t('male')}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '4px', height: '14px', background: 'var(--female)', borderRadius: '2px', flexShrink: 0 }} /> {t('female')}
+                <span style={{ width: '5px', height: '14px', background: 'var(--female)', flexShrink: 0 }} /> {t('female')}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <svg width="26" height="8" style={{ flexShrink: 0 }}><line x1="0" y1="4" x2="26" y2="4" stroke="var(--border)" strokeWidth="1.2" /></svg> {t('filiation')}
+                <span style={{ width: '5px', height: '14px', background: 'var(--success)', flexShrink: 0 }} /> {t('spouse')}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <svg width="26" height="8" style={{ flexShrink: 0 }}><line x1="0" y1="4" x2="26" y2="4" stroke="var(--accent)" strokeWidth="1.5" strokeDasharray="4,3" opacity="0.35" /></svg> {t('spouse')}
+                <span style={{ width: '5px', height: '14px', background: 'var(--accent)', flexShrink: 0 }} /> {t('root')}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <svg width="26" height="8" style={{ flexShrink: 0 }}><line x1="0" y1="4" x2="26" y2="4" stroke="var(--ink)" strokeWidth="1.6" opacity="0.34" /></svg> {t('filiation')}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <svg width="26" height="10" style={{ flexShrink: 0 }}>
+                  <line x1="0" y1="5" x2="26" y2="5" stroke="var(--accent)" strokeWidth="2.25" opacity="0.75" />
+                  <rect x="10" y="2" width="6" height="6" transform="rotate(45 13 5)" fill="var(--bg-card)" stroke="var(--accent)" strokeWidth="1.2" />
+                </svg> {t('union')}
               </div>
             </div>
           </div>
         )}
 
-        {/* Node count */}
-        <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '100px', padding: '4px 12px', fontSize: '11px', color: 'var(--text-muted)' }}>
-          {nodes.length} / {tree.persons.length} {t('persons')}
+        {/* Node count — terracotta figures, stronger outline (Atelier) */}
+        <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'var(--bg-card)', border: 'var(--bw) solid var(--border-strong)', borderRadius: '100px', padding: '4px 13px', fontSize: '12px', color: 'var(--text-muted)', boxShadow: 'var(--shadow-sm)' }}>
+          <strong style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{nodes.length}</strong>
+          <span style={{ opacity: 0.6 }}> / {tree.persons.length}</span> {t('persons')}
         </div>
 
         {/* Real-time presence: overlapping avatar cluster + counter. Rendered only
@@ -890,27 +997,33 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
           const vy = padY + (-offset.y / scale - minY) * mmScale;
           const vw = (cw / scale) * mmScale;
           const vh = (ch / scale) * mmScale;
-          const navigate = (e: React.MouseEvent) => {
-            e.stopPropagation();
-            const rect = e.currentTarget.getBoundingClientRect();
-            const cx = minX + (e.clientX - rect.left - padX) / mmScale;
-            const cy = minY + (e.clientY - rect.top - padY) / mmScale;
+          const navigate = (clientX: number, clientY: number, rect: DOMRect) => {
+            const cx = minX + (clientX - rect.left - padX) / mmScale;
+            const cy = minY + (clientY - rect.top - padY) / mmScale;
             setOffset({ x: cw / 2 - scale * cx, y: ch / 2 - scale * cy });
           };
           return (
-            <div onMouseDown={e => e.stopPropagation()} onClick={navigate} title={t('clickToNavigate')}
-              style={{ position: 'absolute', bottom: '12px', right: '12px', width: `${MM_W}px`, height: `${MM_H}px`, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)', overflow: 'hidden', cursor: 'pointer' }}>
+            <div
+              onMouseDown={e => { e.stopPropagation(); mmDragRef.current = true; navigate(e.clientX, e.clientY, e.currentTarget.getBoundingClientRect()); }}
+              onMouseMove={e => { if (mmDragRef.current) navigate(e.clientX, e.clientY, e.currentTarget.getBoundingClientRect()); }}
+              onMouseUp={() => { mmDragRef.current = false; }}
+              onMouseLeave={() => { mmDragRef.current = false; }}
+              onClick={e => e.stopPropagation()}
+              title={t('clickToNavigate')}
+              style={{ position: 'absolute', bottom: '12px', right: '12px', width: `${MM_W}px`, height: `${MM_H}px`, background: 'var(--bg-card)', border: 'var(--bw) solid var(--border-strong)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)', overflow: 'hidden', cursor: 'crosshair' }}>
               <svg width={MM_W} height={MM_H} style={{ display: 'block' }}>
                 {nodes.map(n => {
                   const active = n.person.id === selectedPersonId || n.person.id === rootId;
+                  // Miniatures coloured by role/gender so the minimap echoes the canvas.
+                  const fill = active ? 'var(--accent)' : genderColor(n.person.gender);
                   return (
                     <rect key={n.person.id}
                       x={padX + (n.x - minX) * mmScale} y={padY + (n.y - minY) * mmScale}
-                      width={5} height={3} rx={1}
-                      fill={active ? 'var(--accent)' : 'var(--border)'} />
+                      width={6} height={3.5} rx={1}
+                      fill={fill} opacity={active ? 1 : 0.7} />
                   );
                 })}
-                <rect x={vx} y={vy} width={vw} height={vh} fill="none" stroke="var(--accent)" strokeWidth={1.2} rx={2} />
+                <rect x={vx} y={vy} width={vw} height={vh} fill="var(--accent)" fillOpacity={0.1} stroke="var(--accent)" strokeWidth={1.4} rx={2} />
               </svg>
               <div className="label" style={{ position: 'absolute', top: '3px', left: '6px', fontSize: '9px', pointerEvents: 'none' }}>Minimap</div>
             </div>
