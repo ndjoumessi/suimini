@@ -27,7 +27,7 @@ function NodeAvatar({ person, clipId }: { person: Person; clipId: string }) {
   }
   return (
     <text x={AVA_X + AVA / 2} y={NODE_H / 2 + 5} textAnchor="middle"
-      fontFamily="var(--font-display)" fontSize={15} fontWeight={700} fill="var(--accent)">
+      fontFamily="var(--font-display)" fontSize={15} fontWeight={700} fill="var(--bg-card)">
       {nodeInitials(person)}
     </text>
   );
@@ -776,10 +776,12 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                       opacity={isRoot ? 0.9 : 0.16} />
                   )}
 
-                  {/* Card — root gets an accent outline + faint accent wash even when
-                      not selected, so the pivot ancestor always stands out. */}
+                  {/* Card — ATELIER RULE: the face is ALWAYS bone/--bg-card, never a
+                      colour wash. Role/state is carried by the left spine, the outline
+                      and the crown — so the text stays legible on every node, including
+                      the pivot. Root = full terracotta outline; selected = accent outline. */}
                   <rect className="tv-node-card" width={NODE_W} height={NODE_H} rx={0} ry={0}
-                    fill={isSelected || isRoot ? 'var(--accent-light)' : 'var(--bg-card)'}
+                    fill="var(--bg-card)"
                     stroke={isSelected || isRoot ? 'var(--accent)' : 'var(--border-strong)'}
                     strokeWidth={isRoot ? 2.5 : isSelected ? 2 : 1.25} />
 
@@ -795,9 +797,12 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                       fill="var(--accent)" stroke="var(--bg-card)" strokeWidth={0.6} />
                   )}
 
-                  {/* Avatar — square (Atelier), 36px */}
+                  {/* Avatar — square (Atelier), 36px. The ROLE colour lives HERE (the
+                      avatar chip), not on the node face. Initials use --bg-card so they
+                      auto-contrast: white-ish on the dark role colours in light theme,
+                      dark on the lighter role colours in dark theme. */}
                   <clipPath id={`avatar-${p.id}`}><rect x={AVA_X} y={(NODE_H - AVA) / 2} width={AVA} height={AVA} /></clipPath>
-                  <rect x={AVA_X} y={(NODE_H - AVA) / 2} width={AVA} height={AVA} fill="var(--accent-light)" stroke="var(--border)" strokeWidth={0.75} />
+                  <rect x={AVA_X} y={(NODE_H - AVA) / 2} width={AVA} height={AVA} fill={spineColor(node, isRoot)} stroke="var(--border-strong)" strokeWidth={0.75} />
                   <NodeAvatar person={p} clipId={`avatar-${p.id}`} />
 
                   {/* First name */}
