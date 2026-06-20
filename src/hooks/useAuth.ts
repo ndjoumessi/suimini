@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { sampleFamilyTree } from '@/lib/sampleData';
+import { offlineStorage } from '@/lib/offlineStorage';
 import type { UserProfile } from '@/types';
 import { fetchMyMemberships, acceptInvitation, PENDING_INVITE_KEY, type TreeMember } from '@/lib/sharing';
 
@@ -166,9 +167,13 @@ export function useAuth() {
     return { error: error?.message };
   }, []);
 
-  // --- Sign out (clears local tree cache + demo, back to landing) ---
+  // --- Sign out (wipes ALL local data so the next guest/demo starts clean) ---
   const signOut = useCallback(async () => {
     await supabase?.auth.signOut();
+    // CRITICAL: clear IndexedDB too, not just localStorage. Cloud mode mirrors the
+    // account's trees into IndexedDB; if we only clear localStorage, the next guest/
+    // demo load reads those stale rows back and leaks the previous account's data.
+    try { await offlineStorage.clear(); } catch { /* ignore */ }
     try {
       localStorage.removeItem(TREES_KEY);
       localStorage.removeItem(ACTIVE_KEY);
@@ -182,7 +187,11 @@ export function useAuth() {
   }, []);
 
   // --- Demo mode (sample data, no cloud sync) ---
-  const startDemo = useCallback(() => {
+  const startDemo = useCallback(async () => {
+    // CRITICAL: wipe IndexedDB *before* seeding. The store's guest/demo branch reads
+    // IndexedDB FIRST — so a leftover cloud account's trees there would override the
+    // sample and leak real data into the demo. Clear it, then inject the Dupont sample.
+    try { await offlineStorage.clear(); } catch { /* ignore */ }
     try {
       // 1. Mark demo mode (localStorage + cookie for the proxy)
       localStorage.setItem(DEMO_KEY, DEMO_VALUE);
@@ -192,7 +201,7 @@ export function useAuth() {
     } catch { /* ignore */ }
     setDemoCookie(true);
     setDemo(true);
-    // 3. Full reload so the store re-reads localStorage cleanly
+    // 3. Full reload so the store re-reads the clean local data
     if (typeof window !== 'undefined') window.location.href = '/app';
   }, []);
 

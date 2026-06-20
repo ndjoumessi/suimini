@@ -220,7 +220,10 @@ export default function Landing() {
                     : t('hero.welcomeGeneric')}
                 </p>
               ) : (
-                <button onClick={startSignup} className="lp-btn-primary lp-btn-hero">{t('hero.cta')}</button>
+                <>
+                  <button onClick={startSignup} className="lp-btn-primary lp-btn-hero">{t('hero.cta')}</button>
+                  <button onClick={startDemo} className="lp-btn-secondary lp-btn-hero"><Gamepad2 size={17} /> {t('demo.cta')}</button>
+                </>
               )}
             </div>
             {!canEnterApp && (

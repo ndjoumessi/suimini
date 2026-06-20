@@ -24,29 +24,26 @@ function truncate(s: string, n: number): string {
 import type { LucideIcon } from 'lucide-react';
 
 // `navKey` indexes into the `nav` message namespace (see messages/*.json).
+// Grouped into three labelled sections (label key in the `sidebar` namespace).
 interface NavItem { view: ViewMode; Icon: LucideIcon; navKey: string }
-const NAV_GROUPS: NavItem[][] = [
-  [
+const NAV_GROUPS: { labelKey: string; items: NavItem[] }[] = [
+  { labelKey: 'sectionMain', items: [
     { view: 'dashboard', Icon: Home, navKey: 'home' },
-  ],
-  [
     { view: 'tree', Icon: TreePine, navKey: 'tree' },
     { view: 'list', Icon: Users, navKey: 'persons' },
+  ] },
+  { labelKey: 'sectionExplore', items: [
     { view: 'map', Icon: Map, navKey: 'map' },
-  ],
-  [
     { view: 'timeline', Icon: Calendar, navKey: 'timeline' },
     { view: 'journal', Icon: BookOpen, navKey: 'journal' },
     { view: 'birthdays', Icon: Cake, navKey: 'birthdays' },
-  ],
-  [
     { view: 'gallery', Icon: Images, navKey: 'gallery' },
     { view: 'ancestors', Icon: Search, navKey: 'exploration' },
     { view: 'statistics', Icon: BarChart2, navKey: 'statistics' },
-  ],
-  [
+  ] },
+  { labelKey: 'sectionManage', items: [
     { view: 'settings', Icon: Settings, navKey: 'settings' },
-  ],
+  ] },
 ];
 
 interface Props {
@@ -141,7 +138,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
       {/* Active tree selector */}
       <button onClick={onShowTreeSelector}
         aria-label={ts('changeTreeAria')}
-        style={{ margin: '10px 12px', padding: '10px 12px', background: 'var(--accent-light)', border: 'var(--bw) solid var(--border-strong)', borderRadius: 'var(--radius)', cursor: 'pointer', textAlign: 'left', transition: 'box-shadow var(--t-fast), transform var(--t-fast)' }}
+        style={{ margin: '10px 12px', padding: '10px 12px 11px 13px', background: 'var(--accent-light)', border: 'var(--bw) solid var(--border-strong)', borderLeft: '3px solid var(--accent)', borderRadius: 'var(--radius)', cursor: 'pointer', textAlign: 'left', transition: 'box-shadow var(--t-fast), transform var(--t-fast)' }}
         onMouseEnter={e => { e.currentTarget.style.transform = 'translate(-2px,-2px)'; e.currentTarget.style.boxShadow = 'var(--shadow)'; }}
         onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
       >
@@ -183,8 +180,11 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
       {/* Navigation */}
       <nav style={{ flex: 1, padding: '4px 8px', overflowY: 'auto' }} aria-label={ts('navAria')}>
         {NAV_GROUPS.map((group, gi) => (
-          <div key={gi} style={{ paddingTop: gi > 0 ? '6px' : 0, marginTop: gi > 0 ? '6px' : 0, borderTop: gi > 0 ? '1px solid var(--border)' : 'none' }}>
-            {group.map(item => {
+          <div key={gi} style={{ paddingTop: gi > 0 ? '10px' : '2px', marginTop: gi > 0 ? '8px' : 0, borderTop: gi > 0 ? '1px solid var(--border)' : 'none' }}>
+            <div className="label" style={{ fontSize: '9px', letterSpacing: '0.1em', color: 'var(--text-light)', padding: '0 11px', marginBottom: '5px' }}>
+              {ts(group.labelKey)}
+            </div>
+            {group.items.map(item => {
               const active = activeView === item.view;
               const showBadge = item.view === 'birthdays' && birthdayAlertCount > 0;
               return (

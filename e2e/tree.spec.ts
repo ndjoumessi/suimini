@@ -26,8 +26,9 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('tree renders sample nodes', async ({ page }) => {
-  // Le layout vertical affiche 11 des 13 personnes selon generationsToShow par défaut.
-  await expect(page.locator('.person-node')).toHaveCount(11);
+  // Le layout vertical affiche 17 des 19 personnes de l'arbre démo enrichi
+  // (5 générations) selon generationsToShow par défaut.
+  await expect(page.locator('.person-node')).toHaveCount(17);
 });
 
 test('clicking a node opens PersonPanel', async ({ page }) => {
