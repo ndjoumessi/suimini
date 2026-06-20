@@ -90,6 +90,10 @@ export default function RootLayout() {
                 name="person/[id]"
                 options={{ presentation: 'card' }}
               />
+              <Stack.Screen
+                name="person/edit"
+                options={{ presentation: 'modal' }}
+              />
             </Stack>
           </AuthGate>
         </View>

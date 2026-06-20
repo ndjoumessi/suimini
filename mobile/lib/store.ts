@@ -7,7 +7,11 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { FamilyTree, Person, Relationship } from './types';
 import { sampleFamilyTree } from './sampleData';
-import { loadTreesFromSupabase } from './supabaseSync';
+import {
+  loadTreesFromSupabase,
+  upsertPersonRemote,
+  deletePersonRemote,
+} from './supabaseSync';
 import { createKVStorage } from './storage';
 
 const mmkv = createKVStorage('suimini-store');
@@ -41,9 +45,13 @@ interface FamilyState {
   setActiveTree: (id: string) => void;
   /** Pull trees from Supabase (no-op without a configured client). */
   refreshFromRemote: () => Promise<void>;
-  upsertPerson: (treeId: string, person: Person) => void;
-  removePerson: (treeId: string, personId: string) => void;
+  /** Insert/update a person: optimistic local write + Supabase (skipped in demo). */
+  upsertPerson: (treeId: string, person: Person) => Promise<WriteOutcome>;
+  /** Delete a person: optimistic local write + Supabase (skipped in demo). */
+  removePerson: (treeId: string, personId: string) => Promise<WriteOutcome>;
 }
+
+export interface WriteOutcome { ok: boolean; error?: string }
 
 function mergeTrees(local: FamilyTree[], remote: FamilyTree[]): FamilyTree[] {
   const byId = new Map<string, FamilyTree>();
@@ -99,7 +107,8 @@ export const useStore = create<FamilyState>()(
         }
       },
 
-      upsertPerson: (treeId, person) =>
+      upsertPerson: async (treeId, person) => {
+        // Optimistic local write first (instant UI, works offline / demo).
         set((s) => ({
           trees: s.trees.map((t) => {
             if (t.id !== treeId) return t;
@@ -112,9 +121,15 @@ export const useStore = create<FamilyState>()(
               updatedAt: new Date().toISOString(),
             };
           }),
-        })),
+        }));
+        if (get().isDemo) return { ok: true };
+        set({ syncStatus: 'syncing' });
+        const { error } = await upsertPersonRemote(treeId, person);
+        set({ syncStatus: error ? 'error' : 'saved' });
+        return error ? { ok: false, error } : { ok: true };
+      },
 
-      removePerson: (treeId, personId) =>
+      removePerson: async (treeId, personId) => {
         set((s) => ({
           trees: s.trees.map((t) =>
             t.id === treeId
@@ -128,7 +143,13 @@ export const useStore = create<FamilyState>()(
                 }
               : t,
           ),
-        })),
+        }));
+        if (get().isDemo) return { ok: true };
+        set({ syncStatus: 'syncing' });
+        const { error } = await deletePersonRemote(personId);
+        set({ syncStatus: error ? 'error' : 'saved' });
+        return error ? { ok: false, error } : { ok: true };
+      },
     }),
     {
       name: 'suimini-family',

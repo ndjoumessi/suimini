@@ -1,7 +1,7 @@
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, Share2 } from 'lucide-react-native';
+import { ChevronLeft, Pencil } from 'lucide-react-native';
 import { PersonDetail } from '@/components/person/PersonDetail';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { fonts, fontSize, spacing, borderWidth } from '@/lib/theme';
@@ -30,8 +30,14 @@ export default function PersonScreen() {
           <ChevronLeft size={22} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.topTitle, { color: colors.textMuted }]}>FICHE</Text>
-        <TouchableOpacity style={styles.iconBtn} disabled>
-          <Share2 size={18} color={colors.textLight} />
+        <TouchableOpacity
+          style={styles.iconBtn}
+          onPress={() =>
+            person && router.push({ pathname: '/person/edit', params: { id: person.id } })
+          }
+          disabled={!person}
+        >
+          <Pencil size={18} color={person ? colors.accent : colors.textLight} />
         </TouchableOpacity>
       </View>
 

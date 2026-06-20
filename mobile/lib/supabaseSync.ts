@@ -1,12 +1,54 @@
 /**
- * Read-only Supabase sync for mobile — row mappers ported from the web app's
- * src/lib/supabaseSync.ts so the column ↔ field mapping stays identical. The
- * mobile client currently loads trees; writes go through the web app.
+ * Supabase sync for mobile — row mappers ported from the web app's
+ * src/lib/supabaseSync.ts so the column ↔ field mapping stays identical.
+ * Loads trees AND writes persons (upsert / delete) under the user's RLS.
  */
 import { supabase } from './supabase';
 import type { FamilyTree, Person, Relationship, JournalEntry } from './types';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
+/** Person → DB row (mirror of the web personToRow; unmapped fields go to `extra`). */
+function personToRow(p: Person, treeId: string): any {
+  const {
+    id, firstName, lastName, gender, birthDate, birthPlace, deathDate, deathPlace,
+    isAlive, occupation, bio, profilePhoto, dnaOrigins, citations, customFields,
+    tags, privacy, createdAt, updatedAt, ...rest
+  } = p;
+  return {
+    id, tree_id: treeId, first_name: firstName, last_name: lastName, gender: gender ?? null,
+    birth_date: birthDate ?? null, birth_place: birthPlace ?? null,
+    death_date: deathDate ?? null, death_place: deathPlace ?? null,
+    is_alive: isAlive ?? true, occupation: occupation ?? null, bio: bio ?? null,
+    profile_photo: profilePhoto ?? null, dna_origins: dnaOrigins ?? null,
+    citations: citations ?? null, custom_fields: customFields ?? null,
+    tags: tags ?? null, privacy: privacy ?? null,
+    extra: Object.keys(rest).length ? rest : null,
+    created_at: createdAt, updated_at: updatedAt,
+  };
+}
+
+export interface WriteResult { error?: string }
+
+/** Upsert a person (insert or update). RLS: caller must own/write the tree. */
+export async function upsertPersonRemote(treeId: string, person: Person): Promise<WriteResult> {
+  if (!supabase) return { error: 'Supabase non configuré' };
+  const { error } = await supabase
+    .from('persons')
+    .upsert(personToRow(person, treeId), { onConflict: 'id' });
+  return error ? { error: error.message } : {};
+}
+
+/** Delete a person and any relationship touching it (FK safety). */
+export async function deletePersonRemote(personId: string): Promise<WriteResult> {
+  if (!supabase) return { error: 'Supabase non configuré' };
+  await supabase
+    .from('relationships')
+    .delete()
+    .or(`person1_id.eq.${personId},person2_id.eq.${personId}`);
+  const { error } = await supabase.from('persons').delete().eq('id', personId);
+  return error ? { error: error.message } : {};
+}
 
 function rowToPerson(r: any): Person {
   return {

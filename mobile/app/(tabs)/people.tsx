@@ -9,12 +9,12 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Search, Users } from 'lucide-react-native';
+import { Search, Users, Plus } from 'lucide-react-native';
 import { Header } from '@/components/layout/Header';
 import { Input } from '@/components/ui/Input';
 import { PersonCard } from '@/components/person/PersonCard';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { fonts, fontSize, spacing } from '@/lib/theme';
+import { fonts, fontSize, spacing, shadows, borderWidth } from '@/lib/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { useFamilyStore } from '@/hooks/useFamilyStore';
 import { searchPersons, getGeneration } from '@/lib/treeUtils';
@@ -139,6 +139,19 @@ export default function PeopleScreen() {
           />
         }
       />
+
+      {/* FAB — nouvelle fiche */}
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={() => router.push('/person/edit')}
+        style={[
+          styles.fab,
+          { backgroundColor: colors.accent, borderColor: colors.borderStrong, bottom: spacing.lg },
+          shadows.hard,
+        ]}
+      >
+        <Plus size={26} color={colors.bg} />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -155,5 +168,14 @@ const styles = StyleSheet.create({
   },
   sortChip: { borderWidth: 1, paddingHorizontal: spacing.sm, paddingVertical: 5 },
   sortText: { fontFamily: fonts.mono, fontSize: fontSize.xs - 1, letterSpacing: 0.5 },
-  list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
+  list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl + 56 },
+  fab: {
+    position: 'absolute',
+    right: spacing.lg,
+    width: 56,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth,
+  },
 });
