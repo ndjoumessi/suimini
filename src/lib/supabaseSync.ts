@@ -152,23 +152,38 @@ export async function loadOneTree(treeId: string): Promise<FamilyTree | null> {
 
 async function syncChildTable(table: string, treeId: string, rows: any[]) {
   if (!supabase) return;
-  if (rows.length) await supabase.from(table).upsert(rows);
+  // NOTE: every Supabase result is error-checked and THROWN on failure. Previously
+  // these errors were swallowed, so a blocked write (RLS / ownership / constraint)
+  // left syncStatus on "saved" while nothing persisted — the data then vanished on
+  // reload. Surfacing the error makes the cause visible and flips syncStatus to 'error'.
+  if (rows.length) {
+    const { error } = await supabase.from(table).upsert(rows);
+    if (error) {
+      console.error(`[sync] upsert ${table} échoué (${rows.length} lignes):`, error.message, error.code ?? '', error.details ?? '');
+      throw error;
+    }
+  }
   // Remove rows that no longer exist locally.
-  const { data: existing } = await supabase.from(table).select('id').eq('tree_id', treeId);
+  const { data: existing, error: selError } = await supabase.from(table).select('id').eq('tree_id', treeId);
+  if (selError) { console.error(`[sync] lecture ${table} échouée:`, selError.message); throw selError; }
   const keep = new Set(rows.map(r => r.id));
   const remove = (existing || []).map((r: any) => r.id).filter((id: string) => !keep.has(id));
-  if (remove.length) await supabase.from(table).delete().in('id', remove);
+  if (remove.length) {
+    const { error } = await supabase.from(table).delete().in('id', remove);
+    if (error) { console.error(`[sync] suppression ${table} échouée:`, error.message); throw error; }
+  }
 }
 
 export async function saveTreeToSupabase(tree: FamilyTree, ownerId: string, isOwner = true): Promise<void> {
   if (!supabase) return;
   // For shared trees the recipient may only write children, never the owning `trees` row.
   if (isOwner) {
-    await supabase.from('trees').upsert({
+    const { error } = await supabase.from('trees').upsert({
       id: tree.id, owner_id: ownerId, name: tree.name, description: tree.description ?? null,
       settings: { ...(tree.settings || {}), rootPersonId: tree.rootPersonId },
       created_at: tree.createdAt, updated_at: new Date().toISOString(),
     });
+    if (error) { console.error('[sync] upsert tree échoué:', error.message, error.code ?? ''); throw error; }
   }
   await syncChildTable('persons', tree.id, tree.persons.map(p => personToRow(p, tree.id)));
   await syncChildTable('relationships', tree.id, tree.relationships.map(r => relToRow(r, tree.id)));

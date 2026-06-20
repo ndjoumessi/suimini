@@ -208,7 +208,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
       const isOwner = !shared[activeTree.id];
       saveTreeToSupabase(activeTree, user.id, isOwner)
         .then(() => { lastLocalWriteRef.current = Date.now(); setSyncStatus('saved'); })
-        .catch(() => setSyncStatus('error'));
+        .catch((err) => { console.error('[store] Sauvegarde cloud échouée:', err?.message ?? err); setSyncStatus('error'); });
     }, 700);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -287,7 +287,11 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     // effect (which reads IDB first) resurrects it on the next visit — the root cause
     // of "impossible de supprimer un arbre".
     offlineStorage.deleteTree(treeId).catch(() => {});
-    if (cloud && user) deleteTreeFromSupabase(treeId, user.id).catch(() => {});
+    if (cloud && user) {
+      deleteTreeFromSupabase(treeId, user.id)
+        .then(({ error }) => { if (error) console.error('[store] Suppression cloud échouée:', error); })
+        .catch((err) => console.error('[store] Suppression cloud échouée:', err?.message ?? err));
+    }
     if (activeTreeId === treeId) {
       const newActive = updated[0]?.id || null;
       setActiveTreeId(newActive);
