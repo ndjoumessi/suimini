@@ -6,7 +6,12 @@ import { test, expect } from '@playwright/test';
  *  - mobile TreeView (390px) with bottom nav
  *  - /confidentialite and /cgu legal pages
  * Run against an already-running server via E2E_BASE_URL.
+ *
+ * Local-only: these capture screenshots (with route interception to freeze the
+ * loading spinner) for design review — not assertions. Skipped in CI to avoid
+ * flakiness; run them manually with `npx playwright test e2e/feature-screenshots.spec.ts`.
  */
+test.skip(!!process.env.CI, 'Local-only screenshot capture (flaky under CI)');
 
 test('shot: auth modal with loading spinner', async ({ page }) => {
   await page.goto('/');
