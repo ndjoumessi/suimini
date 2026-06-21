@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Guide pour travailler dans **Suimini** — application web d'arbre généalogique (FR/EN), collaborative et élégante.
+Guide pour travailler dans **Suimini** — application **web** (Next.js) d'arbre généalogique (FR/EN), collaborative et élégante, **+ une app mobile** React Native/Expo dans `mobile/` (voir la section « Mobile »).
 
 ## Stack
 
@@ -40,7 +40,8 @@ src/
                        #   /api/narrative + /api/narrative-person + /api/analyze-photo +
                        #   /api/ocr-document + /api/search (Anthropic), /api/export-pdf
                        #   (HTML livret), /api/send-approval + /api/send-invite-email +
-                       #   /api/send-approval-email (Resend). sitemap.ts, robots.ts.
+                       #   /api/send-approval-email (Resend), /api/push/register
+                       #   (enregistre un Expo Push Token, auth Bearer). sitemap.ts, robots.ts.
     layout.tsx         # <html lang>, polices next/font, NextIntlClientProvider, preconnects
     globals.css        # SYSTÈME DE DESIGN "Atelier" (variables CSS + classes utilitaires)
   proxy.ts             # Garde d'auth Next 16 (PAS middleware.ts) — protège /app
@@ -52,11 +53,15 @@ src/
                        #   emails.ts, sharing.ts, pdfTemplates.ts…
   i18n/                # config.ts (constantes) + request.ts (locale depuis cookie)
 messages/              # fr.json + en.json
-supabase/              # schema.sql + migrations manuelles (share-public.sql, storage.sql…)
-  teda/                # scripts SQL de l'arbre famille TEDA (seed, enrichissement…)
-    pdf/               # sources du PDF de synthèse TEDA (teda_v2.html + render.mjs)
+supabase/              # schema.sql + migrations manuelles (share-public.sql, storage.sql,
+                       #   push-tokens.sql, cleanup-demo-tree.sql…)
+  teda/                # scripts SQL de l'arbre famille TEDA (seed, enrichissement,
+                       #   update-teda-v2-final.sql…) ; pdf/ = sources du PDF de synthèse
+mobile/                # App React Native / Expo (SDK 54) — voir section « Mobile »
 e2e/                   # tests Playwright
 ```
+
+> ⚠️ Le **root `tsconfig.json` exclut `mobile`** (`exclude: ["node_modules","mobile"]`) : le projet RN a son propre `tsconfig`/`node_modules`. Sans ça, `tsc`/`next build` au root planteraient sur les fichiers `mobile/`.
 
 ### Auth & multitenant
 - `src/proxy.ts` (convention **`proxy`** de Next 16, le `middleware` est déprécié) protège `/app` : nécessite une session Supabase **ou** le cookie démo, et un statut `approved` (sinon redirige vers `/`).
@@ -96,6 +101,27 @@ Brutalisme raffiné. **Pas de classes utilitaires Tailwind** en pratique : on ut
 - Cards : bordure `var(--bw) solid var(--border-strong)` + `box-shadow: var(--shadow)`. Chiffres mis en avant en terracotta.
 - Avant tout travail UI, lire `~/.claude/skills/frontend-design/SKILL.md`.
 
+## Mobile (`mobile/` — React Native / Expo)
+
+App native compagnon (iOS/Android), même design « Atelier » que le web. **Projet séparé** avec son propre `package.json`/`node_modules`/`tsconfig` — toujours travailler **dans `mobile/`** (cd) et garder Node 22.
+
+- **Stack** : **Expo SDK 54** (RN 0.81, React 19) · **Expo Router 6** (file-based, typed routes) · `react-native-svg` (arbre pan/pinch via `react-native-gesture-handler` + `react-native-reanimated` v4 — plugin babel `react-native-worklets/plugin`) · **Zustand + MMKV** (store/persistance) · **i18next + react-i18next + expo-localization** (FR/EN) · `@react-native-community/datetimepicker` · `expo-notifications` (+ `expo-device`) · `lucide-react-native`.
+- **Projet EAS** : `@ndjoumessi/suimini` (`extra.eas.projectId` dans `app.json`) — requis pour les Expo Push Tokens.
+- **Commandes** (depuis `mobile/`, Node 22) :
+  ```bash
+  npm install
+  npx tsc --noEmit                          # type-check
+  npx expo export --platform android        # valide le bundle Metro (gate)
+  npx expo-doctor                           # 18/18 attendu
+  npx expo start                            # dev (⚠️ MMKV/push ne marchent pas dans Expo Go → dev build)
+  ```
+- **Données / store** (`lib/store.ts`, Zustand) : `seedDemo()` seed l'arbre démo (`sampleData.ts` = **Famille Dupont fictive**, 28 pers./5 gén.), `isDemo` global (pas dans `useAuth` — sinon l'AuthGate ne le voit pas). `refreshFromRemote()` **REMPLACE** les arbres par ceux de Supabase pour un user connecté (jamais de merge avec le démo) ; échec → garde le local + `syncStatus:'offline'`. `upsertPerson`/`removePerson` = écriture locale optimiste **puis** Supabase (skip si démo).
+- **Auth** (`hooks/useAuth.ts`) : mêmes règles que le web (`onAuthStateChange` **synchrone**). Le chargement des arbres + l'enregistrement push se déclenchent dans `app/_layout.tsx` dès qu'une **vraie session** existe (lancement ou login).
+- **i18n** : `lib/i18n.ts` (langue = choix persisté MMKV > langue du téléphone > `fr`). Chaînes dans `mobile/locales/{fr,en}.ts` (`en` typé sur `fr` → parité). Tout texte UI passe par `t('clé')` ; toggle FR/EN dans `settings.tsx`. **Distinct du web** (qui utilise `next-intl` + `messages/`).
+- **Stockage** : `lib/storage.ts` → `createKVStorage(id)` tente MMKV puis **repli mémoire** si le module natif est absent (Expo Go) — évite les crashs « missing default export ». `react-native-mmkv` est en **v2** (la v3 exige les TurboModules).
+- **Push** : `lib/notifications.ts` (token Expo → POST `/api/push/register` côté web, best-effort). Table `supabase/push-tokens.sql` (RLS `user_id = auth.uid()`). Délivrance réelle = build de dev + déclencheur serveur (API Expo) à ajouter.
+- **Assets** : `mobile/assets/{icon,splash,adaptive-icon}.png` générés via Pillow (polices Bricolage/Hanken des paquets `@expo-google-fonts`).
+
 ## Variables d'environnement
 
 `.env.local` (non committé) et secrets Vercel :
@@ -104,6 +130,10 @@ Brutalisme raffiné. **Pas de classes utilitaires Tailwind** en pratique : on ut
 - `RESEND_API_KEY` (emails approbation / invitation / notification propriétaire, server-only) ; `RESEND_FROM` optionnel (sinon sandbox `onboarding@resend.dev`, qui ne délivre qu'à l'adresse vérifiée)
 
 Sans les vars Supabase, l'app tourne en mode invité (localStorage).
+
+⚠️ **Pas de `SUPABASE_SERVICE_ROLE_KEY`** dans le projet (ni `.env.local`, ni Vercel, ni CLI) — l'archi est anon-key + RLS. Les écritures prod (scripts `supabase/*.sql`) se lancent **manuellement dans le SQL Editor** (rôle privilégié → RLS contournée) ; impossible d'écrire en prod depuis l'agent.
+
+L'app **mobile** lit les mêmes valeurs Supabase via `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` dans `mobile/.env` (gitignoré ; mapper depuis les `NEXT_PUBLIC_*` de la racine). `EXPO_PUBLIC_PUSH_REGISTER_URL` optionnel.
 
 ## Tests & CI
 
@@ -120,6 +150,8 @@ Sans les vars Supabase, l'app tourne en mode invité (localStorage).
 - Partage public (`/arbre/[slug]`) : `force-dynamic` + RLS qui masque les fiches « privé » et n'expose jamais le journal. Migration : `supabase/share-public.sql` (manuelle).
 - **PDF = navigateur, pas serveur** : `playwright`/Chromium ne tourne pas dans une route API Vercel (`@playwright/test` n'est qu'une *devDependency* pour `render.mjs` local + e2e). Générer le PDF côté client via fenêtre d'impression (`pdfTemplates.ts` / `PrintModal`), pas dans `/api/*`.
 - **Lecture d'un profil tiers** : RLS bloque le `select` direct sur `profiles` d'un autre user → utiliser la RPC `get_public_profiles(ids)` (voir section Emails).
+- **Web ≠ mobile** : deux projets, deux i18n (`next-intl`+`messages/` vs `i18next`+`mobile/locales/`), deux `useAuth`/`useFamilyStore`. Ne pas importer de l'un vers l'autre ; le modèle (`Person`/`Tree`) est **dupliqué** dans `mobile/lib/types.ts` (garder en phase). Vérifier `tsc`/`expo export` **dans `mobile/`** séparément du `tsc`/`build` racine.
+- **Écriture prod bloquée depuis l'agent** : sans `service_role` key / mot de passe DB (absents partout), impossible d'exécuter un `supabase/*.sql` contre la prod — livrer le script et demander à l'utilisateur de le lancer dans le SQL Editor.
 
 ## Conventions
 
