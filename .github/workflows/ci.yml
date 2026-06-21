@@ -67,3 +67,23 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 30
+
+  eas-build:
+    # Vérifie l'app mobile (mobile/) sur push main : type-check uniquement.
+    # Le build EAS reste MANUEL (eas build -p android|ios --profile …) — pas en CI.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm install -g eas-cli
+      - name: Install mobile deps
+        working-directory: mobile
+        run: npm ci
+      - name: Type-check mobile
+        working-directory: mobile
+        run: npx tsc --noEmit
