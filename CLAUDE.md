@@ -109,7 +109,13 @@ App native compagnon (iOS/Android), même design « Atelier » que le web. **Pro
 - **Identité app** (`app.json`) : `owner: ndjoumessi`, `ios.bundleIdentifier` / `android.package` = **`com.suimini.app`**, `ios.buildNumber "1"` / `android.versionCode 1`.
 - **EAS Build** : projet `@ndjoumessi/suimini` (`extra.eas.projectId`). `mobile/eas.json` — 3 profils : **development** (devClient, internal, APK), **preview** (internal, Android APK + iOS simulator), **production** (store, Android AAB + iOS archive) ; `appVersionSource: local` (versions pilotées par `app.json`). `mobile/.easignore` exclut `node_modules`/`.expo`. Lancer **manuellement** : `cd mobile && eas build -p android --profile preview`.
   - ⚠️ **Quota gratuit** : le plan EAS gratuit limite les builds Android/mois (réinit. mensuelle) — un build de trop échoue avec « used its … builds from the Free plan ».
-  - ⚠️ **Env du build** : `mobile/.env` n'est **pas committé** → un build EAS n'a PAS les `EXPO_PUBLIC_*` (→ mode démo). Les fournir via `eas env:create --environment preview --name EXPO_PUBLIC_SUPABASE_URL --value … --visibility plaintext` (idem ANON_KEY).
+  - ⚠️ **Env du build** : `mobile/.env` n'est **pas committé** → un build EAS n'a PAS les `EXPO_PUBLIC_*` (→ mode démo). Les fournir sur EAS (valeurs = celles de `mobile/.env`), pour les 3 environnements à la fois, en **plaintext** (clé `anon` publique — ⚠️ jamais la `service_role`) :
+    ```bash
+    eas env:create --name EXPO_PUBLIC_SUPABASE_URL --value "<url>" \
+      --environment development --environment preview --environment production \
+      --visibility plaintext --scope project --non-interactive   # idem ANON_KEY ; --force pour réécrire
+    ```
+    Vérifier : `eas env:list --environment preview`.
   - CI : job `eas-build` (push `main`) = **type-check seul** dans `mobile/` (pas de build EAS en CI).
 - **Commandes** (depuis `mobile/`, Node 22) :
   ```bash
