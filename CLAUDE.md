@@ -106,7 +106,11 @@ Brutalisme raffiné. **Pas de classes utilitaires Tailwind** en pratique : on ut
 App native compagnon (iOS/Android), même design « Atelier » que le web. **Projet séparé** avec son propre `package.json`/`node_modules`/`tsconfig` — toujours travailler **dans `mobile/`** (cd) et garder Node 22.
 
 - **Stack** : **Expo SDK 54** (RN 0.81, React 19) · **Expo Router 6** (file-based, typed routes) · `react-native-svg` (arbre pan/pinch via `react-native-gesture-handler` + `react-native-reanimated` v4 — plugin babel `react-native-worklets/plugin`) · **Zustand + MMKV** (store/persistance) · **i18next + react-i18next + expo-localization** (FR/EN) · `@react-native-community/datetimepicker` · `expo-notifications` (+ `expo-device`) · `lucide-react-native`.
-- **Projet EAS** : `@ndjoumessi/suimini` (`extra.eas.projectId` dans `app.json`) — requis pour les Expo Push Tokens.
+- **Identité app** (`app.json`) : `owner: ndjoumessi`, `ios.bundleIdentifier` / `android.package` = **`com.suimini.app`**, `ios.buildNumber "1"` / `android.versionCode 1`.
+- **EAS Build** : projet `@ndjoumessi/suimini` (`extra.eas.projectId`). `mobile/eas.json` — 3 profils : **development** (devClient, internal, APK), **preview** (internal, Android APK + iOS simulator), **production** (store, Android AAB + iOS archive) ; `appVersionSource: local` (versions pilotées par `app.json`). `mobile/.easignore` exclut `node_modules`/`.expo`. Lancer **manuellement** : `cd mobile && eas build -p android --profile preview`.
+  - ⚠️ **Quota gratuit** : le plan EAS gratuit limite les builds Android/mois (réinit. mensuelle) — un build de trop échoue avec « used its … builds from the Free plan ».
+  - ⚠️ **Env du build** : `mobile/.env` n'est **pas committé** → un build EAS n'a PAS les `EXPO_PUBLIC_*` (→ mode démo). Les fournir via `eas env:create --environment preview --name EXPO_PUBLIC_SUPABASE_URL --value … --visibility plaintext` (idem ANON_KEY).
+  - CI : job `eas-build` (push `main`) = **type-check seul** dans `mobile/` (pas de build EAS en CI).
 - **Commandes** (depuis `mobile/`, Node 22) :
   ```bash
   npm install
