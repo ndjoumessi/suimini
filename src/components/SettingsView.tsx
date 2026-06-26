@@ -6,7 +6,7 @@ import { COLOR_THEMES } from '@/lib/themes';
 import { ThemeMode } from '@/hooks/useDarkMode';
 import { supabase } from '@/lib/supabase';
 import { relativeSyncParts } from '@/lib/relativeTime';
-import { Sun, Moon, Monitor, Settings as SettingsIcon, Check, KeyRound, LogOut, Download, Trash2, ShieldAlert, Save, RefreshCw } from 'lucide-react';
+import { Settings as SettingsIcon, Check, KeyRound, LogOut, Download, Trash2, ShieldAlert, Save, RefreshCw } from 'lucide-react';
 
 interface Props {
   themeId: ColorThemeId;
@@ -26,12 +26,6 @@ interface Props {
   lastSyncAt?: number | null;
 }
 
-const MODE_OPTS: { id: ThemeMode; labelKey: 'modeLight' | 'modeDark' | 'modeSystem'; Icon: typeof Sun }[] = [
-  { id: 'light', labelKey: 'modeLight', Icon: Sun },
-  { id: 'dark', labelKey: 'modeDark', Icon: Moon },
-  { id: 'system', labelKey: 'modeSystem', Icon: Monitor },
-];
-
 function clearLocalSuimini() {
   try {
     Object.keys(localStorage).filter(k => k.startsWith('suimini_')).forEach(k => localStorage.removeItem(k));
@@ -45,7 +39,7 @@ function initials(name?: string | null, email?: string | null): string {
   return ((parts[0]?.[0] || '?') + (parts[1]?.[0] || '')).toUpperCase().slice(0, 2);
 }
 
-export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, onCancelPreview, mode, onSetMode, userEmail, displayName, cloud, trees = [], onToast, onResync, lastSyncAt }: Props) {
+export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, onCancelPreview, userEmail, displayName, cloud, trees = [], onToast, onResync, lastSyncAt }: Props) {
   const [name, setName] = useState(displayName || '');
   const [resyncing, setResyncing] = useState(false);
   const [savingName, setSavingName] = useState(false);
@@ -161,32 +155,6 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
                 </button>
               );
             })}
-          </div>
-        </section>
-
-        {/* Appearance */}
-        <section>
-          <h3 className="serif" style={{ fontSize: '1.15rem', marginBottom: '12px' }}>{t('appearance')}</h3>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', padding: '14px 16px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: '14px' }}>{t('displayTheme')}</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{t('displayThemeHint')}</div>
-            </div>
-            <div role="radiogroup" aria-label={t('displayTheme')} style={{ display: 'inline-flex', background: 'var(--bg-muted)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '3px', gap: '2px' }}>
-              {MODE_OPTS.map(opt => {
-                const active = mode === opt.id;
-                return (
-                  <button key={opt.id} role="radio" aria-checked={active} onClick={() => onSetMode(opt.id)}
-                    className="btn btn-sm" style={{
-                      background: active ? 'var(--accent)' : 'transparent',
-                      color: active ? '#fff' : 'var(--text-muted)',
-                      boxShadow: 'none', minHeight: '32px',
-                    }}>
-                    <opt.Icon size={14} /> {t(opt.labelKey)}
-                  </button>
-                );
-              })}
-            </div>
           </div>
         </section>
 

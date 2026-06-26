@@ -146,16 +146,18 @@ export default function ListView({ tree, onSelectPerson, onAddPerson, canEdit = 
                   onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-muted)'; }}
                   onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
                 >
-                  {/* Avatar */}
+                  {/* Avatar — photo, else initials in the display face on terracotta */}
                   <div style={{
-                    width: '44px', height: '44px', borderRadius: '50%', flexShrink: 0,
-                    background: 'var(--bg-muted)',
+                    width: '44px', height: '44px', flexShrink: 0,
+                    background: person.profilePhoto ? 'var(--bg-muted)' : 'var(--accent)',
+                    color: '#fff', border: 'var(--bw) solid var(--border-strong)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    overflow: 'hidden'
+                    overflow: 'hidden',
+                    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', letterSpacing: '-0.02em',
                   }}>
                     {person.profilePhoto
                       ? <img src={person.profilePhoto} alt="" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : <User size={20} style={{ color: 'var(--text-light)' }} aria-hidden="true" />
+                      : ((person.firstName?.[0] || '') + (person.lastName?.[0] || '')).toUpperCase() || <User size={20} style={{ color: '#fff' }} aria-hidden="true" />
                     }
                   </div>
 

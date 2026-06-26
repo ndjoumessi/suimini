@@ -1,58 +1,65 @@
 @import "tailwindcss";
 
 /* =====================================================================
-   ATELIER — Warm Brutalist design system
-   Bone canvas · ink rules · terracotta accent · hard-offset shadows
+   ATELIER NOIR — Haute-couture brutalism · dark by design
+   Near-black canvas · quiet rules · terracotta as the one loud voice ·
+   dramatic terracotta hard-offset shadows · dominant typography.
    Fonts loaded via next/font (layout.tsx) and exposed as CSS variables:
-     --font-display  Bricolage Grotesque   (headings, names, key numbers)
-     --font-body     Hanken Grotesk        (body)
-     --font-mono     IBM Plex Mono         (labels, dates, eyebrows)
+     --font-display  Bricolage Grotesque   (XXL titles, names, key numbers)
+     --font-body     Hanken Grotesk        (body, UI labels)
+     --font-mono     IBM Plex Mono         (metadata, dates, IDs — present)
+   Dark-only: there is no light theme. `:root` IS the theme; `data-theme`
+   stays "dark" so the few [data-theme="dark"] overrides keep applying.
    Variable + class names are kept stable so the system cascades app-wide.
    ===================================================================== */
 
 :root {
-  /* Surfaces */
-  --bg: #f4f1ea;              /* bone canvas */
-  --bg-card: #ffffff;         /* bordered surfaces */
-  --bg-muted: #ece7dc;        /* inert zones */
+  /* Surfaces — near-black, three tiers */
+  --bg: #0f0f0f;              /* primary canvas (quasi-noir) */
+  --bg-card: #1a1a1a;         /* cards, sidebar, raised surfaces */
+  --bg-muted: #242424;        /* inert zones / hover fills */
   --surface-1: var(--bg);
   --surface-2: var(--bg-card);
-  --surface-3: #fbfaf6;
-  --interactive: #e6e0d3;
+  --surface-3: #1f1f1f;
+  --interactive: #242424;     /* hover state */
 
-  /* Ink + text */
-  --ink: #1b1b1b;
-  --text: #1b1b1b;
-  --text-muted: #4a4742;      /* tuned ≥ 4.5:1 on --bg */
-  --text-light: #6e6a62;      /* tuned ≥ 3:1 on --bg */
+  /* Ink + text (bone on noir) */
+  --ink: #f4f1ea;
+  --text: #f4f1ea;
+  --text-muted: #a8a39a;      /* secondary — tuned ≥ 4.5:1 on bg & card */
+  --text-light: #8a8680;      /* tertiary — tuned ≥ 3:1, ≥4.5 on cards */
 
-  /* Rules: a calm hairline + the signature strong ink rule */
-  --border: #d8d2c6;          /* hairline dividers */
-  --border-strong: #1b1b1b;   /* card / button / input outlines */
+  /* Rules — quiet by design; drama comes from the terracotta shadow */
+  --border: #2e2e2e;          /* hairline dividers + card outlines */
+  --border-strong: #3a3a3a;   /* interactive outlines (buttons/inputs) */
   --bw: 1.5px;                /* structural border width */
 
-  /* Accent — terracotta, kept rare (action + link only) */
+  /* Accent — terracotta, rarer and louder. The brand fill/shadow color is
+     #bf4b2c; `--accent-text` is a brighter terracotta used wherever the
+     accent is small TEXT (eyebrows, links) so it clears WCAG AA on noir. */
   --accent: #bf4b2c;
-  --accent-hover: #a53e22;
-  --accent-light: #f6e1d8;
+  --accent-hover: #d4562f;
+  --accent-text: #e0623e;     /* ≥4.5:1 on #0f0f0f and #1a1a1a */
+  --accent-light: rgba(191, 75, 44, 0.16);
 
-  /* Signals (information, not decoration) */
-  --male: #2c5f8a;
-  --female: #a8456b;
-  --deceased: #6e6a62;
-  --success: #0e6e63;
-  --danger: #9e2b25;
-  --warning: #c77d1a;
-  --info: #2c5f8a;
+  /* Signals (information, not decoration) — brightened for noir */
+  --male: #5b8fc0;
+  --female: #c87a9a;
+  --deceased: #8a8276;
+  --success: #2f9c8e;
+  --danger: #d8554a;          /* ≥4.5:1 on noir */
+  --warning: #d59a4e;
+  --info: #5b8fc0;
 
-  /* Hard-offset shadows (flat at rest; shadow answers state) */
-  --shadow-color: rgba(27, 22, 18, 0.9);
-  --shadow-sm: 2px 2px 0 rgba(27, 22, 18, 0.16);
-  --shadow: 4px 4px 0 var(--shadow-color);
-  --shadow-lg: 6px 6px 0 var(--shadow-color);
-  --shadow-xl: 10px 10px 0 var(--shadow-color);
+  /* Hard-offset shadows — TERRACOTTA, not ink: the signature drama.
+     Flat at rest; the terracotta block answers hover / elevation. */
+  --shadow-color: var(--accent);
+  --shadow-sm: 2px 2px 0 rgba(191, 75, 44, 0.45);
+  --shadow: 4px 4px 0 var(--accent);
+  --shadow-lg: 6px 6px 0 var(--accent);
+  --shadow-xl: 12px 12px 0 var(--accent);
   --shadow-accent: 4px 4px 0 var(--accent);
-  --scrim: rgba(27, 22, 18, 0.55);   /* modal / overlay backdrop */
+  --scrim: rgba(0, 0, 0, 0.72);   /* modal / overlay backdrop */
 
   /* Radii — sharp by design */
   --radius-sm: 0px;
@@ -78,44 +85,9 @@
   /* --font-display / --font-body / --font-mono are injected by next/font on <html> (see layout.tsx) */
 }
 
-/* ===== DARK MODE — "Atelier nuit" ===== */
-[data-theme="dark"] {
-  --bg: #161412;
-  --bg-card: #211e1a;
-  --bg-muted: #2a2620;
-  --surface-1: var(--bg);
-  --surface-2: var(--bg-card);
-  --surface-3: #26221d;
-  --interactive: #322d26;
-
-  --ink: #f4f1ea;
-  --text: #f4f1ea;
-  --text-muted: #b8b2a6;      /* tuned ≥ 4.5:1 on --bg */
-  --text-light: #8a8276;      /* tuned ≥ 3:1 on --bg */
-
-  --border: #36312a;
-  --border-strong: #7b7264;
-
-  --accent: #e0623e;
-  --accent-hover: #ef7350;
-  --accent-light: #2e211b;
-  --scrim: rgba(0, 0, 0, 0.7);   /* deeper backdrop in dark mode */
-
-  --male: #5b8fc0;
-  --female: #c87a9a;
-  --deceased: #8a8278;
-  --success: #2f9c8e;
-  --danger: #c85248;
-  --warning: #d59a4e;
-  --info: #5b8fc0;
-
-  --shadow-color: rgba(0, 0, 0, 0.85);
-  --shadow-sm: 2px 2px 0 rgba(0, 0, 0, 0.5);
-  --shadow: 4px 4px 0 var(--shadow-color);
-  --shadow-lg: 6px 6px 0 var(--shadow-color);
-  --shadow-xl: 10px 10px 0 var(--shadow-color);
-  --shadow-accent: 4px 4px 0 var(--accent);
-}
+/* Atelier Noir is dark-only: `:root` above is the single source of truth.
+   `data-theme="dark"` is still set on <html> (see useDarkMode) so the badge
+   tints below — which need a darker backing on noir — keep applying. */
 
 * { box-sizing: border-box; }
 
@@ -132,27 +104,38 @@ body {
   overscroll-behavior: none; /* prevent pull-to-refresh / over-bounce in PWA */
 }
 
-/* ===== Typography hierarchy ===== */
+/* ===== Typography hierarchy — dominant, weight 800, tight tracking ===== */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-weight: 800;
+  letter-spacing: -0.03em;
   margin: 0;
 }
-h1 { font-size: 2.25rem; line-height: 1.05; }
-h2 { font-size: 1.6rem; line-height: 1.12; }
-h3 { font-size: 1.25rem; line-height: 1.2; letter-spacing: -0.015em; }
-h4 { font-size: 1.05rem; line-height: 1.3; letter-spacing: -0.01em; }
+h1 { font-size: 2.6rem; line-height: 1.0; }
+h2 { font-size: 1.75rem; line-height: 1.08; }
+h3 { font-size: 1.3rem; line-height: 1.18; letter-spacing: -0.02em; }
+h4 { font-size: 1.05rem; line-height: 1.3; letter-spacing: -0.015em; }
 h5, h6 { font-size: 0.92rem; line-height: 1.35; letter-spacing: -0.01em; }
 
 /* `.serif` is a legacy hook now mapped to the Atelier display face. */
-.serif { font-family: var(--font-display); font-weight: 700; letter-spacing: -0.02em; }
+.serif { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.03em; }
 .mono { font-family: var(--font-mono); }
+
+/* Hero — the one piece of type allowed to dominate the viewport. */
+.display-xxl {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(2.6rem, 8vw, 5rem);
+  line-height: 0.92;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  margin: 0;
+}
 
 .label {
   font-family: var(--font-mono);
   font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.8px; color: var(--text-muted);
+  letter-spacing: 1px; color: var(--text-muted);
 }
 
 html { scroll-behavior: smooth; }
@@ -275,12 +258,47 @@ input:-webkit-autofill:focus {
   font-family: var(--font-body); font-size: 14px;
   transition: border-color var(--t-fast) ease, box-shadow var(--t-fast) ease; outline: none;
 }
-.input:focus { border-color: var(--accent); box-shadow: 3px 3px 0 var(--accent-light); }
+.input:focus { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 .input:focus-visible { outline: none; }
 .input::placeholder { color: var(--text-light); }
 .input[aria-invalid="true"] { border-color: var(--danger); }
-.input[aria-invalid="true"]:focus { box-shadow: 3px 3px 0 rgba(158, 43, 37, 0.22); }
+.input[aria-invalid="true"]:focus { box-shadow: 0 0 0 1px var(--danger); }
 select.input { cursor: pointer; }
+
+/* ===== Custom checkbox / radio — square ink controls (no native browser UI) =====
+   Global, so every input[type=checkbox|radio] across the app picks up the
+   Atelier Noir language at once. Square (radio = pill), terracotta when on. */
+input[type="checkbox"],
+input[type="radio"] {
+  appearance: none; -webkit-appearance: none; margin: 0;
+  width: 18px; height: 18px; flex-shrink: 0;
+  display: inline-grid; place-content: center;
+  background: var(--bg-card);
+  border: var(--bw) solid var(--border-strong);
+  border-radius: 0; cursor: pointer;
+  transition: background var(--t-fast) ease, border-color var(--t-fast) ease, box-shadow var(--t-fast) ease;
+  vertical-align: -3px;
+}
+input[type="radio"] { border-radius: 50%; }
+input[type="checkbox"]::before,
+input[type="radio"]::before {
+  content: ""; width: 10px; height: 10px; transform: scale(0);
+  transition: transform var(--t-fast) var(--ease-out);
+}
+input[type="checkbox"]::before {
+  /* terracotta check mark */
+  clip-path: polygon(14% 47%, 0 60%, 39% 100%, 100% 18%, 86% 5%, 39% 73%);
+  background: #fff;
+}
+input[type="radio"]::before { border-radius: 50%; background: #fff; width: 8px; height: 8px; }
+input[type="checkbox"]:checked,
+input[type="radio"]:checked { background: var(--accent); border-color: var(--accent); }
+input[type="checkbox"]:checked::before,
+input[type="radio"]:checked::before { transform: scale(1); }
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+input[type="checkbox"]:disabled,
+input[type="radio"]:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .field-error { color: var(--danger); font-size: 12px; margin-top: 4px; display: flex; gap: 4px; align-items: center; font-weight: 600; }
 .field-help { color: var(--text-muted); font-size: 12px; margin-top: 4px; }
@@ -299,7 +317,7 @@ legend { font-family: var(--font-mono); font-size: 11px; font-weight: 700; text-
 .badge-female { background: #f5dde8; color: var(--female); }
 .badge-alive { background: #d6efe9; color: var(--success); }
 .badge-deceased { background: #ebe8e3; color: var(--deceased); }
-.badge-accent { background: var(--accent-light); color: var(--accent); }
+.badge-accent { background: var(--accent-light); color: var(--accent-text); }
 [data-theme="dark"] .badge-male { background: #16242f; }
 [data-theme="dark"] .badge-female { background: #2a1a22; }
 [data-theme="dark"] .badge-alive { background: #142823; }
@@ -326,7 +344,7 @@ legend { font-family: var(--font-mono); font-size: 11px; font-weight: 700; text-
 
 /* ===== Modals ===== */
 .modal-overlay {
-  position: fixed; inset: 0; background: rgba(27, 22, 18, 0.55); z-index: var(--z-modal);
+  position: fixed; inset: 0; background: var(--scrim); z-index: var(--z-modal);
   display: flex; align-items: center; justify-content: center; padding: 16px;
   animation: fadeIn var(--t-base) ease-out;
 }

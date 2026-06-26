@@ -2,7 +2,7 @@
 import { useOverlay } from '@/hooks/useOverlay';
 import { useState } from 'react';
 import { FamilyTree } from '@/types';
-import { TreePine, X, Pencil, Copy, Trash2 } from 'lucide-react';
+import { TreePine, X, Pencil, Copy, Trash2, Users } from 'lucide-react';
 
 interface Props {
   trees: FamilyTree[];
@@ -103,8 +103,8 @@ export default function TreeSelectorModal({ trees, activeTreeId, shared = {}, on
                             <span style={{ marginLeft: '8px', fontSize: '10px', color: 'var(--accent)', fontWeight: '700', textTransform: 'uppercase' }}>Actif</span>
                           )}
                           {shared[tree.id] && (
-                            <span className="badge badge-accent" style={{ marginLeft: '8px', fontSize: '9px' }}>
-                              🤝 Partagé par {shared[tree.id].sharedByName || 'un proche'}
+                            <span className="badge badge-accent" style={{ marginLeft: '8px', fontSize: '9px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <Users size={10} aria-hidden="true" /> Partagé par {shared[tree.id].sharedByName || 'un proche'}
                             </span>
                           )}
                         </div>

@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   TreePine, Sparkles, Camera, Users, Smartphone, Shield,
   ArrowRight, ChevronDown, Check, Mail,
-  KeyRound, UserPlus, Share2, ShieldCheck, Gamepad2, X,
+  KeyRound, UserPlus, Share2, ShieldCheck, Gamepad2, X, Heart,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/hooks/useAuth';
@@ -409,7 +409,7 @@ export default function Landing() {
         </div>
         <div className="lp-footer-bottom lp-mono">
           <span>© 2026 Suimini · Tous droits réservés</span>
-          <span>Fait avec ❤️ en France</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>Fait avec <Heart size={12} aria-label="amour" style={{ color: 'var(--accent)', fill: 'var(--accent)' }} /> en France</span>
         </div>
       </footer>
 

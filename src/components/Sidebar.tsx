@@ -8,10 +8,9 @@ import { relativeSyncParts } from '@/lib/relativeTime';
 import { FamilyTree, ViewMode } from '@/types';
 import {
   Home, TreePine, Users, Calendar, Map, Images, BookOpen, Cake, Search, BarChart2, Settings,
-  Plus, Play, Share2, FolderOpen, Printer, FileDown, Moon, Sun, ChevronDown, LogOut, LogIn, Cloud,
-  Check, CloudOff, Shield, ArrowLeft, RefreshCw,
+  ChevronRight, LogOut, LogIn, Check, CloudOff, Shield, ArrowLeft, RefreshCw,
 } from 'lucide-react';
-import { BrandLockup } from './Brand';
+import { BrandMark } from './Brand';
 
 function initials(name?: string | null, email?: string | null): string {
   const src = (name || email || '?').trim();
@@ -24,7 +23,6 @@ function truncate(s: string, n: number): string {
 import type { LucideIcon } from 'lucide-react';
 
 // `navKey` indexes into the `nav` message namespace (see messages/*.json).
-// Grouped into three labelled sections (label key in the `sidebar` namespace).
 interface NavItem { view: ViewMode; Icon: LucideIcon; navKey: string }
 const NAV_GROUPS: { labelKey: string; items: NavItem[] }[] = [
   { labelKey: 'sectionMain', items: [
@@ -52,18 +50,10 @@ interface Props {
   activeTree: FamilyTree | null;
   trees: FamilyTree[];
   onShowTreeSelector: () => void;
-  onAddPerson: () => void;
   canEdit?: boolean;
   /** Effective role on the active tree, for the badge under "Arbre actif". */
   userRole?: 'owner' | 'admin' | 'editor' | 'viewer';
-  onShowImportExport: () => void;
-  onPrint?: () => void;
-  onExportPdf?: () => void;
-  onShare?: () => void;
-  onPresent?: () => void;
   birthdayAlertCount?: number;
-  dark: boolean;
-  onToggleDark: () => void;
   isOpen: boolean;
   onClose: () => void;
   userEmail?: string | null;
@@ -82,17 +72,16 @@ interface Props {
 
 function SyncIndicator({ status }: { status: 'idle' | 'saved' | 'syncing' | 'offline' | 'error' }) {
   const ts = useTranslations('sidebar');
-  if (status === 'syncing') return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--accent)' }}><span className="spinner" style={{ width: 11, height: 11 }} /> {ts('syncSyncing')}</span>;
+  if (status === 'syncing') return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--accent-text)' }}><span className="spinner" style={{ width: 11, height: 11 }} /> {ts('syncSyncing')}</span>;
   if (status === 'error') return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--danger)' }}><CloudOff size={12} /> {ts('syncError')}</span>;
   if (status === 'offline') return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--danger)' }}><CloudOff size={12} /> {ts('syncOffline')}</span>;
   if (status === 'saved') return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--success)' }}><Check size={12} /> {ts('syncSaved')}</span>;
-  return null; // idle → rien (notamment 0 arbre)
+  return null;
 }
 
-export default function Sidebar({ activeView, onViewChange, activeTree, trees, onShowTreeSelector, onAddPerson, canEdit = true, userRole, onShowImportExport, onPrint, onExportPdf, onShare, onPresent, birthdayAlertCount = 0, dark, onToggleDark, isOpen, onClose, userEmail, displayName, isDemo, cloud, syncStatus = 'idle', lastSyncAt, onResync, presenceCount = 0, onSignIn, onSignOut, isAdmin = false, unreadCount = 0 }: Props) {
+export default function Sidebar({ activeView, onViewChange, activeTree, trees, onShowTreeSelector, userRole, birthdayAlertCount = 0, isOpen, onClose, userEmail, displayName, isDemo, cloud, syncStatus = 'idle', lastSyncAt, onResync, presenceCount = 0, onSignIn, onSignOut, isAdmin = false, unreadCount = 0 }: Props) {
   const t = useTranslations('nav');
   const ts = useTranslations('sidebar');
-  const tPdf = useTranslations('pdf');
   const tr = useTranslations('roles');
   const tSync = useTranslations('sync');
   // Re-render every 60s so the "last sync X min ago" label stays current.
@@ -115,262 +104,204 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
     return () => { alive = false; clearInterval(iv); };
   }, [cloud, userEmail, activeTreeId]);
 
-  return (
-    <aside style={{ width: '232px', flexShrink: 0, background: 'var(--bg-card)', borderRight: 'var(--bw) solid var(--border-strong)', display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 'var(--z-sticky)' }}
-      className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}
-    >
-      {/* Logo + dark toggle */}
-      <div style={{ padding: '16px 16px 12px', borderBottom: 'var(--bw) solid var(--border-strong)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-        <Link href="/" aria-label={ts('backToSiteAria')} title={ts('backToSiteTitle')} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
-          <BrandLockup size={26} color="var(--ink)" accent="var(--accent)" surface="var(--bg-card)" fontSize={20} />
-          <div style={{ marginTop: '5px' }}>
-          {isDemo
-            ? <span className="badge badge-accent" style={{ fontSize: '9px' }}>{ts('demoBadge')}</span>
-            : <div className="label" style={{ fontSize: '10px', letterSpacing: '1px' }}>{ts('tagline')}</div>}
-          </div>
-        </Link>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-          <button onClick={onToggleDark} className="icon-btn" aria-label={dark ? ts('lightModeAria') : ts('darkModeAria')} title={dark ? ts('lightModeTitle') : ts('darkModeTitle')}>
-            {dark ? <Sun size={17} /> : <Moon size={17} />}
-          </button>
-          <LanguageSwitcher tone="app" />
-        </div>
-      </div>
-
-      {/* Active tree selector */}
-      <button onClick={onShowTreeSelector}
-        aria-label={ts('changeTreeAria')}
-        style={{ margin: '10px 12px', padding: '10px 12px 11px 13px', background: 'var(--accent-light)', border: 'var(--bw) solid var(--border-strong)', borderLeft: '3px solid var(--accent)', borderRadius: 'var(--radius)', cursor: 'pointer', textAlign: 'left', transition: 'box-shadow var(--t-fast), transform var(--t-fast)' }}
-        onMouseEnter={e => { e.currentTarget.style.transform = 'translate(-2px,-2px)'; e.currentTarget.style.boxShadow = 'var(--shadow)'; }}
-        onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
+  const navItem = (item: NavItem, opts?: { badge?: number; Icon?: LucideIcon; navKey?: string; view?: ViewMode }) => {
+    const view = opts?.view ?? item.view;
+    const Icon = opts?.Icon ?? item.Icon;
+    const navKey = opts?.navKey ?? item.navKey;
+    const active = activeView === view;
+    const badge = opts?.badge ?? (view === 'birthdays' ? birthdayAlertCount : 0);
+    return (
+      <button key={view}
+        onClick={() => { onViewChange(view); onClose(); }}
+        aria-current={active ? 'page' : undefined}
+        aria-label={t(navKey)}
+        className={`sb-item ${active ? 'sb-item-active' : ''}`}
       >
-        <div className="label" style={{ fontSize: '10px', marginBottom: '2px' }}>{ts('activeTree')}</div>
-        <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--accent)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '120px' }}>
-            {activeTree?.name || ts('noTree')}
-          </span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-            {pendingSuggestions > 0 && (
-              <span
-                title={ts('pendingSuggestions', { count: pendingSuggestions })}
-                style={{ minWidth: '18px', height: '18px', padding: '0 5px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'var(--danger)', color: '#fff', fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700, borderRadius: '100px', border: '1.5px solid var(--border-strong)' }}
-              >
-                {pendingSuggestions}
-              </span>
-            )}
-            <ChevronDown size={14} style={{ opacity: 0.6 }} />
-          </span>
-        </div>
-        {activeTree && (
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px' }}>
-            {ts('treeMeta', { persons: activeTree.persons.length, links: activeTree.relationships.length })}
-          </div>
-        )}
-        {activeTree && userRole && (
-          <span title={tr('yourRole', { role: tr(userRole) })}
-            style={{
-              marginTop: '6px', display: 'inline-block', fontFamily: 'var(--font-mono)',
-              fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em',
-              padding: '2px 7px', borderRadius: '2px', border: '1.5px solid currentColor',
-              color: userRole === 'viewer' ? 'var(--text-muted)' : userRole === 'editor' ? 'var(--success)' : 'var(--accent)',
-            }}>
-            {tr(userRole)}
-          </span>
-        )}
+        {active && <span aria-hidden="true" className="sb-active-bar" />}
+        <span className="sb-icon">
+          <Icon size={18} aria-hidden="true" />
+          {badge > 0 && <span className="birthday-pulse-dot" />}
+        </span>
+        <span className="sb-label">{t(navKey)}</span>
+        {badge > 0 && <span className="sb-label birthday-badge sb-count">{badge}</span>}
       </button>
+    );
+  };
 
-      {/* Navigation */}
-      <nav style={{ flex: 1, padding: '4px 8px', overflowY: 'auto' }} aria-label={ts('navAria')}>
-        {NAV_GROUPS.map((group, gi) => (
-          <div key={gi} style={{ paddingTop: gi > 0 ? '10px' : '2px', marginTop: gi > 0 ? '8px' : 0, borderTop: gi > 0 ? '1px solid var(--border)' : 'none' }}>
-            <div className="label" style={{ fontSize: '9px', letterSpacing: '0.1em', color: 'var(--text-light)', padding: '0 11px', marginBottom: '5px' }}>
-              {ts(group.labelKey)}
-            </div>
-            {group.items.map(item => {
-              const active = activeView === item.view;
-              const showBadge = item.view === 'birthdays' && birthdayAlertCount > 0;
-              return (
-                <button key={item.view}
-                  onClick={() => { onViewChange(item.view); onClose(); }}
-                  aria-current={active ? 'page' : undefined}
-                  aria-label={t(item.navKey)}
-                  style={{
-                    position: 'relative', width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                    padding: '8px 11px', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius)', marginBottom: '2px',
-                    background: active ? 'var(--accent-light)' : 'transparent',
-                    color: active ? 'var(--accent)' : 'var(--text-muted)',
-                    fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: active ? 700 : 400,
-                    transition: 'background var(--t-fast), color var(--t-fast)',
-                  }}
-                  onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'var(--interactive)'; }}
-                  onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}
-                >
-                  {active && <span aria-hidden="true" style={{ position: 'absolute', left: 0, top: '6px', bottom: '6px', width: '2px', borderRadius: '2px', background: 'var(--accent)' }} />}
-                  <span style={{ width: '18px', display: 'inline-flex', justifyContent: 'center', position: 'relative' }}>
-                    <item.Icon size={17} aria-hidden="true" />
-                    {showBadge && <span className="birthday-pulse-dot" />}
-                  </span>
-                  {t(item.navKey)}
-                  {showBadge && (
-                    <span className="birthday-badge" style={{ marginLeft: 'auto', background: 'var(--danger)', color: 'white', borderRadius: '100px', padding: '1px 6px', fontSize: '10px', fontWeight: '700' }}>
-                      {birthdayAlertCount}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+  return (
+    <aside className={`sidebar ${isOpen ? 'sidebar-open' : ''}`} aria-label={ts('navAria')}>
+      <div className="sidebar-panel">
+        {/* Logo */}
+        <div className="sb-head">
+          <Link href="/" aria-label={ts('backToSiteAria')} title={ts('backToSiteTitle')} className="sb-brand">
+            <BrandMark size={30} color="var(--ink)" accent="var(--accent)" surface="var(--bg)" />
+            <span className="sb-label sb-wordmark serif">Suimini</span>
+          </Link>
+          <div className="sb-label sb-head-meta">
+            {isDemo
+              ? <span className="badge badge-accent" style={{ fontSize: '9px' }}>{ts('demoBadge')}</span>
+              : <span className="label" style={{ fontSize: '9px', letterSpacing: '1px' }}>{ts('tagline')}</span>}
+            <LanguageSwitcher tone="app" />
           </div>
-        ))}
-
-        {/* Admin (visible uniquement pour les admins) */}
-        {isAdmin && (() => {
-          const active = activeView === 'admin';
-          return (
-            <div style={{ paddingTop: '6px', marginTop: '6px', borderTop: '1px solid var(--border)' }}>
-              <button
-                onClick={() => { onViewChange('admin'); onClose(); }}
-                aria-current={active ? 'page' : undefined}
-                aria-label={t('admin')}
-                style={{
-                  position: 'relative', width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                  padding: '8px 11px', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius)', marginBottom: '2px',
-                  background: active ? 'var(--accent-light)' : 'transparent',
-                  color: active ? 'var(--accent)' : 'var(--text-muted)',
-                  fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: active ? 700 : 400,
-                  transition: 'background var(--t-fast), color var(--t-fast)',
-                }}
-                onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'var(--interactive)'; }}
-                onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}
-              >
-                {active && <span aria-hidden="true" style={{ position: 'absolute', left: 0, top: '6px', bottom: '6px', width: '2px', borderRadius: '2px', background: 'var(--accent)' }} />}
-                <span style={{ width: '18px', display: 'inline-flex', justifyContent: 'center', position: 'relative' }}>
-                  <Shield size={17} aria-hidden="true" />
-                  {unreadCount > 0 && <span className="birthday-pulse-dot" />}
-                </span>
-                {t('admin')}
-                {unreadCount > 0 && (
-                  <span className="birthday-badge" style={{ marginLeft: 'auto', background: 'var(--danger)', color: 'white', borderRadius: '100px', padding: '1px 6px', fontSize: '10px', fontWeight: 700 }}>
-                    {unreadCount}
-                  </span>
-                )}
-              </button>
-            </div>
-          );
-        })()}
-      </nav>
-
-      {/* Actions */}
-      <div style={{ padding: '8px 10px', borderTop: '1px solid var(--border)' }}>
-        {canEdit && (
-          <button onClick={onAddPerson} className="btn btn-primary" style={{ width: '100%', height: '36px', borderRadius: '8px', marginBottom: '6px' }}>
-            <Plus size={16} aria-hidden="true" /> {ts('addPerson')}
-          </button>
-        )}
-        <button onClick={onPresent} className="btn btn-secondary btn-sm" style={{ width: '100%', marginBottom: '6px' }}>
-          <Play size={14} /> {ts('presentMode')}
-        </button>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px', marginBottom: '5px' }}>
-          <button onClick={onShare} className="btn btn-secondary btn-sm">
-            <Share2 size={14} /> {ts('share')}
-          </button>
-          <button onClick={onShowImportExport} className="btn btn-secondary btn-sm">
-            <FolderOpen size={14} /> {ts('import')}
-          </button>
         </div>
-        <button onClick={onPrint} className="btn btn-secondary btn-sm" style={{ width: '100%', marginBottom: '5px' }}>
-          <Printer size={14} /> {ts('print')}
-        </button>
-        {onExportPdf && (
-          <button onClick={onExportPdf} className="btn btn-secondary btn-sm" style={{ width: '100%' }}>
-            <FileDown size={14} /> {tPdf('export')}
-          </button>
-        )}
-      </div>
 
-      {/* Back to the public site */}
-      <div style={{ padding: '6px 10px', borderTop: '1px solid var(--border)' }}>
-        <Link href="/" className="sb-back-link" onClick={onClose}>
-          <ArrowLeft size={14} aria-hidden="true" /> {ts('backToSite')}
-        </Link>
-        <Link href="/confidentialite" className="sb-back-link" onClick={onClose}>
-          <Shield size={14} aria-hidden="true" /> Confidentialité
-        </Link>
-      </div>
-
-      {/* Account & sync */}
-      <div style={{ padding: '8px 10px', borderTop: '1px solid var(--border)', position: 'relative' }}>
-        {userEmail ? (
-          <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '2px' }}>
-              <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/profil'; }}
-                aria-label={ts('myProfile')} title={ts('myProfile')}
-                style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '10px', background: 'none', border: 'none', padding: '2px', cursor: 'pointer', textAlign: 'left', borderRadius: 'var(--radius)' }}
-                onMouseEnter={e => e.currentTarget.style.background = 'var(--interactive)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'none'}
-              >
-                <div className="mono" style={{ width: '36px', height: '36px', borderRadius: 'var(--radius)', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, flexShrink: 0, border: '1.5px solid var(--border-strong)' }}>
-                  {initials(displayName, userEmail)}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '13px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text)' }}>{truncate(displayName || userEmail.split('@')[0], 16)}</div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{truncate(userEmail, 22)}</div>
-                </div>
-              </button>
-              <button onClick={onSignOut} aria-label={ts('signOut')} title={ts('signOut')} className="sb-logout"><LogOut size={16} /></button>
+        {/* Navigation */}
+        <nav className="sb-nav">
+          {NAV_GROUPS.map((group, gi) => (
+            <div key={gi} className={gi > 0 ? 'sb-group' : undefined}>
+              <div className="sb-label sb-section">{ts(group.labelKey)}</div>
+              {group.items.map(item => navItem(item))}
             </div>
-            {cloud && syncStatus !== 'idle' && (
-              <div style={{ fontSize: '10px', marginTop: '5px', textAlign: 'center' }}><SyncIndicator status={syncStatus} /></div>
-            )}
-            {cloud && onResync && lastSyncAt != null && (() => {
-              const { key, count } = relativeSyncParts(lastSyncAt);
-              const time = count != null ? tSync(key, { count }) : tSync(key);
-              return (
-                <button
-                  onClick={() => onResync()}
-                  disabled={syncStatus === 'syncing'}
-                  title={tSync('resync')}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
-                    width: '100%', marginTop: '5px', padding: '4px', background: 'none', border: 'none',
-                    cursor: syncStatus === 'syncing' ? 'wait' : 'pointer', color: 'var(--text-light)',
-                    fontFamily: 'var(--font-mono)', fontSize: '10px',
-                  }}
-                >
-                  <RefreshCw size={10} aria-hidden="true" style={{ animation: syncStatus === 'syncing' ? 'spin 0.8s linear infinite' : undefined }} />
-                  {tSync('lastSync', { time })}
-                </button>
-              );
-            })()}
-            {presenceCount > 1 && (
-              <div style={{ fontSize: '10px', color: 'var(--accent)', textAlign: 'center', marginTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                <Users size={11} /> {ts('presence', { count: presenceCount })}
-              </div>
-            )}
-          </>
-        ) : (
-          // Demo mode also lands here: the top DemoBanner already shows the demo
-          // status + "Quitter la démo", so the sidebar only offers the sign-in CTA.
-          <button onClick={onSignIn} className="btn btn-secondary btn-sm" style={{ width: '100%' }}>
-            <LogIn size={14} /> {ts('signIn')}
-          </button>
-        )}
-      </div>
+          ))}
+          {isAdmin && (
+            <div className="sb-group">
+              <div className="sb-label sb-section">&nbsp;</div>
+              {navItem({ view: 'admin', Icon: Shield, navKey: 'admin' }, { badge: unreadCount })}
+            </div>
+          )}
+        </nav>
 
-      {/* Footer */}
-      <div style={{ padding: '6px 14px', borderTop: '1px solid var(--border)', textAlign: 'center' }}>
-        <div style={{ fontSize: '10px', color: 'var(--text-light)' }}>
-          {ts('footerTrees', { count: trees.length })} · Suimini v1.5{userEmail ? '' : ` · ${ts('footerGuest')}`}
+        {/* Active tree — compact badge */}
+        <button onClick={onShowTreeSelector} aria-label={ts('changeTreeAria')} className="sb-tree">
+          <span className="sb-tree-mark" aria-hidden="true">{(activeTree?.name || '·').charAt(0).toUpperCase()}</span>
+          <span className="sb-label sb-tree-body">
+            <span className="sb-tree-row">
+              <span className="sb-tree-name">{activeTree?.name || ts('noTree')}</span>
+              {pendingSuggestions > 0 && <span className="sb-pending" title={ts('pendingSuggestions', { count: pendingSuggestions })}>{pendingSuggestions}</span>}
+              <ChevronRight size={13} style={{ opacity: 0.6, flexShrink: 0 }} />
+            </span>
+            {activeTree && (
+              <span className="sb-tree-meta">{ts('treeMeta', { persons: activeTree.persons.length, links: activeTree.relationships.length })}</span>
+            )}
+            {activeTree && userRole && (
+              <span className="sb-role" style={{ color: userRole === 'viewer' ? 'var(--text-muted)' : userRole === 'editor' ? 'var(--success)' : 'var(--accent-text)' }}>{tr(userRole)}</span>
+            )}
+          </span>
+        </button>
+
+        {/* Account */}
+        <div className="sb-account">
+          {userEmail ? (
+            <>
+              <div className="sb-account-row">
+                <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/profil'; }}
+                  aria-label={ts('myProfile')} title={ts('myProfile')} className="sb-account-btn">
+                  <span className="sb-avatar mono">{initials(displayName, userEmail)}</span>
+                  <span className="sb-label sb-account-id">
+                    <span className="sb-account-name">{truncate(displayName || userEmail.split('@')[0], 16)}</span>
+                    <span className="sb-account-email">{truncate(userEmail, 22)}</span>
+                  </span>
+                </button>
+                <button onClick={onSignOut} aria-label={ts('signOut')} title={ts('signOut')} className="sb-logout sb-label"><LogOut size={16} /></button>
+              </div>
+              {cloud && syncStatus !== 'idle' && (
+                <div className="sb-label" style={{ fontSize: '10px', marginTop: '5px', textAlign: 'center' }}><SyncIndicator status={syncStatus} /></div>
+              )}
+              {cloud && onResync && lastSyncAt != null && (() => {
+                const { key, count } = relativeSyncParts(lastSyncAt);
+                const time = count != null ? tSync(key, { count }) : tSync(key);
+                return (
+                  <button onClick={() => onResync()} disabled={syncStatus === 'syncing'} title={tSync('resync')} className="sb-label sb-resync">
+                    <RefreshCw size={10} aria-hidden="true" style={{ animation: syncStatus === 'syncing' ? 'spin 0.8s linear infinite' : undefined }} />
+                    {tSync('lastSync', { time })}
+                  </button>
+                );
+              })()}
+              {presenceCount > 1 && (
+                <div className="sb-label" style={{ fontSize: '10px', color: 'var(--accent-text)', textAlign: 'center', marginTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                  <Users size={11} /> {ts('presence', { count: presenceCount })}
+                </div>
+              )}
+            </>
+          ) : (
+            <button onClick={onSignIn} className="sb-item" aria-label={ts('signIn')} title={ts('signIn')}>
+              <span className="sb-icon"><LogIn size={18} /></span>
+              <span className="sb-label">{ts('signIn')}</span>
+            </button>
+          )}
+          <Link href="/" className="sb-item sb-foot-link" onClick={onClose} aria-label={ts('backToSite')} title={ts('backToSite')}>
+            <span className="sb-icon"><ArrowLeft size={16} /></span>
+            <span className="sb-label">{ts('backToSite')}</span>
+          </Link>
         </div>
       </div>
 
       <style>{`
-        .sb-logout { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex-shrink: 0; border: none; background: transparent; color: var(--text-muted); border-radius: 8px; cursor: pointer; transition: background var(--t-fast), color var(--t-fast); }
+        .sidebar { width: 64px; flex-shrink: 0; position: relative; z-index: var(--z-sticky); }
+        .sidebar-panel {
+          position: absolute; inset: 0 auto 0 0; width: 64px;
+          background: var(--bg-card); border-right: var(--bw) solid var(--border);
+          display: flex; flex-direction: column; overflow: hidden;
+          transition: width var(--t-base) var(--ease-out), box-shadow var(--t-base) var(--ease-out);
+        }
+        .sidebar:hover .sidebar-panel, .sidebar:focus-within .sidebar-panel {
+          width: 240px; box-shadow: 8px 0 0 -4px var(--accent);
+        }
+        /* labels + expand-only blocks fade in on expand; clipped while collapsed */
+        .sb-label { opacity: 0; white-space: nowrap; transition: opacity var(--t-fast) ease; }
+        .sidebar:hover .sb-label, .sidebar:focus-within .sb-label { opacity: 1; }
+
+        .sb-head { display: flex; flex-direction: column; gap: 8px; padding: 16px 0 12px 17px; border-bottom: 1px solid var(--border); }
+        .sb-brand { display: inline-flex; align-items: center; gap: 9px; text-decoration: none; color: inherit; }
+        .sb-wordmark { font-size: 20px; font-weight: 800; letter-spacing: -0.03em; color: var(--ink); }
+        .sb-head-meta { display: flex; align-items: center; gap: 10px; padding-right: 14px; height: 18px; }
+
+        .sb-nav { flex: 1; padding: 8px 0; overflow-y: auto; overflow-x: hidden; }
+        .sb-nav::-webkit-scrollbar { width: 0; }
+        .sb-group { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+        .sb-section { font-size: 9px; letter-spacing: 0.12em; color: var(--text-light); padding: 0 17px; margin-bottom: 5px; min-height: 11px; }
+
+        .sb-item {
+          position: relative; width: 100%; display: flex; align-items: center; gap: 14px;
+          padding: 10px 17px 10px 23px; border: none; background: transparent; cursor: pointer;
+          color: var(--text-muted); font-family: var(--font-body); font-size: 13px; font-weight: 500;
+          text-align: left; text-decoration: none; transition: background var(--t-fast), color var(--t-fast);
+        }
+        .sb-item:hover { background: var(--accent); color: #fff; }
+        .sb-item:hover .sb-icon { color: #fff; }
+        .sb-item-active { color: var(--accent-text); font-weight: 700; background: var(--accent-light); }
+        .sb-active-bar { position: absolute; left: 0; top: 7px; bottom: 7px; width: 3px; background: var(--accent); }
+        .sb-icon { width: 18px; display: inline-flex; justify-content: center; position: relative; flex-shrink: 0; }
+        .sb-count { margin-left: auto; background: var(--danger); color: #fff; border-radius: 100px; padding: 1px 6px; font-size: 10px; font-weight: 700; }
+
+        .sb-tree {
+          display: flex; align-items: center; gap: 13px; margin: 0; padding: 12px 14px 12px 14px;
+          background: transparent; border: none; border-top: 1px solid var(--border);
+          cursor: pointer; text-align: left; transition: background var(--t-fast);
+        }
+        .sb-tree:hover { background: var(--bg-muted); }
+        .sb-tree-mark {
+          width: 36px; height: 36px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
+          background: var(--accent); color: #fff; font-family: var(--font-display); font-weight: 800; font-size: 18px;
+          border: var(--bw) solid var(--border-strong);
+        }
+        .sb-tree-body { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+        .sb-tree-row { display: flex; align-items: center; gap: 6px; }
+        .sb-tree-name { font-size: 13px; font-weight: 700; color: var(--accent-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+        .sb-tree-meta { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+        .sb-role { margin-top: 5px; font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; align-self: flex-start; border: 1.5px solid currentColor; padding: 1px 6px; }
+        .sb-pending { min-width: 18px; height: 18px; padding: 0 5px; display: inline-flex; align-items: center; justify-content: center; background: var(--danger); color: #fff; font-family: var(--font-mono); font-size: 10px; font-weight: 700; border-radius: 100px; flex-shrink: 0; }
+
+        .sb-account { padding: 8px 10px 10px; border-top: 1px solid var(--border); }
+        .sb-account-row { display: flex; align-items: center; gap: 8px; }
+        .sb-account-btn { flex: 1; min-width: 0; display: flex; align-items: center; gap: 11px; background: none; border: none; padding: 4px; cursor: pointer; text-align: left; }
+        .sb-account-btn:hover { background: var(--bg-muted); }
+        .sb-avatar { width: 36px; height: 36px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--accent); color: #fff; font-size: 13px; font-weight: 700; border: var(--bw) solid var(--border-strong); }
+        .sb-account-id { display: flex; flex-direction: column; min-width: 0; }
+        .sb-account-name { font-size: 13px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .sb-account-email { font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .sb-logout { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex-shrink: 0; border: none; background: transparent; color: var(--text-muted); cursor: pointer; transition: background var(--t-fast), color var(--t-fast); }
         .sb-logout:hover { background: var(--bg-muted); color: var(--danger); }
-        .sb-back-link { display: inline-flex; align-items: center; gap: 7px; width: 100%; padding: 6px 8px; font-family: var(--font-body); font-size: 12px; color: var(--text-muted); text-decoration: none; border-radius: var(--radius); transition: background var(--t-fast), color var(--t-fast); }
-        .sb-back-link:hover { background: var(--interactive); color: var(--accent); }
+        .sb-resync { display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; margin-top: 5px; padding: 4px; background: none; border: none; cursor: pointer; color: var(--text-light); font-family: var(--font-mono); font-size: 10px; }
+        .sb-foot-link { padding-top: 8px; padding-bottom: 8px; font-size: 12px; }
+        .sb-foot-link:hover { background: var(--bg-muted); color: var(--accent-text); }
+
         @media (max-width: 768px) {
-          .sidebar { position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-100%); transition: transform 0.3s ease; }
-          .sidebar.sidebar-open { transform: translateX(0); box-shadow: var(--shadow-lg); }
+          .sidebar { width: 0; }
+          .sidebar-panel { position: fixed; width: 248px; transform: translateX(-100%); transition: transform 0.3s ease; }
+          .sidebar.sidebar-open .sidebar-panel { transform: translateX(0); box-shadow: var(--shadow-lg); }
+          /* drawer is always "expanded": reveal labels */
+          .sidebar .sb-label { opacity: 1; }
         }
       `}</style>
     </aside>

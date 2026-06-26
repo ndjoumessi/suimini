@@ -134,7 +134,7 @@ export default function InvitePage() {
         <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
           <span style={iconCircle} aria-hidden="true"><UserPlus size={24} /></span>
           <div role="status">
-            <h1 style={h1Style}>Vous avez rejoint l&apos;arbre «&nbsp;{state.treeName}&nbsp;» ! 🎉</h1>
+            <h1 style={h1Style}>Vous avez rejoint l&apos;arbre «&nbsp;{state.treeName}&nbsp;» !</h1>
             <p style={{ margin: '0 0 8px' }}>Bienvenue dans la famille.</p>
             <p style={{ margin: 0, ...mutedStyle }}><span className="spinner" aria-hidden="true" /> Redirection en cours…</p>
           </div>

@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { ViewMode, Person, FamilyTree, PhotoTag } from '@/types';
 import { generateId } from '@/lib/treeUtils';
 import Sidebar from './Sidebar';
+import ContentHeader from './ContentHeader';
 import BottomNav from './BottomNav';
 import AuthModal from './AuthModal';
 import DemoBanner from './DemoBanner';
@@ -70,7 +71,7 @@ export default function SuiminiApp() {
   const storeUser = useMemo(() => (user ? { id: user.id, email: user.email } : null), [user?.id, user?.email]);
   // authReady = auth resolved → the store won't seed the demo sample for logged-in users.
   const store = useFamilyStore(storeUser, !isLoading);
-  const { dark, toggle: toggleDark, mode: themeMode, setMode: setThemeMode } = useDarkMode();
+  const { dark, mode: themeMode, setMode: setThemeMode } = useDarkMode();
   const { themeId, setTheme, previewTheme, cancelPreview } = useTheme();
   const birthdayAlertCount = useBirthdayNotifications(store.activeTree);
 
@@ -432,17 +433,9 @@ export default function SuiminiApp() {
         activeTree={store.activeTree}
         trees={store.trees}
         onShowTreeSelector={() => setShowTreeSelector(true)}
-        onAddPerson={() => setShowAddPerson(true)}
         canEdit={canEdit}
         userRole={userRole}
-        onShowImportExport={() => setImportExportTab('export')}
-        onPrint={() => setShowPrint(true)}
-        onExportPdf={() => setShowExportPdf(true)}
-        onShare={() => setShowShare(true)}
-        onPresent={() => setShowPresentation(true)}
         birthdayAlertCount={birthdayAlertCount}
-        dark={dark}
-        onToggleDark={toggleDark}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         userEmail={user?.email || null}
@@ -480,10 +473,13 @@ export default function SuiminiApp() {
         ) : view === 'dashboard' ? (
           <DashboardView
             trees={store.trees}
+            activeTree={store.activeTree}
+            canEdit={canEdit}
             displayName={(user?.user_metadata?.display_name as string | undefined) || null}
             userEmail={user?.email || null}
             onNavigate={setView}
             onNewTree={() => setShowTreeSelector(true)}
+            onAddPerson={() => setShowAddPerson(true)}
             onSelectPerson={(treeId, personId) => { if (treeId !== store.activeTreeId) store.switchTree(treeId); handleSelectPerson(personId); }}
             onNarrative={() => setShowNarrative(true)}
             onAnalyzePhoto={() => openPhotoAnalyzer()}
@@ -493,6 +489,20 @@ export default function SuiminiApp() {
           <EmptyState onCreateTree={() => setShowTreeSelector(true)} />
         ) : (
           <>
+            {store.activeTree && view !== 'settings' && (
+              <ContentHeader
+                activeView={view}
+                activeTreeName={store.activeTree.name}
+                canEdit={canEdit}
+                onAddPerson={() => setShowAddPerson(true)}
+                onPresent={() => setShowPresentation(true)}
+                onShare={() => setShowShare(true)}
+                onShowImportExport={() => setImportExportTab('export')}
+                onPrint={() => setShowPrint(true)}
+                onExportPdf={() => setShowExportPdf(true)}
+                onOpenSearch={() => setShowPalette(true)}
+              />
+            )}
             {view === 'tree' && store.activeTree && <TreeView tree={store.activeTree} selectedPersonId={selectedPersonId} onSelectPerson={handleSelectPerson} onAddPerson={() => setShowAddPerson(true)} onExport={() => setShowPrint(true)} readOnly={!canEdit} />}
             {view === 'list' && <ListView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} onAddPerson={() => setShowAddPerson(true)} canEdit={canEdit} />}
             {view === 'timeline' && <TimelineView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} />}

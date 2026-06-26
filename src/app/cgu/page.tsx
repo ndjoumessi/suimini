@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { AlertTriangle } from 'lucide-react';
 
 export const metadata = {
   title: "Conditions générales d'utilisation | Suimini",
@@ -52,9 +53,10 @@ const sections: { title: string; content: ReactNode }[] = [
     title: 'Données généalogiques',
     content: (
       <>
-        <p style={{ margin: '0 0 12px' }}>
-          ⚠️ Les arbres généalogiques peuvent contenir des <strong>données sensibles</strong>{' '}
-          (origines, données de santé, etc.).
+        <p style={{ margin: '0 0 12px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+          <AlertTriangle size={16} aria-hidden="true" style={{ color: 'var(--accent)', flexShrink: 0, marginTop: '3px' }} />
+          <span>Les arbres généalogiques peuvent contenir des <strong>données sensibles</strong>{' '}
+          (origines, données de santé, etc.).</span>
         </p>
         <p style={{ margin: '0 0 12px' }}>
           L&apos;utilisateur est seul <strong>responsable du contenu</strong> qu&apos;il publie.

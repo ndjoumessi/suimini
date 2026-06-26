@@ -5,7 +5,7 @@
  * If you edit one, edit the other.
  */
 
-export const APPROVED_SUBJECT = 'Votre compte est activé — Suimini 🎉';
+export const APPROVED_SUBJECT = 'Votre compte est activé — Suimini';
 
 export const INVITE_SUBJECT = (inviterName: string, treeName: string): string =>
   `${inviterName} vous invite sur ${treeName} — Suimini`;
@@ -83,7 +83,7 @@ export function memberJoinedEmailHtml(
             </tr>
             <tr>
               <td style="padding:32px 28px; color:#1b1b1b; font-family:'Hanken Grotesk', Arial, sans-serif; font-size:15px; line-height:1.6;">
-                <h1 style="margin:0 0 16px; font-family:'Bricolage Grotesque', Georgia, serif; font-weight:700; font-size:26px; color:#1b1b1b;">Bonne nouvelle ! 🎉</h1>
+                <h1 style="margin:0 0 16px; font-family:'Bricolage Grotesque', Georgia, serif; font-weight:700; font-size:26px; color:#1b1b1b;">Bonne nouvelle !</h1>
                 ${greeting}
                 <p style="margin:0 0 24px;"><strong>${esc(memberName)}</strong> a accepté votre invitation et a rejoint l'arbre <strong>« ${esc(treeName)} »</strong>. Vous pouvez maintenant collaborer ensemble sur votre histoire familiale.</p>
                 <p style="margin:0 0 24px;">
