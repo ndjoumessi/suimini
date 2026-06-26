@@ -1,12 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, Hanken_Grotesk, IBM_Plex_Mono } from "next/font/google";
+import { Cormorant_Garamond, Libre_Baskerville, IBM_Plex_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
 
-// Atelier type system — distinctive, self-hosted via next/font (no FOUT, no render-blocking @import).
-const display = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-display", display: "swap" });
-const body = Hanken_Grotesk({ subsets: ["latin"], variable: "--font-body", display: "swap" });
+// Editorial Heritage type system — self-hosted via next/font (no FOUT, no render-blocking @import).
+// Display = Cormorant Garamond (literary mastheads, names, drop caps), Body = Libre Baskerville
+// (bookish, warm), Mono = IBM Plex Mono kept for archival labels/dates (ledger texture).
+const display = Cormorant_Garamond({ subsets: ["latin"], weight: ["400", "500", "600", "700"], style: ["normal", "italic"], variable: "--font-display", display: "swap" });
+const body = Libre_Baskerville({ subsets: ["latin"], weight: ["400", "700"], style: ["normal", "italic"], variable: "--font-body", display: "swap" });
 const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500", "700"], variable: "--font-mono", display: "swap" });
 
 const SITE_URL = "https://suimini.vercel.app";
@@ -52,7 +54,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0f0f0f",
+  themeColor: "#FBF7EF",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -71,7 +73,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const locale = await getLocale();
   const messages = await getMessages();
   return (
-    <html lang={locale} data-theme="dark" style={{ colorScheme: "dark" }} className={`${display.variable} ${body.variable} ${mono.variable}`}>
+    <html lang={locale} data-theme="light" style={{ colorScheme: "light" }} className={`${display.variable} ${body.variable} ${mono.variable}`}>
       <head>
         {/* next/font self-hosts the fonts, so we only hint at the runtime origins we actually hit. */}
         {SUPABASE_ORIGIN && <link rel="preconnect" href={SUPABASE_ORIGIN} crossOrigin="anonymous" />}

@@ -6,16 +6,16 @@ import { applyColorTheme, THEME_STORAGE_KEY } from '@/lib/themes';
 export type ThemeMode = 'light' | 'dark' | 'system';
 
 /**
- * Atelier Noir is DARK BY DESIGN — there is no light theme and no toggle.
- * This hook now simply locks the app to dark: it sets <html data-theme="dark">,
- * keeps the PWA chrome color in sync, and (re)applies the chosen colour theme.
+ * Editorial Heritage is LIGHT BY DESIGN — there is no dark theme and no toggle.
+ * This hook locks the app to light: it sets <html data-theme="light">, keeps the
+ * PWA chrome color in sync, and (re)applies the chosen colour theme.
  * The `toggle` / `setMode` API is kept as no-ops so existing callers compile.
  */
 export function useDarkMode() {
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.setAttribute('data-theme', 'light');
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', '#0f0f0f');
+    if (meta) meta.setAttribute('content', '#fbf7ef');
     try {
       const storedTheme = (localStorage.getItem(THEME_STORAGE_KEY) as ColorThemeId | null) || 'sepia';
       applyColorTheme(storedTheme);
@@ -24,5 +24,5 @@ export function useDarkMode() {
 
   const noop = useCallback(() => {}, []);
 
-  return { dark: true as const, toggle: noop, mode: 'dark' as ThemeMode, setMode: noop };
+  return { dark: false as const, toggle: noop, mode: 'light' as ThemeMode, setMode: noop };
 }

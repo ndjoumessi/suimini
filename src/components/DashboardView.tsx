@@ -80,7 +80,7 @@ function Card({ children, eyebrow, title, Icon, full, delay }: {
             {Icon && <Icon size={14} aria-hidden="true" />}
             {eyebrow}
           </div>
-          {title && <h3 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '1.05rem', textTransform: 'uppercase', letterSpacing: '-0.02em' }}>{title}</h3>}
+          {title && <h3 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '1.4rem', fontWeight: 600, letterSpacing: '-0.005em' }}>{title}</h3>}
         </header>
       )}
       {children}
@@ -161,10 +161,11 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
             {today}{firstName ? `  ·  ${t('greeting', { name: firstName }).replace(/\s*!\s*$/, '')}` : ''}
           </div>
           <h1 className="display-xxl">{heroTitle}</h1>
+          <hr className="rule-accent" style={{ marginTop: '18px' }} />
           {subtitle ? (
             <p className="dash-subtitle mono">{subtitle}</p>
           ) : (
-            <p style={{ margin: '18px 0 0', color: 'var(--text-muted)', fontSize: '15px', maxWidth: '46ch' }}>{t('noTree')}</p>
+            <p style={{ margin: '18px 0 0', color: 'var(--text-muted)', fontSize: '16px', fontStyle: 'italic', maxWidth: '46ch' }}>{t('noTree')}</p>
           )}
           <div style={{ display: 'flex', gap: '10px', marginTop: '22px', flexWrap: 'wrap' }}>
             {hasTree && canEdit && (
@@ -273,14 +274,15 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
       <style>{`
         .dash-wrap { padding: 40px; max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
         .dash-hero { padding: 8px 0 4px; }
-        .dash-subtitle { margin: 20px 0 0; font-size: 14px; color: var(--text-muted); letter-spacing: 0.02em; }
+        .dash-subtitle { margin: 16px 0 0; font-size: 13px; color: var(--text-muted); letter-spacing: 0.04em; }
 
         .dash-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 
         .dash-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-content: start; }
         .dash-card {
-          background: var(--bg-card); border: var(--bw) solid var(--border);
-          border-radius: var(--radius); padding: 22px 24px;
+          background: var(--bg-card); border: 1px solid var(--border);
+          border-radius: var(--radius); padding: 24px 26px;
+          box-shadow: var(--shadow-sm);
           display: flex; flex-direction: column;
         }
 
@@ -295,7 +297,7 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
           background: var(--bg); border: var(--bw) solid var(--border); color: var(--text-muted);
           transition: transform var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out), color var(--t-fast), border-color var(--t-fast);
         }
-        .dash-quick-btn:hover { transform: translate(-2px, -2px); box-shadow: var(--shadow); color: var(--text); border-color: var(--accent); }
+        .dash-quick-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); color: var(--text); border-color: var(--accent); }
 
         @media (max-width: 1000px) {
           .dash-grid { grid-template-columns: repeat(2, 1fr); }
@@ -321,14 +323,15 @@ function BigStat({ value, label, sublabel, delay }: { value: string | number; la
       )}
       <style>{`
         .dash-bigstat {
-          background: var(--bg-card); border: var(--bw) solid var(--border);
-          border-left: 3px solid var(--accent); padding: 26px 26px 24px;
+          background: var(--bg-card); border: 1px solid var(--border);
+          border-left: 3px solid var(--accent); padding: 26px 28px 24px;
+          box-shadow: var(--shadow-sm);
           display: flex; flex-direction: column;
         }
         .dash-bigstat-num {
-          font-family: var(--font-display); font-weight: 800; line-height: 0.9;
-          font-size: clamp(2.6rem, 5vw, 3.4rem); color: var(--accent-text);
-          letter-spacing: -0.03em;
+          font-family: var(--font-display); font-weight: 600; line-height: 0.92;
+          font-size: clamp(3rem, 5.5vw, 4rem); color: var(--accent-text);
+          letter-spacing: -0.01em;
         }
       `}</style>
     </div>

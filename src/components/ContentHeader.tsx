@@ -76,7 +76,7 @@ export default function ContentHeader({ activeView, activeTreeName, canEdit = tr
         }
         .ch-title { flex: 1; min-width: 0; }
         .ch-eyebrow { display: block; color: var(--accent-text); margin-bottom: 1px; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .ch-view { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.03em; text-transform: uppercase; line-height: 1; }
+        .ch-view { font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; letter-spacing: -0.005em; line-height: 1.05; }
         .ch-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
         @media (max-width: 768px) { .content-header { display: none; } }
       `}</style>

@@ -235,7 +235,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
           transition: width var(--t-base) var(--ease-out), box-shadow var(--t-base) var(--ease-out);
         }
         .sidebar:hover .sidebar-panel, .sidebar:focus-within .sidebar-panel {
-          width: 240px; box-shadow: 8px 0 0 -4px var(--accent);
+          width: 240px; box-shadow: var(--shadow-lg);
         }
         /* labels + expand-only blocks fade in on expand; clipped while collapsed */
         .sb-label { opacity: 0; white-space: nowrap; transition: opacity var(--t-fast) ease; }
@@ -243,7 +243,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
 
         .sb-head { display: flex; flex-direction: column; gap: 8px; padding: 16px 0 12px 17px; border-bottom: 1px solid var(--border); }
         .sb-brand { display: inline-flex; align-items: center; gap: 9px; text-decoration: none; color: inherit; }
-        .sb-wordmark { font-size: 20px; font-weight: 800; letter-spacing: -0.03em; color: var(--ink); }
+        .sb-wordmark { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; color: var(--ink); }
         .sb-head-meta { display: flex; align-items: center; gap: 10px; padding-right: 14px; height: 18px; }
 
         .sb-nav { flex: 1; padding: 8px 0; overflow-y: auto; overflow-x: hidden; }
@@ -272,8 +272,8 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sb-tree:hover { background: var(--bg-muted); }
         .sb-tree-mark {
           width: 36px; height: 36px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
-          background: var(--accent); color: #fff; font-family: var(--font-display); font-weight: 800; font-size: 18px;
-          border: var(--bw) solid var(--border-strong);
+          background: var(--accent); color: #fff; font-family: var(--font-display); font-weight: 600; font-size: 20px;
+          border: 1px solid var(--accent);
         }
         .sb-tree-body { display: flex; flex-direction: column; min-width: 0; flex: 1; }
         .sb-tree-row { display: flex; align-items: center; gap: 6px; }

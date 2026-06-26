@@ -226,7 +226,7 @@ export interface Tenant {
   created_at: string;
 }
 
-export type ColorThemeId = 'sepia' | 'slate' | 'forest' | 'bordeaux' | 'marine' | 'midnight';
+export type ColorThemeId = 'sepia' | 'slate' | 'forest' | 'bordeaux' | 'marine' | 'terracotta';
 
 export interface ColorTheme {
   id: ColorThemeId;

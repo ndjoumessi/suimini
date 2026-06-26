@@ -1,65 +1,63 @@
 @import "tailwindcss";
 
 /* =====================================================================
-   ATELIER NOIR — Haute-couture brutalism · dark by design
-   Near-black canvas · quiet rules · terracotta as the one loud voice ·
-   dramatic terracotta hard-offset shadows · dominant typography.
+   ATELIER — EDITORIAL HERITAGE · light by design
+   Archival cream canvas · ink serif · muted gold accent · hairline rules ·
+   magazine typography (asymmetric grid, drop caps, pull quotes).
    Fonts loaded via next/font (layout.tsx) and exposed as CSS variables:
-     --font-display  Bricolage Grotesque   (XXL titles, names, key numbers)
-     --font-body     Hanken Grotesk        (body, UI labels)
-     --font-mono     IBM Plex Mono         (metadata, dates, IDs — present)
-   Dark-only: there is no light theme. `:root` IS the theme; `data-theme`
-   stays "dark" so the few [data-theme="dark"] overrides keep applying.
+     --font-display  Cormorant Garamond   (mastheads, names, drop caps)
+     --font-body     Libre Baskerville     (body — bookish, warm)
+     --font-mono     IBM Plex Mono         (archival labels, dates, IDs)
+   Light-only: `:root` IS the theme; `data-theme` stays "light".
    Variable + class names are kept stable so the system cascades app-wide.
    ===================================================================== */
 
 :root {
-  /* Surfaces — near-black, three tiers */
-  --bg: #0f0f0f;              /* primary canvas (quasi-noir) */
-  --bg-card: #1a1a1a;         /* cards, sidebar, raised surfaces */
-  --bg-muted: #242424;        /* inert zones / hover fills */
+  /* Surfaces — warm paper, three tiers */
+  --bg: #fbf7ef;              /* archival cream canvas */
+  --bg-card: #ffffff;         /* cards, sidebar, raised surfaces */
+  --bg-muted: #f3eee3;        /* inert zones / hover fills */
   --surface-1: var(--bg);
   --surface-2: var(--bg-card);
-  --surface-3: #1f1f1f;
-  --interactive: #242424;     /* hover state */
+  --surface-3: #fcfaf5;
+  --interactive: #efe9dc;     /* hover state */
 
-  /* Ink + text (bone on noir) */
-  --ink: #f4f1ea;
-  --text: #f4f1ea;
-  --text-muted: #a8a39a;      /* secondary — tuned ≥ 4.5:1 on bg & card */
-  --text-light: #8a8680;      /* tertiary — tuned ≥ 3:1, ≥4.5 on cards */
+  /* Ink + text */
+  --ink: #1a1714;
+  --text: #1a1714;
+  --text-muted: #6b6358;      /* secondary — tuned ≥ 4.5:1 on cream & white */
+  --text-light: #8a8276;      /* tertiary — tuned ≥ 3:1 */
 
-  /* Rules — quiet by design; drama comes from the terracotta shadow */
-  --border: #2e2e2e;          /* hairline dividers + card outlines */
-  --border-strong: #3a3a3a;   /* interactive outlines (buttons/inputs) */
-  --bw: 1.5px;                /* structural border width */
+  /* Rules — quiet hairlines; the strong ink rule is the editorial divider */
+  --border: #e6decf;          /* hairline dividers + card outlines */
+  --border-strong: #2a241d;   /* editorial rules / input + button outlines */
+  --bw: 1px;                  /* structural border width (hairline editorial) */
 
-  /* Accent — terracotta, rarer and louder. The brand fill/shadow color is
-     #bf4b2c; `--accent-text` is a brighter terracotta used wherever the
-     accent is small TEXT (eyebrows, links) so it clears WCAG AA on noir. */
-  --accent: #bf4b2c;
-  --accent-hover: #d4562f;
-  --accent-text: #e0623e;     /* ≥4.5:1 on #0f0f0f and #1a1a1a */
-  --accent-light: rgba(191, 75, 44, 0.16);
+  /* Accent — muted gold, kept rare (links, drop caps, rules, CTA). The brand
+     fill colour is #a36b1e; `--accent-text` is a deeper bronze used wherever
+     the accent is small TEXT (eyebrows, links) so it clears WCAG AA on cream. */
+  --accent: #a36b1e;
+  --accent-hover: #8a5a18;
+  --accent-text: #7a4e12;     /* ≥4.5:1 on cream & white */
+  --accent-light: rgba(163, 107, 30, 0.12);
 
-  /* Signals (information, not decoration) — brightened for noir */
-  --male: #5b8fc0;
-  --female: #c87a9a;
-  --deceased: #8a8276;
-  --success: #2f9c8e;
-  --danger: #d8554a;          /* ≥4.5:1 on noir */
-  --warning: #d59a4e;
-  --info: #5b8fc0;
+  /* Signals (information, not decoration) — tuned for light paper */
+  --male: #2c5f8a;
+  --female: #a8456b;
+  --deceased: #6e6a62;
+  --success: #0e6e63;
+  --danger: #9e2b25;
+  --warning: #b06a12;
+  --info: #2c5f8a;
 
-  /* Hard-offset shadows — TERRACOTTA, not ink: the signature drama.
-     Flat at rest; the terracotta block answers hover / elevation. */
-  --shadow-color: var(--accent);
-  --shadow-sm: 2px 2px 0 rgba(191, 75, 44, 0.45);
-  --shadow: 4px 4px 0 var(--accent);
-  --shadow-lg: 6px 6px 0 var(--accent);
-  --shadow-xl: 12px 12px 0 var(--accent);
-  --shadow-accent: 4px 4px 0 var(--accent);
-  --scrim: rgba(0, 0, 0, 0.72);   /* modal / overlay backdrop */
+  /* Shadows — soft, editorial (depth from hairlines + whitespace, not blocks) */
+  --shadow-color: rgba(26, 23, 20, 0.10);
+  --shadow-sm: 0 1px 2px rgba(26, 23, 20, 0.06);
+  --shadow: 0 2px 10px rgba(26, 23, 20, 0.08);
+  --shadow-lg: 0 10px 30px rgba(26, 23, 20, 0.12);
+  --shadow-xl: 0 20px 50px rgba(26, 23, 20, 0.16);
+  --shadow-accent: 0 6px 20px rgba(163, 107, 30, 0.22);
+  --scrim: rgba(26, 23, 20, 0.45);   /* modal / overlay backdrop */
 
   /* Radii — sharp by design */
   --radius-sm: 0px;
@@ -96,47 +94,78 @@ body {
   color: var(--text);
   font-family: var(--font-body);
   font-weight: 400;
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 15px;
+  line-height: 1.7;
   margin: 0;
   transition: background var(--t-base), color var(--t-base);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
   overscroll-behavior: none; /* prevent pull-to-refresh / over-bounce in PWA */
 }
 
-/* ===== Typography hierarchy — dominant, weight 800, tight tracking ===== */
+/* ===== Typography hierarchy — editorial serif, high contrast, generous ===== */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  font-weight: 600;
+  letter-spacing: -0.005em;
   margin: 0;
+  color: var(--ink);
 }
-h1 { font-size: 2.6rem; line-height: 1.0; }
-h2 { font-size: 1.75rem; line-height: 1.08; }
-h3 { font-size: 1.3rem; line-height: 1.18; letter-spacing: -0.02em; }
-h4 { font-size: 1.05rem; line-height: 1.3; letter-spacing: -0.015em; }
-h5, h6 { font-size: 0.92rem; line-height: 1.35; letter-spacing: -0.01em; }
+h1 { font-size: 2.8rem; line-height: 1.04; font-weight: 600; }
+h2 { font-size: 2rem; line-height: 1.1; }
+h3 { font-size: 1.45rem; line-height: 1.2; }
+h4 { font-size: 1.15rem; line-height: 1.3; }
+h5, h6 { font-size: 1rem; line-height: 1.35; }
 
-/* `.serif` is a legacy hook now mapped to the Atelier display face. */
-.serif { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.03em; }
+/* `.serif` is a legacy hook now mapped to the editorial display face. */
+.serif { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.005em; }
 .mono { font-family: var(--font-mono); }
 
-/* Hero — the one piece of type allowed to dominate the viewport. */
+/* Masthead — the one piece of type allowed to dominate the viewport. */
 .display-xxl {
   font-family: var(--font-display);
-  font-weight: 800;
-  font-size: clamp(2.6rem, 8vw, 5rem);
-  line-height: 0.92;
-  letter-spacing: -0.04em;
-  text-transform: uppercase;
+  font-weight: 600;
+  font-size: clamp(2.8rem, 7vw, 5rem);
+  line-height: 1.0;
+  letter-spacing: -0.01em;
   margin: 0;
 }
 
+/* Eyebrows / labels — archival mono, small caps feel. */
 .label {
   font-family: var(--font-mono);
-  font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 1px; color: var(--text-muted);
+  font-size: 11px; font-weight: 500; text-transform: uppercase;
+  letter-spacing: 1.5px; color: var(--text-muted);
 }
+
+/* ===== Editorial utilities ===== */
+/* Drop cap — large gold initial for lead paragraphs (biographies, intros). */
+.dropcap::first-letter {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 3.4em;
+  line-height: 0.74;
+  float: left;
+  margin: 0.06em 0.10em 0 0;
+  color: var(--accent);
+}
+/* Pull quote — large italic Cormorant with a gold rule. */
+.pullquote {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 1.6rem;
+  line-height: 1.3;
+  color: var(--ink);
+  border-left: 2px solid var(--accent);
+  padding-left: 18px;
+  margin: 0;
+}
+/* Hairline + strong editorial rules. */
+.rule { border: none; border-top: 1px solid var(--border); margin: 0; }
+.rule-strong { border: none; border-top: var(--bw) solid var(--border-strong); margin: 0; }
+/* Gold accent hairline used under mastheads / section heads. */
+.rule-accent { border: none; border-top: 2px solid var(--accent); margin: 0; width: 56px; }
 
 html { scroll-behavior: smooth; }
 
@@ -145,7 +174,7 @@ html { scroll-behavior: smooth; }
 ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 0; }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
-::selection { background: rgba(191, 75, 44, 0.22); color: inherit; }
+::selection { background: rgba(163, 107, 30, 0.20); color: inherit; }
 
 /* Avoid Chrome's blue autofill background */
 input:-webkit-autofill,
@@ -212,11 +241,13 @@ input:-webkit-autofill:focus {
 }
 
 /* ===== Cards ===== */
-/* Flat at rest: the strong ink outline carries structure; shadow answers state. */
+/* Editorial: hairline border + generous whitespace carry structure; a soft
+   shadow answers elevation (no brutalist hard offset). */
 .card {
   background: var(--bg-card);
-  border: var(--bw) solid var(--border-strong);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
 }
 
 /* ===== Buttons ===== */
@@ -231,20 +262,20 @@ input:-webkit-autofill:focus {
   touch-action: manipulation; user-select: none; -webkit-tap-highlight-color: transparent;
   position: relative;
 }
-.btn:active { transform: translate(0, 0); box-shadow: 1px 1px 0 var(--shadow-color); }
+.btn:active { transform: translateY(1px); box-shadow: none; }
 .btn:disabled, .btn[disabled] { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
 
-.btn-primary { background: var(--accent); color: #fff; border-color: var(--border-strong); }
-.btn-primary:hover { background: var(--accent-hover); transform: translate(-2px, -2px); box-shadow: var(--shadow); }
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); box-shadow: var(--shadow-accent); }
 
 .btn-secondary { background: var(--bg-card); color: var(--text); }
-.btn-secondary:hover { transform: translate(-2px, -2px); box-shadow: var(--shadow); }
+.btn-secondary:hover { background: var(--bg-muted); border-color: var(--accent); box-shadow: var(--shadow-sm); }
 
 .btn-ghost { background: transparent; color: var(--text-muted); border-color: transparent; }
 .btn-ghost:hover { background: var(--interactive); color: var(--text); }
 
-.btn-danger { background: var(--danger); color: #fff; }
-.btn-danger:hover { transform: translate(-2px, -2px); box-shadow: var(--shadow); filter: brightness(1.05); }
+.btn-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+.btn-danger:hover { box-shadow: var(--shadow); filter: brightness(1.06); }
 
 .btn-sm { padding: 6px 12px; font-size: 12px; min-height: 36px; gap: 5px; }
 .btn-lg { padding: 13px 26px; font-size: 16px; min-height: 50px; }
@@ -429,7 +460,7 @@ body.modal-open { overflow: hidden; }
 .icon-btn:hover { background: var(--interactive); color: var(--text); }
 
 /* ===== Gallery tile (keyboard-accessible hover/focus) ===== */
-.gallery-tile:hover, .gallery-tile:focus-visible { transform: translate(-3px, -3px); box-shadow: var(--shadow-lg); }
+.gallery-tile:hover, .gallery-tile:focus-visible { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
 .gallery-tile:hover .photo-overlay, .gallery-tile:focus-visible .photo-overlay { opacity: 1; }
 
 /* ===== Leaflet map ===== */

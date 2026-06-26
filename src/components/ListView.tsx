@@ -153,7 +153,7 @@ export default function ListView({ tree, onSelectPerson, onAddPerson, canEdit = 
                     color: '#fff', border: 'var(--bw) solid var(--border-strong)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     overflow: 'hidden',
-                    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', letterSpacing: '-0.02em',
+                    fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '17px', letterSpacing: '0',
                   }}>
                     {person.profilePhoto
                       ? <img src={person.profilePhoto} alt="" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
