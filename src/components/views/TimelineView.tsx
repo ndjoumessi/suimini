@@ -459,7 +459,7 @@ export default function TimelineView({ tree, onSelectPerson }: Props) {
                         width: `${width}%`,
                         minWidth: '14px',
                         background: color,
-                        color: '#fff',
+                        color: '#12131a',
                         border: 'var(--bw) solid var(--border-strong)',
                         borderRight: living ? '2.5px dotted var(--border-strong)' : `var(--bw) solid var(--border-strong)`,
                         borderRadius: 'var(--radius)',

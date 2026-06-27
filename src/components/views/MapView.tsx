@@ -161,10 +161,10 @@ export default function MapView({ tree, onSelectPerson }: Props) {
                             </div>
                             <div>
                               <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text)' }}>{getDisplayName(pt.person)}</div>
-                              <div style={{ fontSize: '11px', color: '#6b6560' }}>
+                              <div style={{ fontSize: '11px', color: 'var(--text-light)' }}>
                                 {pt.kind === 'birth' ? t('birth') : t('death')}{pt.year ? ` · ${pt.year}` : ''}
                               </div>
-                              {pt.place && <div style={{ fontSize: '11px', color: '#a09890', display: 'flex', alignItems: 'center', gap: '4px' }}><MapPin size={11} aria-hidden="true" /> {pt.place}</div>}
+                              {pt.place && <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}><MapPin size={11} aria-hidden="true" /> {pt.place}</div>}
                             </div>
                           </button>
                         ))}

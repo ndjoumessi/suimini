@@ -168,7 +168,7 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
             <h3 className="serif" style={{ fontSize: '1.15rem', marginBottom: '12px' }}>{t('account')}</h3>
             <div className="card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div aria-hidden="true" style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'var(--accent-light)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '15px', flexShrink: 0 }}>
+                <div aria-hidden="true" style={{ width: '44px', height: '44px', borderRadius: 'var(--radius)', background: 'var(--accent-light)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '15px', flexShrink: 0 }}>
                   {initials(name, userEmail)}
                 </div>
                 <div style={{ minWidth: 0 }}>

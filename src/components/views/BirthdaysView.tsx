@@ -117,7 +117,7 @@ export default function BirthdaysView({ tree, onSelectPerson }: Props) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
               <div className="label" style={{
                 background: 'var(--accent)',
-                color: 'white', padding: '4px 14px', borderRadius: '100px',
+                color: '#12131a', padding: '4px 14px',
               }}>
                 {t('todaySection')}
               </div>
@@ -208,8 +208,8 @@ function AnniversaryCard({ a, onSelect, typeIcon, typeLabel, typeColor, t, dateL
       <div style={{ textAlign: 'center', flexShrink: 0 }}>
         {a.daysUntil === 0 ? (
           <div style={{
-            background: 'var(--accent)', color: 'white',
-            borderRadius: '100px', padding: '4px 10px',
+            background: 'var(--accent)', color: '#12131a',
+            padding: '4px 10px',
             fontSize: '11px', fontWeight: '700'
           }}>{t('todayBadge')}</div>
         ) : a.daysUntil === 1 ? (
