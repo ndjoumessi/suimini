@@ -129,9 +129,9 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
                   aria-pressed={active}
                   style={{
                     textAlign: 'left', cursor: 'pointer', padding: '18px',
-                    border: `1px solid ${active ? theme.accent : 'var(--border)'}`,
-                    background: 'var(--bg-card)',
-                    boxShadow: active ? `inset 0 0 0 1px ${theme.accent}` : 'none',
+                    border: active ? `2px solid ${theme.accent}` : '1px solid var(--border)',
+                    background: active ? '#252535' : 'var(--bg-card)',
+                    boxShadow: 'none',
                     position: 'relative',
                   }}
                 >

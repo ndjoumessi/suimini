@@ -133,10 +133,10 @@ export default function JournalView({ tree, onSelectPerson, onAdd, onUpdate, onD
                 {editingId === entry.id ? (
                   <EntryEditor tree={tree} draft={draft} setDraft={setDraft} toggleMention={toggleMention} onSave={save} onCancel={cancel} title={t('editEntry')} />
                 ) : (
-                  <div className="card" style={{ padding: '14px 16px' }}>
+                  <div className="card" style={{ padding: '14px 16px 14px 18px', borderLeft: '3px solid var(--accent)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div className="label" style={{ color: 'var(--accent)' }}>
+                        <div className="label" style={{ color: 'var(--accent-text)', opacity: 0.8 }}>
                           {formatDate(entry.date) || '—'}
                         </div>
                         <h3 className="serif" style={{ margin: '2px 0 0', fontSize: '1.15rem' }}>{entry.title}</h3>
@@ -162,8 +162,10 @@ export default function JournalView({ tree, onSelectPerson, onAdd, onUpdate, onD
                     {entry.mentionedPersonIds && entry.mentionedPersonIds.length > 0 && (
                       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '12px' }}>
                         {entry.mentionedPersonIds.map(id => (
-                          <button key={id} onClick={() => onSelectPerson(id)} className="badge badge-accent" style={{ border: 'none', cursor: 'pointer', textTransform: 'none', letterSpacing: 0 }}>
-                            @ {personName(id)}
+                          <button key={id} onClick={() => onSelectPerson(id)} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer', background: 'var(--bg-card)', color: 'var(--accent-text)', border: '1px solid var(--border)', padding: '3px 9px', fontFamily: 'var(--font-mono)', fontSize: '11px', transition: 'border-color var(--t-fast), background var(--t-fast)' }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = 'var(--accent-light)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg-card)'; }}>
+                            @{personName(id)}
                           </button>
                         ))}
                       </div>

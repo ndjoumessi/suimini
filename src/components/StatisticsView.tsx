@@ -12,7 +12,7 @@ interface Props {
 function Figure({ label, value, sub, color }: { label: string; value: string | number; sub?: string; color?: string }) {
   return (
     <div style={{ minWidth: '92px' }}>
-      <div style={{ fontSize: '1.6rem', fontWeight: 700, lineHeight: 1, color: color || 'var(--accent)', fontFamily: 'var(--font-display)' }}>
+      <div style={{ fontSize: '2rem', fontWeight: 700, lineHeight: 1, color: color || 'var(--accent)', fontFamily: 'var(--font-display)' }}>
         {value}
       </div>
       <div className="label" style={{ marginTop: '4px' }}>{label}</div>

@@ -318,7 +318,7 @@ function BigStat({ value, label, sublabel, delay }: { value: string | number; la
   return (
     <div className="dash-bigstat animate-fade-in" style={{ animationDelay: `${delay}s` }}>
       <div className="dash-bigstat-num">{value}</div>
-      <div className="label" style={{ marginTop: '8px', color: 'var(--text-muted)' }}>{label}</div>
+      <div className="label dash-bigstat-label" style={{ marginTop: '8px' }}>{label}</div>
       {sublabel && (
         <div title={sublabel} style={{ marginTop: '4px', fontSize: '13px', color: 'var(--text)', lineHeight: 1.3, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{sublabel}</div>
       )}
@@ -333,10 +333,11 @@ function BigStat({ value, label, sublabel, delay }: { value: string | number; la
         .dash-bigstat:hover { box-shadow: var(--shadow-accent); border-left-color: var(--accent-hover); transform: translateY(-2px); }
         @media (prefers-reduced-motion: reduce) { .dash-bigstat:hover { transform: none; } }
         .dash-bigstat-num {
-          font-family: var(--font-display); font-weight: 600; line-height: 0.92;
-          font-size: clamp(3rem, 5.5vw, 4rem); color: var(--accent-text);
-          letter-spacing: -0.01em;
+          font-family: var(--font-display); font-weight: 700; line-height: 0.92;
+          font-size: clamp(3.2rem, 6vw, 4rem); color: var(--accent);
+          letter-spacing: -0.015em;
         }
+        .dash-bigstat-label { color: var(--accent-text); opacity: 0.72; }
       `}</style>
     </div>
   );

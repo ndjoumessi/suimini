@@ -3,6 +3,7 @@ import { useOverlay } from '@/hooks/useOverlay';
 import { useState } from 'react';
 import { FamilyTree } from '@/types';
 import { TreePine, X, Pencil, Copy, Trash2, Users } from 'lucide-react';
+import TreeAvatar from './TreeAvatar';
 
 interface Props {
   trees: FamilyTree[];
@@ -95,7 +96,7 @@ export default function TreeSelectorModal({ trees, activeTreeId, shared = {}, on
                       onClick={() => { onSelect(tree.id); onClose(); }}
                       style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0, border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}
                     >
-                      <span style={{ width: '40px', height: '40px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid var(--border-strong)', borderRadius: 'var(--radius)', background: 'var(--accent-light)', color: 'var(--accent)' }}><TreePine size={20} aria-hidden="true" /></span>
+                      <TreeAvatar tree={tree} size={40} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: '700', fontSize: '14px' }}>
                           {tree.name}
