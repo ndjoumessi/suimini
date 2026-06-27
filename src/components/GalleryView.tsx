@@ -1,7 +1,7 @@
 'use client';
 import { useState, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
-import { Images, LayoutGrid, Rows3, ImageOff, X, ImageUp, Plus, ScanFace } from 'lucide-react';
+import { LayoutGrid, Rows3, ImageOff, X, ImageUp, Plus, ScanFace } from 'lucide-react';
 import { EmptyState } from './ui/EmptyState';
 import { FamilyTree, Person } from '@/types';
 import { getDisplayName, formatYear } from '@/lib/treeUtils';
@@ -73,10 +73,7 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
       {/* Header */}
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <h2 className="serif" style={{ margin: 0, fontSize: '1.1rem', flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Images size={18} style={{ color: 'var(--accent)', flexShrink: 0 }} aria-hidden="true" />
-            {t('heading')} | {t('photoCount', { count: photos.length })}
-          </h2>
+          <span className="label" style={{ flex: 1, color: 'var(--text-muted)' }}>{t('photoCount', { count: photos.length })}</span>{/* title lives in ContentHeader (no double header) */}
           <select
             value={filterPersonId}
             onChange={e => setFilterPersonId(e.target.value)}

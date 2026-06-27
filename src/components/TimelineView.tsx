@@ -279,7 +279,7 @@ export default function TimelineView({ tree, onSelectPerson }: Props) {
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Header + controls */}
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-        <h2 className="serif" style={{ margin: 0, fontSize: '1.1rem', flex: '1 1 auto' }}>{t('heading', { name: tree.name })}</h2>
+        <div style={{ flex: '1 1 auto' }} />{/* title lives in ContentHeader (no double header) */}
 
         {/* View toggle (Liste / Siècle) */}
         <div role="group" aria-label={t('viewList') + ' / ' + t('viewCentury')} style={{ display: 'flex' }}>

@@ -96,10 +96,7 @@ export default function JournalView({ tree, onSelectPerson, onAdd, onUpdate, onD
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Header */}
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-        <h2 className="serif" style={{ margin: 0, fontSize: '1.1rem', flex: 1, minWidth: '120px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <BookOpen size={18} style={{ color: 'var(--accent)', flexShrink: 0 }} aria-hidden="true" />
-          {t('title')}
-        </h2>
+        <div style={{ flex: 1, minWidth: '120px' }} />{/* title lives in ContentHeader (no double header) */}
         <select value={filterPersonId} onChange={e => setFilterPersonId(e.target.value)} className="input" style={{ width: 'auto' }}>
           <option value="">{t('allPersons')}</option>
           {tree.persons.map(p => <option key={p.id} value={p.id}>{getDisplayName(p)}</option>)}

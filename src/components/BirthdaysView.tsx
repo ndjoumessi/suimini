@@ -60,10 +60,7 @@ export default function BirthdaysView({ tree, onSelectPerson }: Props) {
       {/* Header */}
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-          <h2 className="serif" style={{ margin: 0, fontSize: '1.1rem', flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Cake size={18} style={{ color: 'var(--accent)', flexShrink: 0 }} aria-hidden="true" />
-            {t('title')}
-          </h2>
+          <div style={{ flex: 1 }} />{/* title lives in ContentHeader (no double header) */}
           <select value={daysAhead} onChange={e => setDaysAhead(+e.target.value)} className="input" style={{ width: 'auto' }} aria-label={t('rangeLabel')}>
             <option value={30}>{t('range30')}</option>
             <option value={60}>{t('range60')}</option>
@@ -96,7 +93,7 @@ export default function BirthdaysView({ tree, onSelectPerson }: Props) {
       <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
         {filtered.length === 0 && (
           <div style={{ textAlign: 'center', padding: '48px 24px', maxWidth: '420px', margin: '0 auto' }}>
-            <CalendarDays size={44} strokeWidth={1.25} style={{ color: 'var(--text-light)', marginBottom: '12px' }} aria-hidden="true" />
+            <CalendarDays size={44} strokeWidth={1.25} style={{ color: 'var(--text-muted)', marginBottom: '12px' }} aria-hidden="true" />
             <p style={{ fontWeight: 700, margin: '0 0 6px', color: 'var(--text)' }}>{t('emptyTitle')}</p>
             <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 16px' }}>
               {filter !== 'all'
@@ -141,11 +138,11 @@ export default function BirthdaysView({ tree, onSelectPerson }: Props) {
           return (
             <div key={month} style={{ marginBottom: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                <div className="label" style={{ fontSize: '12px', color: 'var(--text-light)', minWidth: '80px' }}>
+                <div className="label" style={{ fontSize: '12px', color: 'var(--text-muted)', minWidth: '80px' }}>
                   {monthLabel}
                 </div>
                 <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
-                <div style={{ fontSize: '11px', color: 'var(--text-light)' }}>{t('count', { count: items.length })}</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t('count', { count: items.length })}</div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {items.map((a, i) => (
@@ -200,7 +197,7 @@ function AnniversaryCard({ a, onSelect, typeIcon, typeLabel, typeColor, t, dateL
           <span style={{ color: typeColor(a.type), fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px', verticalAlign: 'middle' }}>{typeIcon(a.type)} {typeLabel(a.type)}</span>
           {' · '}{dayMonth}
           {a.age !== undefined && (
-            <span style={{ marginLeft: '6px', color: 'var(--text-light)' }}>
+            <span style={{ marginLeft: '6px', color: 'var(--text-muted)' }}>
               ({a.type === 'birthday' ? t('turning', { age: a.age }) : a.type === 'wedding' ? t('weddingYears', { age: a.age }) : ''})
             </span>
           )}
@@ -222,7 +219,7 @@ function AnniversaryCard({ a, onSelect, typeIcon, typeLabel, typeColor, t, dateL
             <div style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text)', fontFamily: 'var(--font-display)' }}>
               {a.daysUntil}
             </div>
-            <div style={{ fontSize: '10px', color: 'var(--text-light)' }}>{t('daysUnit', { count: a.daysUntil })}</div>
+            <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{t('daysUnit', { count: a.daysUntil })}</div>
           </div>
         )}
       </div>

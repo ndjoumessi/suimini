@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { AlertCircle, FolderOpen, Plus, X, Dna, ImageUp, Images, Check } from 'lucide-react';
 import { Person, Gender } from '@/types';
 import { uploadAvatar } from '@/lib/uploadImage';
@@ -16,6 +16,12 @@ interface Props {
 
 export default function PersonForm({ initial, onSave, onCancel, submitLabel }: Props) {
   const t = useTranslations('personForm');
+  const locale = useLocale();
+  // Native <input type=date> stores ISO but renders in the browser's locale.
+  // `lang` makes locale-aware browsers (Firefox) use the right display order;
+  // the helper example below makes the expected format explicit everywhere.
+  const dateLang = locale === 'en' ? 'en-GB' : 'fr-FR';
+  const dateExample = locale === 'en' ? 'e.g. 1950-04-12' : 'ex. 12/04/1950';
   const [form, setForm] = useState<Partial<Person>>({
     firstName: '', lastName: '', gender: 'unknown', isAlive: true,
     ...initial
@@ -172,10 +178,12 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel }: P
           {t('birthDate')}
           <input
             type="date"
+            lang={dateLang}
             value={form.birthDate || ''}
             onChange={e => set('birthDate', e.target.value || undefined)}
             className="input"
           />
+          <span className="field-help">{dateExample}</span>
         </label>
         <label style={labelStyle}>
           {t('birthPlace')}
@@ -203,10 +211,12 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel }: P
             {t('deathDate')}
             <input
               type="date"
+              lang={dateLang}
               value={form.deathDate || ''}
               onChange={e => set('deathDate', e.target.value || undefined)}
               className="input"
             />
+            <span className="field-help">{dateExample}</span>
           </label>
           <label style={labelStyle}>
             {t('deathPlace')}

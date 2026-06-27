@@ -49,17 +49,15 @@ export default function ListView({ tree, onSelectPerson, onAddPerson, canEdit = 
         .lv-name { font-family: var(--font-display); font-size: 18px; font-weight: 600; color: var(--ink); line-height: 1.2; }
         .lv-maiden { font-weight: 400; color: var(--text-muted); font-size: 13px; }
         .lv-dates { font-family: var(--font-mono); font-size: 11px; color: var(--accent-text); opacity: 0.9; }
-        .lv-age { color: var(--text-light); }
+        .lv-age { color: var(--text-muted); }
         .lv-occ { font-family: var(--font-body); font-style: italic; font-size: 13px; color: var(--text-muted); }
-        .lv-place { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-mono); font-size: 10.5px; color: var(--text-light); }
+        .lv-place { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-mono); font-size: 10.5px; color: var(--text-muted); }
         @media (prefers-reduced-motion: reduce) { .lv-card { transition: border-color var(--t-fast) ease; } .lv-card:hover { transform: none; } }
       `}</style>
       {/* Header */}
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-          <h2 className="serif" style={{ margin: 0, fontSize: '1.1rem', flex: 1 }}>
-            {t('title')} | {tree.name}
-          </h2>
+          <div style={{ flex: 1 }} />{/* title lives in ContentHeader (no double header) */}
           <button onClick={() => setShowFilters(!showFilters)} className="btn btn-secondary btn-sm" style={{ gap: '6px' }} aria-expanded={showFilters}>
             <Filter size={14} aria-hidden="true" /> {t('filters')}
             {(() => { const n = Object.keys(filters).filter(k => filters[k as keyof SearchFilters] !== undefined).length; return n > 0 ? <span className="badge badge-accent" style={{ marginLeft: '2px' }} aria-label={t('activeFilters', { count: n })}>{n}</span> : null; })()}

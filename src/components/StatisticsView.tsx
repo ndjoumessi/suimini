@@ -336,10 +336,7 @@ export default function StatisticsView({ tree }: Props) {
 
   return (
     <div style={{ flex: 1, overflowY: 'auto' }}>
-      <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)' }}>
-        <h2 className="serif" style={{ margin: 0, fontSize: '1.1rem' }}>{t('heading', { tree: tree.name })}</h2>
-      </div>
-
+      {/* title lives in ContentHeader (no double header) */}
       <div style={{ padding: '20px', maxWidth: '1000px' }}>
         {/* Overview — a narrative line, then a quiet row of secondary figures. */}
         <div style={{ marginBottom: '28px' }}>

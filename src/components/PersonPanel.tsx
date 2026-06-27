@@ -512,8 +512,11 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
         ] as { id: typeof tab; Icon: typeof User; count?: number }[]).map(({ id, Icon, count }) => {
           const tabLabel = id==='narrative' ? tn('tab') : id==='discussion' ? tc('tab') : t(`tab_${id}`);
           return (
-          <button key={id} onClick={() => setTab(id as typeof tab)} className={`tab ${tab===id?'active':''}`} style={{ display:'inline-flex', alignItems:'center', gap:'5px', padding:'8px 10px', whiteSpace:'nowrap', fontSize:'13px' }} aria-label={tabLabel} title={tabLabel}>
-            <Icon size={15} aria-hidden="true" />{count?<span className="mono" style={{ fontSize:'11px' }}>{count}</span>:null}
+          <button key={id} onClick={() => setTab(id as typeof tab)} className={`tab ${tab===id?'active':''}`} style={{ display:'inline-flex', flexDirection:'column', alignItems:'center', gap:'3px', padding:'7px 11px', whiteSpace:'nowrap' }} aria-label={tabLabel} title={tabLabel}>
+            <span style={{ display:'inline-flex', alignItems:'center', gap:'4px' }}>
+              <Icon size={15} aria-hidden="true" />{count?<span className="mono" style={{ fontSize:'10px' }}>{count}</span>:null}
+            </span>
+            <span style={{ fontSize:'10px', fontWeight: tab===id?700:500, letterSpacing:'0.01em' }}>{tabLabel}</span>
           </button>
           );
         })}

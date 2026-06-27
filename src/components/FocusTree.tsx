@@ -279,7 +279,7 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         .ft-name { font-family: var(--font-display); font-size: 16px; font-weight: 600; color: var(--ink); line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .ft-last { font-weight: 600; }
         .ft-dates { font-family: var(--font-mono); font-size: 11px; color: var(--accent-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .ft-place { font-family: var(--font-mono); font-size: 10px; color: var(--text-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ft-place { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .ft-genband { position: absolute; left: 14px; transform: translateY(-50%); z-index: 1; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); opacity: 0.7; pointer-events: none; background: var(--bg); padding: 2px 6px; }
 
         .ft-crumbs { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 5;
