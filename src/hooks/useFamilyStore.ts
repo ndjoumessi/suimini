@@ -77,6 +77,11 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
   // and bails, so a stale local read (started while auth was still resolving) can
   // NEVER overwrite the Supabase data. This is the definitive race guard.
   const supabaseLoadedRef = useRef(false);
+  // Origin of the latest sync error, so the in-app "Réessayer" does the RIGHT thing:
+  // a failed PULL (load) should re-pull; a failed PUSH (debounced save) must re-push,
+  // NEVER pull (a pull would replace the local edit that hasn't reached the server →
+  // data loss). null when there is no error.
+  const syncErrorKindRef = useRef<'load' | 'save' | null>(null);
 
   // SINGLE load effect. Gated on authReady so it never runs against a half-init
   // client. It branches by mode — and the two branches are mutually exclusive:
@@ -87,15 +92,17 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
   useEffect(() => {
     if (!authReady || typeof window === 'undefined') return;
 
-    // Schema-version cache-bust (runs before any read). Purge ONLY when a KNOWN
-    // older version is recorded (a real downgrade from a prior build). A missing
-    // meta means a pre-versioning install: we adopt the current cache as-is and just
-    // stamp it — never wipe an existing guest's local-only trees on first upgrade.
+    // Schema-version cache-bust (runs before any read). Purge ONLY in CLOUD mode,
+    // where Supabase can re-hydrate — a guest's local-only trees are irreplaceable,
+    // so we NEVER auto-delete them on a version change (better a tolerated old shape
+    // than silent data loss). `!==` (not `<`) so a downgrade too — e.g. a deploy
+    // rollback leaving a newer-shaped cache the old code can't read — also purges.
+    // A missing meta (pre-versioning install) is adopted as-is and just stamped.
     const cachedVersion = readCacheVersion();
-    if (cachedVersion != null && cachedVersion < STORE_VERSION) {
+    if (cachedVersion != null && cachedVersion !== STORE_VERSION && cloud && user) {
       try { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(ACTIVE_TREE_KEY); } catch { /* ignore */ }
       offlineStorage.clear().catch(() => {});
-      console.info(`[store] Cache schema obsolète (v${cachedVersion} < v${STORE_VERSION}) → purge et rechargement.`);
+      console.info(`[store] Cache schema incompatible (v${cachedVersion} ≠ v${STORE_VERSION}) → purge + rechargement cloud.`);
     }
     writeCacheMeta(cloud && user ? user.id : 'guest');
 
@@ -108,20 +115,27 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     if (cloud && user) {
       supabaseLoadedRef.current = true; // from now on the guest branch must not write
       let active = true;
+      let settled = false; // flips true once run() reaches any terminal state
       let retryTimer: ReturnType<typeof setTimeout> | null = null;
       setSyncStatus('syncing');
-      // Safety net: if the network hangs (loadTreesFromSupabase never settles) the
-      // user must NEVER be stuck on an infinite spinner. After 10s, reveal the app
-      // with whatever local data we have and flag the error (the in-app banner then
-      // offers "Réessayer"). `setLoaded(true)` is idempotent if the load already won.
-      const safety = setTimeout(() => {
-        if (!active) return;
-        setSyncStatus(s => (s === 'syncing' ? 'error' : s));
-        setLoaded(true);
-      }, 10000);
       const localTrees = localCacheRef.current;
       const onlySample = localTrees.length === 1 && localTrees[0].id === 'tree1';
       const hasRealLocal = localTrees.length > 0 && !onlySample;
+      // Safety net: if the network hangs (loadTreesFromSupabase never settles) the
+      // user must NEVER be stuck on an infinite spinner. After 10s, IF the load
+      // hasn't settled, reveal the app with the LOCAL CACHE (not an empty []) and
+      // flag the error so the in-app banner offers "Réessayer". Guarded by `settled`
+      // so it can never clobber a load that already won.
+      const safety = setTimeout(() => {
+        if (!active || settled) return;
+        if (localTrees.length > 0) {
+          setTrees(localTrees);
+          setActiveTreeId(prev => prev ?? localTrees[0]?.id ?? null);
+        }
+        syncErrorKindRef.current = 'load';
+        setSyncStatus('error');
+        setLoaded(true);
+      }, 10000);
 
       // On a cold load the access token may not be attached to the FIRST REST call
       // yet → RLS returns [] and the app looked empty until a manual refresh. Retry a
@@ -149,7 +163,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
               localStorage.setItem(STORAGE_KEY, JSON.stringify(remote));
               for (const t of remote) await offlineStorage.setTree(t);
             } catch { /* IndexedDB/localStorage unavailable — non-fatal */ }
-            if (active) setLoaded(true);
+            if (active) { settled = true; setLoaded(true); }
             return;
           }
           if (hasRealLocal) {
@@ -159,7 +173,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
             setTrees(localTrees);
             setActiveTreeId(localTrees[0]?.id || null);
             setSyncStatus('saved');
-            if (active) setLoaded(true);
+            if (active) { settled = true; setLoaded(true); }
             return;
           }
           // Empty + no local data: could be a token-not-ready race → retry, else onboard.
@@ -171,7 +185,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
           setTrees([]);
           setActiveTreeId(null);
           setSyncStatus('idle');
-          if (active) setLoaded(true);
+          if (active) { settled = true; setLoaded(true); }
         } catch (err) {
           if (!active) return;
           if (attempt < MAX_ATTEMPTS) {
@@ -182,8 +196,9 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
           // Fall back to real local data if any, otherwise empty — never the sample.
           if (hasRealLocal) { setTrees(localTrees); setActiveTreeId(localTrees[0]?.id || null); }
           else { setTrees([]); setActiveTreeId(null); }
+          syncErrorKindRef.current = 'load';
           setSyncStatus('error');
-          if (active) setLoaded(true);
+          if (active) { settled = true; setLoaded(true); }
         }
       };
       run(1);
@@ -275,8 +290,8 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
       lastLocalWriteRef.current = Date.now();
       const isOwner = !shared[activeTree.id];
       saveTreeToSupabase(activeTree, user.id, isOwner)
-        .then(() => { lastLocalWriteRef.current = Date.now(); setSyncStatus('saved'); })
-        .catch((err) => { console.error('[store] Sauvegarde cloud échouée:', err?.message ?? err); setSyncStatus('error'); });
+        .then(() => { lastLocalWriteRef.current = Date.now(); syncErrorKindRef.current = null; setSyncStatus('saved'); setLastSyncAt(Date.now()); })
+        .catch((err) => { console.error('[store] Sauvegarde cloud échouée:', err?.message ?? err); syncErrorKindRef.current = 'save'; setSyncStatus('error'); });
     }, 700);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -312,11 +327,21 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     }
     try {
       const { trees: remote, shared: sharedMeta } = await loadTreesFromSupabase(user.id);
+      // EMPTY-RESULT GUARD: an empty result is almost always the RLS token-not-ready
+      // race (the initial loader retries 3× for exactly this), not a genuinely empty
+      // account. NEVER destroy the local cache / blank the screen on []. Keep what we
+      // have and report failure so the caller can surface a retry. A real "all trees
+      // deleted" propagates through the explicit delete flow, not through resync.
+      if (remote.length === 0) {
+        console.warn('[store] Resync a renvoyé 0 arbre — probablement un jeton non prêt ; cache local conservé.');
+        setSyncStatus('error');
+        return false;
+      }
       try {
         await offlineStorage.clear();              // IndexedDB 'trees' store only
         localStorage.removeItem(STORAGE_KEY);      // 'suimini_trees' only — never the auth cookie
         for (const t of remote) await offlineStorage.setTree(t);
-        if (remote.length) localStorage.setItem(STORAGE_KEY, JSON.stringify(remote));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(remote));
       } catch { /* cache unavailable — non-fatal */ }
       localCacheRef.current = remote;
       setShared(sharedMeta);
@@ -324,14 +349,44 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
       setActiveTreeId(prev => (remote.find(t => t.id === prev) ? prev : remote[0]?.id || null));
       setMigrationPending(false);
       setLastSyncAt(Date.now());
+      syncErrorKindRef.current = null;
       setSyncStatus('saved');
       return true;
     } catch (err) {
       console.error('[store] Resync échouée:', err);
+      syncErrorKindRef.current = 'load';
       setSyncStatus('error');
       return false;
     }
   }, [cloud, user]);
+
+  // Re-push the active tree (used to recover from a failed debounced SAVE without a
+  // destructive pull). Returns true on success.
+  const pushActiveTree = useCallback(async (): Promise<boolean> => {
+    if (!cloud || !user) return false;
+    const tree = trees.find(t => t.id === activeTreeId);
+    if (!tree) return false;
+    setSyncStatus('syncing');
+    try {
+      await saveTreeToSupabase(tree, user.id, !shared[tree.id]);
+      lastLocalWriteRef.current = Date.now();
+      syncErrorKindRef.current = null;
+      setSyncStatus('saved');
+      setLastSyncAt(Date.now());
+      return true;
+    } catch (err) {
+      console.error('[store] Re-push échoué:', err);
+      syncErrorKindRef.current = 'save';
+      setSyncStatus('error');
+      return false;
+    }
+  }, [cloud, user, trees, activeTreeId, shared]);
+
+  // Context-aware retry for the in-app error banner: a failed SAVE re-pushes (keeps
+  // the local edit), a failed LOAD re-pulls. Never pull-replaces over a pending edit.
+  const retrySync = useCallback(async (): Promise<boolean> => {
+    return syncErrorKindRef.current === 'save' ? pushActiveTree() : resync();
+  }, [pushActiveTree, resync]);
 
   // Refs of the latest sync state so the visibility listener stays subscribed once
   // (no re-bind on every status tick) while still reading fresh values.
@@ -340,11 +395,14 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
 
   // Stale-cache guard: when the tab regains focus and the last successful cloud sync
   // is older than STALE_MS, silently pull fresh data (Supabase always wins). Never
-  // fires mid-sync; resync() revalidates the session before touching anything.
+  // fires mid-sync, and NEVER while a save is pending in error (a pull would discard
+  // the unsynced local edit). resync() revalidates the session and keeps the cache on
+  // an empty result, so a token-not-ready race can't blank the screen.
   useEffect(() => {
     if (!cloud) return;
     const onVisible = () => {
       if (document.visibilityState !== 'visible' || syncStatusRef.current === 'syncing') return;
+      if (syncErrorKindRef.current === 'save') return; // unsynced edit pending — don't pull
       const last = lastSyncRef.current;
       if (last != null && Date.now() - last > STALE_MS) {
         console.info('[store] Cache périmé (>5 min) → resync au retour de focus.');
@@ -629,6 +687,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     reloadTreeFromCloud,
     lastLocalWriteRef,
     resync,
+    retrySync,
     lastSyncAt,
   };
 }

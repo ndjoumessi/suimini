@@ -1327,7 +1327,7 @@
     "shareSocial": "Partager sur les réseaux",
     "copyText": "Copier le texte",
     "embedCode": "Code d'intégration (iframe)",
-    "familyMeetingTip": "Pour partager lors d'une réunion de famille : exportez le fichier .json et importez-le sur un autre appareil via Import/Export.",
+    "familyMeetingTip": "Pour partager lors d'une réunion de famille : exportez le fichier .json et importez-le sur un autre appareil via <b>Import/Export</b>.",
     "share": "Partage",
     "tabsAria": "Partage",
     "copy": "Copier",
@@ -1440,7 +1440,9 @@
     "syncing": "Synchronisation en cours...",
     "synced": "Synchronisé ✓",
     "syncError": "Synchronisation impossible — vos données locales sont affichées.",
-    "retry": "Réessayer"
+    "retry": "Réessayer",
+    "resyncOk": "Synchronisation terminée",
+    "resyncFail": "Échec de la synchronisation"
   },
   "pdf": {
     "export": "Exporter le livret",

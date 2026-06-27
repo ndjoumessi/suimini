@@ -5,13 +5,20 @@ export const THEME_STORAGE_KEY = 'suimini_color_theme';
 // Modern Heritage palette (dark): each accent is tuned to sit on the near-black
 // (#0d0d0d) / cream (#f5f0e8) canvas. `id` values stay stable for localStorage
 // compatibility; the default ('sepia') carries the muted gold (Or).
+// Gender colours are intentionally theme-INDEPENDENT: they must match the tree's
+// GENDER_BAR (#4A90D9 / #C47BA0, defined in tree/nodeStyle.ts) so nodes, the legend,
+// statistics, timeline and badges all read the same hue whatever the accent theme.
+// applyColorTheme writes these as inline <html> vars, so they (not globals.css) are
+// the effective runtime value — keep all three in sync.
+const GENDER_MALE = '#4a90d9';
+const GENDER_FEMALE = '#c47ba0';
 export const COLOR_THEMES: ColorTheme[] = [
-  { id: 'sepia',    name: 'Or',       emoji: '🥇', accent: '#c9a84c', male: '#5b7fa6', female: '#b07d92' },
-  { id: 'bordeaux', name: 'Bordeaux', emoji: '🍷', accent: '#c06b78', male: '#5b7fa6', female: '#b07d92' },
-  { id: 'forest',   name: 'Forêt',    emoji: '🌲', accent: '#6fae8a', male: '#5b8a8a', female: '#b07d92' },
-  { id: 'slate',    name: 'Ardoise',  emoji: '🪨', accent: '#8aa2b4', male: '#5b7fa6', female: '#b07d92' },
-  { id: 'marine',   name: 'Marine',   emoji: '⚓', accent: '#5b8fc0', male: '#5b7fa6', female: '#8aa0c0' },
-  { id: 'terracotta', name: 'Terracotta', emoji: '🧱', accent: '#d3845a', male: '#5b7fa6', female: '#b07d92' },
+  { id: 'sepia',    name: 'Or',       emoji: '🥇', accent: '#c9a84c', male: GENDER_MALE, female: GENDER_FEMALE },
+  { id: 'bordeaux', name: 'Bordeaux', emoji: '🍷', accent: '#c06b78', male: GENDER_MALE, female: GENDER_FEMALE },
+  { id: 'forest',   name: 'Forêt',    emoji: '🌲', accent: '#6fae8a', male: GENDER_MALE, female: GENDER_FEMALE },
+  { id: 'slate',    name: 'Ardoise',  emoji: '🪨', accent: '#8aa2b4', male: GENDER_MALE, female: GENDER_FEMALE },
+  { id: 'marine',   name: 'Marine',   emoji: '⚓', accent: '#5b8fc0', male: GENDER_MALE, female: GENDER_FEMALE },
+  { id: 'terracotta', name: 'Terracotta', emoji: '🧱', accent: '#d3845a', male: GENDER_MALE, female: GENDER_FEMALE },
 ];
 
 export function getTheme(id: ColorThemeId): ColorTheme {

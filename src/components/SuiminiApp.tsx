@@ -415,7 +415,13 @@ export default function SuiminiApp() {
 
   const handleResync = async () => {
     const ok = await store.resync();
-    showToast(ok ? 'Synchronisation terminée' : 'Échec de la synchronisation', ok ? 'success' : 'error');
+    showToast(ok ? tOffline('resyncOk') : tOffline('resyncFail'), ok ? 'success' : 'error');
+  };
+  // Context-aware retry from the error banner: re-pushes a failed save (no data loss)
+  // or re-pulls a failed load. handleResync (sidebar) is always an explicit pull.
+  const handleRetrySync = async () => {
+    const ok = await store.retrySync();
+    showToast(ok ? tOffline('resyncOk') : tOffline('resyncFail'), ok ? 'success' : 'error');
   };
 
   return (
@@ -472,7 +478,7 @@ export default function SuiminiApp() {
           <div role="alert" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '7px 16px', background: 'color-mix(in srgb, var(--danger) 16%, var(--bg-card))', borderBottom: 'var(--bw) solid var(--danger)', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--ink)', letterSpacing: '0.02em' }}>
             <AlertTriangle size={14} aria-hidden="true" style={{ flexShrink: 0, color: 'var(--danger)' }} />
             <span>{tOffline('syncError')}</span>
-            <button onClick={handleResync} className="btn btn-sm" style={{ minHeight: '26px', padding: '3px 10px', gap: '5px' }}>
+            <button onClick={handleRetrySync} className="btn btn-sm" style={{ minHeight: '26px', padding: '3px 10px', gap: '5px' }}>
               <RefreshCw size={12} aria-hidden="true" /> {tOffline('retry')}
             </button>
           </div>

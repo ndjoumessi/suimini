@@ -40,10 +40,11 @@
   --accent-text: #d4b257;     /* gold text on dark, ≥4.5:1 */
   --accent-light: rgba(201, 168, 76, 0.14);
 
-  /* Signals (information, not decoration) — tuned for dark. Gender values are the
-     SINGLE source of truth, matched to the tree's GENDER_BAR so nodes, the tree
-     legend, statistics and timeline all read the same colour. The brighter pair
-     also clears AA for coloured name text on the dark bg (the old #5b7fa6 didn't). */
+  /* Signals (information, not decoration) — tuned for dark. These are the INITIAL
+     gender values; applyColorTheme() in lib/themes.ts overrides them at runtime as
+     inline <html> vars (so themes.ts is the effective source — keep both + the tree's
+     GENDER_BAR in nodeStyle.ts in sync). The brighter pair matches the tree and
+     clears AA for coloured name text on the dark bg (the old #5b7fa6 didn't). */
   --male: #4a90d9;            /* vivid blue  — matches tree GENDER_BAR.male   */
   --female: #c47ba0;          /* vivid rose  — matches tree GENDER_BAR.female */
   --deceased: #8a8276;

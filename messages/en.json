@@ -1327,7 +1327,7 @@
     "shareSocial": "Share on social media",
     "copyText": "Copy text",
     "embedCode": "Embed code (iframe)",
-    "familyMeetingTip": "To share at a family gathering: export the .json file and import it on another device via Import/Export.",
+    "familyMeetingTip": "To share at a family gathering: export the .json file and import it on another device via <b>Import/Export</b>.",
     "share": "Share",
     "tabsAria": "Sharing",
     "copy": "Copy",
@@ -1440,7 +1440,9 @@
     "syncing": "Syncing...",
     "synced": "Synced ✓",
     "syncError": "Sync failed — showing your local data.",
-    "retry": "Retry"
+    "retry": "Retry",
+    "resyncOk": "Sync complete",
+    "resyncFail": "Sync failed"
   },
   "pdf": {
     "export": "Export booklet",
