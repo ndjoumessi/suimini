@@ -37,6 +37,23 @@ export default function ListView({ tree, onSelectPerson, onAddPerson, canEdit = 
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <style>{`
+        .lv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(248px, 1fr)); gap: 14px; max-width: 1080px; margin: 0 auto; }
+        .lv-card { display: flex; flex-direction: column; gap: 7px; text-align: left; cursor: pointer;
+          background: var(--bg-card); border: 1px solid var(--border); padding: 16px;
+          transition: border-color var(--t-fast) var(--ease-out), box-shadow var(--t-base) var(--ease-out), transform var(--t-fast) var(--ease-out); }
+        .lv-card:hover { border-color: var(--accent); box-shadow: var(--shadow-accent); transform: translateY(-2px); }
+        .lv-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        .lv-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 2px; }
+        .lv-tags { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; flex-shrink: 0; }
+        .lv-name { font-family: var(--font-display); font-size: 18px; font-weight: 600; color: var(--ink); line-height: 1.2; }
+        .lv-maiden { font-weight: 400; color: var(--text-muted); font-size: 13px; }
+        .lv-dates { font-family: var(--font-mono); font-size: 11px; color: var(--accent-text); opacity: 0.9; }
+        .lv-age { color: var(--text-light); }
+        .lv-occ { font-family: var(--font-body); font-style: italic; font-size: 13px; color: var(--text-muted); }
+        .lv-place { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-mono); font-size: 10.5px; color: var(--text-light); }
+        @media (prefers-reduced-motion: reduce) { .lv-card { transition: border-color var(--t-fast) ease; } .lv-card:hover { transform: none; } }
+      `}</style>
       {/* Header */}
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
@@ -130,52 +147,48 @@ export default function ListView({ tree, onSelectPerson, onAddPerson, canEdit = 
             }
           />
         ) : (
-          <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden', background: 'var(--bg-card)', maxWidth: '760px', margin: '0 auto' }}>
-            {visible.map((person, idx) => {
+          <div className="lv-grid">
+            {visible.map((person) => {
               const age = getAge(person.birthDate, person.deathDate);
+              const dates = [
+                person.birthDate ? formatYear(person.birthDate) : null,
+                !person.isAlive && person.deathDate ? `† ${formatYear(person.deathDate)}` : null,
+              ].filter(Boolean).join(' ');
               return (
                 <button
                   key={person.id}
                   onClick={() => onSelectPerson(person.id)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '12px',
-                    padding: '10px 14px', border: 'none',
-                    borderBottom: idx < visible.length - 1 ? '1px solid var(--border)' : 'none',
-                    background: 'transparent', cursor: 'pointer', textAlign: 'left', width: '100%',
-                    transition: 'background var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out)', opacity: person.isAlive ? 1 : 0.75,
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-muted)'; e.currentTarget.style.boxShadow = 'inset 3px 0 0 var(--accent), var(--shadow-accent)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.boxShadow = 'none'; }}
+                  className="lv-card"
+                  style={{ opacity: person.isAlive ? 1 : 0.82 }}
                 >
-                  {/* Avatar — photo, else elegant gender-coloured initials */}
-                  <PersonAvatar person={person} size={48} />
-
-                  {/* Info */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: '700', fontSize: '14px', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {getDisplayName(person)}
-                      {person.maidenName && <span style={{ fontWeight: '400', color: 'var(--text-muted)', fontSize: '12px' }}> ({person.maidenName})</span>}
-                    </div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '2px' }}>
-                      {person.occupation || '·'}
-                    </div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-light)', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      {person.birthDate && <span>{formatYear(person.birthDate)}</span>}
-                      {!person.isAlive && person.deathDate && <span>† {formatYear(person.deathDate)}</span>}
-                      {age !== null && <span>{t('years', { age })}</span>}
-                      {person.birthPlace?.city && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}><MapPin size={11} aria-hidden="true" /> {person.birthPlace.city}</span>}
+                  <div className="lv-card-top">
+                    <PersonAvatar person={person} size={56} />
+                    <div className="lv-tags">
+                      <span className={`badge badge-${person.gender === 'male' ? 'male' : person.gender === 'female' ? 'female' : 'accent'}`}>
+                        {person.gender === 'male' ? t('genderMale') : person.gender === 'female' ? t('genderFemale') : t('genderOther')}
+                      </span>
+                      <span className={`badge badge-${person.isAlive ? 'alive' : 'deceased'}`}>
+                        {person.isAlive ? t('alive') : t('deceased')}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Badges */}
-                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexShrink: 0 }}>
-                    <span className={`badge badge-${person.gender === 'male' ? 'male' : person.gender === 'female' ? 'female' : 'accent'}`}>
-                      {person.gender === 'male' ? t('genderMale') : person.gender === 'female' ? t('genderFemale') : t('genderOther')}
-                    </span>
-                    <span className={`badge badge-${person.isAlive ? 'alive' : 'deceased'}`}>
-                      {person.isAlive ? t('alive') : t('deceased')}
-                    </span>
+                  <div className="lv-name">
+                    {getDisplayName(person)}
+                    {person.maidenName && <span className="lv-maiden"> ({person.maidenName})</span>}
                   </div>
+
+                  {dates && (
+                    <div className="lv-dates">
+                      {dates}{age !== null && <span className="lv-age"> · {t('years', { age })}</span>}
+                    </div>
+                  )}
+
+                  {person.occupation && <div className="lv-occ">{person.occupation}</div>}
+
+                  {person.birthPlace?.city && (
+                    <div className="lv-place"><MapPin size={12} aria-hidden="true" /> {person.birthPlace.city}</div>
+                  )}
                 </button>
               );
             })}

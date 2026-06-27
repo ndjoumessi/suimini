@@ -71,7 +71,9 @@ export default function SuiminiApp() {
   const storeUser = useMemo(() => (user ? { id: user.id, email: user.email } : null), [user?.id, user?.email]);
   // authReady = auth resolved → the store won't seed the demo sample for logged-in users.
   const store = useFamilyStore(storeUser, !isLoading);
-  const { dark, mode: themeMode, setMode: setThemeMode } = useDarkMode();
+  // Dark-only app: useDarkMode locks data-theme + applies the colour theme (side
+  // effects only). No light/dark toggle is exposed any more.
+  useDarkMode();
   const { themeId, setTheme, previewTheme, cancelPreview } = useTheme();
   const birthdayAlertCount = useBirthdayNotifications(store.activeTree);
 
@@ -450,6 +452,11 @@ export default function SuiminiApp() {
         isAdmin={isAdmin}
         unreadCount={admin.unreadCount}
         onSignOut={async () => { await signOut(); showToast('Déconnecté'); }}
+        onAddPerson={store.activeTree ? () => setShowAddPerson(true) : undefined}
+        onShare={store.activeTree ? () => setShowShare(true) : undefined}
+        onImport={store.activeTree ? () => setImportExportTab('import') : undefined}
+        onPrint={store.activeTree ? () => setShowPrint(true) : undefined}
+        onExportPdf={store.activeTree ? () => setShowExportPdf(true) : undefined}
       />
 
       <main className="app-main" style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', minWidth: 0 }}>
@@ -526,9 +533,6 @@ export default function SuiminiApp() {
                 onSelectTheme={(id) => { setTheme(id); showToast('Thème appliqué'); }}
                 onPreviewTheme={previewTheme}
                 onCancelPreview={cancelPreview}
-                dark={dark}
-                mode={themeMode}
-                onSetMode={setThemeMode}
                 userEmail={user?.email || null}
                 displayName={(user?.user_metadata?.display_name as string | undefined) || null}
                 cloud={store.cloud}

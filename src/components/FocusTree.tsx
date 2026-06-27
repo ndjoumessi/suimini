@@ -10,12 +10,12 @@ import { ChevronUp, ChevronDown, Crown, ChevronRight } from 'lucide-react';
    Rendu HTML (nœuds nets) + SVG (connecteurs). Modern Heritage dark.
    ===================================================================== */
 
-const NODE_W = 188;
-const NODE_H = 86;
-const GAP = 26;
-const ROW_V = 104;   // vertical gap between generation rows
-const PADX = 48;
-const PADY = 64;
+const NODE_W = 200;
+const NODE_H = 100;
+const GAP = 28;
+const ROW_V = 112;   // vertical gap between generation rows
+const PADX = 52;
+const PADY = 68;
 
 // Per-generation accent line (génération 0 = la plus ancienne).
 function genColor(g: number): string {
@@ -184,6 +184,7 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         aria-label={getDisplayName(p)}
       >
         <span className="ft-gen" style={{ background: genColor(g) }} aria-hidden="true" />
+        <span className="ft-gen-tag" style={{ color: genColor(g) }} aria-hidden="true">GÉN.&nbsp;{g + 1}</span>
         {isPivot && <Crown size={13} className="ft-crown" aria-hidden="true" />}
         <span className="ft-ava" style={{ background: avatarBg(p) }} aria-hidden="true">
           {p.profilePhoto
@@ -229,6 +230,17 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
               <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke="var(--accent)" strokeOpacity={0.5} strokeWidth={1.5} strokeLinecap="round" />
             ))}
           </svg>
+          {/* Generation band labels, centred on the connector bus between rows */}
+          {hasParents && (
+            <span className="ft-genband" style={{ top: parentsY + NODE_H + ROW_V / 2 }}>
+              GÉNÉRATION {(genMap.get(focus.id) ?? 0) + 1}
+            </span>
+          )}
+          {hasChildren && (
+            <span className="ft-genband" style={{ top: focusY + NODE_H + ROW_V / 2 }}>
+              GÉNÉRATION {(genMap.get(children[0].id) ?? (genMap.get(focus.id) ?? 0) + 1) + 1}
+            </span>
+          )}
           {hasParents && parents.map((p, i) => renderNode(p, 'parent', parentX(i), parentsY))}
           {focusRow.map((n, i) => renderNode(n.p, n.role, focusX(i), focusY))}
           {hasChildren && children.map((c, i) => renderNode(c, 'child', childX(i), childrenY))}
@@ -249,24 +261,26 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         .ft-stage { position: relative; margin: auto; flex-shrink: 0; }
         .ft-links { position: absolute; inset: 0; pointer-events: none; }
 
-        .ft-node { position: absolute; display: grid; grid-template-columns: 56px 1fr; align-items: center; gap: 12px;
-          padding: 0 14px 0 10px; text-align: left; cursor: pointer;
+        .ft-node { position: absolute; display: grid; grid-template-columns: 58px 1fr; align-items: center; gap: 13px;
+          padding: 0 14px 0 11px; text-align: left; cursor: pointer;
           background: var(--bg-card); border: 1px solid var(--border); border-radius: 0;
           transition: border-color 160ms var(--ease-out), box-shadow 200ms var(--ease-out), transform 160ms var(--ease-out), background 160ms; }
         .ft-node:hover { border-color: var(--accent); box-shadow: var(--shadow-accent); transform: translateY(-2px); z-index: 2; }
         .ft-node:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         .ft-node-focus { background: var(--bg-muted); border: 2px solid var(--accent); box-shadow: var(--shadow-accent); }
         .ft-node-sel { border-color: var(--accent); }
-        .ft-gen { position: absolute; top: 0; left: 0; right: 0; height: 2px; }
-        .ft-crown { position: absolute; top: 6px; right: 6px; color: var(--accent); }
-        .ft-ava { width: 46px; height: 46px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
-          font-family: var(--font-display); font-weight: 700; font-size: 16px; color: #0d0d0d; overflow: hidden; flex-shrink: 0; justify-self: center; }
+        .ft-gen { position: absolute; top: 0; left: 0; right: 0; height: 4px; }
+        .ft-gen-tag { position: absolute; top: 8px; right: 9px; font-family: var(--font-mono); font-size: 8.5px; font-weight: 700; letter-spacing: 0.06em; opacity: 0.85; }
+        .ft-crown { position: absolute; top: 9px; left: 9px; color: var(--accent); }
+        .ft-ava { width: 52px; height: 52px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+          font-family: var(--font-display); font-weight: 700; font-size: 18px; color: #0d0d0d; overflow: hidden; flex-shrink: 0; justify-self: center; }
         .ft-ava img { width: 100%; height: 100%; object-fit: cover; }
         .ft-body { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
         .ft-name { font-family: var(--font-display); font-size: 16px; font-weight: 600; color: var(--ink); line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .ft-last { font-weight: 600; }
         .ft-dates { font-family: var(--font-mono); font-size: 11px; color: var(--accent-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .ft-place { font-family: var(--font-mono); font-size: 10px; color: var(--text-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ft-genband { position: absolute; left: 14px; transform: translateY(-50%); z-index: 1; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); opacity: 0.7; pointer-events: none; background: var(--bg); padding: 2px 6px; }
 
         .ft-crumbs { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 5;
           display: flex; align-items: center; gap: 2px; max-width: calc(100% - 32px); overflow: hidden;

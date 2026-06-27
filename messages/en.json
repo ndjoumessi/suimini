@@ -890,7 +890,7 @@
     "backToSiteTitle": "Back to the site",
     "backToSite": "Back to the site",
     "demoBadge": "Demo mode",
-    "tagline": "Family Tree",
+    "tagline": "Family memory",
     "lightModeAria": "Switch to light mode",
     "darkModeAria": "Switch to dark mode",
     "lightModeTitle": "Light mode",
@@ -918,7 +918,12 @@
     "syncError": "Sync error",
     "syncOffline": "Offline",
     "syncSaved": "Saved",
-    "pendingSuggestions": "{count, plural, one {# pending suggestion} other {# pending suggestions}}"
+    "pendingSuggestions": "{count, plural, one {# pending suggestion} other {# pending suggestions}}",
+    "activeTreeLabel": "Active tree",
+    "treeStats": "{persons, plural, one {# member} other {# members}} · {generations, plural, one {# generation} other {# generations}}",
+    "badgeOwner": "Owner",
+    "badgeGuest": "Guest",
+    "export": "Export"
   },
   "commandPalette": {
     "dialogLabel": "Command palette",

@@ -890,7 +890,7 @@
     "backToSiteTitle": "Retour au site",
     "backToSite": "Retour au site",
     "demoBadge": "Mode démo",
-    "tagline": "Arbre Généalogique",
+    "tagline": "Mémoire familiale",
     "lightModeAria": "Activer le mode clair",
     "darkModeAria": "Activer le mode sombre",
     "lightModeTitle": "Mode clair",
@@ -918,7 +918,12 @@
     "syncError": "Erreur sync",
     "syncOffline": "Hors ligne",
     "syncSaved": "Sauvegardé",
-    "pendingSuggestions": "{count, plural, one {# suggestion en attente} other {# suggestions en attente}}"
+    "pendingSuggestions": "{count, plural, one {# suggestion en attente} other {# suggestions en attente}}",
+    "activeTreeLabel": "Arbre actif",
+    "treeStats": "{persons, plural, one {# membre} other {# membres}} · {generations, plural, one {# génération} other {# générations}}",
+    "badgeOwner": "Propriétaire",
+    "badgeGuest": "Invité",
+    "export": "Exporter"
   },
   "commandPalette": {
     "dialogLabel": "Palette de commandes",

@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { ColorThemeId, FamilyTree } from '@/types';
 import { COLOR_THEMES } from '@/lib/themes';
-import { ThemeMode } from '@/hooks/useDarkMode';
 import { supabase } from '@/lib/supabase';
 import { relativeSyncParts } from '@/lib/relativeTime';
 import { Settings as SettingsIcon, Check, KeyRound, LogOut, Download, Trash2, ShieldAlert, Save, RefreshCw } from 'lucide-react';
@@ -13,9 +12,6 @@ interface Props {
   onSelectTheme: (id: ColorThemeId) => void;
   onPreviewTheme: (id: ColorThemeId) => void;
   onCancelPreview: () => void;
-  dark: boolean;
-  mode: ThemeMode;
-  onSetMode: (m: ThemeMode) => void;
   userEmail?: string | null;
   displayName?: string | null;
   cloud?: boolean;

@@ -477,7 +477,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
           <button onClick={onClose} className="icon-btn" aria-label={t('closePanel')} title={t('close')}><X size={18} aria-hidden="true" /></button>
         </div>
         <div style={{ display:'flex', alignItems:'flex-start', gap:'12px' }}>
-          <PersonAvatar person={person} size={64} />
+          <PersonAvatar person={person} size={72} />
           <div style={{ flex:1, minWidth:0 }}>
             <h2 className="serif" style={{ margin:'0 0 4px', fontSize:'1.2rem', lineHeight:1.25 }}>
               {person.firstName} {person.maidenName?`(${person.maidenName}) `:''}{person.lastName}

@@ -328,6 +328,14 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
 
   const { nodes, edges, pearls } = buildLayout();
 
+  // Generation index per node (0 = oldest row), derived from vertical position.
+  // Drives the per-node top colour bar + "GÉN. N" tag, matching FocusTree.
+  const rowStep = NODE_H + V_GAP;
+  const minNodeY = nodes.length ? Math.min(...nodes.map(n => n.y)) : 0;
+  const genOf = (y: number) => Math.max(0, Math.round((y - minNodeY) / rowStep));
+  const genColorTV = (g: number) =>
+    g <= 1 ? 'var(--accent)' : g <= 3 ? '#5b7fa6' : g <= 5 ? '#5b8a6e' : '#8a5b6e';
+
   // ---- Fan chart (ancestor pedigree) layout ----
   const MAX_FAN_GEN = 4;
   const FAN_R0 = 54;
@@ -910,7 +918,17 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                   {/* Role spine (clipped to the card): pivot=terracotta, spouse=green, else gender */}
                   <g clipPath={`url(#card-${p.id})`}>
                     <rect x={0} y={0} width={SPINE} height={NODE_H} fill={spineColor(node, isRoot)} />
+                    {/* Generation colour band along the top edge */}
+                    <rect x={SPINE} y={0} width={NODE_W - SPINE} height={3} fill={genColorTV(genOf(node.y))} />
                   </g>
+
+                  {/* Generation tag (desktop only — mobile cards are too short) */}
+                  {!isMobile && (
+                    <text x={AVA_X} y={13} fontFamily="var(--font-mono)" fontSize={8} fontWeight={700}
+                      fill={genColorTV(genOf(node.y))} opacity={0.85}>
+                      GÉN. {genOf(node.y) + 1}
+                    </text>
+                  )}
 
                   {/* Root crown — larger (×1.5) and lifted for the pivot ancestor.
                       Desktop keeps translate(NODE_W-30, 7) scale(1.5); mobile shrinks. */}
