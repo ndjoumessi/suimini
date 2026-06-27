@@ -11,11 +11,24 @@ import { ChevronUp, ChevronDown, Crown, ChevronRight } from 'lucide-react';
    ===================================================================== */
 
 const NODE_W = 200;
-const NODE_H = 100;
+const NODE_H = 110;
 const GAP = 28;
-const ROW_V = 112;   // vertical gap between generation rows
+const ROW_V = 120;   // vertical gap between generation rows
 const PADX = 52;
-const PADY = 68;
+const PADY = 72;
+
+// Per-node colour scheme by gender (+ pivot override). Dark tinted surface,
+// 4px coloured left edge, matching avatar chip. Distinguishes M/F at a glance.
+const NODE_VARIANTS = {
+  male:    { bg: '#1e2435', edge: '#5b7fa6', ava: '#5b7fa6', avaInk: '#f5f0e8' },
+  female:  { bg: '#251e2e', edge: '#8a5b6e', ava: '#8a5b6e', avaInk: '#f5f0e8' },
+  unknown: { bg: '#1e1e28', edge: '#3a3a4a', ava: '#3a3a4a', avaInk: '#f5f0e8' },
+  pivot:   { bg: '#2a2218', edge: '#c9a84c', ava: '#c9a84c', avaInk: '#0d0d0d' },
+} as const;
+function nodeVariant(p: Person, isPivot: boolean) {
+  if (isPivot) return NODE_VARIANTS.pivot;
+  return p.gender === 'male' ? NODE_VARIANTS.male : p.gender === 'female' ? NODE_VARIANTS.female : NODE_VARIANTS.unknown;
+}
 
 // Per-generation accent line (génération 0 = la plus ancienne).
 function genColor(g: number): string {
@@ -27,9 +40,6 @@ function genColor(g: number): string {
 
 function initials(p: Person): string {
   return (((p.firstName?.[0] || '') + (p.lastName?.[0] || '')).toUpperCase()) || '?';
-}
-function avatarBg(p: Person): string {
-  return p.gender === 'male' ? '#c9a84c' : p.gender === 'female' ? '#b07d92' : '#6b6b6b';
 }
 function dateLine(p: Person): string {
   const b = formatYear(p.birthDate);
@@ -173,21 +183,28 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
     const isFocus = role === 'focus';
     const isPivot = p.id === pivotId;
     const dim = role === 'parent' || role === 'child';
+    const isSel = p.id === selectedPersonId;
     const g = genMap.get(p.id) ?? 0;
     const place = p.birthPlace?.city;
+    const v = nodeVariant(p, isPivot);
     return (
       <button
         key={`${role}-${p.id}`}
-        className={`ft-node ${isFocus ? 'ft-node-focus' : ''} ${p.id === selectedPersonId ? 'ft-node-sel' : ''}`}
-        style={{ left: x, top: ny, width: NODE_W, height: NODE_H, opacity: dim ? 0.82 : 1 }}
-        onClick={() => select(p.id)}
+        className={`ft-node ${isFocus ? 'ft-node-focus' : ''} ${isSel ? 'ft-node-sel' : ''}`}
+        style={{
+          left: x, top: ny, width: NODE_W, height: NODE_H, opacity: dim ? 0.82 : 1,
+          background: v.bg, borderLeft: `4px solid ${v.edge}`,
+          ...(isFocus ? { boxShadow: '0 0 0 2px var(--accent), var(--shadow-accent)' } : {}),
+        }}
+        onClick={() => { if (p.id !== focusId) onFocus(p.id); else onSelectPerson(p.id); }}
+        onDoubleClick={() => onSelectPerson(p.id)}
         aria-label={getDisplayName(p)}
         title={`${getDisplayName(p)}${dateLine(p) ? ` · ${dateLine(p)}` : ''}`}
       >
         <span className="ft-gen" style={{ background: genColor(g) }} aria-hidden="true" />
         <span className="ft-gen-tag" style={{ color: genColor(g) }} aria-hidden="true">GÉN.&nbsp;{g + 1}</span>
-        {isPivot && <Crown size={13} className="ft-crown" aria-hidden="true" />}
-        <span className="ft-ava" style={{ background: avatarBg(p) }} aria-hidden="true">
+        {isPivot && <Crown size={12} className="ft-crown" aria-hidden="true" />}
+        <span className="ft-ava" style={{ background: v.ava, color: v.avaInk }} aria-hidden="true">
           {p.profilePhoto
             ? <img src={p.profilePhoto} alt="" loading="lazy" decoding="async" />
             : initials(p)}
@@ -218,10 +235,10 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         </nav>
       )}
 
-      {/* Up nav */}
+      {/* Up nav — previous generation */}
       {hasParents && (
         <button className="ft-nav ft-nav-up" onClick={() => onFocus(parents[0].id)}>
-          <ChevronUp size={15} aria-hidden="true" /> Voir les parents
+          <ChevronUp size={14} aria-hidden="true" className="ft-nav-arrow" /> Génération précédente
         </button>
       )}
 
@@ -234,13 +251,13 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
           </svg>
           {/* Generation band labels, centred on the connector bus between rows */}
           {hasParents && (
-            <span className="ft-genband" style={{ top: parentsY + NODE_H + ROW_V / 2 }}>
-              GÉNÉRATION {(genMap.get(focus.id) ?? 0) + 1}
+            <span className="ft-genband" style={{ top: parentsY + NODE_H + ROW_V / 2, left: cx }}>
+              — GÉNÉRATION {(genMap.get(focus.id) ?? 0) + 1} —
             </span>
           )}
           {hasChildren && (
-            <span className="ft-genband" style={{ top: focusY + NODE_H + ROW_V / 2 }}>
-              GÉNÉRATION {(genMap.get(children[0].id) ?? (genMap.get(focus.id) ?? 0) + 1) + 1}
+            <span className="ft-genband" style={{ top: focusY + NODE_H + ROW_V / 2, left: cx }}>
+              — GÉNÉRATION {(genMap.get(children[0].id) ?? (genMap.get(focus.id) ?? 0) + 1) + 1} —
             </span>
           )}
           {hasParents && parents.map((p, i) => renderNode(p, 'parent', parentX(i), parentsY))}
@@ -249,64 +266,67 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         </div>
       </div>
 
-      {/* Down nav */}
+      {/* Down nav — next generation */}
       {hasChildren && (
         <button className="ft-nav ft-nav-down" onClick={() => onFocus(children[0].id)}>
-          <ChevronDown size={15} aria-hidden="true" /> Voir les enfants
+          <ChevronDown size={14} aria-hidden="true" className="ft-nav-arrow" /> Génération suivante
         </button>
       )}
 
       <style>{`
-        .ft-root { position: relative; flex: 1; min-height: 0; background: var(--bg);
-          background-image: radial-gradient(circle, var(--border) 1px, transparent 1px); background-size: 26px 26px; overflow: hidden; }
-        .ft-scroll { position: absolute; inset: 0; overflow: auto; display: flex; }
+        .ft-root { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--bg); overflow: hidden; }
+        .ft-scroll { flex: 1; min-height: 0; position: relative; overflow: auto; display: flex;
+          background-image: radial-gradient(circle, var(--border) 1px, transparent 1px); background-size: 26px 26px; }
         .ft-stage { position: relative; margin: auto; flex-shrink: 0; }
         .ft-links { position: absolute; inset: 0; pointer-events: none; }
 
-        .ft-node { position: absolute; display: grid; grid-template-columns: 58px 1fr; align-items: center; gap: 13px;
+        .ft-node { position: absolute; display: grid; grid-template-columns: 56px 1fr; align-items: center; gap: 13px;
           padding: 0 14px 0 11px; text-align: left; cursor: pointer;
-          background: var(--bg-card); border: 1px solid var(--border); border-radius: 0;
-          transition: border-color 160ms var(--ease-out), box-shadow 200ms var(--ease-out), transform 160ms var(--ease-out), background 160ms; }
+          border: 1px solid var(--border); border-radius: 0;
+          transition: border-color 160ms var(--ease-out), box-shadow 200ms var(--ease-out), transform 160ms var(--ease-out); }
         .ft-node:hover { border-color: var(--accent); box-shadow: var(--shadow-accent); transform: translateY(-2px); z-index: 2; }
         .ft-node:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-        .ft-node-focus { background: var(--bg-muted); border: 2px solid var(--accent); box-shadow: var(--shadow-accent); }
         .ft-node-sel { border-color: var(--accent); }
         .ft-gen { position: absolute; top: 0; left: 0; right: 0; height: 4px; }
-        .ft-gen-tag { position: absolute; top: 8px; right: 9px; font-family: var(--font-mono); font-size: 8.5px; font-weight: 700; letter-spacing: 0.06em; opacity: 0.85; }
-        .ft-crown { position: absolute; top: 9px; left: 9px; color: var(--accent); }
-        .ft-ava { width: 52px; height: 52px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
-          font-family: var(--font-display); font-weight: 700; font-size: 18px; color: #0d0d0d; overflow: hidden; flex-shrink: 0; justify-self: center; }
+        .ft-gen-tag { position: absolute; top: 8px; right: 9px; font-family: var(--font-mono); font-size: 8.5px; font-weight: 700; letter-spacing: 0.06em; opacity: 0.9; }
+        .ft-crown { position: absolute; top: 8px; right: 44px; color: var(--accent); }
+        .ft-ava { width: 52px; height: 52px; border-radius: 0; display: inline-flex; align-items: center; justify-content: center;
+          font-family: var(--font-display); font-weight: 700; font-size: 18px; overflow: hidden; flex-shrink: 0; justify-self: center; }
         .ft-ava img { width: 100%; height: 100%; object-fit: cover; }
         .ft-body { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-        .ft-name { font-family: var(--font-display); font-size: 15px; font-weight: 600; color: var(--ink); line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .ft-surname { font-family: var(--font-display); font-size: 13px; font-weight: 500; color: var(--text-muted); line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
+        .ft-name { font-family: var(--font-body); font-size: 15px; font-weight: 700; color: var(--ink); line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ft-surname { font-family: var(--font-body); font-size: 13px; font-weight: 500; color: var(--text-muted); line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
         .ft-dates { font-family: var(--font-mono); font-size: 11px; color: var(--accent-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .ft-place { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .ft-genband { position: absolute; left: 14px; transform: translateY(-50%); z-index: 1; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); opacity: 0.7; pointer-events: none; background: var(--bg); padding: 2px 6px; }
+        .ft-genband { position: absolute; transform: translate(-50%, -50%); z-index: 1; font-family: var(--font-mono); font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-text); pointer-events: none; background: var(--bg); padding: 2px 12px; white-space: nowrap; }
 
-        .ft-crumbs { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 5;
-          display: flex; align-items: center; gap: 2px; max-width: calc(100% - 32px); overflow: hidden;
-          background: color-mix(in srgb, var(--bg-card) 86%, transparent); backdrop-filter: blur(8px);
-          border: 1px solid var(--border); padding: 5px 10px; }
-        .ft-crumb { background: none; border: none; cursor: pointer; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em;
-          text-transform: uppercase; color: var(--text-muted); padding: 2px 4px; white-space: nowrap; transition: color 150ms; }
-        .ft-crumb:hover { color: var(--ink); }
-        .ft-crumb-on { color: var(--accent-text); }
-        .ft-crumb-wrap { display: inline-flex; align-items: center; }
+        /* Breadcrumb — solid top bar, separate clickable chips */
+        .ft-crumbs { flex-shrink: 0; display: flex; align-items: center; gap: 6px; overflow-x: auto;
+          background: #1a1a24; border-bottom: 1px solid var(--border); padding: 8px 12px; }
+        .ft-crumbs::-webkit-scrollbar { height: 0; }
+        .ft-crumb { background: var(--bg-card); border: 1px solid var(--border); cursor: pointer; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.08em;
+          text-transform: uppercase; color: var(--text-muted); padding: 3px 8px; white-space: nowrap; transition: color 150ms, background 150ms, border-color 150ms; }
+        .ft-crumb:hover { color: var(--ink); border-color: var(--accent); }
+        .ft-crumb-on { background: var(--accent); color: #0d0d0d; border-color: var(--accent); }
+        .ft-crumb-wrap { display: inline-flex; align-items: center; gap: 6px; }
         .ft-crumb-sep { color: var(--text-light); flex-shrink: 0; }
 
-        .ft-nav { position: absolute; left: 50%; transform: translateX(-50%); z-index: 5;
-          display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
-          font-family: var(--font-body); font-size: 13px; color: var(--accent-text);
-          background: var(--bg-card); border: 1px solid var(--border); padding: 8px 16px; border-radius: 0;
-          transition: border-color 160ms, box-shadow 200ms, color 160ms; }
-        .ft-nav:hover { border-color: var(--accent); box-shadow: var(--shadow-accent); color: var(--ink); }
-        .ft-nav-up { top: 52px; }
-        .ft-nav-down { bottom: 18px; }
+        /* Generation nav — full-width bars top & bottom */
+        .ft-nav { flex-shrink: 0; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
+          font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink);
+          background: #1a1a24; border: none; padding: 10px 16px; transition: background 160ms, color 160ms; }
+        .ft-nav:hover { background: var(--bg-muted); color: var(--accent-text); }
+        .ft-nav-up { border-bottom: 1px solid var(--border); }
+        .ft-nav-down { border-top: 1px solid var(--border); }
+        .ft-nav-up .ft-nav-arrow { animation: ftBounceUp 1.5s ease-in-out infinite; }
+        .ft-nav-down .ft-nav-arrow { animation: ftBounceDown 1.5s ease-in-out infinite; }
+        @keyframes ftBounceUp { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+        @keyframes ftBounceDown { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(3px); } }
 
         @media (prefers-reduced-motion: reduce) {
           .ft-node, .ft-nav { transition: none; }
           .ft-node:hover { transform: none; }
+          .ft-nav-arrow { animation: none !important; }
         }
       `}</style>
     </div>

@@ -124,7 +124,16 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel }: P
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+    <form onSubmit={handleSubmit} className="pf-form" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <style>{`
+        .pf-form .input { background: #1a1a24; border-color: var(--border); }
+        .pf-form .input::placeholder { color: var(--text-light); }
+        .pf-form .input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+        .pf-form details > summary::-webkit-details-marker { display: none; }
+        .pf-form details > summary::marker { content: ''; }
+        .pf-form details > summary::before { content: '▸'; margin-right: 6px; color: var(--accent-text); display: inline-block; transition: transform 150ms; }
+        .pf-form details[open] > summary::before { transform: rotate(90deg); }
+      `}</style>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
         <label style={labelStyle}>
           {t('firstName')} *
@@ -437,7 +446,7 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel }: P
 }
 
 const labelStyle: React.CSSProperties = {
-  display: 'flex', flexDirection: 'column', gap: '4px',
-  fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)',
-  textTransform: 'uppercase', letterSpacing: '0.5px'
+  display: 'flex', flexDirection: 'column', gap: '5px',
+  fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: '700', color: 'var(--accent-text)',
+  textTransform: 'uppercase', letterSpacing: '1px'
 };

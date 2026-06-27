@@ -21,6 +21,15 @@ const REL_OPTIONS: { value: RelationType; labelKey: string; Icon: LucideIcon; de
   { value: 'sibling', labelKey: 'relSibling', Icon: UsersRound,  descKey: 'relSiblingDesc' },
 ];
 
+const stepChip = (active: boolean): React.CSSProperties => ({
+  display: 'inline-flex', alignItems: 'center', gap: '5px',
+  padding: '3px 9px', fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700,
+  letterSpacing: '0.08em', textTransform: 'uppercase',
+  background: active ? 'var(--accent)' : 'transparent',
+  color: active ? '#0d0d0d' : 'var(--text-muted)',
+  border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
+});
+
 export default function AddPersonModal({ onClose, tree, onAdd }: Props) {
   const [step, setStep] = useState<'form' | 'relation'>('form');
   const [newPerson, setNewPerson] = useState<Omit<Person, 'id' | 'createdAt' | 'updatedAt'> | null>(null);
@@ -61,19 +70,13 @@ export default function AddPersonModal({ onClose, tree, onAdd }: Props) {
             <h2 className="serif" style={{ margin: '0 0 2px', fontSize: '1.3rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
               {step === 'form' ? <><Plus size={20} aria-hidden="true" /> {t('newPerson')}</> : <><Link2 size={20} aria-hidden="true" /> {t('establishRelation')}</>}
             </h2>
-            {/* Step indicator */}
-            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: step === 'form' ? 'var(--accent)' : 'var(--text-light)' }}>
-                <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: step === 'form' ? 'var(--accent)' : 'var(--success)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '700' }}>
-                  {step === 'relation' ? <Check size={11} aria-hidden="true" /> : '1'}
-                </div>
-                {t('stepInfo')}
-              </div>
-              <div style={{ width: '24px', height: '1px', background: 'var(--border)' }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: step === 'relation' ? 'var(--accent)' : 'var(--text-light)' }}>
-                <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: step === 'relation' ? 'var(--accent)' : 'var(--border)', color: step === 'relation' ? 'white' : 'var(--text-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '700' }}>2</div>
-                {t('stepRelation')}
-              </div>
+            {/* Step indicator — gold chips */}
+            <div style={{ display: 'flex', gap: '7px', alignItems: 'center', marginTop: '5px' }}>
+              <span style={stepChip(true)}>
+                {step === 'relation' ? <Check size={11} aria-hidden="true" /> : '1'} {t('stepInfo')}
+              </span>
+              <span style={{ width: '16px', height: '1px', background: 'var(--border)' }} />
+              <span style={stepChip(step === 'relation')}>2 {t('stepRelation')}</span>
             </div>
           </div>
           <button onClick={onClose} className="btn btn-ghost btn-sm btn-icon" aria-label={t('close')}><X size={16} aria-hidden="true" /></button>

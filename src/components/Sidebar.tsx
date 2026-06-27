@@ -404,8 +404,11 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
 
         @media (max-width: 768px) {
           .sidebar { width: 0; }
-          .sidebar-panel { position: fixed; width: 248px; transform: translateX(-100%); transition: transform 0.3s ease; }
+          /* The whole drawer scrolls on mobile (no fixed-height children starving the
+             nav). Nav takes its natural height so EVERY item is reachable. */
+          .sidebar-panel { position: fixed; width: 248px; transform: translateX(-100%); transition: transform 0.3s ease; overflow-y: auto; -webkit-overflow-scrolling: touch; }
           .sidebar.sidebar-open .sidebar-panel { transform: translateX(0); box-shadow: var(--shadow-lg); }
+          .sb-nav { flex: 0 0 auto; overflow: visible; }
         }
       `}</style>
     </aside>
