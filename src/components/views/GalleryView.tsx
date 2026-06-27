@@ -2,7 +2,7 @@
 import { useState, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { LayoutGrid, Rows3, ImageOff, X, ImageUp, Plus, ScanFace } from 'lucide-react';
-import { EmptyState } from './ui/EmptyState';
+import { EmptyState } from '../ui/EmptyState';
 import { FamilyTree, Person } from '@/types';
 import { getDisplayName, formatYear } from '@/lib/treeUtils';
 import { uploadAvatar } from '@/lib/uploadImage';

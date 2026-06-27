@@ -2,7 +2,7 @@
 import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { BookOpen, Plus, Pencil, Trash2, Check } from 'lucide-react';
-import { EmptyState } from './ui/EmptyState';
+import { EmptyState } from '../ui/EmptyState';
 import { FamilyTree, JournalEntry } from '@/types';
 import { getDisplayName, formatDate, safeHttpUrl } from '@/lib/treeUtils';
 

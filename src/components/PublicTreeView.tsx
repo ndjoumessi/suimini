@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { FamilyTree } from '@/types';
-import TreeView from './TreeView';
+import TreeView from './tree/TreeView';
 import { BrandLockup } from './Brand';
 
 /**

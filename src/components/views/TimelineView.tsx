@@ -2,7 +2,7 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { CalendarDays, MapPin, Sparkles, Moon, Heart, Star } from 'lucide-react';
-import { EmptyState } from './ui/EmptyState';
+import { EmptyState } from '../ui/EmptyState';
 import { FamilyTree, EventType, Person } from '@/types';
 import { getDisplayName, formatDate, getChildren, getParents } from '@/lib/treeUtils';
 import { eventsOverlapping, type HistoricalEvent } from '@/lib/history';

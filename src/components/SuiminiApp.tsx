@@ -11,26 +11,26 @@ import { useTreeRole } from '@/hooks/useTreeRole';
 import { supabase } from '@/lib/supabase';
 import { ViewMode, Person, FamilyTree, PhotoTag } from '@/types';
 import { generateId } from '@/lib/treeUtils';
-import Sidebar from './Sidebar';
-import ContentHeader from './ContentHeader';
+import Sidebar from './layout/Sidebar';
+import ContentHeader from './layout/ContentHeader';
 import BottomNav from './BottomNav';
 import AuthModal from './AuthModal';
 import DemoBanner from './DemoBanner';
-import DashboardView from './DashboardView';
-import TreeView from './TreeView';
-import ListView from './ListView';
-import TimelineView from './TimelineView';
-import StatisticsView from './StatisticsView';
-import JournalView from './JournalView';
-import BirthdaysView from './BirthdaysView';
-import AncestorsView from './AncestorsView';
-import SettingsView from './SettingsView';
-import PersonPanel from './PersonPanel';
+import DashboardView from './views/DashboardView';
+import TreeView from './tree/TreeView';
+import ListView from './views/ListView';
+import TimelineView from './views/TimelineView';
+import StatisticsView from './views/StatisticsView';
+import JournalView from './views/JournalView';
+import BirthdaysView from './views/BirthdaysView';
+import AncestorsView from './views/AncestorsView';
+import SettingsView from './views/SettingsView';
+import PersonPanel from './person/PersonPanel';
 import HistoryIndicator from './HistoryIndicator';
 import CommandPalette from './CommandPalette';
 import PresentationMode from './PresentationMode';
 import NarrativeModal from './NarrativeModal';
-import AddPersonModal from './AddPersonModal';
+import AddPersonModal from './person/AddPersonModal';
 import PhotoAnalyzer, { FaceAssignment } from './PhotoAnalyzer';
 import DocumentScanner, { ImportItem } from './DocumentScanner';
 import AdminDashboard from './AdminDashboard';
@@ -45,7 +45,7 @@ import OnboardingWizard, { OnboardingData } from './OnboardingWizard';
 import { Menu, Search, TreePine, Sprout, Cloud, WifiOff } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-const MapView = dynamic(() => import('./MapView'), {
+const MapView = dynamic(() => import('./views/MapView'), {
   ssr: false,
   loading: () => (
     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
@@ -55,7 +55,7 @@ const MapView = dynamic(() => import('./MapView'), {
 });
 
 // Gallery pulls image-heavy UI; load it on demand to keep the initial app bundle lean.
-const GalleryView = dynamic(() => import('./GalleryView'), {
+const GalleryView = dynamic(() => import('./views/GalleryView'), {
   loading: () => (
     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
       Chargement de la galerie…

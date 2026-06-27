@@ -5,7 +5,7 @@ import {
   Home, Cake, Clock, Sparkles, Sprout, Plus,
   TreePine, Users, Calendar, BookOpen, ScanFace,
 } from 'lucide-react';
-import PersonAvatar from './PersonAvatar';
+import PersonAvatar from '../person/PersonAvatar';
 import { FamilyTree, ViewMode } from '@/types';
 import {
   computeTreeStats, getUpcomingAnniversaries, getAge, getDisplayName,

@@ -2,7 +2,8 @@
 import { useMemo, useRef, useEffect } from 'react';
 import { FamilyTree, Person } from '@/types';
 import { getParents, getChildren, getSpouses, getDisplayName, formatYear, getAge, formatAge } from '@/lib/treeUtils';
-import { ChevronUp, ChevronDown, Crown, ChevronRight } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronRight } from 'lucide-react';
+import TreeNode from './TreeNode';
 
 /* =====================================================================
    FocusTree — « Focus centré » : 3 générations à la fois (parents · focus ·
@@ -10,24 +11,25 @@ import { ChevronUp, ChevronDown, Crown, ChevronRight } from 'lucide-react';
    Rendu HTML (nœuds nets) + SVG (connecteurs). Modern Heritage dark.
    ===================================================================== */
 
-const NODE_W = 200;
+const NODE_W = 220;
 const NODE_H = 110;
 const GAP = 28;
 const ROW_V = 120;   // vertical gap between generation rows
 const PADX = 52;
 const PADY = 72;
 
-// Per-node colour scheme by gender (+ pivot override). Dark tinted surface,
-// 4px coloured left edge, matching avatar chip. Distinguishes M/F at a glance.
-const NODE_VARIANTS = {
-  male:    { bg: '#1e2435', edge: '#5b7fa6', ava: '#5b7fa6', avaInk: '#f5f0e8' },
-  female:  { bg: '#251e2e', edge: '#8a5b6e', ava: '#8a5b6e', avaInk: '#f5f0e8' },
-  unknown: { bg: '#1e1e28', edge: '#3a3a4a', ava: '#3a3a4a', avaInk: '#f5f0e8' },
-  pivot:   { bg: '#2a2218', edge: '#c9a84c', ava: '#c9a84c', avaInk: '#0d0d0d' },
+// Gender (+ pivot) is carried by a 6px coloured left bar — the node face stays a
+// uniform dark surface so every card reads identically and the text never fights a
+// colour wash. M/F/unknown/pivot distinguished at a glance by the bar alone.
+const GENDER_EDGE = {
+  male:    '#5b7fa6',
+  female:  '#8a5b6e',
+  unknown: '#3a3a4a',
+  pivot:   '#c9a84c',
 } as const;
-function nodeVariant(p: Person, isPivot: boolean) {
-  if (isPivot) return NODE_VARIANTS.pivot;
-  return p.gender === 'male' ? NODE_VARIANTS.male : p.gender === 'female' ? NODE_VARIANTS.female : NODE_VARIANTS.unknown;
+function edgeColor(p: Person, isPivot: boolean): string {
+  if (isPivot) return GENDER_EDGE.pivot;
+  return p.gender === 'male' ? GENDER_EDGE.male : p.gender === 'female' ? GENDER_EDGE.female : GENDER_EDGE.unknown;
 }
 
 // Per-generation accent line (génération 0 = la plus ancienne).
@@ -38,9 +40,6 @@ function genColor(g: number): string {
   return '#8a5b6e';               // rose-muted
 }
 
-function initials(p: Person): string {
-  return (((p.firstName?.[0] || '') + (p.lastName?.[0] || '')).toUpperCase()) || '?';
-}
 function dateLine(p: Person): string {
   const b = formatYear(p.birthDate);
   const d = formatYear(p.deathDate);
@@ -203,45 +202,27 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
 
   if (!focus) return null;
 
-  const select = (id: string) => { onSelectPerson(id); if (id !== focusId) onFocus(id); };
-
   const renderNode = (p: Person, role: 'focus' | 'spouse' | 'parent' | 'child', x: number, ny: number) => {
-    const isFocus = role === 'focus';
     const isPivot = p.id === pivotId;
-    const dim = role === 'parent' || role === 'child';
-    const isSel = p.id === selectedPersonId;
     const g = genMap.get(p.id) ?? 0;
-    const place = p.birthPlace?.city;
-    const v = nodeVariant(p, isPivot);
     return (
-      <button
+      <TreeNode
         key={`${role}-${p.id}`}
-        className={`ft-node ${isFocus ? 'ft-node-focus' : ''} ${isSel ? 'ft-node-sel' : ''}`}
-        style={{
-          left: x, top: ny, width: NODE_W, height: NODE_H, opacity: dim ? 0.82 : 1,
-          background: v.bg, borderLeft: `4px solid ${v.edge}`,
-          ...(isFocus ? { boxShadow: '0 0 0 2px var(--accent), var(--shadow-accent)' } : {}),
-        }}
+        person={p}
+        role={role}
+        x={x} y={ny} w={NODE_W} h={NODE_H}
+        isPivot={isPivot}
+        isSelected={p.id === selectedPersonId}
+        isFocus={role === 'focus'}
+        dim={role === 'parent' || role === 'child'}
+        edge={edgeColor(p, isPivot)}
+        genColor={genColor(g)}
+        gen={g}
+        dateStr={dateLine(p)}
+        displayName={getDisplayName(p)}
         onClick={() => { if (p.id !== focusId) onFocus(p.id); else onSelectPerson(p.id); }}
         onDoubleClick={() => onSelectPerson(p.id)}
-        aria-label={getDisplayName(p)}
-        title={`${getDisplayName(p)}${dateLine(p) ? ` · ${dateLine(p)}` : ''}`}
-      >
-        <span className="ft-gen" style={{ background: genColor(g) }} aria-hidden="true" />
-        <span className="ft-gen-tag" style={{ color: genColor(g) }} aria-hidden="true">GÉN.&nbsp;{g + 1}</span>
-        {isPivot && <Crown size={12} className="ft-crown" aria-hidden="true" />}
-        <span className="ft-ava" style={{ background: v.ava, color: v.avaInk }} aria-hidden="true">
-          {p.profilePhoto
-            ? <img src={p.profilePhoto} alt="" loading="lazy" decoding="async" />
-            : initials(p)}
-        </span>
-        <span className="ft-body">
-          <span className="ft-name">{p.firstName}</span>
-          <span className="ft-surname">{p.lastName}</span>
-          <span className="ft-dates">{dateLine(p)}</span>
-          {place && <span className="ft-place">{place}</span>}
-        </span>
-      </button>
+      />
     );
   };
 
@@ -306,23 +287,25 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         .ft-stage { position: relative; margin: auto; flex-shrink: 0; }
         .ft-links { position: absolute; inset: 0; pointer-events: none; }
 
-        .ft-node { position: absolute; display: grid; grid-template-columns: 56px 1fr; align-items: center; gap: 13px;
-          padding: 0 14px 0 11px; text-align: left; cursor: pointer;
+        .ft-node { position: absolute; display: flex; flex-direction: column; justify-content: center; gap: 1px;
+          padding: 4px 14px 4px 20px; text-align: left; cursor: pointer; background: #1e1e28;
           border: 1px solid var(--border); border-radius: 0;
-          transition: border-color 160ms var(--ease-out), box-shadow 200ms var(--ease-out), transform 160ms var(--ease-out); }
+          transition: border-color 160ms var(--ease-out), box-shadow 200ms var(--ease-out), transform 160ms var(--ease-out), background 160ms var(--ease-out); }
         .ft-node:hover { border-color: var(--accent); box-shadow: var(--shadow-accent); transform: translateY(-2px); z-index: 2; }
         .ft-node:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         .ft-node-sel { border-color: var(--accent); }
-        .ft-gen { position: absolute; top: 0; left: 0; right: 0; height: 4px; }
-        .ft-gen-tag { position: absolute; top: 8px; right: 9px; font-family: var(--font-mono); font-size: 8.5px; font-weight: 700; letter-spacing: 0.06em; opacity: 0.9; }
-        .ft-crown { position: absolute; top: 8px; right: 44px; color: var(--accent); }
-        .ft-ava { width: 52px; height: 52px; border-radius: 0; display: inline-flex; align-items: center; justify-content: center;
-          font-family: var(--font-display); font-weight: 700; font-size: 18px; overflow: hidden; flex-shrink: 0; justify-self: center; }
-        .ft-ava img { width: 100%; height: 100%; object-fit: cover; }
-        .ft-body { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-        .ft-name { font-family: var(--font-body); font-size: 15px; font-weight: 700; color: var(--ink); line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .ft-surname { font-family: var(--font-body); font-size: 13px; font-weight: 500; color: var(--text-muted); line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
-        .ft-dates { font-family: var(--font-mono); font-size: 11px; color: var(--accent-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* Focus/active node: 2px gold ring (inset, so it never shifts the layout) + lifted surface */
+        .ft-node-focus { background: #242435; border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent), var(--shadow-accent); }
+        /* Gender bar — 6px coloured left edge, full height */
+        .ft-edge { position: absolute; top: 0; bottom: 0; left: 0; width: 6px; }
+        /* Generation bar — 3px along the top, starting after the gender bar */
+        .ft-gen { position: absolute; top: 0; left: 6px; right: 0; height: 3px; }
+        .ft-gen-tag { position: absolute; top: 7px; right: 9px; font-family: var(--font-mono); font-size: 8.5px; font-weight: 700; letter-spacing: 0.06em; opacity: 0.9; }
+        .ft-crown { position: absolute; top: 7px; right: 46px; color: var(--accent); }
+        .ft-body { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+        .ft-name { font-family: var(--font-body); font-size: 14px; font-weight: 700; color: var(--ink); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ft-surname { font-family: var(--font-body); font-size: 13px; font-weight: 500; color: var(--text-muted); line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ft-dates { font-family: var(--font-mono); font-size: 11px; color: var(--accent-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
         .ft-place { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .ft-genband { position: absolute; transform: translate(-50%, -50%); z-index: 1; font-family: var(--font-mono); font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-text); pointer-events: none; background: var(--bg); padding: 2px 12px; white-space: nowrap; }
 

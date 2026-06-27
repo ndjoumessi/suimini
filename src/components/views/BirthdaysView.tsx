@@ -3,7 +3,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Cake, Flame, Heart, CalendarDays } from 'lucide-react';
 import { FamilyTree } from '@/types';
-import PersonAvatar from './PersonAvatar';
+import PersonAvatar from '../person/PersonAvatar';
 import { getUpcomingAnniversaries } from '@/lib/treeUtils';
 import { getDisplayName } from '@/lib/treeUtils';
 

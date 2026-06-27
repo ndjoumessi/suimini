@@ -3,7 +3,7 @@ import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { FamilyTree, Person } from '@/types';
 import { Search, Link2, Scale, TreePine, Sprout, User, AlertCircle, Dna } from 'lucide-react';
-import PersonAvatar from './PersonAvatar';
+import PersonAvatar from '../person/PersonAvatar';
 import {
   getDisplayName, formatYear, getAllAncestors, getAllDescendants,
   findCommonAncestors, findRelationPath, describeRelation, getAge

@@ -2,10 +2,10 @@
 import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { FamilyTree, SearchFilters } from '@/types';
-import { searchPersons, getAge, formatYear, getDisplayName } from '@/lib/treeUtils';
-import { UsersRound, Plus, ChevronDown, Filter, X, MapPin } from 'lucide-react';
-import { EmptyState } from './ui/EmptyState';
-import PersonAvatar from './PersonAvatar';
+import { searchPersons } from '@/lib/treeUtils';
+import { UsersRound, Plus, ChevronDown, Filter, X } from 'lucide-react';
+import { EmptyState } from '../ui/EmptyState';
+import PersonCard from '../person/PersonCard';
 
 interface Props {
   tree: FamilyTree;
@@ -146,50 +146,9 @@ export default function ListView({ tree, onSelectPerson, onAddPerson, canEdit = 
           />
         ) : (
           <div className="lv-grid">
-            {visible.map((person) => {
-              const age = getAge(person.birthDate, person.deathDate);
-              const dates = [
-                person.birthDate ? formatYear(person.birthDate) : null,
-                !person.isAlive && person.deathDate ? `† ${formatYear(person.deathDate)}` : null,
-              ].filter(Boolean).join(' ');
-              return (
-                <button
-                  key={person.id}
-                  onClick={() => onSelectPerson(person.id)}
-                  className="lv-card"
-                  style={{ opacity: person.isAlive ? 1 : 0.82 }}
-                >
-                  <div className="lv-card-top">
-                    <PersonAvatar person={person} size={56} />
-                    <div className="lv-tags">
-                      <span className={`badge badge-${person.gender === 'male' ? 'male' : person.gender === 'female' ? 'female' : 'accent'}`}>
-                        {person.gender === 'male' ? t('genderMale') : person.gender === 'female' ? t('genderFemale') : t('genderOther')}
-                      </span>
-                      <span className={`badge badge-${person.isAlive ? 'alive' : 'deceased'}`}>
-                        {person.isAlive ? t('alive') : t('deceased')}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="lv-name">
-                    {getDisplayName(person)}
-                    {person.maidenName && <span className="lv-maiden"> ({person.maidenName})</span>}
-                  </div>
-
-                  {dates && (
-                    <div className="lv-dates">
-                      {dates}{age !== null && <span className="lv-age"> · {t('years', { age })}</span>}
-                    </div>
-                  )}
-
-                  {person.occupation && <div className="lv-occ">{person.occupation}</div>}
-
-                  {person.birthPlace?.city && (
-                    <div className="lv-place"><MapPin size={12} aria-hidden="true" /> {person.birthPlace.city}</div>
-                  )}
-                </button>
-              );
-            })}
+            {visible.map((person) => (
+              <PersonCard key={person.id} person={person} onSelect={onSelectPerson} />
+            ))}
           </div>
         )}
         {visibleCount < sorted.length && (

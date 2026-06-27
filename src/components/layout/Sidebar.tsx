@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import LanguageSwitcher from './LanguageSwitcher';
+import LanguageSwitcher from '../LanguageSwitcher';
 import { countPendingSuggestions } from '@/lib/collaboration';
 import { relativeSyncParts } from '@/lib/relativeTime';
 import { FamilyTree, ViewMode } from '@/types';
@@ -11,7 +11,7 @@ import {
   ChevronRight, LogOut, LogIn, Check, CloudOff, Shield, ArrowLeft, RefreshCw,
   Plus, Share2, Download, Printer,
 } from 'lucide-react';
-import { BrandMark } from './Brand';
+import { BrandMark } from '../Brand';
 
 function initials(name?: string | null, email?: string | null): string {
   const src = (name || email || '?').trim();
@@ -258,10 +258,10 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
               </button>
             )}
             <div className="sb-action-grid">
-              {onShare && <button className="sb-chip" onClick={() => { onShare(); onClose(); }}><Share2 size={13} aria-hidden="true" /> {ts('share')}</button>}
-              {canImport && onImport && <button className="sb-chip" onClick={() => { onImport(); onClose(); }}><Download size={13} aria-hidden="true" /> {ts('import')}</button>}
-              {onPrint && <button className="sb-chip" onClick={() => { onPrint(); onClose(); }}><Printer size={13} aria-hidden="true" /> {ts('print')}</button>}
-              {onExportPdf && <button className="sb-chip" onClick={() => { onExportPdf(); onClose(); }}><BookOpen size={13} aria-hidden="true" /> {ts('export')}</button>}
+              {onShare && <button className="sb-chip" onClick={() => { onShare(); onClose(); }} aria-label={ts('share')} title={ts('share')}><Share2 size={16} aria-hidden="true" /></button>}
+              {canImport && onImport && <button className="sb-chip" onClick={() => { onImport(); onClose(); }} aria-label={ts('import')} title={ts('import')}><Download size={16} aria-hidden="true" /></button>}
+              {onPrint && <button className="sb-chip" onClick={() => { onPrint(); onClose(); }} aria-label={ts('print')} title={ts('print')}><Printer size={16} aria-hidden="true" /></button>}
+              {onExportPdf && <button className="sb-chip" onClick={() => { onExportPdf(); onClose(); }} aria-label={ts('export')} title={ts('export')}><BookOpen size={16} aria-hidden="true" /></button>}
             </div>
           </div>
         )}
@@ -388,14 +388,16 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
           transition: background var(--t-fast), box-shadow var(--t-fast);
         }
         .sb-add:hover { background: var(--accent-hover); box-shadow: var(--shadow-accent); }
-        .sb-action-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 6px; }
+        /* Icon-only action row — compact 32px squares, no labels (tooltips carry
+           the names). Saves the vertical space the stacked icon+label grid used. */
+        .sb-action-grid { display: flex; gap: 6px; margin-top: 6px; }
         .sb-chip {
-          display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+          flex: 1; height: 32px; display: inline-flex; align-items: center; justify-content: center;
           background: transparent; border: 1px solid var(--border); color: var(--text-muted); cursor: pointer;
-          font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.02em; text-transform: uppercase; padding: 7px 2px;
           transition: border-color var(--t-fast), color var(--t-fast), background var(--t-fast);
         }
         .sb-chip:hover { border-color: var(--accent); color: var(--accent-text); background: var(--accent-light); }
+        .sb-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
         /* Account footer */
         .sb-account { padding: 8px 12px 10px; border-top: 1px solid var(--border); }

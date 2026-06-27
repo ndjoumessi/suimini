@@ -6,55 +6,25 @@ import { getParents, getChildren, getSpouses, getSiblings, getDisplayName, forma
 import { joinTreeCursors, presenceColor, collaborationEnabled, type CursorPeer } from '@/lib/collaboration';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/useMediaQuery';
-import { Search, ZoomIn, ZoomOut, Crosshair, Info, Plus, Aperture, Sprout, Printer, Camera, CheckCircle2, FileText, Maximize2, MapPin, Crown } from 'lucide-react';
+import { Plus, Sprout, Camera, CheckCircle2, FileText, MapPin, Crown } from 'lucide-react';
 import FocusTree from './FocusTree';
+import TreeToolbar from './TreeToolbar';
 
 /** Runtime node-layout dimensions. On desktop these are EXACTLY the historical
  *  module constants (so desktop rendering is byte-for-byte unchanged); on phones
  *  they shrink so the careful SVG layout stays legible on a small viewport. */
 interface Dims {
   NODE_W: number; NODE_H: number; H_GAP: number; V_GAP: number;
-  AVA: number; AVA_X: number;
   FONT_NAME: number; FONT_LAST: number; FONT_DATE: number;
-  AVA_INITIALS: number;
 }
 const DESKTOP_DIMS: Dims = {
-  NODE_W: 190, NODE_H: 88, H_GAP: 32, V_GAP: 76,
-  AVA: 36, AVA_X: 12,
-  FONT_NAME: 14, FONT_LAST: 12, FONT_DATE: 11,
-  AVA_INITIALS: 15,
+  NODE_W: 220, NODE_H: 90, H_GAP: 36, V_GAP: 78,
+  FONT_NAME: 14, FONT_LAST: 13, FONT_DATE: 11,
 };
 const MOBILE_DIMS: Dims = {
-  NODE_W: 120, NODE_H: 60, H_GAP: 16, V_GAP: 48,
-  AVA: 28, AVA_X: 8,
-  FONT_NAME: 11, FONT_LAST: 10, FONT_DATE: 9,
-  AVA_INITIALS: 12,
+  NODE_W: 150, NODE_H: 64, H_GAP: 18, V_GAP: 50,
+  FONT_NAME: 12, FONT_LAST: 11, FONT_DATE: 9,
 };
-
-/** Two-letter initials for the avatar fallback (same logic as PersonPanel/Sidebar). */
-function nodeInitials(p: Person): string {
-  return (((p.firstName?.[0] || '') + (p.lastName?.[0] || '')).toUpperCase()) || '?';
-}
-
-/** Node avatar: profile photo (square-clipped) with a per-node fallback to
- *  initials when the image is absent OR fails to load (broken URL/expired). */
-function NodeAvatar({ person, clipId, dims }: { person: Person; clipId: string; dims: Dims }) {
-  const [broken, setBroken] = useState(false);
-  const { AVA, AVA_X, NODE_H } = dims;
-  if (person.profilePhoto && !broken) {
-    return (
-      <image href={person.profilePhoto} x={AVA_X} y={(NODE_H - AVA) / 2} width={AVA} height={AVA}
-        clipPath={`url(#${clipId})`} preserveAspectRatio="xMidYMid slice"
-        onError={() => setBroken(true)} />
-    );
-  }
-  return (
-    <text x={AVA_X + AVA / 2} y={NODE_H / 2 + 5} textAnchor="middle"
-      fontFamily="var(--font-display)" fontSize={dims.AVA_INITIALS} fontWeight={700} fill="var(--bg-card)">
-      {nodeInitials(person)}
-    </text>
-  );
-}
 
 /** Corner indicator badges (decorative): photos, completeness, sources.
  *  Each badge sits on a small light chip and carries a <title> tooltip. */
@@ -129,7 +99,7 @@ interface Props {
 // UI pass widened the GAPS for legibility/breathing room rather than the cards.
 // NODE_W/NODE_H/H_GAP/V_GAP are now RUNTIME dims (see Dims): desktop keeps the
 // historical 190/88/32/76; mobile shrinks them. SPINE/GRID are size-invariant.
-const SPINE = 5;    // role-coloured left spine width
+const SPINE = 6;    // gender-coloured left bar width
 const GRID = 24; // canvas dot-grid spacing
 
 export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAddPerson, onExport, readOnly = false }: Props) {
@@ -143,7 +113,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
   const baseDims = isMobile ? MOBILE_DIMS : DESKTOP_DIMS;
   // Vue complète: +50% breathing room between cards (legibility).
   const dims = treeMode === 'full' ? { ...baseDims, H_GAP: Math.round(baseDims.H_GAP * 1.5), V_GAP: Math.round(baseDims.V_GAP * 1.5) } : baseDims;
-  const { NODE_W, NODE_H, H_GAP, V_GAP, AVA, AVA_X } = dims;
+  const { NODE_W, NODE_H, H_GAP, V_GAP } = dims;
   // OTHER connected users on this tree (excludes the current user), each with
   // their latest cursor position. Empty when offline/guest or alone — the
   // cluster + cursors render nothing in that case. ONE channel powers both.
@@ -607,14 +577,16 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
     setTimeout(() => centerOn(personId), 0);
   };
 
+  // Gender palette shared with FocusTree so both tree views read identically:
+  // blue-grey = male, rose = female, slate = unknown. (Used by the node bar, the
+  // legend and the minimap miniatures.)
   const genderColor = (g: string) =>
-    g === 'male' ? 'var(--male)' : g === 'female' ? 'var(--female)' : 'var(--text-muted)';
+    g === 'male' ? '#5b7fa6' : g === 'female' ? '#8a5b6e' : '#3a3a4a';
 
-  // Left-spine colour encodes ROLE (not just gender): the pivot/root reads as
-  // terracotta, married-in spouses as green (--success), everyone else by gender.
-  // This is what visually separates "épouses" from blood descendants in a couple row.
+  // Left-bar colour: the pivot/root reads as gold (it also carries the crown),
+  // everyone else by gender. Matches the FocusTree node exactly.
   const spineColor = (node: TreeNode, isRoot: boolean) =>
-    isRoot ? 'var(--accent)' : node.role === 'spouse' ? 'var(--success)' : genderColor(node.person.gender);
+    isRoot ? 'var(--accent)' : genderColor(node.person.gender);
 
   const filteredPersons = showSearch && searchQ
     ? tree.persons.filter(p => getDisplayName(p).toLowerCase().includes(searchQ.toLowerCase()))
@@ -645,7 +617,15 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
     );
   }
 
-  const sep = <div aria-hidden="true" style={{ width: '1px', height: '16px', background: 'var(--border)', flexShrink: 0 }} />;
+  // Re-root + re-focus + recenter on a person chosen from the toolbar search.
+  const pickRoot = (id: string) => {
+    setRootId(id);
+    setFocusPersonId(id);
+    setFocusId(null);
+    setShowSearch(false);
+    setSearchQ('');
+    setTimeout(() => centerOn(id), 120);
+  };
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -699,87 +679,31 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
           .tv-cursor { transition: none !important; }
         }
       `}</style>
-      {/* Toolbar — compact 44px on desktop; wraps on narrow/mobile so no control is clipped */}
-      <div style={{ minHeight: '44px', padding: '5px 12px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '6px', rowGap: '5px', flexWrap: 'wrap', flexShrink: 0 }}>
-        {/* Tree name: spacer that pushes controls right on desktop. Hidden on phones
-            (the name already shows in the mobile header) so the icon controls flow
-            into tidy compact rows instead of being shoved by a flex:1 title. */}
-        {!isMobile && (
-          <h2 className="serif" style={{ margin: 0, fontSize: '1rem', color: 'var(--text)', flex: 1, minWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {tree.name}
-          </h2>
-        )}
-
-        {/* View toggle: Focus (3 generations) vs Complète (full pan/zoom tree) */}
-        <div role="group" aria-label="Mode d’affichage" style={{ display: 'inline-flex', border: '1px solid var(--border)', flexShrink: 0 }}>
-          <button onClick={() => setTreeMode('focus')} aria-pressed={treeMode === 'focus'}
-            style={{ appearance: 'none', cursor: 'pointer', border: 'none', padding: '7px 12px', minHeight: '32px', fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600,
-              background: treeMode === 'focus' ? 'var(--accent)' : 'transparent', color: treeMode === 'focus' ? '#0d0d0d' : 'var(--text-muted)' }}>
-            Focus
-          </button>
-          <button onClick={() => setTreeMode('full')} aria-pressed={treeMode === 'full'}
-            style={{ appearance: 'none', cursor: 'pointer', border: 'none', borderLeft: '1px solid var(--border)', padding: '7px 12px', minHeight: '32px', fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600,
-              background: treeMode === 'full' ? 'var(--accent)' : 'transparent', color: treeMode === 'full' ? '#0d0d0d' : 'var(--text-muted)' }}>
-            Complète
-          </button>
-        </div>
-
-        {sep}
-
-        {/* Change root */}
-        <div style={{ position: 'relative' }}>
-          <button onClick={() => setShowSearch(!showSearch)} className="btn btn-secondary btn-sm" style={{ gap: '6px' }} title={t('changeRoot')} aria-label={t('changeRoot')} aria-expanded={showSearch}>
-            <Search size={14} aria-hidden="true" /> {!isMobile && t('root')}
-          </button>
-          {showSearch && (
-            <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 200, marginTop: '4px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px', width: '240px', boxShadow: 'var(--shadow-lg)' }}>
-              <input autoFocus value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder={t('personNamePlaceholder')} className="input" style={{ marginBottom: '6px' }} />
-              <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                {(searchQ ? filteredPersons : tree.persons.slice(0, 20)).map(p => (
-                  <button key={p.id} onClick={() => { setRootId(p.id); setFocusPersonId(p.id); setFocusId(null); setShowSearch(false); setSearchQ(''); setTimeout(() => centerOn(p.id), 120); }}
-                    style={{ width: '100%', padding: '7px 8px', border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left', borderRadius: 'var(--radius)', fontSize: '13px', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-muted)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'none'}
-                  >
-                    <span style={{ width: '22px', height: '22px', flexShrink: 0, borderRadius: '50%', background: 'var(--accent-light)', color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700 }}>{nodeInitials(p)}</span>
-                    <span style={{ flex: 1 }}>{getDisplayName(p)}</span>
-                    <span style={{ color: 'var(--text-light)', fontSize: '11px' }}>{formatYear(p.birthDate)}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {treeMode === 'full' && layoutMode === 'vertical' && <>
-          {sep}
-          <button onClick={recenter} className="btn btn-secondary btn-sm btn-icon" title={t('centerOnRoot')} aria-label={t('center')}><Crosshair size={14} aria-hidden="true" /></button>
-          <button onClick={fitToScreen} className="btn btn-secondary btn-sm btn-icon" title={t('fitToScreen')} aria-label={t('fitToScreen')}><Maximize2 size={14} aria-hidden="true" /></button>
-          <button onClick={() => setScale(s => Math.max(0.25, s * 0.8))} className="btn btn-secondary btn-sm btn-icon" title={t('zoomOut')} aria-label={t('zoomOut')}><ZoomOut size={14} aria-hidden="true" /></button>
-          <button onClick={() => setScale(1)} className="btn btn-secondary btn-sm" style={{ minWidth: '46px' }} title={t('resetZoom')} aria-label={t('resetZoom')}>{Math.round(scale * 100)}%</button>
-          <button onClick={() => setScale(s => Math.min(2.5, s * 1.2))} className="btn btn-secondary btn-sm btn-icon" title={t('zoomIn')} aria-label={t('zoomIn')}><ZoomIn size={14} aria-hidden="true" /></button>
-        </>}
-
-        {treeMode === 'full' && <>
-          {sep}
-          <button onClick={() => setLayoutMode(m => m === 'fan' ? 'vertical' : 'fan')} className="btn btn-sm" style={{ gap: '6px', background: layoutMode === 'fan' ? 'var(--accent)' : 'var(--bg-muted)', color: layoutMode === 'fan' ? '#0d0d0d' : 'var(--text-muted)', border: '1px solid var(--border)' }} title={t('toggleFan')} aria-label={t('fan')} aria-pressed={layoutMode === 'fan'}>
-            <Aperture size={14} aria-hidden="true" /> {!isMobile && t('fan')}
-          </button>
-          <button onClick={() => setShowLegend(l => !l)} className="btn btn-secondary btn-sm btn-icon" title={t('legend')} aria-label={t('legend')} aria-pressed={showLegend}>
-            <Info size={14} aria-hidden="true" />
-          </button>
-        </>}
-
-        {!readOnly && (
-          <>
-            {sep}
-            {onExport && (
-              <button onClick={onExport} className="btn btn-secondary btn-sm btn-icon" title={t('exportPdf')} aria-label={t('exportPdf')}><Printer size={14} aria-hidden="true" /></button>
-            )}
-            {!readOnly && <button onClick={onAddPerson} className="btn btn-primary btn-sm" style={{ gap: '6px' }} title={t('add')} aria-label={t('add')}><Plus size={14} aria-hidden="true" /> {!isMobile && t('add')}</button>}
-          </>
-        )}
-      </div>
+      {/* Toolbar — extracted; wraps on narrow/mobile so no control is clipped */}
+      <TreeToolbar
+        isMobile={isMobile}
+        treeName={tree.name}
+        treeMode={treeMode}
+        setTreeMode={setTreeMode}
+        showSearch={showSearch}
+        setShowSearch={setShowSearch}
+        searchQ={searchQ}
+        setSearchQ={setSearchQ}
+        persons={tree.persons}
+        filteredPersons={filteredPersons}
+        onPickRoot={pickRoot}
+        layoutMode={layoutMode}
+        setLayoutMode={setLayoutMode}
+        onRecenter={recenter}
+        onFitToScreen={fitToScreen}
+        scale={scale}
+        setScale={setScale}
+        showLegend={showLegend}
+        setShowLegend={setShowLegend}
+        readOnly={readOnly}
+        onExport={onExport}
+        onAddPerson={onAddPerson}
+      />
 
       {/* « Focus centré » — 3 generations, larger nodes, side panel via onSelectPerson */}
       {treeMode === 'focus' && rootId && (
@@ -906,57 +830,46 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                       opacity={isRoot ? 0.9 : 0.16} />
                   )}
 
-                  {/* Card — ATELIER RULE: the face is ALWAYS bone/--bg-card, never a
-                      colour wash. Role/state is carried by the left spine, the outline
-                      and the crown — so the text stays legible on every node, including
-                      the pivot. Root = full terracotta outline; selected = accent outline. */}
+                  {/* Card — uniform dark face (--bg-card = #1e1e28). Gender lives on the
+                      left bar, generation on the top band, state on the outline + crown,
+                      so the text stays legible on every node including the pivot.
+                      Root = 2px gold outline; selected = 2px gold; else thin border. */}
                   <rect className="tv-node-card" width={NODE_W} height={NODE_H} rx={0} ry={0}
                     fill="var(--bg-card)"
                     stroke={isSelected || isRoot ? 'var(--accent)' : 'var(--border-strong)'}
                     strokeWidth={isRoot ? 2.5 : isSelected ? 2 : 1.25} />
 
-                  {/* Role spine (clipped to the card): pivot=terracotta, spouse=green, else gender */}
+                  {/* Gender bar (left, 6px) + generation band (top, 3px), clipped to the card */}
                   <g clipPath={`url(#card-${p.id})`}>
                     <rect x={0} y={0} width={SPINE} height={NODE_H} fill={spineColor(node, isRoot)} />
-                    {/* Generation colour band along the top edge */}
                     <rect x={SPINE} y={0} width={NODE_W - SPINE} height={3} fill={genColorTV(genOf(node.y))} />
                   </g>
 
-                  {/* Generation tag (desktop only — mobile cards are too short) */}
+                  {/* Generation tag — top-right (desktop only; mobile cards are too short) */}
                   {!isMobile && (
-                    <text x={AVA_X} y={13} fontFamily="var(--font-mono)" fontSize={8} fontWeight={700}
-                      fill={genColorTV(genOf(node.y))} opacity={0.85}>
+                    <text x={NODE_W - 9} y={14} textAnchor="end" fontFamily="var(--font-mono)" fontSize={8.5} fontWeight={700}
+                      fill={genColorTV(genOf(node.y))} opacity={0.9}>
                       GÉN. {genOf(node.y) + 1}
                     </text>
                   )}
 
-                  {/* Root crown — larger (×1.5) and lifted for the pivot ancestor.
-                      Desktop keeps translate(NODE_W-30, 7) scale(1.5); mobile shrinks. */}
+                  {/* Root crown — top-right, left of the generation tag (mirrors FocusTree) */}
                   {isRoot && (
-                    <path transform={isMobile ? `translate(${NODE_W - 20}, 5) scale(1.1)` : `translate(${NODE_W - 30}, 7) scale(1.5)`}
+                    <path transform={isMobile ? `translate(${NODE_W - 18}, 5) scale(1.0)` : `translate(${NODE_W - 54}, 5) scale(1.25)`}
                       d="M0 3 L3 7 L6 1.5 L9 7 L12 3 L11 10 L1 10 Z"
                       fill="var(--accent)" stroke="var(--bg-card)" strokeWidth={0.6} />
                   )}
 
-                  {/* Avatar — square (Atelier). The ROLE colour lives HERE (the
-                      avatar chip), not on the node face. Initials use --bg-card so they
-                      auto-contrast: white-ish on the dark role colours in light theme,
-                      dark on the lighter role colours in dark theme. */}
-                  <clipPath id={`avatar-${p.id}`}><rect x={AVA_X} y={(NODE_H - AVA) / 2} width={AVA} height={AVA} /></clipPath>
-                  <rect x={AVA_X} y={(NODE_H - AVA) / 2} width={AVA} height={AVA} fill={spineColor(node, isRoot)} stroke="var(--border-strong)" strokeWidth={0.75} />
-                  <NodeAvatar person={p} clipId={`avatar-${p.id}`} dims={dims} />
-
-                  {/* First name */}
-                  <text x={AVA_X + AVA + (isMobile ? 7 : 10)} y={NODE_H / 2 + (isMobile ? -8 : -11)} fontFamily="var(--font-display)" fontSize={dims.FONT_NAME} fontWeight={700} fill="var(--text)">
-                    {p.firstName.length > (isMobile ? 10 : 13) ? p.firstName.slice(0, isMobile ? 9 : 12) + '…' : p.firstName}
+                  {/* First name — body font, bold, cream */}
+                  <text x={SPINE + (isMobile ? 9 : 14)} y={NODE_H / 2 + (isMobile ? -9 : -12)} fontFamily="var(--font-body)" fontSize={dims.FONT_NAME} fontWeight={700} fill="var(--ink)">
+                    {p.firstName.length > (isMobile ? 13 : 18) ? p.firstName.slice(0, isMobile ? 12 : 17) + '…' : p.firstName}
                   </text>
-                  {/* Last name */}
-                  <text x={AVA_X + AVA + (isMobile ? 7 : 10)} y={NODE_H / 2 + (isMobile ? 4 : 5)} fontFamily="var(--font-body)" fontSize={dims.FONT_LAST} fontWeight={500} fill="var(--text-muted)">
-                    {p.lastName.length > (isMobile ? 12 : 15) ? p.lastName.slice(0, isMobile ? 11 : 14) + '…' : p.lastName}
+                  {/* Last name — body font, muted */}
+                  <text x={SPINE + (isMobile ? 9 : 14)} y={NODE_H / 2 + (isMobile ? 4 : 5)} fontFamily="var(--font-body)" fontSize={dims.FONT_LAST} fontWeight={500} fill="var(--text-muted)">
+                    {p.lastName.length > (isMobile ? 15 : 20) ? p.lastName.slice(0, isMobile ? 14 : 19) + '…' : p.lastName}
                   </text>
-                  {/* Dates — body font (narrower than mono, so it can't collide with
-                      the bottom-right badges), but larger + higher-contrast than before */}
-                  <text x={AVA_X + AVA + (isMobile ? 7 : 10)} y={NODE_H / 2 + (isMobile ? 16 : 21)} fontFamily="var(--font-body)" fontSize={dims.FONT_DATE} fill="var(--text-muted)">
+                  {/* Dates — mono, gold-muted */}
+                  <text x={SPINE + (isMobile ? 9 : 14)} y={NODE_H / 2 + (isMobile ? 16 : 22)} fontFamily="var(--font-mono)" fontSize={dims.FONT_DATE} fill="var(--accent-text)">
                     {dateLine(p)}
                   </text>
 
@@ -1050,16 +963,13 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
             <div className="label" style={{ marginBottom: '8px', color: 'var(--text)' }}>{t('legend')}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '5px', height: '14px', background: 'var(--male)', flexShrink: 0 }} /> {t('male')}
+                <span style={{ width: '6px', height: '14px', background: '#5b7fa6', flexShrink: 0 }} /> {t('male')}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '5px', height: '14px', background: 'var(--female)', flexShrink: 0 }} /> {t('female')}
+                <span style={{ width: '6px', height: '14px', background: '#8a5b6e', flexShrink: 0 }} /> {t('female')}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '5px', height: '14px', background: 'var(--success)', flexShrink: 0 }} /> {t('spouse')}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '5px', height: '14px', background: 'var(--accent)', flexShrink: 0 }} /> {t('root')}
+                <span style={{ width: '6px', height: '14px', background: 'var(--accent)', flexShrink: 0 }} /> {t('root')}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <svg width="26" height="8" style={{ flexShrink: 0 }}><line x1="0" y1="4" x2="26" y2="4" stroke="var(--ink)" strokeWidth="1.6" opacity="0.34" /></svg> {t('filiation')}
