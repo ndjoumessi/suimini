@@ -1,60 +1,74 @@
 'use client';
 import { useTranslations } from 'next-intl';
 import { Person } from '@/types';
-import { getAge, formatYear, getDisplayName } from '@/lib/treeUtils';
+import { formatYear } from '@/lib/treeUtils';
 import { MapPin } from 'lucide-react';
-import PersonAvatar from './PersonAvatar';
+import { GENDER_BAR } from '../tree/nodeStyle';
 
 interface Props {
   person: Person;
   onSelect: (id: string) => void;
+  variant?: 'row' | 'grid';
 }
 
-/** A single person card in the ListView grid. Presentational: the `.lv-*` layout
- *  classes are owned by ListView's <style> block (the grid container), so this
- *  card stays a thin, reusable unit. */
-export default function PersonCard({ person, onSelect }: Props) {
+function initials(p: Person): string {
+  return (((p.lastName?.[0] || '') + (p.firstName?.[0] || '')).toUpperCase()) || '?';
+}
+
+function genderColor(p: Person): string {
+  return p.gender === 'male' ? GENDER_BAR.male : p.gender === 'female' ? GENDER_BAR.female : GENDER_BAR.unknown;
+}
+
+function dateStr(p: Person): string {
+  const b = formatYear(p.birthDate);
+  const d = formatYear(p.deathDate);
+  if (!p.isAlive) return b && d ? `${b} – ${d}` : d ? `† ${d}` : b ? `${b} – ?` : '';
+  return b || '';
+}
+
+/** A person in the répertoire — `row` (dense list) or `grid` (compact card).
+ *  Gender drives the bar + avatar so it stays consistent with the tree. The
+ *  `.lv-*` classes are owned by ListView's <style> block. */
+export default function PersonCard({ person: p, onSelect, variant = 'row' }: Props) {
   const t = useTranslations('list');
-  const age = getAge(person.birthDate, person.deathDate);
-  const dates = [
-    person.birthDate ? formatYear(person.birthDate) : null,
-    !person.isAlive && person.deathDate ? `† ${formatYear(person.deathDate)}` : null,
-  ].filter(Boolean).join(' ');
+  const bar = genderColor(p);
+  const inkOnAvatar = p.gender === 'male' || p.gender === 'female' ? '#12131a' : 'var(--ink)';
+  const dates = dateStr(p);
+  const city = p.birthPlace?.city;
+  const firstName = (p.firstName || '').trim();
+  const lastName = (p.lastName || '').trim() || t('noFirstName');
+
+  const avatar = (cls: string) => (
+    <span className={cls} style={{ background: bar, color: inkOnAvatar }} aria-hidden="true">
+      {p.profilePhoto ? <img src={p.profilePhoto} alt="" loading="lazy" decoding="async" /> : initials(p)}
+    </span>
+  );
+
+  if (variant === 'grid') {
+    return (
+      <button className="lv-gcard" style={{ ['--bar' as string]: bar }} onClick={() => onSelect(p.id)}>
+        <span className="lv-gbar" aria-hidden="true" />
+        {avatar('lv-ava lv-ava-lg')}
+        <span className="lv-gname">{firstName ? `${firstName} ${lastName}` : lastName}</span>
+        {dates && <span className="lv-dates">{dates}</span>}
+        {city && <span className="lv-place"><MapPin size={11} aria-hidden="true" /> {city}</span>}
+      </button>
+    );
+  }
 
   return (
-    <button
-      onClick={() => onSelect(person.id)}
-      className="lv-card"
-      style={{ opacity: person.isAlive ? 1 : 0.82 }}
-    >
-      <div className="lv-card-top">
-        <PersonAvatar person={person} size={56} />
-        <div className="lv-tags">
-          <span className={`badge badge-${person.gender === 'male' ? 'male' : person.gender === 'female' ? 'female' : 'accent'}`}>
-            {person.gender === 'male' ? t('genderMale') : person.gender === 'female' ? t('genderFemale') : t('genderOther')}
-          </span>
-          <span className={`badge badge-${person.isAlive ? 'alive' : 'deceased'}`}>
-            {person.isAlive ? t('alive') : t('deceased')}
-          </span>
-        </div>
-      </div>
-
-      <div className="lv-name">
-        {getDisplayName(person)}
-        {person.maidenName && <span className="lv-maiden"> ({person.maidenName})</span>}
-      </div>
-
-      {dates && (
-        <div className="lv-dates">
-          {dates}{age !== null && <span className="lv-age"> · {t('years', { age })}</span>}
-        </div>
-      )}
-
-      {person.occupation && <div className="lv-occ">{person.occupation}</div>}
-
-      {person.birthPlace?.city && (
-        <div className="lv-place"><MapPin size={12} aria-hidden="true" /> {person.birthPlace.city}</div>
-      )}
+    <button className="lv-row" style={{ ['--bar' as string]: bar }} onClick={() => onSelect(p.id)}>
+      <span className="lv-rbar" aria-hidden="true" />
+      {avatar('lv-ava')}
+      <span className="lv-rname">
+        <span className="lv-rlast">{lastName}</span>
+        <span className="lv-rfirst">{firstName || t('noFirstName')}</span>
+      </span>
+      {dates && <span className="lv-rdates">{dates}</span>}
+      <span className="lv-rtags">
+        {!p.isAlive && <span className="lv-dagger" title={t('deceased')}>†</span>}
+        {city && <span className="lv-place"><MapPin size={11} aria-hidden="true" /> {city}</span>}
+      </span>
     </button>
   );
 }
