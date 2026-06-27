@@ -13,7 +13,9 @@ export default function LanguageSwitcher({ tone = 'app' }: { tone?: 'app' | 'lan
   const locale = useLocale();
 
   function choose(next: Locale) {
-    if (next === locale) return;
+    // No `next === locale` guard: useLocale() can read stale by one navigation, which
+    // would block (and so visually lag) the switch. The route sets an explicit target,
+    // so an extra navigation to the current locale is just a harmless refresh.
     try { localStorage.setItem(LOCALE_COOKIE, next); } catch { /* ignore */ }
     const back = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/';
     window.location.href = `/api/locale?to=${next}&next=${encodeURIComponent(back)}`;

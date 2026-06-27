@@ -60,7 +60,7 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
   const deleteWord = t('deleteConfirmPlaceholder');
 
   function chooseLocale(next: Locale) {
-    if (next === locale) return;
+    // No `next === locale` guard (useLocale() can read stale by one navigation).
     try { localStorage.setItem(LOCALE_COOKIE, next); } catch { /* ignore */ }
     const back = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/app';
     window.location.href = `/api/locale?to=${next}&next=${encodeURIComponent(back)}`;
