@@ -50,6 +50,19 @@ function dateLine(p: Person): string {
   return age !== null ? `${b} · ${formatAge(age)}` : `${b}`;
 }
 
+/** Depth of the deepest descendant subtree under `id` (cycle-guarded). Used so the
+ *  « Génération suivante » button always heads toward the deepest branch, never
+ *  stranding on the eldest child before reaching the lowest generation. */
+function subtreeDepth(id: string, tree: FamilyTree, seen: Set<string>): number {
+  if (seen.has(id)) return 0;
+  seen.add(id);
+  const kids = getChildren(id, tree.relationships, tree.persons);
+  if (!kids.length) return 0;
+  let max = 0;
+  for (const k of kids) max = Math.max(max, subtreeDepth(k.id, tree, seen));
+  return max + 1;
+}
+
 /** Generation depth per person, normalized so the oldest ancestor = 0. */
 function buildGenMap(tree: FamilyTree): Map<string, number> {
   const gen = new Map<string, number>();
@@ -123,6 +136,19 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
 
   const hasParents = parents.length > 0;
   const hasChildren = children.length > 0;
+
+  // « Génération suivante » heads toward the deepest branch (not just the eldest
+  // child), so the button can always reach the lowest generation in the data.
+  const downTarget = useMemo(() => {
+    if (!children.length) return null;
+    let best = children[0], bestDepth = -1;
+    for (const c of children) {
+      const d = subtreeDepth(c.id, tree, new Set<string>());
+      if (d > bestDepth) { bestDepth = d; best = c; }
+    }
+    return best;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusId, tree]);
 
   let y = PADY;
   const parentsY = hasParents ? y : -1;
@@ -227,7 +253,7 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
           {crumbs.map((c, i) => (
             <span key={c.id} className="ft-crumb-wrap">
               <button className={`ft-crumb ${c.id === focusId ? 'ft-crumb-on' : ''}`} onClick={() => onFocus(c.id)}>
-                {(c.lastName || c.firstName || '?').toUpperCase()}
+                {(c.firstName || c.lastName || '?').toUpperCase()}
               </button>
               {i < crumbs.length - 1 && <ChevronRight size={13} className="ft-crumb-sep" aria-hidden="true" />}
             </span>
@@ -268,7 +294,7 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
 
       {/* Down nav — next generation */}
       {hasChildren && (
-        <button className="ft-nav ft-nav-down" onClick={() => onFocus(children[0].id)}>
+        <button className="ft-nav ft-nav-down" onClick={() => onFocus((downTarget ?? children[0]).id)}>
           <ChevronDown size={14} aria-hidden="true" className="ft-nav-arrow" /> Génération suivante
         </button>
       )}
