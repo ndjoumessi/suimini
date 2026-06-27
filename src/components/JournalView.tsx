@@ -120,13 +120,9 @@ export default function JournalView({ tree, onSelectPerson, onAdd, onUpdate, onD
             action={!filterPersonId ? { label: t('firstEntry'), onClick: startAdd } : undefined}
           />
         ) : (
-          <div style={{ position: 'relative', paddingLeft: '20px' }}>
-            {/* Timeline rail */}
-            <div style={{ position: 'absolute', left: '5px', top: '6px', bottom: '6px', width: '2px', background: 'var(--border)' }} />
+          <div style={{ position: 'relative' }}>
             {entries.map(entry => (
-              <div key={entry.id} style={{ position: 'relative', marginBottom: '18px' }}>
-                <div style={{ position: 'absolute', left: '-19px', top: '6px', width: '12px', height: '12px', borderRadius: '50%', background: 'var(--accent)', border: '2px solid var(--bg-card)' }} />
-
+              <div key={entry.id} style={{ position: 'relative', marginBottom: '14px' }}>
                 {editingId === entry.id ? (
                   <EntryEditor tree={tree} draft={draft} setDraft={setDraft} toggleMention={toggleMention} onSave={save} onCancel={cancel} title={t('editEntry')} />
                 ) : (

@@ -244,6 +244,11 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel }: P
         />
       </label>
 
+      <details className="pf-advanced">
+        <summary style={{ cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: 'var(--text-muted)', padding: '6px 0', userSelect: 'none' }}>
+          {t('advancedSection')}
+        </summary>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '10px' }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
         <label style={labelStyle}>
           {t('nationality')}
@@ -323,6 +328,8 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel }: P
           className="input" placeholder={t('galleryUrlPlaceholder')} style={{ marginTop: '8px', textTransform: 'none', fontWeight: 400 }}
         />
       </div>
+        </div>
+      </details>
 
       <label style={labelStyle}>
         {t('bio')}

@@ -217,34 +217,35 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
               {group.items.map(navItem)}
             </div>
           ))}
-          {/* Gérer — settings (+ admin) */}
-          <div className="sb-group">
-            <div className="sb-section">{ts('sectionManage')}</div>
-            <button
-              onClick={() => { onViewChange('settings'); onClose(); }}
-              aria-current={activeView === 'settings' ? 'page' : undefined}
-              aria-label={t('settings')}
-              className={`sb-item ${activeView === 'settings' ? 'sb-item-active' : ''}`}
-            >
-              {activeView === 'settings' && <span aria-hidden="true" className="sb-active-bar" />}
-              <span className="sb-icon"><Settings size={16} aria-hidden="true" /></span>
-              <span className="sb-label">{t('settings')}</span>
-            </button>
-            {isAdmin && (
-              <button
-                onClick={() => { onViewChange('admin'); onClose(); }}
-                aria-current={activeView === 'admin' ? 'page' : undefined}
-                aria-label={t('admin')}
-                className={`sb-item ${activeView === 'admin' ? 'sb-item-active' : ''}`}
-              >
-                {activeView === 'admin' && <span aria-hidden="true" className="sb-active-bar" />}
-                <span className="sb-icon"><Shield size={16} aria-hidden="true" /></span>
-                <span className="sb-label">{t('admin')}</span>
-                {unreadCount > 0 && <span className="sb-count">{unreadCount}</span>}
-              </button>
-            )}
-          </div>
         </nav>
+
+        {/* Gérer — settings (+ admin) : pinned (hors zone scrollable) so it stays visible */}
+        <div className="sb-group sb-manage">
+          <div className="sb-section">{ts('sectionManage')}</div>
+          <button
+            onClick={() => { onViewChange('settings'); onClose(); }}
+            aria-current={activeView === 'settings' ? 'page' : undefined}
+            aria-label={t('settings')}
+            className={`sb-item ${activeView === 'settings' ? 'sb-item-active' : ''}`}
+          >
+            {activeView === 'settings' && <span aria-hidden="true" className="sb-active-bar" />}
+            <span className="sb-icon"><Settings size={16} aria-hidden="true" /></span>
+            <span className="sb-label">{t('settings')}</span>
+          </button>
+          {isAdmin && (
+            <button
+              onClick={() => { onViewChange('admin'); onClose(); }}
+              aria-current={activeView === 'admin' ? 'page' : undefined}
+              aria-label={t('admin')}
+              className={`sb-item ${activeView === 'admin' ? 'sb-item-active' : ''}`}
+            >
+              {activeView === 'admin' && <span aria-hidden="true" className="sb-active-bar" />}
+              <span className="sb-icon"><Shield size={16} aria-hidden="true" /></span>
+              <span className="sb-label">{t('admin')}</span>
+              {unreadCount > 0 && <span className="sb-count">{unreadCount}</span>}
+            </button>
+          )}
+        </div>
 
         {/* Quick actions */}
         {showActions && (
@@ -352,6 +353,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sb-nav::-webkit-scrollbar { width: 0; }
         .sb-group { padding: 6px 0; }
         .sb-group + .sb-group { border-top: 1px solid var(--border); }
+        .sb-manage { flex-shrink: 0; border-top: 1px solid var(--border); }
         .sb-section { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-light); padding: 4px 16px 5px; }
         .sb-item {
           position: relative; width: 100%; display: flex; align-items: center; gap: 12px;

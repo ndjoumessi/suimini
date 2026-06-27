@@ -216,7 +216,7 @@ function AnniversaryCard({ a, onSelect, typeIcon, typeLabel, typeColor, t, dateL
           <div style={{ color: 'var(--text)', fontWeight: '700', fontSize: '13px' }}>{t('tomorrow')}</div>
         ) : (
           <div>
-            <div style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text)', fontFamily: 'var(--font-display)' }}>
+            <div style={{ fontSize: '22px', fontWeight: '700', color: 'var(--accent-text)', fontFamily: 'var(--font-display)' }}>
               {a.daysUntil}
             </div>
             <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{t('daysUnit', { count: a.daysUntil })}</div>

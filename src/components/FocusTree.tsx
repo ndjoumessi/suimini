@@ -192,7 +192,8 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
             : initials(p)}
         </span>
         <span className="ft-body">
-          <span className="ft-name">{p.firstName} <span className="ft-last">{p.lastName}</span></span>
+          <span className="ft-name">{p.firstName}</span>
+          <span className="ft-surname">{p.lastName}</span>
           <span className="ft-dates">{dateLine(p)}</span>
           {place && <span className="ft-place">{place}</span>}
         </span>
@@ -276,8 +277,8 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
           font-family: var(--font-display); font-weight: 700; font-size: 18px; color: #0d0d0d; overflow: hidden; flex-shrink: 0; justify-self: center; }
         .ft-ava img { width: 100%; height: 100%; object-fit: cover; }
         .ft-body { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-        .ft-name { font-family: var(--font-display); font-size: 16px; font-weight: 600; color: var(--ink); line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .ft-last { font-weight: 600; }
+        .ft-name { font-family: var(--font-display); font-size: 15px; font-weight: 600; color: var(--ink); line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ft-surname { font-family: var(--font-display); font-size: 13px; font-weight: 500; color: var(--text-muted); line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
         .ft-dates { font-family: var(--font-mono); font-size: 11px; color: var(--accent-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .ft-place { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .ft-genband { position: absolute; left: 14px; transform: translateY(-50%); z-index: 1; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); opacity: 0.7; pointer-events: none; background: var(--bg); padding: 2px 6px; }

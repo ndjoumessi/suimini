@@ -391,7 +391,8 @@
     "privacyFamily": "Family",
     "privacyPrivate": "Private",
     "cancel": "Cancel",
-    "save": "Save"
+    "save": "Save",
+    "advancedSection": "Details (optional)"
   },
   "addPerson": {
     "close": "Close",
