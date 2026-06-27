@@ -357,13 +357,16 @@ export default function TimelineView({ tree, onSelectPerson }: Props) {
                 <div className="tl-decade"><span>{decade}<span className="tl-decade-s">s</span></span></div>
                 {byDecade[decade].map((entry, i) => {
                   const { Icon, color } = eventVisual(entry.type);
+                  const typeName = t(`type_${entry.type}`);
                   const side = i % 2 === 0 ? 'left' : 'right';
                   return (
                     <TLRow key={`${decade}-${i}`} side={side}>
                       <span className="tl-node" style={{ borderColor: color }} aria-hidden="true" />
                       <button className="tl-card" onClick={() => onSelectPerson(entry.personId)}>
                         <span className="tl-card-head">
-                          <Icon size={15} style={{ color }} aria-hidden="true" />
+                          <span role="img" aria-label={typeName} title={typeName} style={{ display: 'inline-flex', color }}>
+                            <Icon size={15} aria-hidden="true" />
+                          </span>
                           <span className="tl-year">{entry.year}</span>
                         </span>
                         <span className="tl-name">{entry.description}</span>

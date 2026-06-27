@@ -182,6 +182,7 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         style={{ left: x, top: ny, width: NODE_W, height: NODE_H, opacity: dim ? 0.82 : 1 }}
         onClick={() => select(p.id)}
         aria-label={getDisplayName(p)}
+        title={`${getDisplayName(p)}${dateLine(p) ? ` · ${dateLine(p)}` : ''}`}
       >
         <span className="ft-gen" style={{ background: genColor(g) }} aria-hidden="true" />
         <span className="ft-gen-tag" style={{ color: genColor(g) }} aria-hidden="true">GÉN.&nbsp;{g + 1}</span>

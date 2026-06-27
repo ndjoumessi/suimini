@@ -3,7 +3,7 @@ import { useMemo, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import {
   Home, Cake, Clock, Sparkles, Sprout, Plus,
-  TreePine, Users, Map, Calendar, BookOpen, BarChart2, ScanFace,
+  TreePine, Users, Calendar, BookOpen, ScanFace,
 } from 'lucide-react';
 import PersonAvatar from './PersonAvatar';
 import { FamilyTree, ViewMode } from '@/types';
@@ -134,13 +134,12 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
 
   const hasTree = !!stats;
 
+  // Quick access kept to 4 essentials (the rest live in the sidebar nav).
   const QUICK: { view: ViewMode; Icon: typeof Home; navKey: string }[] = [
     { view: 'tree', Icon: TreePine, navKey: 'tree' },
     { view: 'list', Icon: Users, navKey: 'persons' },
-    { view: 'map', Icon: Map, navKey: 'map' },
     { view: 'timeline', Icon: Calendar, navKey: 'timeline' },
     { view: 'journal', Icon: BookOpen, navKey: 'journal' },
-    { view: 'statistics', Icon: BarChart2, navKey: 'statistics' },
   ];
 
   const heroTitle = activeTree?.name || (firstName ? t('greeting', { name: firstName }) : t('greetingGeneric'));

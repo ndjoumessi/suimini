@@ -441,7 +441,7 @@
   "settings": {
     "title": "Paramètres",
     "subtitle": "Apparence, compte et données de Suimini. Vos préférences d’affichage sont enregistrées sur cet appareil.",
-    "colorTheme": "Thème de couleurs",
+    "colorTheme": "Couleur d’accent",
     "colorThemeHint": "Survolez un thème pour l’aperçu en temps réel, cliquez pour l’appliquer.",
     "active": "Actif",
     "swatchAccent": "Accent",
