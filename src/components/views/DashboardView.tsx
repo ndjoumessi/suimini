@@ -3,8 +3,9 @@ import { useMemo, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import {
   Cake, Clock, Sparkles, Sprout, Plus, ScanFace,
-  TreePine, Users, Calendar, BookOpen, BarChart3,
+  TreePine, Users, Calendar, BookOpen, BarChart3, Layers, Crown, ArrowRight,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import PersonAvatar from '../person/PersonAvatar';
 import { FamilyTree, Person, ViewMode } from '@/types';
 import {
@@ -147,11 +148,12 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
     return [ctx, t('generationLabel', { n: gen + 1 })].filter(Boolean).join('  ·  ');
   };
 
-  const actionOf = (p: Person): string => {
+  const isAdded = (p: Person): boolean => {
     const created = new Date(p.createdAt).getTime();
     const updated = new Date(p.updatedAt).getTime();
-    return Number.isFinite(created) && Number.isFinite(updated) && Math.abs(updated - created) < 60000 ? t('actionAdded') : t('actionUpdated');
+    return Number.isFinite(created) && Number.isFinite(updated) && Math.abs(updated - created) < 60000;
   };
+  const actionOf = (p: Person): string => (isAdded(p) ? t('actionAdded') : t('actionUpdated'));
 
   const QUICK: { view: ViewMode; Icon: typeof TreePine; navKey: string }[] = [
     { view: 'tree', Icon: TreePine, navKey: 'tree' },
@@ -181,9 +183,9 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
           <span className="dash-rule" aria-hidden="true" />
           {hasTree ? (
             <p className="dash-sub">
-              {t('generationsCount', { count: stats!.generations })}<span className="dash-dot">·</span>
-              {t('peopleCountInline', { count: stats!.members })}
-              {stats!.since ? <><span className="dash-dot">·</span>{t('since', { year: stats!.since })}</> : null}
+              {t.rich('generationsCount', { count: stats!.generations, b: (c) => <b className="dash-fig">{c}</b> })}<span className="dash-dot">·</span>
+              {t.rich('peopleCountInline', { count: stats!.members, b: (c) => <b className="dash-fig">{c}</b> })}
+              {stats!.since ? <><span className="dash-dot">·</span>{t.rich('since', { year: stats!.since, b: (c) => <b className="dash-fig">{c}</b> })}</> : null}
             </p>
           ) : (
             <p className="dash-empty-sub">{t('noTree')}</p>
@@ -204,9 +206,10 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
         {/* ===== STATS ===== */}
         {stats && (
           <div className="dash-stats">
-            <StatCard value={stats.members} label={t('statMembers')} />
-            <StatCard value={stats.generations} label={t('statGenerations')} />
+            <StatCard Icon={Users} value={stats.members} label={t('statMembers')} />
+            <StatCard Icon={Layers} value={stats.generations} label={t('statGenerations')} />
             <StatCard
+              Icon={Crown}
               value={stats.elder ? stats.elder.age : '·'}
               unit={stats.elder ? t('yearsUnit') : undefined}
               label={t('statEldest')}
@@ -255,10 +258,10 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
                       <PersonAvatar person={person} size={32} />
                       <span className="dash-row-body">
                         <span className="dash-row-name">
-                          {getDisplayName(person)} <span className="dash-action">{actionOf(person)}</span>
+                          {getDisplayName(person)} <span className={`dash-action ${isAdded(person) ? 'dash-action-new' : ''}`}>{actionOf(person)}</span>
                           <span className="dash-row-time"> · {relativeTime(person.updatedAt, locale)}</span>
                         </span>
-                        <span className="dash-row-sub">{contextLine(person, tree)}</span>
+                        <span className="dash-row-sub dash-ctx">{contextLine(person, tree)}</span>
                       </span>
                     </button>
                   </li>
@@ -283,18 +286,24 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
           </div>
         </section>
 
-        {/* ===== AI — sober band ===== */}
+        {/* ===== AI — two compact cards ===== */}
         <section className="dash-ai">
           <div className="dash-ai-head">
             <Sparkles size={15} aria-hidden="true" style={{ color: 'var(--accent)' }} />
             <span className="dash-ai-title">{t('aiTitle')}</span>
           </div>
-          <div className="dash-ai-actions">
-            <button onClick={onNarrative} disabled={!stats} title={!stats ? t('narrativeNeedsTree') : undefined} className="btn btn-secondary btn-sm" style={{ gap: '7px' }}>
-              <Sparkles size={14} aria-hidden="true" /> {t('narrativeAction')}
+          <div className="dash-ai-grid">
+            <button onClick={onNarrative} disabled={!stats} title={!stats ? t('narrativeNeedsTree') : undefined} className="dash-ai-card">
+              <span className="dash-ai-card-icon"><Sparkles size={20} aria-hidden="true" /></span>
+              <span className="dash-ai-card-t">{t('narrativeTitle')}</span>
+              <span className="dash-ai-card-d">{t('narrativeDesc')}</span>
+              <ArrowRight className="dash-ai-card-go" size={16} aria-hidden="true" />
             </button>
-            <button onClick={onAnalyzePhoto} className="btn btn-secondary btn-sm" style={{ gap: '7px' }}>
-              <ScanFace size={14} aria-hidden="true" /> {t('photoAction')}
+            <button onClick={onAnalyzePhoto} className="dash-ai-card">
+              <span className="dash-ai-card-icon"><ScanFace size={20} aria-hidden="true" /></span>
+              <span className="dash-ai-card-t">{t('photoTitle')}</span>
+              <span className="dash-ai-card-d">{t('photoDesc')}</span>
+              <ArrowRight className="dash-ai-card-go" size={16} aria-hidden="true" />
             </button>
           </div>
         </section>
@@ -330,18 +339,20 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
         .dash-user { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
         .dash-user-ava { width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: #12131a; font-family: var(--font-display); font-weight: 700; font-size: 12px; }
         .dash-title { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.5rem, 6vw, 4rem); line-height: 1; letter-spacing: -0.03em; color: var(--accent); margin: 0; text-wrap: balance; overflow-wrap: break-word; }
-        .dash-rule { display: block; width: 80px; height: 3px; background: var(--accent); margin: 18px 0 0; }
-        .dash-sub { font-family: var(--font-mono); font-size: 13px; color: var(--accent-text); opacity: 0.85; margin: 16px 0 0; letter-spacing: 0.02em; }
+        .dash-rule { display: block; width: 60px; height: 2px; background: var(--accent); margin: 18px 0 0; }
+        .dash-sub { font-family: var(--font-mono); font-size: 13px; color: var(--text-muted); margin: 16px 0 0; letter-spacing: 0.02em; }
+        .dash-fig { color: var(--accent); font-weight: 700; }
         .dash-dot { margin: 0 10px; opacity: 0.5; }
         .dash-empty-sub { margin: 16px 0 0; color: var(--text-muted); font-size: 16px; font-style: italic; max-width: 46ch; }
         .dash-hero-actions { display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap; }
 
         /* Stats */
         .dash-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-        .dash-stat { background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--accent);
-          padding: 22px 24px 20px; display: flex; flex-direction: column;
-          transition: box-shadow var(--t-base) var(--ease-out), transform var(--t-base) var(--ease-out); }
-        .dash-stat:hover { box-shadow: var(--shadow-accent); transform: translateY(-2px); }
+        .dash-stat { position: relative; background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--accent);
+          padding: 20px 24px 20px; display: flex; flex-direction: column;
+          transition: box-shadow var(--t-base) var(--ease-out), transform var(--t-base) var(--ease-out), background var(--t-base) var(--ease-out); }
+        .dash-stat:hover { background: #252535; box-shadow: var(--shadow-accent); transform: translateY(-2px); }
+        .dash-stat-icon { color: #a98f4e; margin-bottom: 13px; }
         .dash-stat-num { font-family: var(--font-display); font-weight: 700; line-height: 0.95; font-size: clamp(2.6rem, 5vw, 3.5rem); color: var(--accent); letter-spacing: -0.02em; }
         .dash-stat-num small { font-size: 1.1rem; color: var(--text-muted); font-weight: 600; margin-left: 5px; }
         .dash-stat-label { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-muted); margin-top: 10px; }
@@ -365,6 +376,8 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
         .dash-row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
         .dash-row-name { font-family: var(--font-body); font-size: 14px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .dash-action { font-weight: 400; color: var(--text-muted); }
+        .dash-action-new { color: var(--accent-text); font-weight: 600; }
+        .dash-ctx { font-style: italic; }
         .dash-row-time { font-family: var(--font-mono); font-size: 11px; font-weight: 400; color: var(--text-light); }
         .dash-row-sub { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .dash-when { font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--accent-text); flex-shrink: 0; }
@@ -375,14 +388,25 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
         .dash-quick-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 16px 6px; min-height: 72px; cursor: pointer; background: var(--bg); border: 1px solid var(--border); color: var(--text-muted); font-family: var(--font-body); font-size: 12px; font-weight: 600; transition: transform var(--t-fast) var(--ease-out), box-shadow var(--t-fast), color var(--t-fast), border-color var(--t-fast), background var(--t-fast); }
         .dash-quick-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-accent); background: var(--accent); color: #12131a; border-color: var(--accent); }
 
-        /* AI sober band */
-        .dash-ai { background: #1A1A24; border: 1px solid #2D2D3A; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+        /* AI — two compact cards */
+        .dash-ai { display: flex; flex-direction: column; gap: 14px; }
         .dash-ai-head { display: flex; align-items: center; gap: 9px; }
         .dash-ai-title { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink); }
-        .dash-ai-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        .dash-ai-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .dash-ai-card { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 5px; text-align: left; cursor: pointer; padding: 20px 22px; background: #1A1A24; border: 1px solid #2D2D3A; transition: border-color var(--t-fast), background var(--t-fast), box-shadow var(--t-fast), transform var(--t-base) var(--ease-out); }
+        .dash-ai-card:hover { border-color: var(--accent); background: #252535; box-shadow: var(--shadow-accent); transform: translateY(-2px); }
+        .dash-ai-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        .dash-ai-card:disabled { opacity: 0.45; cursor: not-allowed; }
+        .dash-ai-card:disabled:hover { border-color: #2D2D3A; background: #1A1A24; box-shadow: none; transform: none; }
+        .dash-ai-card-icon { display: inline-flex; color: var(--accent); margin-bottom: 4px; }
+        .dash-ai-card-t { font-family: var(--font-display); font-size: 1.05rem; font-weight: 600; color: var(--ink); }
+        .dash-ai-card-d { font-family: var(--font-body); font-size: 12.5px; line-height: 1.5; color: var(--text-muted); max-width: 36ch; }
+        .dash-ai-card-go { position: absolute; top: 18px; right: 18px; color: var(--text-light); transition: color var(--t-fast), transform var(--t-fast) var(--ease-out); }
+        .dash-ai-card:hover .dash-ai-card-go { color: var(--accent-text); transform: translateX(3px); }
 
         @media (prefers-reduced-motion: reduce) {
-          .dash-stat:hover, .dash-quick-btn:hover { transform: none; }
+          .dash-stat:hover, .dash-quick-btn:hover, .dash-ai-card:hover { transform: none; }
+          .dash-ai-card:hover .dash-ai-card-go { transform: none; }
         }
         @media (max-width: 880px) {
           .dash-two { grid-template-columns: 1fr; }
@@ -391,7 +415,7 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
         @media (max-width: 640px) {
           .dash-wrap { padding: 22px 18px 44px; gap: 20px; }
           .dash-quick { grid-template-columns: repeat(2, 1fr); }
-          .dash-ai { flex-direction: column; align-items: flex-start; }
+          .dash-ai-grid { grid-template-columns: 1fr; }
         }
       `}</style>
     </div>
@@ -412,9 +436,10 @@ function Head({ Icon, eyebrow, title, action }: { Icon?: typeof Cake; eyebrow?: 
   );
 }
 
-function StatCard({ value, unit, label, sublabel }: { value: string | number; unit?: string; label: string; sublabel?: string }) {
+function StatCard({ Icon, value, unit, label, sublabel }: { Icon: LucideIcon; value: string | number; unit?: string; label: string; sublabel?: string }) {
   return (
     <div className="dash-stat">
+      <Icon className="dash-stat-icon" size={17} aria-hidden="true" />
       <div className="dash-stat-num">{value}{unit && <small>{unit}</small>}</div>
       <div className="dash-stat-label">{label}</div>
       {sublabel && <div className="dash-stat-sub" title={sublabel}>{sublabel}</div>}

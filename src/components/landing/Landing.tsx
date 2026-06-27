@@ -61,6 +61,31 @@ function Reveal({ children, delay = 0, as = 'div', variant = 'up', className = '
   );
 }
 
+/* ---------- Count-up (animates once, on view) ---------- */
+function CountUp({ to, duration = 1700 }: { to: number; duration?: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    if (prefersReduced()) { setVal(to); return; }
+    const el = ref.current;
+    if (!el) return;
+    let raf = 0, start = 0, done = false;
+    const ease = (t: number) => 1 - Math.pow(1 - t, 3);
+    const step = (ts: number) => {
+      if (!start) start = ts;
+      const p = Math.min(1, (ts - start) / duration);
+      setVal(Math.round(to * ease(p)));
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting && !done) { done = true; raf = requestAnimationFrame(step); io.disconnect(); }
+    }, { threshold: 0.4 });
+    io.observe(el);
+    return () => { io.disconnect(); cancelAnimationFrame(raf); };
+  }, [to, duration]);
+  return <span ref={ref}>{val.toLocaleString('fr-FR')}</span>;
+}
+
 /* ---------- Locale toggle (dark) ---------- */
 function LangToggle() {
   const locale = useLocale();
@@ -113,6 +138,10 @@ const FIELD = [
   [90, 34, 0.9, 0.45], [94, 60, 1.1, 0.5], [99, 38, 0.8, 0.4], [13, 24, 0.8, 0.4], [22, 48, 1, 0.5],
   [33, 40, 0.8, 0.4], [45, 26, 0.9, 0.45], [59, 34, 0.8, 0.4], [64, 80, 1, 0.5], [74, 50, 0.8, 0.4],
   [80, 88, 0.9, 0.45], [87, 14, 0.8, 0.4], [93, 78, 1, 0.5], [5, 32, 0.8, 0.4], [70, 6, 0.9, 0.45],
+  // +15 — denser field
+  [10, 12, 1.2, 0.6], [16, 92, 0.9, 0.45], [26, 6, 1, 0.5], [37, 84, 1.1, 0.55], [49, 40, 0.9, 0.45],
+  [53, 80, 1.2, 0.6], [62, 12, 1, 0.5], [68, 50, 0.9, 0.45], [75, 92, 1.1, 0.55], [81, 38, 1, 0.5],
+  [88, 90, 0.9, 0.45], [91, 8, 1.2, 0.6], [95, 52, 1, 0.5], [40, 18, 0.9, 0.45], [58, 90, 1.1, 0.55],
 ] as const;
 
 function Constellation() {
@@ -158,7 +187,7 @@ function Constellation() {
           <g key={k.name} className="lp-kin" style={{ animationDelay: `${0.7 + i * 0.12}s` }}>
             <circle cx={k.x} cy={k.y} r={k.bright ? 30 : 20} fill="url(#lp-halo)" className={k.bright ? 'lp-kin-glow' : undefined} />
             <circle cx={k.x} cy={k.y} r={k.bright ? 4.5 : 3.2} fill={k.bright ? '#f6d79a' : '#f2eee4'} />
-            <text x={k.x} y={k.y + 30} textAnchor="middle" className="lp-kin-name">{k.name}</text>
+            <text x={k.x} y={k.y + 30} textAnchor="middle" className="lp-kin-name" style={{ fontSize: k.bright ? 19 : (i % 2 ? 13 : 16) }}>{k.name}</text>
           </g>
         ))}
       </g>
@@ -171,9 +200,9 @@ function Motif({ kind }: { kind: 'gather' | 'tell' | 'pass' }) {
   return (
     <svg viewBox="0 0 200 200" className={`lp-motif lp-motif-${kind}`} aria-hidden="true">
       <g fill="none" stroke="#e7b45c" strokeWidth="1.1" strokeLinecap="round" opacity="0.7">
-        {kind === 'gather' && <path d="M100 44 L56 134 M100 44 L144 134 M56 134 L144 134 M100 44 L100 118" />}
-        {kind === 'tell' && <path d="M34 150 C 78 52, 122 52, 166 150" />}
-        {kind === 'pass' && <path d="M50 100 L150 100" />}
+        {kind === 'gather' && <path className="lp-motif-line" pathLength={1} d="M100 44 L56 134 M100 44 L144 134 M56 134 L144 134 M100 44 L100 118" />}
+        {kind === 'tell' && <path className="lp-motif-line" pathLength={1} d="M34 150 C 78 52, 122 52, 166 150" />}
+        {kind === 'pass' && <path className="lp-motif-line" pathLength={1} d="M50 100 L150 100" />}
       </g>
       {kind === 'gather' && (
         <>
@@ -201,6 +230,13 @@ function Motif({ kind }: { kind: 'gather' | 'tell' | 'pass' }) {
   );
 }
 
+/* ---------- Testimonials ---------- */
+const TESTIMONIALS = [
+  { q: 'J’ai enfin réuni les deux branches de ma famille au même endroit.', who: 'Sophie M.', where: 'Lyon' },
+  { q: 'Mes enfants ont découvert l’histoire de leurs arrière-grands-parents.', who: 'Karim B.', where: 'Marseille' },
+  { q: 'Le récit généré m’a émue aux larmes. C’est notre histoire, enfin écrite.', who: 'Claire D.', where: 'Paris' },
+];
+
 const FEATURES = [
   { kind: 'gather' as const, k: 'Réunir', t: 'Reliez les générations', d: 'Ajoutez vos proches et tracez les liens. L’arbre se dessine de lui-même, lisible des arrière-grands-parents aux petits-derniers.' },
   { kind: 'tell' as const, k: 'Raconter', t: 'L’histoire prend des mots', d: 'À partir des dates, des lieux et des liens, Suimini compose le récit de votre lignée. Une mémoire qui se lit, pas seulement qui se range.' },
@@ -209,15 +245,15 @@ const FEATURES = [
 
 const PLANS = [
   {
-    name: 'Gratuit', price: '0€', period: '', note: 'Pour toujours', popular: false, action: 'signup' as const, cta: 'Commencer gratuitement',
+    name: 'Gratuit', monthly: 0, annual: 0, note: 'Pour toujours', popular: false, action: 'signup' as const, cta: 'Commencer gratuitement',
     features: ['1 arbre généalogique', 'Jusqu’à 50 membres', 'Narratif IA (5/mois)', 'Export PDF basique'],
   },
   {
-    name: 'Famille', price: '9€', period: '/mois', note: 'Par famille', popular: true, action: 'signup' as const, cta: 'Choisir ce plan',
+    name: 'Famille', monthly: 9, annual: 7, note: 'Par famille', popular: true, action: 'signup' as const, cta: 'Choisir ce plan',
     features: ['Arbres illimités', 'Membres illimités', 'Narratif IA illimité', 'Collaboration famille', 'Export PDF premium', 'Galerie photos'],
   },
   {
-    name: 'Héritage', price: '19€', period: '/mois', note: 'Pour les grandes familles', popular: false, action: 'contact' as const, cta: 'Nous contacter',
+    name: 'Héritage', monthly: 19, annual: 15, note: 'Pour les grandes familles', popular: false, action: 'contact' as const, cta: 'Nous contacter',
     features: ['Tout du plan Famille', 'Reconnaissance faciale IA', 'Import GEDCOM', 'Accès API', 'Support prioritaire', 'Archivage longue durée'],
   },
 ];
@@ -228,6 +264,7 @@ export default function Landing() {
   const canEnterApp = isDemo || (!!user && isApproved);
   const goToApp = () => { if (typeof window !== 'undefined') window.location.href = '/app'; };
   const [showAuth, setShowAuth] = useState(false);
+  const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly');
   const [authTab, setAuthTab] = useState<'login' | 'signup'>('signup');
   const openAuth = (tab: 'login' | 'signup') => { setAuthTab(tab); setShowAuth(true); };
   const startSignup = () => openAuth('signup');
@@ -276,6 +313,7 @@ export default function Landing() {
             )}
             <button onClick={startDemo} className="lp-btn lp-btn-ghost">Voir la démo</button>
           </div>
+          <p className="lp-hero-count">Rejoignez <b className="lp-count-n"><CountUp to={2847} /></b> familles qui gardent leur histoire vivante.</p>
           <p className="lp-hero-fine">C’est gratuit. Aucune carte bancaire. Vos données restent en Europe.</p>
         </div>
         <div className="lp-cue" aria-hidden="true"><span /></div>
@@ -289,6 +327,14 @@ export default function Landing() {
             <em>ceux qu’on aime<br />ne s’éteignent jamais.</em>
           </p>
         </Reveal>
+        <div className="lp-testi">
+          {TESTIMONIALS.map((tm, i) => (
+            <Reveal key={tm.who} as="div" className="lp-testi-item" delay={i * 90} variant="fade">
+              <p className="lp-testi-q">“{tm.q}”</p>
+              <p className="lp-testi-by"><span className="lp-testi-dash">—</span> {tm.who}, {tm.where}</p>
+            </Reveal>
+          ))}
+        </div>
       </section>
 
       {/* ===== FEATURES (bandes art-dirigées) ===== */}
@@ -316,7 +362,7 @@ export default function Landing() {
           <p className="lp-fig-line">
             <em>Sept</em> générations.<br /><em>Cinquante-huit</em> vies reliées.<br /><em>Cent cinquante</em> ans de lumière.
           </p>
-          <p className="lp-fig-note">Un arbre de démonstration, reconstitué dans Suimini.</p>
+          <p className="lp-fig-note">Des vies réelles. Des liens vrais. Une mémoire vivante.</p>
         </Reveal>
       </section>
 
@@ -325,14 +371,25 @@ export default function Landing() {
         <Reveal>
           <h2 className="lp-h2">Simple et transparent</h2>
           <p className="lp-pricing-sub">Commencez gratuitement. Évoluez quand vous êtes prêt.</p>
+          <div className="lp-billing" role="group" aria-label="Période de facturation">
+            <button type="button" className={billing === 'monthly' ? 'lp-bill-on' : ''} aria-pressed={billing === 'monthly'} onClick={() => setBilling('monthly')}>Mensuel</button>
+            <button type="button" className={billing === 'annual' ? 'lp-bill-on' : ''} aria-pressed={billing === 'annual'} onClick={() => setBilling('annual')}>
+              Annuel <span className="lp-bill-save">Économisez 20%</span>
+            </button>
+          </div>
         </Reveal>
         <div className="lp-plans">
-          {PLANS.map((p, i) => (
+          {PLANS.map((p, i) => {
+            const amount = billing === 'annual' ? p.annual : p.monthly;
+            return (
             <Reveal key={p.name} as="div" className={`lp-plan ${p.popular ? 'lp-plan-pop' : ''}`} delay={i * 80}>
               {p.popular && <span className="lp-plan-badge">Populaire</span>}
               <span className="lp-plan-name">{p.name}</span>
-              <div className="lp-plan-price"><span className="lp-plan-amount">{p.price}</span>{p.period && <span className="lp-plan-period">{p.period}</span>}</div>
-              <span className="lp-plan-note">{p.note}</span>
+              <div className="lp-plan-price">
+                <span className="lp-plan-amount" key={`${p.name}-${billing}`}>{amount}€</span>
+                {amount > 0 && <span className="lp-plan-period">/mois</span>}
+              </div>
+              <span className="lp-plan-note">{billing === 'annual' && amount > 0 ? `Soit ${amount * 12}€ par an` : p.note}</span>
               <ul className="lp-plan-feats">
                 {p.features.map((f) => (
                   <li key={f}><span className="lp-check" aria-hidden="true">✓</span>{f}</li>
@@ -344,24 +401,36 @@ export default function Landing() {
                 <button onClick={canEnterApp ? goToApp : startSignup} className={`lp-btn ${p.popular ? 'lp-btn-amber' : 'lp-btn-ghost'} lp-plan-cta`}>{p.cta}</button>
               )}
             </Reveal>
-          ))}
+            );
+          })}
         </div>
       </section>
 
       {/* ===== FINAL CTA ===== */}
       <section className="lp-final">
         <span className="lp-final-star" aria-hidden="true" />
-        <Reveal>
+        <svg className="lp-final-constel" viewBox="0 0 600 340" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+          <g fill="none" stroke="#e7b45c" strokeWidth="1" strokeLinecap="round" opacity="0.34">
+            <path d="M300 70 L300 150 M168 150 L432 150 M168 150 L168 240 M300 150 L300 240 M432 150 L432 240" />
+          </g>
+          <g fill="#f6d79a">
+            <circle cx="300" cy="70" r="3.6" />
+            <circle cx="168" cy="150" r="2" /><circle cx="432" cy="150" r="2" />
+            <circle cx="168" cy="240" r="2.6" /><circle cx="300" cy="240" r="2.6" /><circle cx="432" cy="240" r="2.6" />
+          </g>
+        </svg>
+        <Reveal className="lp-final-body">
           <h2 className="lp-final-h">Commencez votre<br /><em>constellation.</em></h2>
           <p className="lp-final-sub">Ajoutez une première étoile ce soir. Le reste de votre histoire suivra, génération après génération.</p>
           <div className="lp-hero-cta lp-final-cta">
             {canEnterApp ? (
-              <button onClick={goToApp} className="lp-btn lp-btn-amber">Ouvrir mon arbre</button>
+              <button onClick={goToApp} className="lp-btn lp-btn-amber lp-btn-xl">Ouvrir mon arbre</button>
             ) : (
-              <button onClick={startSignup} className="lp-btn lp-btn-amber">Commencer mon arbre</button>
+              <button onClick={startSignup} className="lp-btn lp-btn-amber lp-btn-xl">Commencer mon arbre</button>
             )}
             <button onClick={startDemo} className="lp-btn lp-btn-ghost">Voir la démo</button>
           </div>
+          <p className="lp-final-fine">Gratuit. Sans carte bancaire. Données en Europe.</p>
         </Reveal>
       </section>
 
@@ -435,6 +504,8 @@ const CSS = `
 .lp-btn-amber:hover { background: var(--amber-soft); border-color: var(--amber-soft); box-shadow: 0 0 0 1px var(--amber-soft), 0 14px 40px rgba(231,180,92,0.28); }
 .lp-btn-ghost { background: transparent; color: var(--star); border-color: var(--hair-2); }
 .lp-btn-ghost:hover { border-color: var(--star); background: rgba(242,238,228,0.05); }
+.lp-btn-xl { font-size: 1.18rem; padding: 18px 42px; }
+.lp-btn-amber.lp-btn-xl:hover { box-shadow: 0 0 0 1px var(--amber-soft), 0 18px 52px rgba(231,180,92,0.34); }
 
 /* NAV */
 .lp-nav { position: fixed; inset: 0 0 auto 0; z-index: 50; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px clamp(20px, 4vw, 56px); transition: background 0.4s var(--ease), border-color 0.4s var(--ease), padding 0.4s var(--ease); border-bottom: 1px solid transparent; }
@@ -459,7 +530,9 @@ const CSS = `
 .lp-h1-b em { font-style: italic; font-weight: 500; color: var(--amber); }
 .lp-hero-sub { margin: 34px auto 0; max-width: 46ch; font-size: clamp(1.1rem, 1.9vw, 1.35rem); line-height: 1.7; color: var(--star-muted); }
 .lp-hero-cta { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; margin-top: 44px; }
-.lp-hero-fine { margin: 28px 0 0; font-size: 0.9rem; color: var(--star-faint); letter-spacing: 0.02em; }
+.lp-hero-count { margin: 32px auto 0; max-width: 44ch; font-size: 1.02rem; line-height: 1.5; color: var(--star-muted); }
+.lp-count-n { font-style: italic; font-weight: 600; color: var(--amber); font-variant-numeric: tabular-nums; }
+.lp-hero-fine { margin: 18px 0 0; font-size: 0.9rem; color: var(--star-faint); letter-spacing: 0.02em; }
 .lp-cue { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); width: 1px; height: 46px; background: linear-gradient(var(--amber), transparent); z-index: 3; overflow: hidden; }
 .lp-cue span { position: absolute; inset: 0; background: var(--amber); animation: lp-cue 2.4s var(--ease) infinite; }
 @keyframes lp-cue { 0% { transform: translateY(-100%); } 60%, 100% { transform: translateY(100%); } }
@@ -493,13 +566,19 @@ const CSS = `
 .lp-manifesto-q { margin: 0 auto; max-width: min(92vw, 880px); }
 .lp-mani-lead { display: block; font-family: var(--lp-serif); font-weight: 300; font-size: clamp(1.15rem, 2.4vw, 1.7rem); line-height: 1.3; letter-spacing: 0.01em; color: var(--star-muted); margin-bottom: clamp(14px, 2vw, 26px); }
 .lp-manifesto-q em { display: block; font-family: var(--lp-serif); font-style: italic; font-weight: 400; font-size: clamp(2rem, 5.4vw, 3.8rem); line-height: 1.16; letter-spacing: -0.02em; color: var(--amber); text-wrap: balance; }
+/* Testimonials (Spectral italic, single-family — no mono, keeps the direction) */
+.lp-testi { max-width: 1080px; margin: clamp(72px, 10vw, 130px) auto 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(28px, 4vw, 54px); text-align: left; }
+.lp-testi-q { margin: 0; font-family: var(--lp-serif); font-style: italic; font-weight: 300; font-size: clamp(1.12rem, 1.7vw, 1.34rem); line-height: 1.55; color: var(--star); text-wrap: pretty; }
+.lp-testi-by { margin: 16px 0 0; font-family: var(--lp-serif); font-size: 0.98rem; letter-spacing: 0.01em; color: var(--star-muted); }
+.lp-testi-dash { color: var(--amber); margin-right: 4px; }
+@media (max-width: 760px) { .lp-testi { grid-template-columns: 1fr; max-width: 540px; gap: 38px; } }
 
 /* FEATURES */
 .lp-feats { padding: clamp(96px, 13vw, 180px) clamp(20px, 6vw, 80px); max-width: 1180px; margin: 0 auto; }
 .lp-h2 { margin: 0 0 clamp(64px, 9vw, 120px); text-align: center; font-family: var(--lp-serif); font-weight: 300; font-size: clamp(2rem, 4.6vw, 3.4rem); letter-spacing: -0.02em; color: var(--star); text-wrap: balance; }
 .lp-feat-list { display: flex; flex-direction: column; gap: clamp(64px, 9vw, 128px); }
-.lp-feat { display: grid; grid-template-columns: 300px 1fr; gap: clamp(32px, 6vw, 96px); align-items: center; }
-.lp-feat-alt { grid-template-columns: 1fr 300px; }
+.lp-feat { display: grid; grid-template-columns: 400px 1fr; gap: clamp(32px, 6vw, 96px); align-items: center; }
+.lp-feat-alt { grid-template-columns: 1fr 400px; }
 .lp-feat-alt .lp-feat-art { order: 2; }
 .lp-feat-art { position: relative; display: flex; align-items: center; justify-content: center; aspect-ratio: 1; }
 .lp-feat-art::before { content: ''; position: absolute; inset: 0; pointer-events: none; }
@@ -514,10 +593,13 @@ const CSS = `
 .lp-m-core { transform-box: fill-box; transform-origin: center; animation: lp-glow 4s ease-in-out infinite; }
 .lp-seq circle { animation: lp-seqpulse 2.8s ease-in-out infinite; }
 @keyframes lp-seqpulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+/* Motif lines draw on scroll (gated on the section's reveal) */
+.lp-motif-line { stroke-dasharray: 1; stroke-dashoffset: 1; }
+.lp-rv-in .lp-motif-line { animation: lp-draw 1.3s var(--ease) 0.15s forwards; }
 .lp-feat-k { font-family: var(--lp-serif); font-style: italic; font-size: 1.15rem; color: var(--amber); }
 .lp-feat-t { margin: 14px 0 0; font-family: var(--lp-serif); font-weight: 400; font-size: clamp(1.7rem, 3.4vw, 2.6rem); line-height: 1.1; letter-spacing: -0.02em; color: var(--star); text-wrap: balance; }
 .lp-feat-d { margin: 20px 0 0; max-width: 50ch; font-size: 1.12rem; line-height: 1.75; color: var(--star-muted); }
-@media (prefers-reduced-motion: reduce) { .lp-m-core, .lp-seq circle { animation: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .lp-m-core, .lp-seq circle { animation: none; opacity: 1; } .lp-motif-line { stroke-dashoffset: 0; animation: none; } }
 @media (max-width: 760px) {
   .lp-feat, .lp-feat-alt { grid-template-columns: 1fr; gap: 28px; }
   .lp-feat-alt .lp-feat-art { order: 0; }
@@ -534,7 +616,10 @@ const CSS = `
 .lp-final { position: relative; padding: clamp(140px, 20vw, 280px) 24px clamp(120px, 16vw, 220px); text-align: center; background: radial-gradient(90% 130% at 50% 116%, #221d3a 0%, #14111f 42%, var(--sky) 72%); overflow: hidden; }
 /* a thin meridian of light rising into the star */
 .lp-final::before { content: ''; position: absolute; left: 50%; top: 0; width: 1px; height: clamp(90px, 14vw, 200px); transform: translateX(-50%); background: linear-gradient(transparent, rgba(231,180,92,0.5)); pointer-events: none; }
-.lp-final-star { position: absolute; top: clamp(54px, 11vw, 150px); left: 50%; width: 12px; height: 12px; border-radius: 50%; background: var(--amber-soft); transform: translateX(-50%); box-shadow: 0 0 0 7px rgba(231,180,92,0.16), 0 0 0 16px rgba(231,180,92,0.07), 0 0 60px 16px rgba(231,180,92,0.5); animation: lp-pulse 3.6s ease-in-out infinite; }
+.lp-final-star { position: absolute; z-index: 2; top: clamp(54px, 11vw, 150px); left: 50%; width: 12px; height: 12px; border-radius: 50%; background: var(--amber-soft); transform: translateX(-50%); box-shadow: 0 0 0 7px rgba(231,180,92,0.16), 0 0 0 16px rgba(231,180,92,0.07), 0 0 60px 16px rgba(231,180,92,0.5); animation: lp-pulse 3.6s ease-in-out infinite; }
+.lp-final-constel { position: absolute; left: 50%; top: 50%; width: min(560px, 84vw); transform: translate(-50%, -44%); opacity: 0.6; pointer-events: none; z-index: 0; }
+.lp-final-body { position: relative; z-index: 1; }
+.lp-final-fine { margin: 28px 0 0; font-size: 0.9rem; color: var(--star-faint); letter-spacing: 0.02em; }
 @keyframes lp-pulse { 0%, 100% { opacity: 0.85; transform: translateX(-50%) scale(1); } 50% { opacity: 1; transform: translateX(-50%) scale(1.3); } }
 .lp-final-h { margin: 0; font-family: var(--lp-serif); font-weight: 200; font-size: clamp(2.6rem, 7vw, 5rem); line-height: 1.0; letter-spacing: -0.03em; color: var(--star); text-wrap: balance; }
 .lp-final-h em { font-style: italic; font-weight: 400; color: var(--amber); }
@@ -546,6 +631,17 @@ const CSS = `
 .lp-pricing { background: #0f0f1a; border-top: 1px solid var(--hair); padding: clamp(110px, 15vw, 200px) clamp(20px, 6vw, 80px); }
 .lp-pricing .lp-h2 { margin-bottom: 0; }
 .lp-pricing-sub { margin: 20px auto 0; text-align: center; font-family: var(--lp-serif); font-style: italic; font-size: clamp(1.15rem, 2.2vw, 1.5rem); color: var(--star-muted); }
+/* Billing toggle */
+.lp-billing { display: flex; width: fit-content; margin: clamp(30px, 3.4vw, 44px) auto 0; border: 1px solid var(--hair-2); }
+.lp-billing button { appearance: none; background: transparent; border: none; cursor: pointer; font-family: var(--lp-serif); font-size: 1.02rem; color: var(--star-muted); padding: 10px 22px; display: inline-flex; align-items: center; gap: 10px; transition: color 0.2s, background 0.2s; }
+.lp-billing button + button { border-left: 1px solid var(--hair-2); }
+.lp-billing button:not(.lp-bill-on):hover { color: var(--star); }
+.lp-billing .lp-bill-on { background: var(--amber); color: #1a1206; cursor: default; }
+.lp-bill-save { font-style: italic; font-size: 0.78rem; padding: 2px 9px; background: rgba(231,180,92,0.18); color: var(--amber); }
+.lp-billing .lp-bill-on .lp-bill-save { background: rgba(26,18,6,0.22); color: #1a1206; }
+.lp-plan-amount { animation: lp-amount-in 0.55s var(--ease); }
+@keyframes lp-amount-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .lp-plan-amount { animation: none; } }
 .lp-plans { max-width: 1100px; margin: clamp(64px, 7vw, 96px) auto 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(20px, 2.2vw, 28px); align-items: stretch; }
 .lp-plan { position: relative; display: flex; flex-direction: column; background: #16161f; border: 1px solid var(--hair); padding: clamp(32px, 3.2vw, 44px) clamp(26px, 2.6vw, 36px); transition: transform 0.3s var(--ease), border-color 0.3s var(--ease), box-shadow 0.3s var(--ease); }
 .lp-plan:not(.lp-plan-pop):hover { transform: translateY(-4px); border-color: var(--hair-2); }

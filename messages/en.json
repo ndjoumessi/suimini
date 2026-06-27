@@ -614,9 +614,9 @@
     "statGenerations": "Generations",
     "statEldest": "Eldest",
     "yearsUnit": "yrs",
-    "since": "since ~{year}",
-    "generationsCount": "{count, plural, one {# generation} other {# generations}}",
-    "peopleCountInline": "{count, plural, one {# member} other {# members}}",
+    "since": "since ~<b>{year}</b>",
+    "generationsCount": "{count, plural, one {<b>#</b> generation} other {<b>#</b> generations}}",
+    "peopleCountInline": "{count, plural, one {<b>#</b> member} other {<b>#</b> members}}",
     "birthdaysFull": "Birthdays & remembrances",
     "upcomingBirthdays": "Upcoming birthdays",
     "inDays": "{days, plural, one {in # day} other {in # days}}",
@@ -631,7 +631,11 @@
     "latestMembers": "Latest members",
     "viewAllMembers": "View all members →",
     "narrativeAction": "Generate the narrative →",
-    "photoAction": "Analyze a photo →"
+    "photoAction": "Analyze a photo →",
+    "narrativeTitle": "Narrative story",
+    "narrativeDesc": "Your lineage’s story, composed by AI.",
+    "photoTitle": "Analyze a photo",
+    "photoDesc": "Date and identify your family snapshots."
   },
   "common": {
     "save": "Save",

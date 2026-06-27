@@ -614,9 +614,9 @@
     "statGenerations": "Générations",
     "statEldest": "Doyen·ne",
     "yearsUnit": "ans",
-    "since": "depuis ~{year}",
-    "generationsCount": "{count, plural, one {# génération} other {# générations}}",
-    "peopleCountInline": "{count, plural, one {# membre} other {# membres}}",
+    "since": "depuis ~<b>{year}</b>",
+    "generationsCount": "{count, plural, one {<b>#</b> génération} other {<b>#</b> générations}}",
+    "peopleCountInline": "{count, plural, one {<b>#</b> membre} other {<b>#</b> membres}}",
     "birthdaysFull": "Anniversaires & commémorations",
     "upcomingBirthdays": "Prochains anniversaires",
     "inDays": "{days, plural, one {dans # jour} other {dans # jours}}",
@@ -631,7 +631,11 @@
     "latestMembers": "Derniers membres",
     "viewAllMembers": "Voir tous les membres →",
     "narrativeAction": "Générer le récit narratif →",
-    "photoAction": "Analyser une photo →"
+    "photoAction": "Analyser une photo →",
+    "narrativeTitle": "Récit narratif",
+    "narrativeDesc": "L’histoire de votre lignée, composée par l’IA.",
+    "photoTitle": "Analyser une photo",
+    "photoDesc": "Datez et identifiez vos clichés de famille."
   },
   "common": {
     "save": "Enregistrer",

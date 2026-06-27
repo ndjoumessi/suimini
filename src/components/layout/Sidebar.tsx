@@ -341,8 +341,8 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sb-brand { display: inline-flex; align-items: center; gap: 9px; text-decoration: none; color: inherit; flex: 1; min-width: 0; }
         .sb-logo { width: 28px; height: 28px; flex-shrink: 0; display: inline-flex; }
         .sb-brand-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.05; }
-        .sb-wordmark { font-size: 20px; font-weight: 600; font-style: italic; letter-spacing: 0.01em; color: var(--accent-text); white-space: nowrap; }
-        .sb-tagline { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-light); margin-top: 1px; }
+        .sb-wordmark { font-size: 14px; font-weight: 600; font-style: italic; letter-spacing: 0.01em; color: var(--ink); white-space: nowrap; }
+        .sb-tagline { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.13em; text-transform: uppercase; color: #a98f4e; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         /* Active tree block */
         .sb-tree {
@@ -374,11 +374,11 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sb-nav::-webkit-scrollbar-thumb:hover { background: var(--accent); }
         .sb-group { padding: 2px 0; }
         .sb-group + .sb-group { border-top: 1px solid var(--border); }
-        .sb-section { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-light); padding: 2px 16px 2px; }
+        .sb-section { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.18em; text-transform: uppercase; color: #a98f4e; padding: 2px 16px 2px; }
         .sb-item {
-          position: relative; width: 100%; display: flex; align-items: center; gap: 12px;
+          position: relative; width: 100%; display: flex; align-items: center; gap: 12px; min-height: 34px;
           padding: 4px 16px; border: none; background: transparent; cursor: pointer; line-height: 1.3;
-          color: var(--text-muted); font-family: var(--font-body); font-size: 13.5px; font-weight: 500;
+          color: var(--text-muted); font-family: var(--font-body); font-size: 13px; font-weight: 500;
           text-align: left; text-decoration: none; transition: background var(--t-fast), color var(--t-fast);
         }
         .sb-item:hover { background: #1a1a24; color: var(--ink); }
@@ -394,7 +394,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sb-add {
           width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
           background: var(--accent); color: #0d0d0d; border: 1px solid var(--accent); cursor: pointer;
-          font-family: var(--font-display); font-size: 13px; font-weight: 700; padding: 8px 12px;
+          font-family: var(--font-body); font-size: 12px; font-weight: 700; padding: 0 12px; min-height: 34px;
           white-space: nowrap; line-height: 1;
           transition: background var(--t-fast), box-shadow var(--t-fast);
         }
@@ -403,7 +403,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
            the names). Saves the vertical space the stacked icon+label grid used. */
         .sb-action-grid { display: flex; gap: 6px; margin-top: 6px; }
         .sb-chip {
-          flex: 1; height: 28px; display: inline-flex; align-items: center; justify-content: center;
+          flex: 1; height: 26px; display: inline-flex; align-items: center; justify-content: center;
           background: transparent; border: 1px solid var(--border); color: var(--text-muted); cursor: pointer;
           transition: border-color var(--t-fast), color var(--t-fast), background var(--t-fast);
         }
@@ -415,7 +415,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sb-account-row { display: flex; align-items: center; gap: 8px; }
         .sb-account-btn { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; background: none; border: none; padding: 4px; cursor: pointer; text-align: left; transition: background var(--t-fast); }
         .sb-account-btn:hover { background: var(--bg-card); }
-        .sb-avatar { width: 28px; height: 28px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--accent); color: #0d0d0d; font-family: var(--font-display); font-size: 11px; font-weight: 700; }
+        .sb-avatar { width: 22px; height: 22px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--accent); color: #0d0d0d; font-family: var(--font-display); font-size: 10px; font-weight: 700; }
         .sb-account-id { display: flex; flex-direction: column; min-width: 0; }
         .sb-account-name { font-size: 13px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .sb-account-email { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
