@@ -77,6 +77,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang={locale} data-theme="dark" style={{ colorScheme: "dark" }} className={`${display.variable} ${body.variable} ${mono.variable}`}>
       <head>
+        {/* Locale-switch fade-in: if we arrived via switchLocale (?_l param), hide the
+            body BEFORE first paint so it can fade in from 0 (no flash). Removed on load
+            and by LocaleParamCleaner. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: "try{if(location.search.indexOf('_l=')>-1){document.documentElement.classList.add('locale-enter');addEventListener('load',function(){requestAnimationFrame(function(){document.documentElement.classList.remove('locale-enter')})})}}catch(e){}",
+          }}
+        />
         {/* next/font self-hosts the fonts, so we only hint at the runtime origins we actually hit. */}
         {SUPABASE_ORIGIN && <link rel="preconnect" href={SUPABASE_ORIGIN} crossOrigin="anonymous" />}
         {SUPABASE_ORIGIN && <link rel="dns-prefetch" href={SUPABASE_ORIGIN} />}

@@ -100,10 +100,19 @@ body {
   font-size: 15px;
   line-height: 1.6;
   margin: 0;
-  transition: background var(--t-base), color var(--t-base);
+  transition: background var(--t-base), color var(--t-base), opacity 150ms ease;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overscroll-behavior: none; /* prevent pull-to-refresh / over-bounce in PWA */
+}
+/* Smooth locale switch: fade the old page out (locale-switching, set by
+   switchLocale), and fade the new page in from 0 (locale-enter, set pre-paint by
+   an inline head script gated on the ?_l param, removed on load). */
+body.locale-switching { opacity: 0; }
+html.locale-enter body { opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  body { transition: background var(--t-base), color var(--t-base); }
+  body.locale-switching, html.locale-enter body { opacity: 1; }
 }
 
 /* ===== Typography hierarchy — editorial serif, high contrast, generous ===== */

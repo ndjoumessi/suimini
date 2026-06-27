@@ -18,8 +18,16 @@ import { LOCALE_COOKIE, type Locale } from './config';
 export function switchLocale(next: Locale) {
   if (typeof window === 'undefined') return;
   try { localStorage.setItem(LOCALE_COOKIE, next); } catch { /* ignore */ }
+  // Remember scroll so the reloaded page lands where the user was (restored by
+  // LocaleParamCleaner once the new locale has rendered).
+  try { sessionStorage.setItem('localeScrollY', String(window.scrollY)); } catch { /* ignore */ }
   document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
   const url = new URL(window.location.href);
   url.searchParams.set('_l', next);
-  window.location.replace(url.toString());
+  const go = () => window.location.replace(url.toString());
+  // Fade the current page out, then navigate (skip the wait under reduced motion).
+  const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  if (reduced) { go(); return; }
+  try { document.body.classList.add('locale-switching'); } catch { /* ignore */ }
+  window.setTimeout(go, 150);
 }
