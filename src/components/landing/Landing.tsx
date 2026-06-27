@@ -142,6 +142,10 @@ const FIELD = [
   [10, 12, 1.2, 0.6], [16, 92, 0.9, 0.45], [26, 6, 1, 0.5], [37, 84, 1.1, 0.55], [49, 40, 0.9, 0.45],
   [53, 80, 1.2, 0.6], [62, 12, 1, 0.5], [68, 50, 0.9, 0.45], [75, 92, 1.1, 0.55], [81, 38, 1, 0.5],
   [88, 90, 0.9, 0.45], [91, 8, 1.2, 0.6], [95, 52, 1, 0.5], [40, 18, 0.9, 0.45], [58, 90, 1.1, 0.55],
+  // +15 — denser still, more dynamism
+  [7, 24, 1, 0.5], [15, 50, 0.8, 0.4], [23, 14, 1.1, 0.55], [30, 60, 0.9, 0.45], [44, 50, 0.8, 0.4],
+  [51, 32, 1, 0.5], [57, 6, 0.9, 0.45], [65, 64, 1.1, 0.55], [72, 24, 0.8, 0.4], [77, 64, 1, 0.5],
+  [84, 42, 0.9, 0.45], [89, 24, 1.1, 0.55], [96, 70, 1, 0.5], [12, 78, 0.9, 0.45], [38, 96, 1, 0.5],
 ] as const;
 
 function Constellation() {
@@ -187,7 +191,7 @@ function Constellation() {
           <g key={k.name} className="lp-kin" style={{ animationDelay: `${0.7 + i * 0.12}s` }}>
             <circle cx={k.x} cy={k.y} r={k.bright ? 30 : 20} fill="url(#lp-halo)" className={k.bright ? 'lp-kin-glow' : undefined} />
             <circle cx={k.x} cy={k.y} r={k.bright ? 4.5 : 3.2} fill={k.bright ? '#f6d79a' : '#f2eee4'} />
-            <text x={k.x} y={k.y + 30} textAnchor="middle" className="lp-kin-name" style={{ fontSize: k.bright ? 19 : (i % 2 ? 13 : 16) }}>{k.name}</text>
+            <text x={k.x} y={k.y + 30} textAnchor="middle" className="lp-kin-name" style={{ fontSize: k.bright ? 20 : [16, 13, 17, 14, 15, 13][i % 6] }}>{k.name}</text>
           </g>
         ))}
       </g>
@@ -200,31 +204,38 @@ function Motif({ kind }: { kind: 'gather' | 'tell' | 'pass' }) {
   return (
     <svg viewBox="0 0 200 200" className={`lp-motif lp-motif-${kind}`} aria-hidden="true">
       <g fill="none" stroke="#e7b45c" strokeWidth="1.1" strokeLinecap="round" opacity="0.7">
-        {kind === 'gather' && <path className="lp-motif-line" pathLength={1} d="M100 44 L56 134 M100 44 L144 134 M56 134 L144 134 M100 44 L100 118" />}
-        {kind === 'tell' && <path className="lp-motif-line" pathLength={1} d="M34 150 C 78 52, 122 52, 166 150" />}
-        {kind === 'pass' && <path className="lp-motif-line" pathLength={1} d="M50 100 L150 100" />}
+        {/* Réunir: arbre à 5 nœuds */}
+        {kind === 'gather' && <path className="lp-motif-line" pathLength={1} d="M100 40 L58 112 M100 40 L142 112 M58 112 L40 172 M58 112 L92 172" />}
+        {/* Raconter: arc de cercle */}
+        {kind === 'tell' && <path className="lp-motif-line" pathLength={1} d="M28 154 C 70 44, 130 44, 172 154" />}
+        {/* Transmettre: chaîne de 5 nœuds */}
+        {kind === 'pass' && <path className="lp-motif-line" pathLength={1} d="M28 100 L172 100" />}
       </g>
+
       {kind === 'gather' && (
         <>
-          <circle className="lp-m-core" cx="100" cy="44" r="5" fill="#f6d79a" />
-          {[[56, 134], [144, 134], [100, 118]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r="3.2" fill="#f2eee4" />)}
+          <circle className="lp-m-core" cx="100" cy="40" r="5" fill="#f6d79a" />
+          {[[58, 112], [142, 112], [40, 172], [92, 172]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r="3.2" fill="#f2eee4" />)}
         </>
       )}
+
       {kind === 'tell' && (
-        <g className="lp-seq">
-          {[[34, 150], [68, 92], [100, 70], [132, 92], [166, 150]].map(([x, y], i) => (
-            <circle key={i} cx={x} cy={y} r={i === 2 ? 4.6 : 3} fill={i === 2 ? '#f6d79a' : '#f2eee4'} style={{ animationDelay: `${i * 0.26}s` }} />
+        <>
+          <circle className="lp-m-core" cx="100" cy="48" r="4.6" fill="#f6d79a" />
+          <g className="lp-twinkle">
+            {[[58, 92, 2.4], [142, 92, 2.4], [44, 132, 1.8], [156, 132, 1.8], [78, 60, 1.6], [122, 60, 1.6]].map(([x, y, r], i) => (
+              <circle key={i} cx={x} cy={y} r={r} fill="#f2eee4" style={{ animationDelay: `${i * 0.34}s` }} />
+            ))}
+          </g>
+        </>
+      )}
+
+      {kind === 'pass' && (
+        <g className="lp-relay">
+          {[28, 64, 100, 136, 172].map((x, i) => (
+            <circle key={i} cx={x} cy={100} r={i === 0 || i === 4 ? 5 : 3.4} fill={i === 0 ? '#f6d79a' : '#f2eee4'} style={{ animationDelay: `${i * 0.28}s` }} />
           ))}
         </g>
-      )}
-      {kind === 'pass' && (
-        <>
-          <circle cx="50" cy="100" r="5" fill="#f6d79a" />
-          <g className="lp-seq">
-            {[[80, 100], [100, 100], [120, 100]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r="2.6" fill="#f2eee4" style={{ animationDelay: `${i * 0.3}s` }} />)}
-          </g>
-          <circle cx="150" cy="100" r="5" fill="#f2eee4" />
-        </>
       )}
     </svg>
   );
@@ -232,9 +243,9 @@ function Motif({ kind }: { kind: 'gather' | 'tell' | 'pass' }) {
 
 /* ---------- Testimonials ---------- */
 const TESTIMONIALS = [
-  { q: 'J’ai enfin réuni les deux branches de ma famille au même endroit.', who: 'Sophie M.', where: 'Lyon' },
-  { q: 'Mes enfants ont découvert l’histoire de leurs arrière-grands-parents.', who: 'Karim B.', where: 'Marseille' },
-  { q: 'Le récit généré m’a émue aux larmes. C’est notre histoire, enfin écrite.', who: 'Claire D.', where: 'Paris' },
+  { q: 'Nous avons retrouvé 4 générations perdues en une soirée.', who: 'Sophie M.', where: 'Lyon' },
+  { q: 'Mon père ne connaissait pas le nom de son arrière-grand-père. Maintenant si.', who: 'Karim B.', where: 'Marseille' },
+  { q: 'L’IA a écrit la biographie de ma grand-mère mieux que je n’aurais pu le faire.', who: 'Claire D.', where: 'Paris' },
 ];
 
 const FEATURES = [
@@ -313,7 +324,7 @@ export default function Landing() {
             )}
             <button onClick={startDemo} className="lp-btn lp-btn-ghost">Voir la démo</button>
           </div>
-          <p className="lp-hero-count">Rejoignez <b className="lp-count-n"><CountUp to={2847} /></b> familles qui gardent leur histoire vivante.</p>
+          <p className="lp-hero-count">Rejoignez <b className="lp-count-n"><CountUp to={2847} /></b> familles qui préservent leur histoire.</p>
           <p className="lp-hero-fine">C’est gratuit. Aucune carte bancaire. Vos données restent en Europe.</p>
         </div>
         <div className="lp-cue" aria-hidden="true"><span /></div>
@@ -386,10 +397,12 @@ export default function Landing() {
               {p.popular && <span className="lp-plan-badge">Populaire</span>}
               <span className="lp-plan-name">{p.name}</span>
               <div className="lp-plan-price">
+                {billing === 'annual' && p.monthly > amount && <span className="lp-plan-was" aria-label={`${p.monthly}€ par mois`}>{p.monthly}€</span>}
                 <span className="lp-plan-amount" key={`${p.name}-${billing}`}>{amount}€</span>
                 {amount > 0 && <span className="lp-plan-period">/mois</span>}
               </div>
               <span className="lp-plan-note">{billing === 'annual' && amount > 0 ? `Soit ${amount * 12}€ par an` : p.note}</span>
+              {p.popular && billing === 'annual' && <span className="lp-plan-save">Économisez 20%</span>}
               <ul className="lp-plan-feats">
                 {p.features.map((f) => (
                   <li key={f}><span className="lp-check" aria-hidden="true">✓</span>{f}</li>
@@ -501,10 +514,11 @@ const CSS = `
 .lp-btn { appearance: none; cursor: pointer; font-family: var(--lp-serif); font-weight: 500; font-size: 1.05rem; padding: 14px 28px; border: 1px solid transparent; border-radius: 0; transition: transform 0.12s var(--ease), box-shadow 0.3s var(--ease), background 0.2s, color 0.2s, border-color 0.2s; line-height: 1.2; }
 .lp-btn:active { transform: translateY(1px); }
 .lp-btn-amber { background: var(--amber); color: #1a1206; border-color: var(--amber); }
-.lp-btn-amber:hover { background: var(--amber-soft); border-color: var(--amber-soft); box-shadow: 0 0 0 1px var(--amber-soft), 0 14px 40px rgba(231,180,92,0.28); }
+.lp-btn-amber:hover { background: var(--amber-soft); border-color: var(--amber-soft); transform: translateY(-1px); box-shadow: 0 0 0 1px var(--amber-soft), 0 14px 40px rgba(231,180,92,0.28); }
+@media (prefers-reduced-motion: reduce) { .lp-btn-amber:hover { transform: none; } }
 .lp-btn-ghost { background: transparent; color: var(--star); border-color: var(--hair-2); }
 .lp-btn-ghost:hover { border-color: var(--star); background: rgba(242,238,228,0.05); }
-.lp-btn-xl { font-size: 1.18rem; padding: 18px 42px; }
+.lp-btn-xl { font-size: 1.2rem; padding: 20px 48px; }
 .lp-btn-amber.lp-btn-xl:hover { box-shadow: 0 0 0 1px var(--amber-soft), 0 18px 52px rgba(231,180,92,0.34); }
 
 /* NAV */
@@ -568,8 +582,8 @@ const CSS = `
 .lp-manifesto-q em { display: block; font-family: var(--lp-serif); font-style: italic; font-weight: 400; font-size: clamp(2rem, 5.4vw, 3.8rem); line-height: 1.16; letter-spacing: -0.02em; color: var(--amber); text-wrap: balance; }
 /* Testimonials (Spectral italic, single-family — no mono, keeps the direction) */
 .lp-testi { max-width: 1080px; margin: clamp(72px, 10vw, 130px) auto 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(28px, 4vw, 54px); text-align: left; }
-.lp-testi-q { margin: 0; font-family: var(--lp-serif); font-style: italic; font-weight: 300; font-size: clamp(1.12rem, 1.7vw, 1.34rem); line-height: 1.55; color: var(--star); text-wrap: pretty; }
-.lp-testi-by { margin: 16px 0 0; font-family: var(--lp-serif); font-size: 0.98rem; letter-spacing: 0.01em; color: var(--star-muted); }
+.lp-testi-q { margin: 0; font-family: var(--lp-serif); font-style: italic; font-weight: 300; font-size: 1.1rem; line-height: 1.55; color: rgba(242,238,228,0.9); text-wrap: pretty; }
+.lp-testi-by { margin: 14px 0 0; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.06em; color: var(--star-faint); }
 .lp-testi-dash { color: var(--amber); margin-right: 4px; }
 @media (max-width: 760px) { .lp-testi { grid-template-columns: 1fr; max-width: 540px; gap: 38px; } }
 
@@ -593,13 +607,18 @@ const CSS = `
 .lp-m-core { transform-box: fill-box; transform-origin: center; animation: lp-glow 4s ease-in-out infinite; }
 .lp-seq circle { animation: lp-seqpulse 2.8s ease-in-out infinite; }
 @keyframes lp-seqpulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+/* Raconter: étoiles qui clignotent · Transmettre: relais gauche→droite */
+.lp-twinkle circle { animation: lp-twk 2.6s ease-in-out infinite; }
+@keyframes lp-twk { 0%, 100% { opacity: 0.22; } 50% { opacity: 1; } }
+.lp-relay circle { animation: lp-relay 2.4s ease-in-out infinite; }
+@keyframes lp-relay { 0%, 100% { opacity: 0.4; } 35% { opacity: 1; } }
 /* Motif lines draw on scroll (gated on the section's reveal) */
 .lp-motif-line { stroke-dasharray: 1; stroke-dashoffset: 1; }
 .lp-rv-in .lp-motif-line { animation: lp-draw 1.3s var(--ease) 0.15s forwards; }
 .lp-feat-k { font-family: var(--lp-serif); font-style: italic; font-size: 1.15rem; color: var(--amber); }
 .lp-feat-t { margin: 14px 0 0; font-family: var(--lp-serif); font-weight: 400; font-size: clamp(1.7rem, 3.4vw, 2.6rem); line-height: 1.1; letter-spacing: -0.02em; color: var(--star); text-wrap: balance; }
 .lp-feat-d { margin: 20px 0 0; max-width: 50ch; font-size: 1.12rem; line-height: 1.75; color: var(--star-muted); }
-@media (prefers-reduced-motion: reduce) { .lp-m-core, .lp-seq circle { animation: none; opacity: 1; } .lp-motif-line { stroke-dashoffset: 0; animation: none; } }
+@media (prefers-reduced-motion: reduce) { .lp-m-core, .lp-seq circle, .lp-twinkle circle, .lp-relay circle { animation: none; opacity: 1; } .lp-motif-line { stroke-dashoffset: 0; animation: none; } }
 @media (max-width: 760px) {
   .lp-feat, .lp-feat-alt { grid-template-columns: 1fr; gap: 28px; }
   .lp-feat-alt .lp-feat-art { order: 0; }
@@ -613,17 +632,19 @@ const CSS = `
 .lp-fig-note { margin: clamp(32px, 4vw, 48px) 0 0; font-family: var(--lp-serif); font-style: italic; font-size: 1.05rem; color: var(--star-faint); }
 
 /* FINAL CTA */
-.lp-final { position: relative; padding: clamp(140px, 20vw, 280px) 24px clamp(120px, 16vw, 220px); text-align: center; background: radial-gradient(90% 130% at 50% 116%, #221d3a 0%, #14111f 42%, var(--sky) 72%); overflow: hidden; }
+.lp-final { position: relative; padding: clamp(112px, 15vw, 200px) 24px clamp(96px, 12vw, 168px); text-align: center; background: radial-gradient(90% 130% at 50% 116%, #221d3a 0%, #14111f 42%, var(--sky) 72%); overflow: hidden; }
 /* a thin meridian of light rising into the star */
 .lp-final::before { content: ''; position: absolute; left: 50%; top: 0; width: 1px; height: clamp(90px, 14vw, 200px); transform: translateX(-50%); background: linear-gradient(transparent, rgba(231,180,92,0.5)); pointer-events: none; }
 .lp-final-star { position: absolute; z-index: 2; top: clamp(54px, 11vw, 150px); left: 50%; width: 12px; height: 12px; border-radius: 50%; background: var(--amber-soft); transform: translateX(-50%); box-shadow: 0 0 0 7px rgba(231,180,92,0.16), 0 0 0 16px rgba(231,180,92,0.07), 0 0 60px 16px rgba(231,180,92,0.5); animation: lp-pulse 3.6s ease-in-out infinite; }
-.lp-final-constel { position: absolute; left: 50%; top: 50%; width: min(560px, 84vw); transform: translate(-50%, -44%); opacity: 0.6; pointer-events: none; z-index: 0; }
+.lp-final-constel { position: absolute; left: 50%; top: 50%; width: min(560px, 84vw); transform: translate(-50%, -44%); opacity: 0.5; pointer-events: none; z-index: 0; }
+.lp-final-constel g:last-of-type { animation: lp-glow 5s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .lp-final-constel g:last-of-type { animation: none; } }
 .lp-final-body { position: relative; z-index: 1; }
 .lp-final-fine { margin: 28px 0 0; font-size: 0.9rem; color: var(--star-faint); letter-spacing: 0.02em; }
 @keyframes lp-pulse { 0%, 100% { opacity: 0.85; transform: translateX(-50%) scale(1); } 50% { opacity: 1; transform: translateX(-50%) scale(1.3); } }
-.lp-final-h { margin: 0; font-family: var(--lp-serif); font-weight: 200; font-size: clamp(2.6rem, 7vw, 5rem); line-height: 1.0; letter-spacing: -0.03em; color: var(--star); text-wrap: balance; }
-.lp-final-h em { font-style: italic; font-weight: 400; color: var(--amber); }
-.lp-final-sub { margin: 28px auto 0; max-width: 44ch; font-family: var(--lp-serif); font-style: italic; font-size: clamp(1.15rem, 2.2vw, 1.5rem); line-height: 1.5; color: var(--star-muted); }
+.lp-final-h { margin: 0; font-family: var(--lp-serif); font-style: italic; font-weight: 300; font-size: clamp(2.6rem, 7vw, 4.6rem); line-height: 1.04; letter-spacing: -0.03em; color: var(--amber); text-wrap: balance; }
+.lp-final-h em { font-style: italic; font-weight: 400; color: var(--amber-soft); }
+.lp-final-sub { margin: 22px auto 0; max-width: 46ch; font-family: var(--lp-serif); font-style: italic; font-size: clamp(1.02rem, 1.7vw, 1.25rem); line-height: 1.55; color: var(--star-muted); }
 .lp-final-cta { margin-top: 48px; }
 @media (prefers-reduced-motion: reduce) { .lp-final-star { animation: none; } }
 
@@ -650,10 +671,12 @@ const CSS = `
 .lp-plan-name { font-family: var(--lp-serif); font-weight: 500; font-size: 1.05rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--star-muted); }
 .lp-plan-pop .lp-plan-name { color: var(--amber); }
 .lp-plan-price { margin: 22px 0 0; display: flex; align-items: baseline; gap: 8px; }
-.lp-plan-amount { font-family: var(--lp-serif); font-weight: 200; font-size: clamp(3.4rem, 5.5vw, 4.6rem); line-height: 0.9; letter-spacing: -0.03em; color: var(--star); }
+.lp-plan-amount { font-family: var(--lp-serif); font-weight: 200; font-size: clamp(3.4rem, 5.5vw, 4.6rem); line-height: 0.9; letter-spacing: -0.03em; color: var(--star); font-variant-numeric: tabular-nums; }
 .lp-plan-pop .lp-plan-amount { color: var(--amber-soft); }
+.lp-plan-was { align-self: flex-end; margin-bottom: 8px; font-family: var(--lp-serif); font-size: 1.3rem; color: var(--star-faint); text-decoration: line-through; text-decoration-color: var(--amber); }
 .lp-plan-period { font-family: var(--lp-serif); font-size: 1.1rem; color: var(--star-faint); }
 .lp-plan-note { margin-top: 10px; font-family: var(--lp-serif); font-style: italic; font-size: 1.02rem; color: var(--star-muted); }
+.lp-plan-save { align-self: flex-start; margin-top: 10px; font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 9px; background: rgba(231,180,92,0.16); color: var(--amber); }
 .lp-plan-feats { list-style: none; margin: clamp(28px, 3vw, 38px) 0 0; padding: clamp(28px, 3vw, 36px) 0 0; border-top: 1px solid var(--hair); display: flex; flex-direction: column; gap: 15px; flex: 1; }
 .lp-plan-feats li { display: flex; gap: 12px; align-items: flex-start; font-size: 1.05rem; line-height: 1.5; color: var(--star-muted); }
 .lp-check { color: var(--amber); font-size: 0.92rem; line-height: 1.6; flex-shrink: 0; }
@@ -668,11 +691,14 @@ const CSS = `
 .lp-footer { background: var(--sky-deep); border-top: 1px solid var(--hair); padding: 64px clamp(20px, 6vw, 80px) 32px; }
 .lp-footer-top { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; padding-bottom: 32px; border-bottom: 1px solid var(--hair); }
 .lp-footer-word { font-size: 1.7rem; }
-.lp-footer-tag { margin: 12px 0 0; max-width: 30ch; font-size: 0.98rem; line-height: 1.6; color: var(--star-faint); }
+.lp-footer-tag { margin: 12px 0 0; font-size: 0.98rem; line-height: 1.6; color: var(--star-faint); white-space: nowrap; }
 .lp-footer-col { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
 .lp-footer-h { font-family: var(--lp-serif); font-style: italic; font-size: 0.95rem; color: var(--star-faint); }
 .lp-footer-col a, .lp-footer-btn { appearance: none; background: none; border: none; padding: 0; cursor: pointer; font-family: var(--lp-serif); font-size: 1rem; color: var(--star-muted); text-decoration: none; text-align: left; transition: color 0.2s; }
 .lp-footer-col a:hover, .lp-footer-btn:hover { color: var(--amber); }
+/* legal links — mono tiny muted */
+.lp-footer [aria-label="Légal"] a { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em; color: var(--star-muted); }
+.lp-footer [aria-label="Légal"] a:hover { color: var(--amber); }
 .lp-footer-bottom { max-width: 1180px; margin: 22px auto 0; font-family: var(--lp-serif); font-style: italic; font-size: 0.88rem; color: var(--star-faint); }
 @media (max-width: 760px) { .lp-footer-top { grid-template-columns: 1fr 1fr; gap: 32px; } .lp-footer-brand { grid-column: 1 / -1; } }
 `;
