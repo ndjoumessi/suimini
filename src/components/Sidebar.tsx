@@ -364,10 +364,10 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sb-nav::-webkit-scrollbar-thumb:hover { background: var(--accent); }
         .sb-group { padding: 2px 0; }
         .sb-group + .sb-group { border-top: 1px solid var(--border); }
-        .sb-section { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-light); padding: 3px 16px 3px; }
+        .sb-section { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-light); padding: 2px 16px 2px; }
         .sb-item {
           position: relative; width: 100%; display: flex; align-items: center; gap: 12px;
-          padding: 5px 16px; border: none; background: transparent; cursor: pointer;
+          padding: 4px 16px; border: none; background: transparent; cursor: pointer; line-height: 1.3;
           color: var(--text-muted); font-family: var(--font-body); font-size: 13.5px; font-weight: 500;
           text-align: left; text-decoration: none; transition: background var(--t-fast), color var(--t-fast);
         }
@@ -388,11 +388,11 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
           transition: background var(--t-fast), box-shadow var(--t-fast);
         }
         .sb-add:hover { background: var(--accent-hover); box-shadow: var(--shadow-accent); }
-        .sb-action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
+        .sb-action-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 6px; }
         .sb-chip {
-          display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+          display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
           background: transparent; border: 1px solid var(--border); color: var(--text-muted); cursor: pointer;
-          font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; padding: 7px 4px;
+          font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.02em; text-transform: uppercase; padding: 7px 2px;
           transition: border-color var(--t-fast), color var(--t-fast), background var(--t-fast);
         }
         .sb-chip:hover { border-color: var(--accent); color: var(--accent-text); background: var(--accent-light); }
