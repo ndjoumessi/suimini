@@ -7,6 +7,7 @@ import { joinTreeCursors, presenceColor, collaborationEnabled, type CursorPeer }
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/useMediaQuery';
 import { Search, ZoomIn, ZoomOut, Crosshair, Info, Plus, Aperture, Sprout, Printer, Camera, CheckCircle2, FileText, Maximize2, MapPin, Crown } from 'lucide-react';
+import FocusTree from './FocusTree';
 
 /** Runtime node-layout dimensions. On desktop these are EXACTLY the historical
  *  module constants (so desktop rendering is byte-for-byte unchanged); on phones
@@ -137,7 +138,11 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
   const { user } = useAuth();
   // Responsive node-layout dims (desktop = historical constants, byte-for-byte).
   const isMobile = useIsMobile();
-  const dims = isMobile ? MOBILE_DIMS : DESKTOP_DIMS;
+  // « Focus centré » (3 générations) by default; « complète » = the full pan/zoom tree.
+  const [treeMode, setTreeMode] = useState<'focus' | 'full'>('focus');
+  const baseDims = isMobile ? MOBILE_DIMS : DESKTOP_DIMS;
+  // Vue complète: +50% breathing room between cards (legibility).
+  const dims = treeMode === 'full' ? { ...baseDims, H_GAP: Math.round(baseDims.H_GAP * 1.5), V_GAP: Math.round(baseDims.V_GAP * 1.5) } : baseDims;
   const { NODE_W, NODE_H, H_GAP, V_GAP, AVA, AVA_X } = dims;
   // OTHER connected users on this tree (excludes the current user), each with
   // their latest cursor position. Empty when offline/guest or alone — the
@@ -150,6 +155,8 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
   const lastCursorSentRef = useRef(0);
   const [, setCursorTick] = useState(0);
   const [rootId, setRootId] = useState(tree.rootPersonId || tree.persons[0]?.id || null);
+  // Currently-centred person in « Focus » mode (defaults to the root/pivot).
+  const [focusPersonId, setFocusPersonId] = useState<string | null>(tree.rootPersonId || tree.persons[0]?.id || null);
   const [scale, setScale] = useState(1.1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -182,6 +189,11 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
       : (tree.persons[0]?.id ?? null);
     if (next !== rootId) setRootId(next);
   }, [tree.persons, tree.rootPersonId, rootId]);
+
+  // Keep the focused person valid; fall back to the current root.
+  useEffect(() => {
+    if (!focusPersonId || !tree.persons.some(p => p.id === focusPersonId)) setFocusPersonId(rootId);
+  }, [tree.persons, rootId, focusPersonId]);
 
   // Close-family id set for focus mode (focus person + spouses + parents + children + siblings).
   const focusSet: Set<string> | null = (() => {
@@ -690,6 +702,22 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
           </h2>
         )}
 
+        {/* View toggle: Focus (3 generations) vs Complète (full pan/zoom tree) */}
+        <div role="group" aria-label="Mode d’affichage" style={{ display: 'inline-flex', border: '1px solid var(--border)', flexShrink: 0 }}>
+          <button onClick={() => setTreeMode('focus')} aria-pressed={treeMode === 'focus'}
+            style={{ appearance: 'none', cursor: 'pointer', border: 'none', padding: '7px 12px', minHeight: '32px', fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600,
+              background: treeMode === 'focus' ? 'var(--accent)' : 'transparent', color: treeMode === 'focus' ? '#0d0d0d' : 'var(--text-muted)' }}>
+            Focus
+          </button>
+          <button onClick={() => setTreeMode('full')} aria-pressed={treeMode === 'full'}
+            style={{ appearance: 'none', cursor: 'pointer', border: 'none', borderLeft: '1px solid var(--border)', padding: '7px 12px', minHeight: '32px', fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600,
+              background: treeMode === 'full' ? 'var(--accent)' : 'transparent', color: treeMode === 'full' ? '#0d0d0d' : 'var(--text-muted)' }}>
+            Complète
+          </button>
+        </div>
+
+        {sep}
+
         {/* Change root */}
         <div style={{ position: 'relative' }}>
           <button onClick={() => setShowSearch(!showSearch)} className="btn btn-secondary btn-sm" style={{ gap: '6px' }} title={t('changeRoot')} aria-label={t('changeRoot')} aria-expanded={showSearch}>
@@ -700,7 +728,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
               <input autoFocus value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder={t('personNamePlaceholder')} className="input" style={{ marginBottom: '6px' }} />
               <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
                 {(searchQ ? filteredPersons : tree.persons.slice(0, 20)).map(p => (
-                  <button key={p.id} onClick={() => { setRootId(p.id); setFocusId(null); setShowSearch(false); setSearchQ(''); setTimeout(() => centerOn(p.id), 120); }}
+                  <button key={p.id} onClick={() => { setRootId(p.id); setFocusPersonId(p.id); setFocusId(null); setShowSearch(false); setSearchQ(''); setTimeout(() => centerOn(p.id), 120); }}
                     style={{ width: '100%', padding: '7px 8px', border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left', borderRadius: 'var(--radius)', fontSize: '13px', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}
                     onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-muted)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'none'}
@@ -715,7 +743,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
           )}
         </div>
 
-        {layoutMode === 'vertical' && <>
+        {treeMode === 'full' && layoutMode === 'vertical' && <>
           {sep}
           <button onClick={recenter} className="btn btn-secondary btn-sm btn-icon" title={t('centerOnRoot')} aria-label={t('center')}><Crosshair size={14} aria-hidden="true" /></button>
           <button onClick={fitToScreen} className="btn btn-secondary btn-sm btn-icon" title={t('fitToScreen')} aria-label={t('fitToScreen')}><Maximize2 size={14} aria-hidden="true" /></button>
@@ -724,13 +752,15 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
           <button onClick={() => setScale(s => Math.min(2.5, s * 1.2))} className="btn btn-secondary btn-sm btn-icon" title={t('zoomIn')} aria-label={t('zoomIn')}><ZoomIn size={14} aria-hidden="true" /></button>
         </>}
 
-        {sep}
-        <button onClick={() => setLayoutMode(m => m === 'fan' ? 'vertical' : 'fan')} className="btn btn-sm" style={{ gap: '6px', background: layoutMode === 'fan' ? 'var(--accent)' : 'var(--bg-muted)', color: layoutMode === 'fan' ? '#fff' : 'var(--text-muted)', border: '1px solid var(--border)' }} title={t('toggleFan')} aria-label={t('fan')} aria-pressed={layoutMode === 'fan'}>
-          <Aperture size={14} aria-hidden="true" /> {!isMobile && t('fan')}
-        </button>
-        <button onClick={() => setShowLegend(l => !l)} className="btn btn-secondary btn-sm btn-icon" title={t('legend')} aria-label={t('legend')} aria-pressed={showLegend}>
-          <Info size={14} aria-hidden="true" />
-        </button>
+        {treeMode === 'full' && <>
+          {sep}
+          <button onClick={() => setLayoutMode(m => m === 'fan' ? 'vertical' : 'fan')} className="btn btn-sm" style={{ gap: '6px', background: layoutMode === 'fan' ? 'var(--accent)' : 'var(--bg-muted)', color: layoutMode === 'fan' ? '#0d0d0d' : 'var(--text-muted)', border: '1px solid var(--border)' }} title={t('toggleFan')} aria-label={t('fan')} aria-pressed={layoutMode === 'fan'}>
+            <Aperture size={14} aria-hidden="true" /> {!isMobile && t('fan')}
+          </button>
+          <button onClick={() => setShowLegend(l => !l)} className="btn btn-secondary btn-sm btn-icon" title={t('legend')} aria-label={t('legend')} aria-pressed={showLegend}>
+            <Info size={14} aria-hidden="true" />
+          </button>
+        </>}
 
         {!readOnly && (
           <>
@@ -743,7 +773,20 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
         )}
       </div>
 
-      {/* Canvas */}
+      {/* « Focus centré » — 3 generations, larger nodes, side panel via onSelectPerson */}
+      {treeMode === 'focus' && rootId && (
+        <FocusTree
+          tree={tree}
+          focusId={focusPersonId || rootId}
+          pivotId={rootId}
+          selectedPersonId={selectedPersonId}
+          onFocus={setFocusPersonId}
+          onSelectPerson={(id) => { if (!readOnly) onSelectPerson(id); }}
+        />
+      )}
+
+      {/* Canvas (vue complète) */}
+      {treeMode === 'full' && (
       <div
         ref={containerRef}
         onWheel={handleWheel}
@@ -1118,6 +1161,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
           );
         })()}
       </div>
+      )}
     </div>
   );
 }
