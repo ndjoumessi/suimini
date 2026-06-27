@@ -59,16 +59,16 @@ export default function TreeToolbar({
       )}
 
       {/* View toggle: Focus (3 generations) vs Complète (full pan/zoom tree) */}
-      <div role="group" aria-label="Mode d’affichage" style={{ display: 'inline-flex', border: '1px solid var(--border)', flexShrink: 0 }}>
+      <div role="group" aria-label={t('displayMode')} style={{ display: 'inline-flex', border: '1px solid var(--border)', flexShrink: 0 }}>
         <button onClick={() => setTreeMode('focus')} aria-pressed={treeMode === 'focus'}
           style={{ appearance: 'none', cursor: 'pointer', border: 'none', padding: '7px 12px', minHeight: '32px', fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600,
             background: treeMode === 'focus' ? 'var(--accent)' : 'transparent', color: treeMode === 'focus' ? '#0d0d0d' : 'var(--text-muted)' }}>
-          Focus
+          {t('modeFocus')}
         </button>
         <button onClick={() => setTreeMode('full')} aria-pressed={treeMode === 'full'}
           style={{ appearance: 'none', cursor: 'pointer', border: 'none', borderLeft: '1px solid var(--border)', padding: '7px 12px', minHeight: '32px', fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600,
             background: treeMode === 'full' ? 'var(--accent)' : 'transparent', color: treeMode === 'full' ? '#0d0d0d' : 'var(--text-muted)' }}>
-          Complète
+          {t('modeFull')}
         </button>
       </div>
 

@@ -1,27 +1,27 @@
 'use client';
+import { useTranslations } from 'next-intl';
 import { XCircle, LogOut, LifeBuoy } from 'lucide-react';
 
 export default function RejectedScreen({ reason, onSignOut }: { reason?: string | null; onSignOut: () => void }) {
+  const t = useTranslations('accountStatus');
   return (
     <div style={wrap}>
       <div style={card}>
         <XCircle size={64} strokeWidth={1.5} style={{ color: 'var(--danger)' }} aria-hidden="true" />
-        <h1 className="serif" style={title}>Accès refusé</h1>
-        <p style={para}>
-          Votre demande d’inscription n’a pas été acceptée.
-        </p>
+        <h1 className="serif" style={title}>{t('rejectedTitle')}</h1>
+        <p style={para}>{t('rejectedBody')}</p>
         {reason && (
           <div style={reasonBox}>
-            <span className="label" style={{ display: 'block', marginBottom: '4px' }}>Motif</span>
+            <span className="label" style={{ display: 'block', marginBottom: '4px' }}>{t('reasonLabel')}</span>
             {reason}
           </div>
         )}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '8px' }}>
           <a href="mailto:support@suimini.app" className="btn btn-primary btn-sm">
-            <LifeBuoy size={14} aria-hidden="true" /> Contacter le support
+            <LifeBuoy size={14} aria-hidden="true" /> {t('contactSupport')}
           </a>
           <button onClick={onSignOut} className="btn btn-ghost btn-sm">
-            <LogOut size={14} aria-hidden="true" /> Se déconnecter
+            <LogOut size={14} aria-hidden="true" /> {t('signOut')}
           </button>
         </div>
       </div>

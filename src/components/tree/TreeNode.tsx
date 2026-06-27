@@ -1,4 +1,5 @@
 'use client';
+import { useTranslations } from 'next-intl';
 import { Person } from '@/types';
 import { Crown } from 'lucide-react';
 import { nodeStyle, nameLines } from './nodeStyle';
@@ -25,6 +26,7 @@ export default function TreeNode({
   person: p, role, x, y, w, h, isPivot, isSpouse, isSelected, isFocus, dim,
   genColor, gen, dateStr, displayName, unknownLabel, onClick, onDoubleClick,
 }: Props) {
+  const t = useTranslations('tree');
   const st = nodeStyle(p, isPivot, isSpouse);
   const { primary, secondary } = nameLines(p, unknownLabel);
   const place = p.birthPlace?.city;
@@ -41,7 +43,7 @@ export default function TreeNode({
       <span className="ft-edge" style={{ background: st.bar }} aria-hidden="true" />
       <span className="ft-gen" style={{ background: genColor }} aria-hidden="true" />
       {isPivot && <Crown size={11} className="ft-crown" aria-hidden="true" />}
-      <span className="ft-gen-tag" style={{ color: genColor }} aria-hidden="true">GÉN.&nbsp;{gen + 1}</span>
+      <span className="ft-gen-tag" style={{ color: genColor }} aria-hidden="true">{t('genAbbr')}&nbsp;{gen + 1}</span>
       <span className="ft-body">
         <span className="ft-name" style={{ color: st.name }}>{primary}</span>
         {secondary && <span className="ft-surname">{secondary}</span>}

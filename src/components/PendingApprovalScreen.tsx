@@ -1,20 +1,19 @@
 'use client';
+import { useTranslations } from 'next-intl';
 import { Clock, LogOut } from 'lucide-react';
 
 export default function PendingApprovalScreen({ email, onSignOut }: { email?: string | null; onSignOut: () => void }) {
+  const t = useTranslations('accountStatus');
   return (
     <div style={wrap}>
       <div style={card}>
         <Clock size={64} strokeWidth={1.5} style={{ color: 'var(--accent)' }} aria-hidden="true" />
-        <h1 className="serif" style={title}>Demande en cours d’examen</h1>
-        <p style={para}>
-          Votre compte a bien été créé. Un administrateur va examiner votre demande
-          dans les plus brefs délais.
-        </p>
+        <h1 className="serif" style={title}>{t('pendingTitle')}</h1>
+        <p style={para}>{t('pendingBody')}</p>
         {email && <span style={badge}>{email}</span>}
-        <p style={small}>Vous recevrez un email quand votre compte sera activé.</p>
+        <p style={small}>{t('pendingSmall')}</p>
         <button onClick={onSignOut} className="btn btn-ghost btn-sm" style={{ marginTop: '8px' }}>
-          <LogOut size={14} aria-hidden="true" /> Se déconnecter
+          <LogOut size={14} aria-hidden="true" /> {t('signOut')}
         </button>
       </div>
     </div>

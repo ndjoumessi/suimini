@@ -1,22 +1,21 @@
 'use client';
+import { useTranslations } from 'next-intl';
 import { ShieldOff, LogOut, LifeBuoy } from 'lucide-react';
 
 export default function SuspendedScreen({ onSignOut }: { onSignOut: () => void }) {
+  const t = useTranslations('accountStatus');
   return (
     <div style={wrap}>
       <div style={card}>
         <ShieldOff size={64} strokeWidth={1.5} style={{ color: 'var(--warning)' }} aria-hidden="true" />
-        <h1 className="serif" style={title}>Compte suspendu</h1>
-        <p style={para}>
-          L’accès à votre compte a été temporairement suspendu. Contactez le support
-          pour en savoir plus.
-        </p>
+        <h1 className="serif" style={title}>{t('suspendedTitle')}</h1>
+        <p style={para}>{t('suspendedBody')}</p>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '8px' }}>
           <a href="mailto:support@suimini.app" className="btn btn-primary btn-sm">
-            <LifeBuoy size={14} aria-hidden="true" /> Contacter le support
+            <LifeBuoy size={14} aria-hidden="true" /> {t('contactSupport')}
           </a>
           <button onClick={onSignOut} className="btn btn-ghost btn-sm">
-            <LogOut size={14} aria-hidden="true" /> Se déconnecter
+            <LogOut size={14} aria-hidden="true" /> {t('signOut')}
           </button>
         </div>
       </div>

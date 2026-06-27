@@ -858,7 +858,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                   {!isMobile && (
                     <text x={NODE_W - 9} y={14} textAnchor="end" fontFamily="var(--font-mono)" fontSize={8.5} fontWeight={700}
                       fill={genColorTV(genOf(node.y))} opacity={0.9}>
-                      GÉN. {genOf(node.y) + 1}
+                      {t('genAbbr')} {genOf(node.y) + 1}
                     </text>
                   )}
 

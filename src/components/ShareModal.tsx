@@ -102,18 +102,18 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
   async function doInvite() {
     if (!user || inviting) return;
     const email = memberEmail.trim().toLowerCase();
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setInviteError('E-mail invalide'); onToast?.('E-mail invalide', 'error'); return; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setInviteError(t('errEmailInvalid')); onToast?.(t('errEmailInvalid'), 'error'); return; }
     setInviting(true);
     setInviteError(null);
     try {
       const res = await inviteMember(tree.id, email, memberRole, user.id, inviterName, tree.name);
-      if (!res) { setInviteError('Échec de l’invitation'); onToast?.('Échec de l’invitation', 'error'); return; }
+      if (!res) { setInviteError(t('errInviteFailed')); onToast?.(t('errInviteFailed'), 'error'); return; }
       setMemberEmail('');
       setMemberRole('viewer');
       await refreshMembers();
       notify(tm('inviteSuccess', { email }));
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Une erreur est survenue';
+      const msg = e instanceof Error ? e.message : t('errGeneric');
       setInviteError(msg); onToast?.(msg, 'error');
     } finally {
       setInviting(false);
@@ -123,14 +123,14 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
   async function doRemoveMember(email: string) {
     if (typeof window !== 'undefined' && !window.confirm(tm('removeConfirm', { email }))) return;
     const ok = await removeMember(tree.id, email);
-    if (!ok) { onToast?.('Échec', 'error'); return; }
+    if (!ok) { onToast?.(t('errFailed'), 'error'); return; }
     await refreshMembers();
     notify(t('removed'));
   }
 
   async function doChangeRole(email: string, role: MemberRole) {
     const ok = await updateMemberRole(tree.id, email, role);
-    if (!ok) { onToast?.('Échec', 'error'); return; }
+    if (!ok) { onToast?.(t('errFailed'), 'error'); return; }
     await refreshMembers();
     notify(t('roleUpdated'));
   }
@@ -161,26 +161,26 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
     const slug = next ? (publicSlug || makeSlug(tree.name)) : publicSlug;
     const { error } = await setTreePublic(tree.id, next, slug);
     setTogglingPublic(false);
-    if (error) { onToast?.('Échec de la mise à jour du partage public', 'error'); return; }
+    if (error) { onToast?.(t('errPublicUpdate'), 'error'); return; }
     setIsPublic(next);
     if (next && slug) setPublicSlug(slug);
-    onToast?.(next ? 'Arbre rendu public' : 'Partage public désactivé', next ? 'success' : 'info');
+    onToast?.(next ? t('publicEnabled') : t('publicDisabled'), next ? 'success' : 'info');
   }
 
   async function doShare() {
     if (sharing) return;
     const email = shareEmail.trim().toLowerCase();
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setShareError('E-mail invalide'); onToast?.('E-mail invalide', 'error'); return; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setShareError(t('errEmailInvalid')); onToast?.(t('errEmailInvalid'), 'error'); return; }
     setSharing(true);
     setShareError(null);
     try {
       const { error } = await shareTree(tree.id, email, sharePerm);
-      if (error) { setShareError('Échec du partage'); onToast?.('Échec du partage', 'error'); return; }
+      if (error) { setShareError(t('errShareFailed')); onToast?.(t('errShareFailed'), 'error'); return; }
       setShareEmail('');
       setShares(await listShares(tree.id));
-      onToast?.(`Invitation envoyée à ${email}`, 'success');
+      onToast?.(t('inviteSent', { email }), 'success');
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Une erreur est survenue';
+      const msg = e instanceof Error ? e.message : t('errGeneric');
       setShareError(msg); onToast?.(msg, 'error');
     } finally {
       setSharing(false);
@@ -189,7 +189,7 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
   async function removeShare(email: string) {
     await unshareTree(tree.id, email);
     setShares(await listShares(tree.id));
-    onToast?.('Partage retiré', 'info');
+    onToast?.(t('shareRemoved'), 'info');
   }
 
   // Generate a shareable JSON data URL
@@ -219,28 +219,28 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
 
   const embedCode = `<iframe src="${typeof window !== 'undefined' ? window.location.origin : 'https://suimini.vercel.app'}?tree=${tree.id}" width="100%" height="600" frameborder="0"></iframe>`;
 
-  const stats = `${tree.name} — ${tree.persons.length} personnes, ${tree.relationships.length} relations`;
+  const stats = t('statsLine', { name: tree.name, persons: tree.persons.length, relations: tree.relationships.length });
 
-  const socialText = `Découvrez l'arbre généalogique de la ${tree.name} sur Suimini !\n${tree.description ? tree.description + '\n' : ''}${stats}`;
+  const socialText = `${t('socialIntro', { name: tree.name })}\n${tree.description ? tree.description + '\n' : ''}${stats}`;
 
   const overlayRef = useOverlay(onClose);
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div ref={overlayRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Partager l'arbre" className="modal" style={{ maxWidth: '520px' }}>
+      <div ref={overlayRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={t('shareTitle')} className="modal" style={{ maxWidth: '520px' }}>
         <div style={{ padding: '20px 24px', borderBottom: 'var(--bw) solid var(--border-strong)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 className="serif" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}><Share2 size={20} aria-hidden="true" /> Partager l&apos;arbre</h2>
-          <button onClick={onClose} aria-label="Fermer" className="btn btn-ghost btn-sm btn-icon"><X size={16} /></button>
+          <h2 className="serif" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}><Share2 size={20} aria-hidden="true" /> {t('shareTitle')}</h2>
+          <button onClick={onClose} aria-label={t('close')} className="btn btn-ghost btn-sm btn-icon"><X size={16} /></button>
         </div>
 
         {/* Tabs */}
-        <div role="tablist" aria-label="Partage" style={{ display: 'flex', gap: '8px', padding: '12px 24px 0', flexWrap: 'wrap' }}>
+        <div role="tablist" aria-label={t('tabsAria')} style={{ display: 'flex', gap: '8px', padding: '12px 24px 0', flexWrap: 'wrap' }}>
           <button
             role="tab"
             aria-selected={tab === 'share'}
             onClick={() => setTab('share')}
             className={tab === 'share' ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'}
           >
-            <Share2 size={14} aria-hidden="true" /> Partage
+            <Share2 size={14} aria-hidden="true" /> {t('share')}
           </button>
           {canManageMembers && (
             <button
@@ -261,9 +261,9 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
         <div role="tabpanel" hidden={tab !== 'members'} style={{ padding: '20px 24px', display: tab === 'members' ? 'flex' : 'none', flexDirection: 'column', gap: '16px' }}>
           {!membersEnabled ? (
             <div style={{ padding: '12px', background: 'var(--bg-muted)', borderRadius: 'var(--radius)', fontSize: '13px', color: 'var(--text-muted)' }}>
-              Connectez-vous pour gérer les membres de cet arbre.
+              {t('signInToManage')}
               {onRequireAuth && (
-                <button onClick={onRequireAuth} className="btn btn-primary btn-sm" style={{ marginTop: '8px', width: '100%', justifyContent: 'center' }}>Se connecter</button>
+                <button onClick={onRequireAuth} className="btn btn-primary btn-sm" style={{ marginTop: '8px', width: '100%', justifyContent: 'center' }}>{t('signIn')}</button>
               )}
             </div>
           ) : (
@@ -365,21 +365,21 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
         <div role="tabpanel" hidden={tab !== 'share'} style={{ padding: '20px 24px', display: tab === 'share' ? 'flex' : 'none', flexDirection: 'column', gap: '16px' }}>
           {/* Supabase collaboration */}
           <div>
-            <Eyebrow Icon={Cloud}>Partager avec un compte</Eyebrow>
+            <Eyebrow Icon={Cloud}>{t('shareWithAccount')}</Eyebrow>
             {!cloud ? (
               <div style={{ padding: '12px', background: 'var(--bg-muted)', borderRadius: 'var(--radius)', fontSize: '13px', color: 'var(--text-muted)' }}>
-                Connectez-vous pour inviter des proches à collaborer en temps réel.
-                <button onClick={onRequireAuth} className="btn btn-primary btn-sm" style={{ marginTop: '8px', width: '100%', justifyContent: 'center' }}>Se connecter</button>
+                {t('signInToInvite')}
+                <button onClick={onRequireAuth} className="btn btn-primary btn-sm" style={{ marginTop: '8px', width: '100%', justifyContent: 'center' }}>{t('signIn')}</button>
               </div>
             ) : (
               <>
                 <div style={{ display: 'flex', gap: '6px' }}>
-                  <input value={shareEmail} onChange={e => setShareEmail(e.target.value)} placeholder="email@exemple.com" className="input" type="email" style={{ flex: 1 }} />
+                  <input value={shareEmail} onChange={e => setShareEmail(e.target.value)} placeholder={t('emailPlaceholder')} className="input" type="email" style={{ flex: 1 }} />
                   <select value={sharePerm} onChange={e => setSharePerm(e.target.value as 'read' | 'write')} className="input" style={{ width: 'auto' }}>
-                    <option value="read">Lecture</option>
-                    <option value="write">Écriture</option>
+                    <option value="read">{t('read')}</option>
+                    <option value="write">{t('write')}</option>
                   </select>
-                  <button onClick={doShare} disabled={sharing} className="btn btn-primary btn-sm" style={{ opacity: sharing ? 0.7 : undefined }}>{sharing ? <LoadingSpinner size={14} /> : 'Inviter'}</button>
+                  <button onClick={doShare} disabled={sharing} className="btn btn-primary btn-sm" style={{ opacity: sharing ? 0.7 : undefined }}>{sharing ? <LoadingSpinner size={14} /> : t('invite')}</button>
                 </div>
                 {shareError && <div style={{ marginTop: '8px' }}><ErrorMessage message={shareError} onRetry={doShare} /></div>}
                 {shares.length > 0 && (
@@ -387,8 +387,8 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
                     {shares.map(s => (
                       <div key={s.email} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', padding: '6px 8px', background: 'var(--bg-muted)', borderRadius: 'var(--radius)' }}>
                         <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.email}</span>
-                        <span className="badge badge-accent" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>{s.permission === 'write' ? <><Pencil size={10} /> Écriture</> : <><Eye size={10} /> Lecture</>}</span>
-                        <button onClick={() => removeShare(s.email)} aria-label="Retirer le partage" className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--danger)' }}><X size={14} /></button>
+                        <span className="badge badge-accent" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>{s.permission === 'write' ? <><Pencil size={10} /> {t('write')}</> : <><Eye size={10} /> {t('read')}</>}</span>
+                        <button onClick={() => removeShare(s.email)} aria-label={t('removeShare')} className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--danger)' }}><X size={14} /></button>
                       </div>
                     ))}
                   </div>
@@ -400,7 +400,7 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
           {/* Public read-only link */}
           {cloud && (
             <div>
-              <Eyebrow Icon={Globe}>Lien public (lecture seule)</Eyebrow>
+              <Eyebrow Icon={Globe}>{t('publicLink')}</Eyebrow>
               <label style={{ display: 'flex', gap: '10px', alignItems: 'center', cursor: togglingPublic ? 'wait' : 'pointer', padding: '10px 12px', border: 'var(--bw) solid var(--border-strong)', borderRadius: 'var(--radius)', background: isPublic ? 'var(--accent-light)' : 'var(--bg-card)' }}>
                 <input
                   type="checkbox"
@@ -411,10 +411,9 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
                   style={{ width: '18px', height: '18px', accentColor: 'var(--accent)', flexShrink: 0 }}
                 />
                 <span style={{ flex: 1 }}>
-                  <span style={{ display: 'block', fontWeight: 700, fontSize: '13px' }}>Rendre cet arbre public</span>
+                  <span style={{ display: 'block', fontWeight: 700, fontSize: '13px' }}>{t('makePublic')}</span>
                   <span style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)' }}>
-                    Toute personne disposant du lien pourra voir les membres (noms, dates, lieux, photos) en lecture seule.
-                    Les fiches marquées «&nbsp;privé&nbsp;» et le journal restent masqués.
+                    {t('publicDesc')}
                   </span>
                 </span>
               </label>
@@ -423,9 +422,9 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
                 <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
                   <input readOnly value={publicUrl} className="input" style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: '12px' }} onFocus={e => e.currentTarget.select()} />
                   <button onClick={() => copyToClipboard(publicUrl, 'public')} className="btn btn-secondary btn-sm" style={{ flexShrink: 0 }}>
-                    {copied === 'public' ? <><Check size={14} /> Copié</> : <><Copy size={14} /> Copier</>}
+                    {copied === 'public' ? <><Check size={14} /> {t('copied')}</> : <><Copy size={14} /> {t('copy')}</>}
                   </button>
-                  <a href={publicUrl} target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-sm btn-icon" aria-label="Ouvrir le lien public" title="Ouvrir"><ExternalLink size={14} /></a>
+                  <a href={publicUrl} target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-sm btn-icon" aria-label={t('openPublicLink')} title={t('open')}><ExternalLink size={14} /></a>
                 </div>
               )}
             </div>
@@ -445,23 +444,23 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
           {/* Privacy option */}
           <label style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '13px', cursor: 'pointer' }}>
             <input type="checkbox" checked={includePrivate} onChange={e => setIncludePrivate(e.target.checked)} />
-            <span>Inclure les membres marqués «&nbsp;privé&nbsp;»</span>
+            <span>{t('includePrivate')}</span>
           </label>
 
           {/* Download JSON */}
           <div>
-            <Eyebrow Icon={Package}>Fichier exportable</Eyebrow>
+            <Eyebrow Icon={Package}>{t('exportableFile')}</Eyebrow>
             <button onClick={downloadJSON} className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
-              <Download size={15} /> Télécharger {tree.name}.json
+              <Download size={15} /> {t('downloadJson', { name: tree.name })}
             </button>
             <div style={{ fontSize: '11px', color: 'var(--text-light)', marginTop: '4px' }}>
-              Partageable avec n&apos;importe qui utilisant Suimini via Import/Export
+              {t('exportableDesc')}
             </div>
           </div>
 
           {/* Social share */}
           <div>
-            <Eyebrow Icon={Smartphone}>Partager sur les réseaux</Eyebrow>
+            <Eyebrow Icon={Smartphone}>{t('shareSocial')}</Eyebrow>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <a href={`https://wa.me/?text=${encodeURIComponent(socialText)}`} target="_blank" rel="noopener noreferrer" className="btn btn-sm" style={{ background: '#25D366', color: 'white', textDecoration: 'none' }}>
                 <MessageCircle size={14} /> WhatsApp
@@ -469,22 +468,22 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
               <a href={`https://www.facebook.com/sharer/sharer.php?quote=${encodeURIComponent(socialText)}`} target="_blank" rel="noopener noreferrer" className="btn btn-sm" style={{ background: '#1877F2', color: 'white', textDecoration: 'none' }}>
                 <Share2 size={14} /> Facebook
               </a>
-              <a href={`mailto:?subject=${encodeURIComponent(`Arbre généalogique : ${tree.name}`)}&body=${encodeURIComponent(socialText + '\n\nFichier joint : téléchargez le fichier .json et importez-le dans Suimini.')}`} className="btn btn-sm btn-secondary">
+              <a href={`mailto:?subject=${encodeURIComponent(t('mailSubject', { name: tree.name }))}&body=${encodeURIComponent(socialText + '\n\n' + t('mailNote'))}`} className="btn btn-sm btn-secondary">
                 <Mail size={14} /> Email
               </a>
               <button onClick={() => copyToClipboard(socialText, 'social')} className="btn btn-sm btn-secondary">
-                {copied === 'social' ? <><Check size={14} /> Copié !</> : <><Copy size={14} /> Copier le texte</>}
+                {copied === 'social' ? <><Check size={14} /> {t('copiedExcl')}</> : <><Copy size={14} /> {t('copyText')}</>}
               </button>
             </div>
           </div>
 
           {/* Embed code */}
           <div>
-            <Eyebrow Icon={Code2}>Code d&apos;intégration (iframe)</Eyebrow>
+            <Eyebrow Icon={Code2}>{t('embedCode')}</Eyebrow>
             <div style={{ position: 'relative' }}>
               <textarea readOnly value={embedCode} className="input" rows={2} style={{ resize: 'none', fontSize: '11px', fontFamily: 'var(--font-mono)', paddingRight: '92px' }} />
               <button onClick={() => copyToClipboard(embedCode, 'embed')} className="btn btn-sm btn-secondary" style={{ position: 'absolute', right: '6px', top: '6px' }}>
-                {copied === 'embed' ? <Check size={14} /> : <><Copy size={14} /> Copier</>}
+                {copied === 'embed' ? <Check size={14} /> : <><Copy size={14} /> {t('copy')}</>}
               </button>
             </div>
           </div>
@@ -493,7 +492,7 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
           <div style={{ padding: '10px', background: 'var(--bg-muted)', borderRadius: 'var(--radius)', fontSize: '12px', color: 'var(--text-muted)', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
             <Lightbulb size={18} style={{ flexShrink: 0, color: 'var(--warning)' }} aria-hidden="true" />
             <span>
-              Pour partager lors d&apos;une réunion de famille : exportez le fichier .json et importez-le sur un autre appareil via <strong>Import/Export</strong>.
+              {t.rich('familyMeetingTip', { b: (c) => <strong>{c}</strong> })}
             </span>
           </div>
         </div>

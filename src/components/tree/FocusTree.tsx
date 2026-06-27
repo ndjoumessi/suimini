@@ -255,7 +255,7 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
       {/* Up nav — previous generation */}
       {hasParents && (
         <button className="ft-nav ft-nav-up" onClick={() => onFocus(parents[0].id)}>
-          <ChevronUp size={14} aria-hidden="true" className="ft-nav-arrow" /> Génération précédente
+          <ChevronUp size={14} aria-hidden="true" className="ft-nav-arrow" /> {t('previousGeneration')}
         </button>
       )}
 
@@ -275,12 +275,12 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
           {/* Generation band labels, centred on the connector bus between rows */}
           {hasParents && (
             <span className="ft-genband" style={{ top: parentsY + NODE_H + ROW_V / 2, left: cx }}>
-              — GÉNÉRATION {(genMap.get(focus.id) ?? 0) + 1} —
+              — {t('generationN', { n: (genMap.get(focus.id) ?? 0) + 1 })} —
             </span>
           )}
           {hasChildren && (
             <span className="ft-genband" style={{ top: focusY + NODE_H + ROW_V / 2, left: cx }}>
-              — GÉNÉRATION {(genMap.get(children[0].id) ?? (genMap.get(focus.id) ?? 0) + 1) + 1} —
+              — {t('generationN', { n: (genMap.get(children[0].id) ?? (genMap.get(focus.id) ?? 0) + 1) + 1 })} —
             </span>
           )}
           {hasParents && parents.map((p, i) => renderNode(p, 'parent', parentX(i), parentsY))}
@@ -297,7 +297,7 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
       {/* Down nav — next generation */}
       {hasChildren && (
         <button className="ft-nav ft-nav-down" onClick={() => onFocus((downTarget ?? children[0]).id)}>
-          <ChevronDown size={14} aria-hidden="true" className="ft-nav-arrow" /> Génération suivante
+          <ChevronDown size={14} aria-hidden="true" className="ft-nav-arrow" /> {t('nextGeneration')}
         </button>
       )}
 

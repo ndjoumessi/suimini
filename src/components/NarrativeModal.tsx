@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { FamilyTree } from '@/types';
 import { ScrollText, Copy, Download, RefreshCw, X, Check } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -8,6 +9,7 @@ import { ErrorMessage } from '@/components/ui/ErrorMessage';
 type State = 'idle' | 'loading' | 'result' | 'error';
 
 export default function NarrativeModal({ tree, onClose }: { tree: FamilyTree; onClose: () => void }) {
+  const t = useTranslations('narrative');
   const [state, setState] = useState<State>('idle');
   const [narrative, setNarrative] = useState('');
   const [error, setError] = useState('');
@@ -27,17 +29,17 @@ export default function NarrativeModal({ tree, onClose }: { tree: FamilyTree; on
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data?.error || `Erreur (${res.status}).`);
+        setError(data?.error || t('errStatus', { status: res.status }));
         setState('error');
         return;
       }
       setNarrative(data.narrative || '');
       setState('result');
     } catch {
-      setError('Connexion au serveur impossible. Vérifiez votre réseau et réessayez.');
+      setError(t('errNetwork'));
       setState('error');
     }
-  }, [tree]);
+  }, [tree, t]);
 
   // Auto-generate on open; Esc closes; lock body scroll (matches the app's modal pattern).
   useEffect(() => { generate(); }, [generate]);
@@ -77,15 +79,15 @@ export default function NarrativeModal({ tree, onClose }: { tree: FamilyTree; on
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div ref={dialogRef} tabIndex={-1} className="modal" style={{ maxWidth: '680px', width: '100%', display: 'flex', flexDirection: 'column' }} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Rapport narratif" aria-busy={state === 'loading'}>
+      <div ref={dialogRef} tabIndex={-1} className="modal" style={{ maxWidth: '680px', width: '100%', display: 'flex', flexDirection: 'column' }} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={t('title')} aria-busy={state === 'loading'}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '16px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
           <ScrollText size={20} style={{ color: 'var(--accent)', flexShrink: 0 }} aria-hidden="true" />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <h2 className="serif" style={{ margin: 0, fontSize: '1.25rem' }}>Rapport narratif</h2>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Le récit de « {tree.name} », écrit par l&apos;IA</div>
+            <h2 className="serif" style={{ margin: 0, fontSize: '1.25rem' }}>{t('title')}</h2>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t('subtitle', { name: tree.name })}</div>
           </div>
-          <button onClick={onClose} className="icon-btn" aria-label="Fermer"><X size={18} aria-hidden="true" /></button>
+          <button onClick={onClose} className="icon-btn" aria-label={t('close')}><X size={18} aria-hidden="true" /></button>
         </div>
 
         {/* Body */}
@@ -93,14 +95,14 @@ export default function NarrativeModal({ tree, onClose }: { tree: FamilyTree; on
           {state === 'loading' && (
             <div role="status" aria-live="polite" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
               <LoadingSpinner size={22} />
-              <p style={{ marginTop: '14px' }}>Composition du récit familial…</p>
-              <p style={{ fontSize: '12px', color: 'var(--text-light)' }}>Cela prend généralement quelques secondes.</p>
+              <p style={{ marginTop: '14px' }}>{t('composing')}</p>
+              <p style={{ fontSize: '12px', color: 'var(--text-light)' }}>{t('composingHint')}</p>
             </div>
           )}
 
           {state === 'error' && (
             <div style={{ padding: '32px 20px', maxWidth: '420px', margin: '0 auto' }}>
-              <ErrorMessage message={error || 'Génération impossible.'} onRetry={generate} />
+              <ErrorMessage message={error || t('errGenerate')} onRetry={generate} />
             </div>
           )}
 
@@ -118,13 +120,13 @@ export default function NarrativeModal({ tree, onClose }: { tree: FamilyTree; on
         {state === 'result' && (
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', padding: '14px 20px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
             <button onClick={copy} className="btn btn-secondary btn-sm" style={{ gap: '6px' }}>
-              {copied ? <><Check size={14} aria-hidden="true" /> Copié</> : <><Copy size={14} aria-hidden="true" /> Copier</>}
+              {copied ? <><Check size={14} aria-hidden="true" /> {t('copied')}</> : <><Copy size={14} aria-hidden="true" /> {t('copy')}</>}
             </button>
             <button onClick={download} className="btn btn-secondary btn-sm" style={{ gap: '6px' }}>
-              <Download size={14} aria-hidden="true" /> Télécharger (.txt)
+              <Download size={14} aria-hidden="true" /> {t('downloadTxt')}
             </button>
             <button onClick={generate} className="btn btn-ghost btn-sm" style={{ gap: '6px', marginLeft: 'auto' }}>
-              <RefreshCw size={14} aria-hidden="true" /> Régénérer
+              <RefreshCw size={14} aria-hidden="true" /> {t('regenerate')}
             </button>
           </div>
         )}
