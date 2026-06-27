@@ -2,15 +2,15 @@
 import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { FamilyTree, Person } from '@/types';
-import { Search, Link2, Scale, TreePine, Sprout, User, AlertCircle, Dna } from 'lucide-react';
-import PersonAvatar from '../person/PersonAvatar';
+import { Network, ArrowLeftRight, Scale, TreePine, Sprout, AlertCircle, Dna, ChevronDown } from 'lucide-react';
+import { GENDER_BAR } from '../tree/nodeStyle';
 import {
   getDisplayName, formatYear, getAllAncestors, getAllDescendants,
-  findCommonAncestors, findRelationPath, describeRelation, getAge
+  findCommonAncestors, findRelationPath, describeRelation, getAge,
 } from '@/lib/treeUtils';
 
 const MODE_META = {
-  relation: { Icon: Link2, labelKey: 'modeRelation' },
+  relation: { Icon: ArrowLeftRight, labelKey: 'modeRelation' },
   compare: { Icon: Scale, labelKey: 'modeCompare' },
   ancestors: { Icon: TreePine, labelKey: 'modeAncestors' },
   descendants: { Icon: Sprout, labelKey: 'modeDescendants' },
@@ -21,16 +21,25 @@ interface Props {
   onSelectPerson: (id: string) => void;
 }
 
+function genderColor(p: Person): string {
+  return p.gender === 'male' ? GENDER_BAR.male : p.gender === 'female' ? GENDER_BAR.female : GENDER_BAR.unknown;
+}
+function initials(p: Person): string {
+  return (((p.firstName?.[0] || '') + (p.lastName?.[0] || '')).toUpperCase()) || '?';
+}
+
 export default function AncestorsView({ tree, onSelectPerson }: Props) {
   const t = useTranslations('ancestors');
   const [person1Id, setPerson1Id] = useState('');
   const [person2Id, setPerson2Id] = useState('');
   const [mode, setMode] = useState<'relation' | 'compare' | 'ancestors' | 'descendants'>('relation');
+  const [ancestorsOpen, setAncestorsOpen] = useState(true);
   const dual = mode === 'relation' || mode === 'compare';
 
   const person1 = tree.persons.find(p => p.id === person1Id) || null;
   const person2 = tree.persons.find(p => p.id === person2Id) || null;
 
+  // ---- LOGIC (unchanged) ----
   const relationPath = useMemo(() => {
     if (!person1Id || !person2Id || !dual) return null;
     return findRelationPath(person1Id, person2Id, tree.relationships, tree.persons);
@@ -60,324 +69,387 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
     if (!relationPath) return [];
     return relationPath.map(id => tree.persons.find(p => p.id === id)).filter(Boolean) as Person[];
   }, [relationPath, tree]);
+  // ---- /LOGIC ----
+
+  const showEmpty = !person1Id || (dual && !person2Id);
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)' }}>
-        <h2 className="serif" style={{ margin: '0 0 10px', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Search size={18} aria-hidden="true" /> {t('title')}
-        </h2>
-        {/* Mode selector */}
-        <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', flexWrap: 'wrap' }}>
-          {(['relation','compare','ancestors','descendants'] as const).map(m => {
-            const { Icon, labelKey } = MODE_META[m];
-            return (
-            <button
-              key={m}
-              onClick={() => setMode(m)}
-              className="btn btn-sm"
-              style={{
-                background: mode === m ? 'var(--accent)' : 'var(--bg-muted)',
-                color: mode === m ? 'white' : 'var(--text-muted)',
-              }}
-            >
-              <Icon size={14} aria-hidden="true" /> {t(labelKey)}
-            </button>
-          ); })}
-        </div>
+    <div className="ex-root" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div className="ex-scroll">
+        <div className="ex-wrap">
+          {/* HERO */}
+          <header className="ex-hero">
+            <Network size={24} aria-hidden="true" style={{ color: 'var(--accent)', flexShrink: 0 }} />
+            <div style={{ minWidth: 0 }}>
+              <h1 className="serif ex-title">{t('title')}</h1>
+              <p className="ex-subtitle">{t('subtitle')}</p>
+            </div>
+          </header>
 
-        {/* Inputs */}
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: '200px' }}>
-            <label style={{ fontSize: '11px', color: 'var(--text-light)', display: 'block', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              {dual ? t('personA') : t('person')}
-            </label>
-            <select value={person1Id} onChange={e => setPerson1Id(e.target.value)} className="input">
-              <option value="">{t('choosePlaceholder')}</option>
-              {tree.persons.map(p => (
-                <option key={p.id} value={p.id}>{getDisplayName(p)} {p.birthDate ? `(${formatYear(p.birthDate)})` : ''}</option>
-              ))}
-            </select>
+          {/* Tabs */}
+          <div className="ex-tabs" role="tablist" aria-label={t('title')}>
+            {(['relation', 'compare', 'ancestors', 'descendants'] as const).map(m => {
+              const { Icon, labelKey } = MODE_META[m];
+              const on = mode === m;
+              return (
+                <button key={m} role="tab" aria-selected={on} onClick={() => setMode(m)} className={`ex-tab ${on ? 'on' : ''}`}>
+                  <Icon size={15} aria-hidden="true" /> {t(labelKey)}
+                </button>
+              );
+            })}
           </div>
 
-          {dual && (
-            <>
-              <div style={{ color: 'var(--text-muted)', fontSize: '20px', paddingTop: '20px' }}>⟷</div>
-              <div style={{ flex: 1, minWidth: '200px' }}>
-                <label style={{ fontSize: '11px', color: 'var(--text-light)', display: 'block', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  {t('personB')}
-                </label>
-                <select value={person2Id} onChange={e => setPerson2Id(e.target.value)} className="input">
-                  <option value="">{t('choosePlaceholder')}</option>
-                  {tree.persons.filter(p => p.id !== person1Id).map(p => (
-                    <option key={p.id} value={p.id}>{getDisplayName(p)} {p.birthDate ? `(${formatYear(p.birthDate)})` : ''}</option>
-                  ))}
-                </select>
+          {/* Selectors */}
+          <div className="ex-selectors">
+            <div className="ex-field">
+              <label className="ex-flabel" htmlFor="ex-p1">{dual ? t('personA') : t('person')}</label>
+              <select id="ex-p1" value={person1Id} onChange={e => setPerson1Id(e.target.value)} className="ex-select">
+                <option value="">{t('choosePlaceholder')}</option>
+                {tree.persons.map(p => (
+                  <option key={p.id} value={p.id}>{getDisplayName(p)} {p.birthDate ? `(${formatYear(p.birthDate)})` : ''}</option>
+                ))}
+              </select>
+            </div>
+            {dual && (
+              <>
+                <span className="ex-swap" aria-hidden="true"><ArrowLeftRight size={20} /></span>
+                <div className="ex-field">
+                  <label className="ex-flabel" htmlFor="ex-p2">{t('personB')}</label>
+                  <select id="ex-p2" value={person2Id} onChange={e => setPerson2Id(e.target.value)} className="ex-select">
+                    <option value="">{t('choosePlaceholder')}</option>
+                    {tree.persons.filter(p => p.id !== person1Id).map(p => (
+                      <option key={p.id} value={p.id}>{getDisplayName(p)} {p.birthDate ? `(${formatYear(p.birthDate)})` : ''}</option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* ===== RELATION ===== */}
+          {mode === 'relation' && person1 && person2 && (
+            <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              <div className="ex-result">
+                <button className="ex-party" onClick={() => onSelectPerson(person1.id)}>
+                  <Avatar person={person1} size={56} />
+                  <span className="serif ex-party-name">{person1.firstName || person1.lastName}</span>
+                  {person1.lastName && person1.firstName && <span className="ex-party-sub">{person1.lastName}</span>}
+                  {person1.birthDate && <span className="ex-party-year">{formatYear(person1.birthDate)}</span>}
+                </button>
+
+                <div className="ex-link">
+                  <span className="ex-link-arrow" aria-hidden="true">←</span>
+                  {relation ? (
+                    <span className="serif ex-relation">{relation}</span>
+                  ) : (
+                    <span className="ex-nolink"><AlertCircle size={14} aria-hidden="true" /> {t('noFamilyLink')}</span>
+                  )}
+                  <span className="ex-link-arrow" aria-hidden="true">→</span>
+                  {relation && relationPath && (
+                    <span className="ex-degree">{t('degrees', { count: relationPath.length - 1 })}</span>
+                  )}
+                </div>
+
+                <button className="ex-party" onClick={() => onSelectPerson(person2.id)}>
+                  <Avatar person={person2} size={56} />
+                  <span className="serif ex-party-name">{person2.firstName || person2.lastName}</span>
+                  {person2.lastName && person2.firstName && <span className="ex-party-sub">{person2.lastName}</span>}
+                  {person2.birthDate && <span className="ex-party-year">{formatYear(person2.birthDate)}</span>}
+                </button>
               </div>
-            </>
+
+              {/* Kinship path */}
+              {pathPersons.length > 2 && (
+                <div className="ex-card">
+                  <div className="ex-eyebrow">{t('kinshipPath')}</div>
+                  <div className="ex-path">
+                    {pathPersons.map((p, i) => (
+                      <span key={p.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <button className="ex-path-chip" onClick={() => onSelectPerson(p.id)} style={{ ['--bar' as string]: genderColor(p) }}>
+                          <span className="ex-path-dot" aria-hidden="true" />
+                          {getDisplayName(p)}
+                        </button>
+                        {i < pathPersons.length - 1 && <span className="ex-path-sep" aria-hidden="true">→</span>}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Common ancestors — collapsible grid */}
+              {commonAncestors.length > 0 && (
+                <CommonAncestors persons={commonAncestors} open={ancestorsOpen} onToggle={() => setAncestorsOpen(o => !o)} label={t('commonAncestors', { count: commonAncestors.length })} onSelect={onSelectPerson} />
+              )}
+            </div>
+          )}
+
+          {/* ===== COMPARE ===== */}
+          {mode === 'compare' && person1 && person2 && (
+            <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              <div className="ex-result">
+                <button className="ex-party" onClick={() => onSelectPerson(person1.id)}>
+                  <Avatar person={person1} size={56} />
+                  <span className="serif ex-party-name">{person1.firstName || person1.lastName}</span>
+                  {person1.birthDate && <span className="ex-party-year">{formatYear(person1.birthDate)}</span>}
+                </button>
+                <div className="ex-link">
+                  <Scale size={20} aria-hidden="true" style={{ color: 'var(--accent)' }} />
+                  {relation ? <span className="serif ex-relation" style={{ fontSize: '1.1rem' }}>{relation}</span>
+                    : <span className="ex-nolink">{t('noDirectLink')}</span>}
+                </div>
+                <button className="ex-party" onClick={() => onSelectPerson(person2.id)}>
+                  <Avatar person={person2} size={56} />
+                  <span className="serif ex-party-name">{person2.firstName || person2.lastName}</span>
+                  {person2.birthDate && <span className="ex-party-year">{formatYear(person2.birthDate)}</span>}
+                </button>
+              </div>
+
+              {/* Comparison table — 2 columns split by a gold rule */}
+              <div className="ex-card">
+                <div className="ex-eyebrow">{t('compareFichesTitle')}</div>
+                <div className="ex-legend">
+                  <span className="ex-legend-swatch" aria-hidden="true" /> {t('legendCommon')} · {t('legendDifferent')}
+                </div>
+                <div className="ex-table">
+                  {COMPARE_FIELDS.map(f => {
+                    const a = f.get(person1, t); const b = f.get(person2, t);
+                    const same = !!a && !!b && a.toLowerCase() === b.toLowerCase();
+                    return (
+                      <div className="ex-trow" key={f.labelKey}>
+                        <div className={`ex-tcell ${same ? 'same' : ''} ${a ? '' : 'empty'}`}>{a || '—'}</div>
+                        <div className="ex-tlabel">{same ? '✓ ' : ''}{t(f.labelKey)}</div>
+                        <div className={`ex-tcell ${same ? 'same' : ''} ${b ? '' : 'empty'}`}>{b || '—'}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* DNA */}
+              {((person1.dnaOrigins?.length || 0) > 0 || (person2.dnaOrigins?.length || 0) > 0) && (() => {
+                const regionsA = new Set((person1.dnaOrigins || []).map(d => d.region.toLowerCase()));
+                const regionsB = new Set((person2.dnaOrigins || []).map(d => d.region.toLowerCase()));
+                const chip = (region: string, percent: number, shared: boolean) => (
+                  <span key={region} className="ex-dna-chip" style={shared ? { background: 'var(--success)', color: '#0d0d0d', borderColor: 'var(--success)' } : undefined}>
+                    {region} {Math.round(percent)}%
+                  </span>
+                );
+                return (
+                  <div className="ex-card">
+                    <div className="ex-eyebrow" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Dna size={13} aria-hidden="true" /> {t('originsAndDna')}</div>
+                    <div className="ex-dna-grid">
+                      <div className="ex-dna-col">
+                        {(person1.dnaOrigins || []).length === 0 ? <span className="ex-dash">—</span>
+                          : (person1.dnaOrigins || []).map(d => chip(d.region, d.percent, regionsB.has(d.region.toLowerCase())))}
+                      </div>
+                      <div className="ex-dna-col">
+                        {(person2.dnaOrigins || []).length === 0 ? <span className="ex-dash">—</span>
+                          : (person2.dnaOrigins || []).map(d => chip(d.region, d.percent, regionsA.has(d.region.toLowerCase())))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Common ancestors */}
+              {commonAncestors.length === 0 ? (
+                <p className="ex-empty-elegant serif">{t('noCommonAncestor')}</p>
+              ) : (
+                <CommonAncestors persons={commonAncestors} open={ancestorsOpen} onToggle={() => setAncestorsOpen(o => !o)} label={t('commonAncestors', { count: commonAncestors.length })} onSelect={onSelectPerson} />
+              )}
+            </div>
+          )}
+
+          {/* ===== ANCESTORS ===== */}
+          {mode === 'ancestors' && person1 && (
+            <div className="animate-fade-in">
+              <p className="ex-found">{t.rich('ancestorsFoundFor', { count: ancestors.length, name: getDisplayName(person1), strong: (c) => <strong>{c}</strong> })}</p>
+              {ancestors.length === 0 ? (
+                <p className="ex-empty-elegant serif">{t('noAncestorRecorded')}</p>
+              ) : (
+                <div className="ex-anc-grid">
+                  {ancestors.map(p => <AncestorCard key={p.id} person={p} onClick={() => onSelectPerson(p.id)} />)}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ===== DESCENDANTS ===== */}
+          {mode === 'descendants' && person1 && (
+            <div className="animate-fade-in">
+              <p className="ex-found">{t.rich('descendantsFoundFor', { count: descendants.length, name: getDisplayName(person1), strong: (c) => <strong>{c}</strong> })}</p>
+              {descendants.length === 0 ? (
+                <p className="ex-empty-elegant serif">{t('noDescendantRecorded')}</p>
+              ) : (
+                <div className="ex-anc-grid">
+                  {descendants.map(p => <AncestorCard key={p.id} person={p} onClick={() => onSelectPerson(p.id)} />)}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ===== EMPTY STATE ===== */}
+          {showEmpty && (
+            <div className="ex-empty animate-fade-in">
+              <UnlinkedNodes />
+              <p className="ex-empty-text">{!person1Id ? t('selectFirstPrompt') : t('selectSecondPrompt')}</p>
+            </div>
           )}
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
-        {/* RELATION MODE */}
-        {mode === 'relation' && person1Id && person2Id && (
-          <div className="animate-fade-in">
-            {/* Relation result */}
-            <div className="card" style={{ padding: '20px', marginBottom: '20px', textAlign: 'center' }}>
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px', marginBottom: '16px' }}>
-                <PersonBubble person={person1} onClick={() => person1 && onSelectPerson(person1.id)} />
-                <div style={{ textAlign: 'center' }}>
-                  {relation ? (
-                    <>
-                      <div style={{ marginBottom: '4px', display: 'flex', justifyContent: 'center', color: 'var(--accent)' }}><Link2 size={22} aria-hidden="true" /></div>
-                      <div style={{
-                        background: 'var(--accent-light)', color: 'var(--accent)',
-                        padding: '6px 14px', borderRadius: 'var(--radius)',
-                        fontWeight: '700', fontSize: '14px', border: '1.5px solid var(--accent)',
-                      }}>
-                        {relation}
-                      </div>
-                      {relationPath && (
-                        <div style={{ fontSize: '11px', color: 'var(--text-light)', marginTop: '4px' }}>
-                          {t('degrees', { count: relationPath.length - 1 })}
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div style={{ color: 'var(--text-muted)', fontSize: '13px', padding: '8px', display: 'flex', alignItems: 'center', gap: '5px', justifyContent: 'center' }}>
-                      <AlertCircle size={14} aria-hidden="true" /> {t('noFamilyLink')}
-                    </div>
-                  )}
-                </div>
-                <PersonBubble person={person2!} onClick={() => onSelectPerson(person2!.id)} />
-              </div>
-            </div>
+      <style>{`
+        .ex-scroll { flex: 1; overflow-y: auto; }
+        .ex-wrap { max-width: 880px; margin: 0 auto; padding: 0 24px 48px; }
+        .ex-hero { display: flex; align-items: flex-start; gap: 14px; padding: 36px 0 24px; border-bottom: 1px solid var(--accent-light); margin-bottom: 22px; }
+        .ex-title { margin: 0; font-size: clamp(1.9rem, 4vw, 2.5rem); line-height: 1.05; color: var(--ink); letter-spacing: -0.02em; }
+        .ex-subtitle { margin: 6px 0 0; font-size: 15px; color: var(--text-muted); }
 
-            {/* Path */}
-            {pathPersons.length > 2 && (
-              <div className="card" style={{ padding: '16px', marginBottom: '16px' }}>
-                <h3 className="serif" style={{ margin: '0 0 12px', fontSize: '1rem' }}>{t('kinshipPath')}</h3>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                  {pathPersons.map((p, i) => (
-                    <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <button
-                        onClick={() => onSelectPerson(p.id)}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: '6px',
-                          padding: '5px 10px', border: '1px solid var(--border)',
-                          borderRadius: '100px', background: 'var(--bg-muted)',
-                          cursor: 'pointer', fontSize: '12px', fontWeight: '600',
-                          transition: 'all 0.1s',
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = 'var(--accent-light)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg-muted)'; }}
-                      >
-                        <span style={{ display: 'inline-flex', color: p.gender === 'male' ? 'var(--male)' : p.gender === 'female' ? 'var(--female)' : 'var(--text-muted)' }}><User size={14} aria-hidden="true" /></span>
-                        <span>{getDisplayName(p)}</span>
-                      </button>
-                      {i < pathPersons.length - 1 && (
-                        <span style={{ color: 'var(--text-light)', fontSize: '16px' }}>→</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+        /* Tabs */
+        .ex-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
+        .ex-tab { display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px; min-height: 40px; font-family: var(--font-body); font-size: 13.5px; font-weight: 600; cursor: pointer; background: var(--bg-card); color: var(--text-muted); border: 1px solid #2d2d3a; transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast); }
+        .ex-tab:hover { background: #252535; color: var(--ink); border-color: var(--accent); }
+        .ex-tab.on { background: var(--accent); color: #12131a; font-weight: 700; border-color: var(--accent); }
+        .ex-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-            {/* Common ancestors */}
-            {commonAncestors.length > 0 && (
-              <div className="card" style={{ padding: '16px' }}>
-                <h3 className="serif" style={{ margin: '0 0 12px', fontSize: '1rem' }}>
-                  {t('commonAncestors', { count: commonAncestors.length })}
-                </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '8px' }}>
-                  {commonAncestors.map(p => (
-                    <PersonCard key={p.id} person={p} onClick={() => onSelectPerson(p.id)} />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+        /* Selectors */
+        .ex-selectors { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 24px; }
+        .ex-field { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 6px; }
+        .ex-flabel { font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-text); }
+        .ex-select { width: 100%; background: #1a1a24; border: 1px solid #2d2d3a; color: var(--text); padding: 10px 12px; font-family: var(--font-body); font-size: 14px; min-height: 42px; cursor: pointer; }
+        .ex-select:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; border-color: var(--accent); }
+        .ex-swap { display: inline-flex; align-items: center; justify-content: center; color: var(--accent); flex-shrink: 0; height: 42px; }
 
-        {/* COMPARE MODE */}
-        {mode === 'compare' && person1 && person2 && (
-          <div className="animate-fade-in">
-            {/* Header */}
-            <div className="card" style={{ padding: '16px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-around', gap: '12px' }}>
-              <PersonBubble person={person1} onClick={() => onSelectPerson(person1.id)} />
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ marginBottom: '4px', display: 'flex', justifyContent: 'center', color: 'var(--accent)' }}><Scale size={20} aria-hidden="true" /></div>
-                {relation
-                  ? <span className="badge badge-accent" style={{ fontSize: '12px' }}>{relation}</span>
-                  : <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{t('noDirectLink')}</span>}
-              </div>
-              <PersonBubble person={person2} onClick={() => onSelectPerson(person2.id)} />
-            </div>
+        /* Result card */
+        .ex-result { background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--accent); padding: 22px 20px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
+        .ex-party { display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; cursor: pointer; padding: 6px; min-width: 0; }
+        .ex-party:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        .ex-party-name { font-size: 16px; font-weight: 700; color: var(--ink); margin-top: 4px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .ex-party-sub { font-size: 12px; color: var(--text-muted); }
+        .ex-party-year { font-family: var(--font-mono); font-size: 11px; color: var(--accent-text); }
+        .ex-link { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; min-width: 120px; }
+        .ex-link-arrow { display: none; }
+        .ex-relation { font-size: clamp(1.1rem, 2.5vw, 1.5rem); font-weight: 700; color: var(--accent-text); line-height: 1.1; }
+        .ex-degree { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+        .ex-nolink { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--text-muted); }
 
-            {/* Attribute comparison */}
-            <div className="card" style={{ padding: '16px', marginBottom: '16px' }}>
-              <h3 className="serif" style={{ margin: '0 0 4px', fontSize: '1rem' }}>{t('compareFichesTitle')}</h3>
-              <div style={{ fontSize: '11px', color: 'var(--text-light)', marginBottom: '12px' }}>
-                <span style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '2px', background: 'var(--success)', verticalAlign: 'middle', marginRight: '4px' }} /> {t('legendCommon')}
-                &nbsp;·&nbsp; {t('legendDifferent')}
-              </div>
-              {COMPARE_FIELDS.map(f => {
-                const a = f.get(person1, t); const b = f.get(person2, t);
-                const same = !!a && !!b && a.toLowerCase() === b.toLowerCase();
-                return <CompareRow key={f.labelKey} label={t(f.labelKey)} a={a} b={b} same={same} />;
-              })}
-            </div>
+        /* Generic card + eyebrow */
+        .ex-card { background: var(--bg-card); border: 1px solid var(--border); padding: 16px 18px; }
+        .ex-eyebrow { font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-text); margin-bottom: 12px; }
 
-            {/* DNA comparison */}
-            {((person1.dnaOrigins?.length || 0) > 0 || (person2.dnaOrigins?.length || 0) > 0) && (() => {
-              const regionsA = new Set((person1.dnaOrigins || []).map(d => d.region.toLowerCase()));
-              const regionsB = new Set((person2.dnaOrigins || []).map(d => d.region.toLowerCase()));
-              const chip = (region: string, percent: number, shared: boolean) => (
-                <span key={region} className="badge" style={{ background: shared ? 'var(--success)' : 'var(--bg-muted)', color: shared ? '#fff' : 'var(--text-muted)', border: '1px solid var(--border)' }}>
-                  {region} {Math.round(percent)}%
-                </span>
-              );
-              return (
-                <div className="card" style={{ padding: '16px', marginBottom: '16px' }}>
-                  <h3 className="serif" style={{ margin: '0 0 12px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '7px' }}><Dna size={16} aria-hidden="true" /> {t('originsAndDna')}</h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignContent: 'flex-start' }}>
-                      {(person1.dnaOrigins || []).length === 0 ? <span style={{ fontSize: '12px', color: 'var(--text-light)' }}>—</span>
-                        : (person1.dnaOrigins || []).map(d => chip(d.region, d.percent, regionsB.has(d.region.toLowerCase())))}
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignContent: 'flex-start' }}>
-                      {(person2.dnaOrigins || []).length === 0 ? <span style={{ fontSize: '12px', color: 'var(--text-light)' }}>—</span>
-                        : (person2.dnaOrigins || []).map(d => chip(d.region, d.percent, regionsA.has(d.region.toLowerCase())))}
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
+        /* Kinship path */
+        .ex-path { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .ex-path-chip { display: inline-flex; align-items: center; gap: 7px; padding: 6px 11px; background: #1a1a24; border: 1px solid var(--border); cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--text); transition: border-color var(--t-fast), background var(--t-fast); }
+        .ex-path-chip:hover { border-color: var(--accent); background: var(--accent-light); }
+        .ex-path-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        .ex-path-dot { width: 8px; height: 8px; flex-shrink: 0; background: var(--bar); }
+        .ex-path-sep { color: var(--text-light); font-size: 15px; }
 
-            {/* Common ancestors */}
-            <div className="card" style={{ padding: '16px' }}>
-              <h3 className="serif" style={{ margin: '0 0 12px', fontSize: '1rem' }}>
-                {t('commonAncestors', { count: commonAncestors.length })}
-              </h3>
-              {commonAncestors.length === 0 ? (
-                <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{t('noCommonAncestor')}</div>
-              ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '8px' }}>
-                  {commonAncestors.map(p => <PersonCard key={p.id} person={p} onClick={() => onSelectPerson(p.id)} />)}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        /* Common ancestors */
+        .ex-anc-toggle { width: 100%; display: flex; align-items: center; gap: 8px; background: none; border: none; cursor: pointer; padding: 0; margin-bottom: 14px; }
+        .ex-anc-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        .ex-anc-chevron { color: var(--accent-text); transition: transform var(--t-base) var(--ease-out); }
+        .ex-anc-chevron.closed { transform: rotate(-90deg); }
+        .ex-anc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+        .ex-acard { display: flex; align-items: center; gap: 10px; padding: 9px 11px; background: #1a1a24; border: 1px solid var(--border); border-left: 4px solid var(--bar); cursor: pointer; text-align: left; transition: border-color var(--t-fast), background var(--t-fast); }
+        .ex-acard:hover { border-color: var(--accent); border-left-color: var(--bar); background: #20202c; }
+        .ex-acard:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        .ex-acard-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+        .ex-acard-name { font-family: var(--font-display); font-size: 13.5px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .ex-acard-dates { font-family: var(--font-mono); font-size: 10.5px; color: var(--accent-text); }
 
-        {/* ANCESTORS MODE */}
-        {mode === 'ancestors' && person1Id && (
-          <div className="animate-fade-in">
-            <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
-                {t.rich('ancestorsFoundFor', {
-                  count: ancestors.length,
-                  name: getDisplayName(person1!),
-                  strong: (chunks) => <strong>{chunks}</strong>,
-                })}
-              </div>
-            </div>
-            {ancestors.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                {t('noAncestorRecorded')}
-              </div>
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '8px' }}>
-                {ancestors.map(p => (
-                  <PersonCard key={p.id} person={p} onClick={() => onSelectPerson(p.id)} />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+        /* Avatar */
+        .ex-avatar { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 700; color: #12131a; overflow: hidden; }
+        .ex-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
-        {/* DESCENDANTS MODE */}
-        {mode === 'descendants' && person1Id && (
-          <div className="animate-fade-in">
-            <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
-                {t.rich('descendantsFoundFor', {
-                  count: descendants.length,
-                  name: getDisplayName(person1!),
-                  strong: (chunks) => <strong>{chunks}</strong>,
-                })}
-              </div>
-            </div>
-            {descendants.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                {t('noDescendantRecorded')}
-              </div>
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '8px' }}>
-                {descendants.map(p => (
-                  <PersonCard key={p.id} person={p} onClick={() => onSelectPerson(p.id)} />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+        /* Compare table */
+        .ex-legend { font-size: 11px; color: var(--text-light); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+        .ex-legend-swatch { width: 10px; height: 10px; background: var(--success); display: inline-block; }
+        .ex-table { display: flex; flex-direction: column; gap: 6px; }
+        .ex-trow { display: grid; grid-template-columns: 1fr 130px 1fr; align-items: center; gap: 0; }
+        .ex-tcell { padding: 7px 10px; font-size: 13px; font-weight: 600; text-align: center; background: var(--bg-muted); color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .ex-tcell.same { background: var(--success); color: #0d0d0d; }
+        .ex-tcell.empty { color: var(--text-light); font-weight: 400; }
+        .ex-tlabel { text-align: center; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-light); border-left: 1px solid var(--accent-light); border-right: 1px solid var(--accent-light); padding: 0 8px; }
 
-        {(!person1Id || (dual && !person2Id)) && (
-          <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>
-            <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'center' }}>
-              {(() => { const { Icon } = MODE_META[mode]; return <Icon size={48} strokeWidth={1.2} aria-hidden="true" />; })()}
-            </div>
-            <p>{!person1Id
-              ? t('selectFirstPrompt')
-              : t('selectSecondPrompt')}</p>
-          </div>
-        )}
-      </div>
+        /* DNA */
+        .ex-dna-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .ex-dna-col { display: flex; flex-wrap: wrap; gap: 5px; align-content: flex-start; }
+        .ex-dna-chip { font-family: var(--font-mono); font-size: 11px; padding: 3px 8px; background: var(--bg-muted); color: var(--text-muted); border: 1px solid var(--border); }
+        .ex-dash { font-size: 12px; color: var(--text-light); }
+
+        /* Found line */
+        .ex-found { font-size: 14px; color: var(--text-muted); margin: 0 0 16px; }
+
+        /* Empty states */
+        .ex-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 14px; padding: 56px 20px; }
+        .ex-empty-text { margin: 0; color: var(--text-muted); font-size: 15px; max-width: 36ch; }
+        .ex-empty-elegant { color: var(--text-muted); font-style: italic; font-size: 17px; text-align: center; padding: 36px 20px; margin: 0; }
+
+        @media (max-width: 560px) {
+          .ex-result { grid-template-columns: 1fr; gap: 18px; }
+          .ex-dna-grid { grid-template-columns: 1fr; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .ex-anc-chevron { transition: none; }
+        }
+      `}</style>
     </div>
   );
 }
 
-function PersonBubble({ person, onClick }: { person: Person | null; onClick: () => void }) {
-  if (!person) return <div style={{ width: '80px' }} />;
+/** Square gender-coloured avatar (photo when present). */
+function Avatar({ person, size }: { person: Person; size: number }) {
+  const bg = genderColor(person);
   return (
-    <button onClick={onClick} style={{ border: 'none', background: 'none', cursor: 'pointer', textAlign: 'center' }}>
-      <div style={{ margin: '0 auto 6px', width: '64px' }}><PersonAvatar person={person} size={64} /></div>
-      <div style={{ fontSize: '12px', fontWeight: '700' }}>{person.firstName}</div>
-      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{person.lastName}</div>
-      {person.birthDate && <div style={{ fontSize: '10px', color: 'var(--text-light)' }}>{formatYear(person.birthDate)}</div>}
+    <span className="ex-avatar" style={{ width: size, height: size, background: person.profilePhoto ? 'var(--bg-muted)' : bg, fontSize: size * 0.34 }} aria-hidden="true">
+      {person.profilePhoto ? <img src={person.profilePhoto} alt="" loading="lazy" decoding="async" /> : initials(person)}
+    </span>
+  );
+}
+
+function CommonAncestors({ persons, open, onToggle, label, onSelect }: { persons: Person[]; open: boolean; onToggle: () => void; label: string; onSelect: (id: string) => void }) {
+  return (
+    <div className="ex-card">
+      <button className="ex-anc-toggle" onClick={onToggle} aria-expanded={open}>
+        <ChevronDown size={15} aria-hidden="true" className={`ex-anc-chevron ${open ? '' : 'closed'}`} />
+        <span className="ex-eyebrow" style={{ margin: 0 }}>{label}</span>
+      </button>
+      {open && (
+        <div className="ex-anc-grid animate-fade-in">
+          {persons.map(p => <AncestorCard key={p.id} person={p} onClick={() => onSelect(p.id)} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AncestorCard({ person, onClick }: { person: Person; onClick: () => void }) {
+  const age = getAge(person.birthDate, person.deathDate);
+  return (
+    <button className="ex-acard" onClick={onClick} style={{ ['--bar' as string]: genderColor(person) }}>
+      <Avatar person={person} size={40} />
+      <span className="ex-acard-body">
+        <span className="ex-acard-name">{getDisplayName(person)}</span>
+        <span className="ex-acard-dates">
+          {formatYear(person.birthDate)}
+          {!person.isAlive && person.deathDate ? ` – ${formatYear(person.deathDate)}` : ''}
+          {age !== null ? ` · ${age} ans` : ''}
+        </span>
+      </span>
     </button>
   );
 }
 
-function PersonCard({ person, onClick }: { person: Person; onClick: () => void }) {
-  const age = getAge(person.birthDate, person.deathDate);
+/** Empty-state illustration: two unconnected nodes. */
+function UnlinkedNodes() {
   return (
-    <button
-      onClick={onClick}
-      style={{
-        display: 'flex', alignItems: 'center', gap: '10px', padding: '10px',
-        border: '1px solid var(--border)', borderRadius: 'var(--radius)',
-        background: 'var(--bg-card)', cursor: 'pointer', textAlign: 'left',
-        transition: 'all 0.15s',
-        borderLeft: `4px solid ${person.gender === 'male' ? 'var(--male)' : person.gender === 'female' ? 'var(--female)' : 'var(--border)'}`,
-      }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = 'var(--shadow)'; }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.borderLeftColor = person.gender === 'male' ? 'var(--male)' : person.gender === 'female' ? 'var(--female)' : 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
-    >
-      <PersonAvatar person={person} size={36} />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: '700', fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {getDisplayName(person)}
-        </div>
-        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-          {formatYear(person.birthDate)}
-          {!person.isAlive && person.deathDate && ` – ${formatYear(person.deathDate)}`}
-          {age !== null && ` · ${age} ans`}
-        </div>
-      </div>
-    </button>
+    <svg width="120" height="64" viewBox="0 0 120 64" fill="none" aria-hidden="true">
+      <rect x="6" y="20" width="40" height="24" fill="var(--bg-card)" stroke="var(--border-strong)" strokeWidth="2" />
+      <rect x="74" y="20" width="40" height="24" fill="var(--bg-card)" stroke="var(--border-strong)" strokeWidth="2" />
+      <line x1="50" y1="32" x2="70" y2="32" stroke="var(--text-light)" strokeWidth="2" strokeDasharray="4 4" />
+      <circle cx="60" cy="32" r="3" fill="none" stroke="var(--accent)" strokeWidth="1.5" />
+    </svg>
   );
 }
 
@@ -393,22 +465,3 @@ const COMPARE_FIELDS: { labelKey: string; get: (p: Person, t: CompareT) => strin
   { labelKey: 'fieldNationality', get: p => p.nationality || '' },
   { labelKey: 'fieldReligion', get: p => p.religion || '' },
 ];
-
-function CompareRow({ label, a, b, same }: { label: string; a: string; b: string; same: boolean }) {
-  const cell = (v: string): React.CSSProperties => ({
-    flex: 1, padding: '6px 10px', fontSize: '13px', fontWeight: 600,
-    background: same ? 'var(--success)' : 'var(--bg-muted)',
-    color: same ? '#fff' : v ? 'var(--text)' : 'var(--text-light)',
-    borderRadius: 'var(--radius)', textAlign: 'center',
-    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-  });
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-      <div style={cell(a)}>{a || '—'}</div>
-      <div style={{ width: '120px', flexShrink: 0, textAlign: 'center', fontSize: '11px', color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-        {same ? '✓ ' : ''}{label}
-      </div>
-      <div style={cell(b)}>{b || '—'}</div>
-    </div>
-  );
-}

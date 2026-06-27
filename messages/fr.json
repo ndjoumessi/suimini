@@ -805,7 +805,8 @@
     "valueFemale": "Femme",
     "valueOther": "Autre",
     "valueAlive": "Vivant",
-    "valueDeceased": "Décédé"
+    "valueDeceased": "Décédé",
+    "subtitle": "Découvrez les liens, comparez les lignées, explorez votre arbre."
   },
   "personPanel": {
     "edit": "Modifier",

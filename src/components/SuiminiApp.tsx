@@ -513,7 +513,7 @@ export default function SuiminiApp() {
           <EmptyState onCreateTree={() => setShowTreeSelector(true)} />
         ) : (
           <>
-            {store.activeTree && view !== 'settings' && (
+            {store.activeTree && view !== 'settings' && view !== 'ancestors' && (
               <ContentHeader
                 activeView={view}
                 activeTreeName={store.activeTree.name}
