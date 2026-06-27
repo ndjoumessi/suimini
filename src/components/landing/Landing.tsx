@@ -1,11 +1,12 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Spectral } from 'next/font/google';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/hooks/useAuth';
 import AuthModal from '@/components/AuthModal';
+import { BrandMark } from '@/components/Brand';
+import { useLocaleSwitch } from '@/components/IntlProvider';
 import { LOCALES, type Locale } from '@/i18n/config';
-import { switchLocale } from '@/i18n/switchLocale';
 
 /* =====================================================================
    Suimini — Landing « La constellation des vôtres »
@@ -87,15 +88,27 @@ function CountUp({ to, duration = 1700 }: { to: number; duration?: number }) {
   return <span ref={ref}>{val.toLocaleString('fr-FR')}</span>;
 }
 
+/* ---------- Brand logo (mirrors the app sidebar mark: gold square + glyph) ---------- */
+function LpLogo({ tagline = false }: { tagline?: boolean }) {
+  const t = useTranslations('landing');
+  return (
+    <a href="/" className="lp-logo" aria-label="Suimini">
+      <BrandMark size={32} color="#0d0d0d" accent="#0d0d0d" surface="#C9A84C" />
+      <span className="lp-logo-text">
+        <span className="lp-logo-name">Suimini</span>
+        {tagline && <span className="lp-logo-tag">{t('brandTagline')}</span>}
+      </span>
+    </a>
+  );
+}
+
 /* ---------- Locale toggle (dark) ----------
-   Shares switchLocale() with the in-app switcher: cookie set client-side, then a
-   cache-busted full navigation. No /api/locale redirect (its Set-Cookie raced the
-   redirected GET, leaving the render one click behind). */
+   Real-time switch via IntlProvider — no reload, the page re-renders in place. */
 function LangToggle() {
-  const locale = useLocale();
+  const { locale, setLocale } = useLocaleSwitch();
   const choose = (next: Locale) => {
     if (next === locale) return;
-    switchLocale(next);
+    setLocale(next);
   };
   return (
     <div className="lp-lang" role="group" aria-label="Langue">
@@ -281,7 +294,7 @@ export default function Landing() {
     <div className={`lp-root ${serif.variable}`}>
       {/* ===== NAV ===== */}
       <nav className={`lp-nav ${scrolled ? 'lp-nav-on' : ''}`}>
-        <a href="#top" className="lp-word" aria-label="Suimini, accueil">Suimini</a>
+        <LpLogo tagline />
         <div className="lp-nav-right">
           <a href="#features" className="lp-nav-link">{t('nav.how')}</a>
           <a href="#tarifs" className="lp-nav-link">{t('nav.pricing')}</a>
@@ -440,7 +453,7 @@ export default function Landing() {
       <footer className="lp-footer">
         <div className="lp-footer-top">
           <div className="lp-footer-brand">
-            <div className="lp-word lp-footer-word">Suimini</div>
+            <LpLogo />
             <p className="lp-footer-tag">{t('footer.tagline')}</p>
           </div>
           <nav className="lp-footer-col" aria-label={t('footer.product')}>
@@ -493,6 +506,11 @@ const CSS = `
 
 /* Wordmark + lang */
 .lp-word { font-family: var(--lp-serif); font-style: italic; font-weight: 500; font-size: 1.6rem; letter-spacing: 0.01em; color: var(--star); text-decoration: none; }
+/* Brand logo (gold square mark + wordmark) — matches the app sidebar */
+.lp-logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
+.lp-logo-text { display: flex; flex-direction: column; line-height: 1.05; min-width: 0; }
+.lp-logo-name { font-family: var(--lp-serif); font-style: italic; font-weight: 500; font-size: 16px; color: var(--star); }
+.lp-logo-tag { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.14em; text-transform: uppercase; color: #a98f4e; margin-top: 1px; white-space: nowrap; }
 .lp-lang { display: inline-flex; border: 1px solid var(--hair-2); }
 .lp-lang button { appearance: none; background: transparent; border: none; border-left: 1px solid var(--hair-2); cursor: pointer; padding: 5px 9px; font-family: var(--lp-serif); font-size: 12px; font-weight: 500; letter-spacing: 0.06em; color: var(--star-muted); transition: color 0.2s, background 0.2s; }
 .lp-lang button:first-child { border-left: none; }

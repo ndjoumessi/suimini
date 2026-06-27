@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Spectral, Plus_Jakarta_Sans, IBM_Plex_Mono } from "next/font/google";
-import { NextIntlClientProvider } from "next-intl";
-import LocaleParamCleaner from "@/components/LocaleParamCleaner";
-import { getLocale, getMessages } from "next-intl/server";
+import IntlProvider from "@/components/IntlProvider";
+import { getLocale } from "next-intl/server";
+import { isLocale, DEFAULT_LOCALE } from "@/i18n/config";
 import "./globals.css";
 
 // Modern Heritage type system — self-hosted via next/font (no FOUT, no render-blocking @import).
@@ -70,21 +70,13 @@ const SUPABASE_ORIGIN = (() => {
 })();
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // Locale comes from the cookie (no URL routing). Messages are provided to the
-  // whole tree so every client component can call useTranslations().
-  const locale = await getLocale();
-  const messages = await getMessages();
+  // Locale is seeded from the cookie (no URL routing) for SSR + first paint; the
+  // client IntlProvider then switches it in real time without a reload.
+  const cookieLocale = await getLocale();
+  const locale = isLocale(cookieLocale) ? cookieLocale : DEFAULT_LOCALE;
   return (
     <html lang={locale} data-theme="dark" style={{ colorScheme: "dark" }} className={`${display.variable} ${body.variable} ${mono.variable}`}>
       <head>
-        {/* Locale-switch fade-in: if we arrived via switchLocale (?_l param), hide the
-            body BEFORE first paint so it can fade in from 0 (no flash). Removed on load
-            and by LocaleParamCleaner. */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: "try{if(location.search.indexOf('_l=')>-1){document.documentElement.classList.add('locale-enter');addEventListener('load',function(){requestAnimationFrame(function(){document.documentElement.classList.remove('locale-enter')})})}}catch(e){}",
-          }}
-        />
         {/* next/font self-hosts the fonts, so we only hint at the runtime origins we actually hit. */}
         {SUPABASE_ORIGIN && <link rel="preconnect" href={SUPABASE_ORIGIN} crossOrigin="anonymous" />}
         {SUPABASE_ORIGIN && <link rel="dns-prefetch" href={SUPABASE_ORIGIN} />}
@@ -101,10 +93,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="apple-touch-startup-image" href="/splash-640x1136.png"  media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" />
       </head>
       <body>
-        <NextIntlClientProvider locale={locale} messages={messages}>
-          <LocaleParamCleaner />
+        <IntlProvider initialLocale={locale}>
           {children}
-        </NextIntlClientProvider>
+        </IntlProvider>
         <script
           dangerouslySetInnerHTML={{
             __html: `

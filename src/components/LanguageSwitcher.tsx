@@ -1,20 +1,18 @@
 'use client';
-import { useLocale } from 'next-intl';
 import { LOCALES, type Locale } from '@/i18n/config';
-import { switchLocale } from '@/i18n/switchLocale';
+import { useLocaleSwitch } from '@/components/IntlProvider';
 
 /**
- * FR | EN segmented toggle, Atelier style. No URL routing: the locale lives in a
- * cookie read by the server layout. switchLocale() sets the cookie client-side
- * then does a cache-busted full navigation, which re-reads the locale reliably in
- * both directions (the old /api/locale 302 raced its Set-Cookie, lagging one click).
+ * FR | EN segmented toggle, Atelier style. Switches the locale in real time via
+ * IntlProvider (state change → instant re-render, no reload). The cookie is
+ * updated in the background for the next visit.
  */
 export default function LanguageSwitcher({ tone = 'app' }: { tone?: 'app' | 'landing' }) {
-  const locale = useLocale();
+  const { locale, setLocale } = useLocaleSwitch();
 
   function choose(next: Locale) {
     if (next === locale) return;
-    switchLocale(next);
+    setLocale(next);
   }
 
   const ink = tone === 'landing' ? '#1b1b1b' : 'var(--border-strong)';

@@ -1,12 +1,12 @@
 'use client';
 import { useState, useRef, type ReactNode } from 'react';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { ColorThemeId, FamilyTree } from '@/types';
 import { COLOR_THEMES } from '@/lib/themes';
 import { supabase } from '@/lib/supabase';
 import { relativeSyncParts } from '@/lib/relativeTime';
 import { LOCALES, type Locale } from '@/i18n/config';
-import { switchLocale } from '@/i18n/switchLocale';
+import { useLocaleSwitch } from '@/components/IntlProvider';
 import { Settings2, Check, KeyRound, LogOut, Download, Trash2, RefreshCw, Cloud, CloudOff, X, Pencil } from 'lucide-react';
 
 interface Props {
@@ -56,13 +56,13 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
   const nameRef = useRef<HTMLInputElement>(null);
   const t = useTranslations('settings');
   const tSync = useTranslations('sync');
-  const locale = useLocale();
+  const { locale, setLocale } = useLocaleSwitch();
   const toast = (m: string, type?: string) => onToast?.(m, type);
   const deleteWord = t('deleteConfirmPlaceholder');
 
   function chooseLocale(next: Locale) {
     if (next === locale) return;
-    switchLocale(next);
+    setLocale(next);
   }
 
   async function saveName() {
