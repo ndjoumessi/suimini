@@ -1190,7 +1190,9 @@
     "changeImage": "Change image",
     "previewAlt": "Preview of the photo to add",
     "uploadingLabel": "Uploading…",
-    "needPerson": "Choose a person first"
+    "needPerson": "Choose a person first",
+    "cropInstruction": "Adjust the frame to crop your photo",
+    "previewLabel": "Preview"
   },
   "photoAnalyzer": {
     "title": "Face recognition",

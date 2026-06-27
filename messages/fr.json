@@ -1190,7 +1190,9 @@
     "changeImage": "Changer l’image",
     "previewAlt": "Aperçu de la photo à ajouter",
     "uploadingLabel": "Envoi en cours…",
-    "needPerson": "Choisissez d’abord une personne"
+    "needPerson": "Choisissez d’abord une personne",
+    "cropInstruction": "Ajustez le cadre pour recadrer votre photo",
+    "previewLabel": "Aperçu"
   },
   "photoAnalyzer": {
     "title": "Reconnaissance de visages",

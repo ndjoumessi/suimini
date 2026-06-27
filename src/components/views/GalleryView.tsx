@@ -2,6 +2,8 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { LayoutGrid, Rows3, ImagePlus, X, Plus, ScanFace, UploadCloud } from 'lucide-react';
+import ReactCrop, { centerCrop, makeAspectCrop, convertToPixelCrop, type Crop, type PixelCrop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
 import { FamilyTree, Person } from '@/types';
 import { getDisplayName, formatYear } from '@/lib/treeUtils';
 import { uploadAvatar } from '@/lib/uploadImage';
@@ -47,11 +49,17 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  // Crop (1:1, profile-photo ratio) — see the upload modal.
+  const imgRef = useRef<HTMLImageElement>(null);
+  const previewCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [crop, setCrop] = useState<Crop>();
+  const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
 
   const canAdd = !!onUpdatePerson && tree.persons.length > 0;
 
-  const openModal = () => { setAddPersonId(''); setPendingFile(null); setPreviewUrl(''); setDragOver(false); setShowAdd(true); };
-  const closeModal = () => { setShowAdd(false); setPendingFile(null); setPreviewUrl(''); };
+  const resetCrop = () => { setCrop(undefined); setCompletedCrop(undefined); };
+  const openModal = () => { setAddPersonId(''); setPendingFile(null); setPreviewUrl(''); setDragOver(false); resetCrop(); setShowAdd(true); };
+  const closeModal = () => { setShowAdd(false); setPendingFile(null); setPreviewUrl(''); resetCrop(); };
 
   // Esc closes the modal / lightbox.
   useEffect(() => {
@@ -67,15 +75,57 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
   const acceptFile = (file: File | undefined) => {
     if (!file || !file.type.startsWith('image/')) return;
     if (previewUrl) URL.revokeObjectURL(previewUrl);
+    resetCrop();
     setPendingFile(file);
     setPreviewUrl(URL.createObjectURL(file));
   };
+
+  // Seed a centered square crop once the image dimensions are known.
+  const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const { width, height } = e.currentTarget;
+    const c = centerCrop(makeAspectCrop({ unit: '%', width: 90 }, 1, width, height), width, height);
+    setCrop(c);
+    setCompletedCrop(convertToPixelCrop(c, width, height));
+  };
+
+  // Render the selected region from the natural-resolution image to a canvas.
+  const cropToCanvasEl = (canvas: HTMLCanvasElement, image: HTMLImageElement, c: PixelCrop, outSize?: number) => {
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+    const srcW = c.width * scaleX;
+    const srcH = c.height * scaleY;
+    canvas.width = outSize ?? Math.max(1, Math.round(srcW));
+    canvas.height = outSize ?? Math.max(1, Math.round(srcH));
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return false;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(image, c.x * scaleX, c.y * scaleY, srcW, srcH, 0, 0, canvas.width, canvas.height);
+    return true;
+  };
+
+  // Live square preview of the current crop.
+  useEffect(() => {
+    if (!completedCrop || !completedCrop.width || !imgRef.current || !previewCanvasRef.current) return;
+    cropToCanvasEl(previewCanvasRef.current, imgRef.current, completedCrop, 120);
+  }, [completedCrop]);
 
   const handleSave = async () => {
     if (!pendingFile || !addPersonId || !onUpdatePerson) return;
     setUploading(true);
     try {
-      const res = await uploadAvatar(pendingFile, addPersonId);
+      // Crop via canvas → JPEG 0.85; fall back to the original on any failure.
+      let fileToUpload = pendingFile;
+      if (imgRef.current && completedCrop?.width && completedCrop.height) {
+        const canvas = document.createElement('canvas');
+        if (cropToCanvasEl(canvas, imgRef.current, completedCrop)) {
+          const blob = await new Promise<Blob | null>(res => canvas.toBlob(res, 'image/jpeg', 0.85));
+          if (blob) {
+            const base = pendingFile.name.replace(/\.[^.]+$/, '') || 'photo';
+            fileToUpload = new File([blob], `${base}.jpg`, { type: 'image/jpeg' });
+          }
+        }
+      }
+      const res = await uploadAvatar(fileToUpload, addPersonId);
       const person = tree.persons.find(p => p.id === addPersonId);
       onUpdatePerson(addPersonId, { photos: [...(person?.photos || []), res.url] });
       closeModal();
@@ -187,14 +237,14 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
       {/* Upload modal */}
       {showAdd && onUpdatePerson && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && closeModal()}>
-          <div role="dialog" aria-modal="true" aria-label={t('modalTitle')} className="modal" style={{ maxWidth: '440px' }}>
+          <div role="dialog" aria-modal="true" aria-label={t('modalTitle')} className="modal" style={{ maxWidth: '560px', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
             <div className="gv-modal-head">
               <h2 className="serif" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.15rem' }}>
                 <ImagePlus size={18} aria-hidden="true" style={{ color: 'var(--accent)' }} /> {t('modalTitle')}
               </h2>
               <button onClick={closeModal} aria-label={t('cancel')} className="btn btn-ghost btn-sm btn-icon"><X size={16} /></button>
             </div>
-            <div style={{ padding: '16px 20px 20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ padding: '16px 20px 20px', display: 'flex', flexDirection: 'column', gap: '14px', overflowY: 'auto', minHeight: 0 }}>
               {/* 1. Person selector */}
               <label className="gv-field">
                 <span className="label">{t('associateWith')}</span>
@@ -208,11 +258,27 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
               <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }}
                 onChange={e => { acceptFile(e.target.files?.[0]); e.target.value = ''; }} />
               {previewUrl ? (
-                <div className="gv-preview">
-                  <img src={previewUrl} alt={t('previewAlt')} />
-                  <button type="button" onClick={() => fileRef.current?.click()} className="btn btn-secondary btn-sm gv-preview-change">
-                    {t('changeImage')}
-                  </button>
+                <div className="gv-cropwrap">
+                  <div className="gv-cropmain">
+                    <ReactCrop
+                      crop={crop}
+                      onChange={(_, percent) => setCrop(percent)}
+                      onComplete={(c) => setCompletedCrop(c)}
+                      aspect={1}
+                      keepSelection
+                      className="gv-reactcrop"
+                    >
+                      <img ref={imgRef} src={previewUrl} alt={t('previewAlt')} onLoad={onImageLoad} className="gv-cropimg" />
+                    </ReactCrop>
+                    <p className="gv-cropinstr">{t('cropInstruction')}</p>
+                    <button type="button" onClick={() => fileRef.current?.click()} className="btn btn-secondary btn-sm gv-change">
+                      {t('changeImage')}
+                    </button>
+                  </div>
+                  <div className="gv-cropside">
+                    <span className="label">{t('previewLabel')}</span>
+                    <canvas ref={previewCanvasRef} className="gv-cropprev" width={120} height={120} />
+                  </div>
                 </div>
               ) : (
                 <button type="button"
@@ -306,10 +372,30 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
         .gv-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: var(--bw) solid var(--border-strong); }
         .gv-drop { width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 32px 16px; background: #1a1a24; border: 1.5px dashed var(--border-strong); color: var(--text-muted); font-size: 13px; cursor: pointer; transition: border-color 150ms, background 150ms, color 150ms; }
         .gv-drop:hover, .gv-drop.over, .gv-drop:focus-visible { border-color: var(--accent); color: var(--accent-text); background: var(--accent-light); outline: none; }
-        .gv-preview { position: relative; }
-        .gv-preview img { width: 100%; max-height: 240px; object-fit: cover; display: block; border: 1px solid var(--border-strong); }
-        .gv-preview-change { position: absolute; bottom: 8px; right: 8px; }
         .gv-hint { margin: 0; font-size: 12px; color: var(--accent-text); text-align: right; }
+
+        /* Crop UI — interactive 1:1 crop + live preview */
+        .gv-cropwrap { display: flex; gap: 16px; align-items: flex-start; }
+        .gv-cropmain { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+        .gv-reactcrop { width: 100%; background: #0D0D0D; border: 1px solid var(--border-strong);
+          /* theme: gold handles, gold focus (override the library's vars) */
+          --rc-drag-handle-size: 14px; --rc-drag-handle-bg-colour: #C9A84C; --rc-border-color: #C9A84C; --rc-focus-color: #C9A84C; }
+        .gv-cropimg { display: block; width: 100%; max-height: 46vh; object-fit: contain; }
+        /* dark overlay on excluded zones (huge spread shadow leaves the selection clear) */
+        .gv-reactcrop .ReactCrop__crop-selection { box-shadow: 0 0 0 9999px rgba(13,13,13,0.64); }
+        .gv-reactcrop .ReactCrop__drag-handle { background-color: #C9A84C; border-color: #0D0D0D; }
+        .gv-cropinstr { margin: 0; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.04em; color: var(--text-muted); }
+        .gv-change { flex-shrink: 0; }
+        .gv-cropside { width: 120px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+        .gv-cropside .label { align-self: flex-start; }
+        .gv-cropprev { width: 120px; height: 120px; background: #0D0D0D; border: 1px solid var(--border-strong); display: block; }
+        @media (max-width: 560px) {
+          .gv-cropwrap { flex-direction: column; }
+          .gv-cropside { width: 100%; flex-direction: row; align-items: center; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .gv-reactcrop .ReactCrop__crop-selection { animation: none; }
+        }
 
         /* Lightbox */
         .gv-lightbox { position: fixed; inset: 0; background: var(--scrim, rgba(0,0,0,0.92)); z-index: 2000; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 16px; padding: 20px; }
