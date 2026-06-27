@@ -574,7 +574,10 @@
   "demo": {
     "banner": "Demo mode · data not saved",
     "quit": "Exit demo",
-    "createAccount": "Create account"
+    "createAccount": "Create account",
+    "bannerTitle": "Demo mode",
+    "bannerNote": "Your data isn’t saved",
+    "dismiss": "Dismiss"
   },
   "language": {
     "label": "Language",

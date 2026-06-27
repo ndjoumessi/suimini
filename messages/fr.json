@@ -574,7 +574,10 @@
   "demo": {
     "banner": "Mode démo · données non sauvegardées",
     "quit": "Quitter la démo",
-    "createAccount": "Créer un compte"
+    "createAccount": "Créer un compte",
+    "bannerTitle": "Mode démonstration",
+    "bannerNote": "Les données ne sont pas sauvegardées",
+    "dismiss": "Masquer"
   },
   "language": {
     "label": "Langue",
