@@ -66,7 +66,9 @@
     "errorPasswordTooShort": "Password must be at least 8 characters.",
     "errorPasswordMismatch": "Passwords do not match.",
     "successResetSent": "Reset link sent. Check your inbox.",
-    "successSignupSent": "Request sent! An administrator will review your registration."
+    "successSignupSent": "Request sent! An administrator will review your registration.",
+    "magicLinkButton": "Sign in with a magic link",
+    "successMagicSent": "Magic link sent! Check your inbox."
   },
   "landing": {
     "nav": {

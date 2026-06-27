@@ -66,7 +66,9 @@
     "errorPasswordTooShort": "Le mot de passe doit faire au moins 8 caractères.",
     "errorPasswordMismatch": "Les mots de passe ne correspondent pas.",
     "successResetSent": "Lien de réinitialisation envoyé. Consultez votre boîte mail.",
-    "successSignupSent": "Demande envoyée ! Un administrateur va examiner votre inscription."
+    "successSignupSent": "Demande envoyée ! Un administrateur va examiner votre inscription.",
+    "magicLinkButton": "Connexion par lien magique",
+    "successMagicSent": "Lien de connexion envoyé ! Vérifiez votre boîte mail."
   },
   "landing": {
     "nav": {

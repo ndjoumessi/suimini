@@ -1,13 +1,12 @@
 'use client';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Mail, Lock, User, Eye, EyeOff, ArrowRight, Gamepad2, Check, X as XIcon, ArrowLeft, Building2, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, ArrowRight, Gamepad2, Check, X as XIcon, ArrowLeft, Building2, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useOverlay } from '@/hooks/useOverlay';
 import { passwordChecks, strengthInfo } from '@/lib/password';
-import { BrandLockup } from './Brand';
+import { BrandMark } from './Brand';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { ErrorMessage } from '@/components/ui/ErrorMessage';
 
 type Tab = 'login' | 'signup';
 interface Props {
@@ -16,11 +15,10 @@ interface Props {
 }
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-const ACCENT = 'var(--accent)';
 
 export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
   const tr = useTranslations('auth');
-  const { signUp, signIn, resetPassword, startDemo } = useAuth();
+  const { signUp, signIn, resetPassword, signInWithMagicLink, startDemo } = useAuth();
   const overlayRef = useOverlay<HTMLDivElement>(onClose);
 
   const [tab, setTab] = useState<Tab>(initialTab);
@@ -34,6 +32,7 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
   const [showPw, setShowPw] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [magicLoading, setMagicLoading] = useState(false);
   const [error, setError] = useState('');
   const [sentMsg, setSentMsg] = useState('');
 
@@ -44,6 +43,16 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
   const confirmValid = confirm.length > 0 && confirm === password;
 
   function switchTab(t: Tab) { setTab(t); setForgot(false); setError(''); setSentMsg(''); }
+
+  async function handleMagicLink() {
+    if (!emailValid) { setError(tr('errorEmailInvalid')); return; }
+    setError('');
+    setMagicLoading(true);
+    const { error } = await signInWithMagicLink(email);
+    setMagicLoading(false);
+    if (error) setError(error);
+    else setSentMsg(tr('successMagicSent'));
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -67,16 +76,12 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
         const { error } = await signIn(email, password);
         if (error) {
           clearTimeout(safety); setLoading(false);
-          // Localize the two known sign-in errors (useAuth returns French copy).
           const localized = /incorrect|invalid/i.test(error) ? tr('errorInvalidCredentials')
             : /confirm/i.test(error) ? tr('errorEmailNotConfirmed')
             : error;
           setError(localized);
           return;
         }
-        // Explicit login → go to the app. Full navigation so the proxy/HomeGate gate
-        // the destination by status (approved → /app ; pending/rejected/suspended →
-        // bounced back to / where the matching status screen is shown).
         clearTimeout(safety);
         onClose();
         window.location.href = '/app';
@@ -108,40 +113,38 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
   return (
     <div className="auth-overlay" onMouseDown={e => e.target === e.currentTarget && onClose()}>
       <div ref={overlayRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={tr('modalAria')} className="auth-modal animate-scale-in">
-        <button onClick={onClose} aria-label={tr('close')} className="auth-x"><XIcon size={18} /></button>
+        <button onClick={onClose} aria-label={tr('close')} className="auth-x"><XIcon size={20} /></button>
 
-        {/* Logo + tagline */}
-        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
-            <BrandLockup size={30} color="var(--ink)" accent="var(--accent)" surface="var(--bg-card)" fontSize={24} />
+        {/* Header — logo + wordmark + tagline + gold rule */}
+        <div className="auth-head">
+          <div className="auth-brand">
+            <BrandMark size={36} color="#0d0d0d" accent="#0d0d0d" surface="var(--accent)" />
+            <span className="auth-brand-name serif">Suimini</span>
           </div>
-          <p className="label" style={{ margin: 0, color: 'var(--text-muted)' }}>
-            {tr('tagline')}
-          </p>
+          <p className="auth-tagline">{tr('tagline')}</p>
         </div>
 
         {sentMsg ? (
-          <div className="animate-fade-in" style={{ textAlign: 'center' }}>
-            <CheckCircle2 size={44} style={{ color: 'var(--success)', marginBottom: '10px' }} aria-hidden="true" />
-            <p style={{ fontSize: '14px', lineHeight: 1.6, margin: '0 0 16px' }}>{sentMsg}</p>
-            <button onClick={onClose} className="auth-submit">{tr('close')}</button>
+          <div className="animate-fade-in">
+            <AuthSuccess message={sentMsg} />
+            <button onClick={onClose} className="auth-submit" style={{ marginTop: '18px' }}>{tr('close')} <ArrowRight size={18} /></button>
           </div>
         ) : forgot ? (
           <form onSubmit={handleSubmit}>
-            <button type="button" onClick={() => { setForgot(false); setError(''); }} className="btn btn-ghost btn-sm" style={{ marginBottom: '8px' }}><ArrowLeft size={14} /> {tr('back')}</button>
-            <h3 className="serif" style={{ margin: '0 0 4px', fontSize: '1.1rem' }}>{tr('forgotTitle')}</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 18px' }}>{tr('forgotDesc')}</p>
+            <button type="button" onClick={() => { setForgot(false); setError(''); }} className="auth-back"><ArrowLeft size={14} /> {tr('back')}</button>
+            <h3 className="serif" style={{ margin: '0 0 4px', fontSize: '1.15rem', color: 'var(--ink)' }}>{tr('forgotTitle')}</h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 18px', lineHeight: 1.5 }}>{tr('forgotDesc')}</p>
             <Field label={tr('email')} Icon={Mail} type="email" value={email} onChange={setEmail} placeholder={tr('emailPlaceholder')} autoComplete="email" autoFocus valid={email.length > 0 ? emailValid : undefined} ariaLabel="Email" />
-            {error && <div className="animate-fade-in" style={{ margin: '6px 0 0' }}><ErrorMessage message={error} /></div>}
-            <SubmitBtn loading={loading} disabled={!canSubmit} label={tr('sendLink')} style={{ marginTop: '16px' }} />
+            {error && <div className="animate-fade-in" style={{ margin: '10px 0 0' }}><AuthError message={error} /></div>}
+            <SubmitBtn loading={loading} disabled={!canSubmit} label={tr('sendLink')} style={{ marginTop: '18px' }} />
           </form>
         ) : (
           <>
-            {/* Tabs (2, 50/50, animated underline) */}
+            {/* Tabs — gold underline on the active one, no coloured fill */}
             <div role="tablist" className="auth-tabs">
               {([['login', tr('login')], ['signup', tr('signup')]] as [Tab, string][]).map(([t, lbl]) => (
                 <button key={t} role="tab" aria-selected={tab === t} onClick={() => switchTab(t)}
-                  className="auth-tab" style={{ color: tab === t ? ACCENT : 'var(--text-muted)', fontWeight: tab === t ? 700 : 400 }}>
+                  className={`auth-tab ${tab === t ? 'auth-tab-on' : ''}`}>
                   {lbl}
                 </button>
               ))}
@@ -162,7 +165,7 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
               <div className="auth-field">
                 <label className="auth-label" htmlFor="pw">{tr('password')}</label>
                 <div className="auth-input-wrap">
-                  <Lock size={18} className="auth-input-icon" />
+                  <Lock size={16} className="auth-input-icon" />
                   <input id="pw" type={showPw ? 'text' : 'password'} value={password} onChange={e => { setPassword(e.target.value); setError(''); }}
                     placeholder={tab === 'signup' ? tr('passwordPlaceholderSignup') : '••••••••'} autoComplete={tab === 'signup' ? 'new-password' : 'current-password'}
                     aria-label={tr('passwordAria')} className="auth-input" style={{ paddingRight: '44px' }} />
@@ -172,16 +175,16 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
                 </div>
 
                 {tab === 'signup' && password.length > 0 && (
-                  <div style={{ marginTop: '8px' }} aria-live="polite">
-                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center', marginBottom: '6px' }}>
+                  <div style={{ marginTop: '10px' }} aria-live="polite">
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '7px' }}>
                       <div style={{ display: 'flex', gap: '4px', flex: 1 }}>
                         {[0, 1, 2, 3].map(i => (
-                          <div key={i} style={{ flex: 1, height: '3px', borderRadius: '2px', background: i < strength.filled ? strength.color : 'var(--bg-muted)', transition: 'background 300ms ease, width 300ms ease' }} />
+                          <div key={i} style={{ flex: 1, height: '3px', background: i < strength.filled ? strength.color : '#2D2D3A', transition: 'background 300ms ease' }} />
                         ))}
                       </div>
-                      <span style={{ fontSize: '11px', fontWeight: 600, color: strength.color }}>{strength.labelKey ? tr(strength.labelKey) : ''}</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.04em', color: strength.color }}>{strength.labelKey ? tr(strength.labelKey) : ''}</span>
                     </div>
-                    <div style={{ display: 'flex', gap: '12px', fontSize: '11px' }}>
+                    <div style={{ display: 'flex', gap: '12px', fontFamily: 'var(--font-mono)', fontSize: '11px' }}>
                       <Crit ok={pwChecks.length} label={tr('critLength')} />
                       <Crit ok={pwChecks.upper} label={tr('critUpper')} />
                       <Crit ok={pwChecks.digit} label={tr('critDigit')} />
@@ -198,7 +201,7 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
                 <div className="auth-field">
                   <label className="auth-label" htmlFor="cpw">{tr('confirmPassword')}</label>
                   <div className="auth-input-wrap">
-                    <Lock size={18} className="auth-input-icon" />
+                    <Lock size={16} className="auth-input-icon" />
                     <input id="cpw" type={showConfirm ? 'text' : 'password'} value={confirm} onChange={e => { setConfirm(e.target.value); setError(''); }}
                       placeholder="••••••••" autoComplete="new-password" aria-label={tr('confirmPassword')} aria-invalid={confirm.length > 0 && !confirmValid}
                       className="auth-input" style={{ paddingRight: '70px', borderColor: confirm.length > 0 ? (confirmValid ? 'var(--success)' : 'var(--danger)') : undefined }} />
@@ -211,19 +214,26 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
               )}
 
               {tab === 'login' && (
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '14px', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} style={{ width: '16px', height: '16px' }} /> {tr('rememberMe')}
+                <label className="auth-remember">
+                  <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} /> {tr('rememberMe')}
                 </label>
               )}
 
-              {error && <div className="animate-fade-in" style={{ margin: '6px 0 12px' }}><ErrorMessage message={error} /></div>}
+              {error && <div className="animate-fade-in" style={{ margin: '12px 0' }}><AuthError message={error} /></div>}
 
-              <SubmitBtn loading={loading} disabled={!canSubmit} label={submitLabel} loadingLabel={tab === 'login' ? tr('loginLoading') : undefined} style={{ marginTop: '4px' }} />
+              <SubmitBtn loading={loading} disabled={!canSubmit} label={submitLabel} loadingLabel={tab === 'login' ? tr('loginLoading') : undefined} style={{ marginTop: '6px' }} />
             </form>
 
-            {/* Separator + demo */}
+            {/* Separator */}
             <div className="auth-or"><span /><small>{tr('orSeparator')}</small><span /></div>
-            <button type="button" onClick={startDemo} className="auth-demo">
+
+            {/* Magic link (login only) + demo */}
+            {tab === 'login' && (
+              <button type="button" onClick={handleMagicLink} disabled={magicLoading} className="auth-ghost">
+                {magicLoading ? <LoadingSpinner size={16} /> : <>{tr('magicLinkButton')} <ArrowRight size={15} /></>}
+              </button>
+            )}
+            <button type="button" onClick={startDemo} className="auth-ghost auth-demo">
               <Gamepad2 size={16} /> {tr('tryDemo')}
             </button>
           </>
@@ -243,7 +253,7 @@ function Field({ label, Icon, value, onChange, placeholder, type = 'text', autoC
     <div className="auth-field">
       <label className="auth-label">{label}</label>
       <div className="auth-input-wrap">
-        <Icon size={18} className="auth-input-icon" />
+        <Icon size={16} className="auth-input-icon" />
         <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} autoComplete={autoComplete}
           autoFocus={autoFocus} aria-label={ariaLabel} aria-invalid={valid === false} className="auth-input"
           style={{ paddingRight: '40px', borderColor: valid === false ? 'var(--danger)' : valid === true ? 'var(--success)' : undefined }} />
@@ -261,41 +271,86 @@ function Crit({ ok, label }: { ok: boolean; label: string }) {
   return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', color: ok ? 'var(--success)' : 'var(--text-light)' }}>{ok ? <Check size={12} /> : <XIcon size={12} />} {label}</span>;
 }
 
+function AuthError({ message }: { message: string }) {
+  return <div role="alert" className="auth-msg auth-msg-err"><AlertCircle size={15} aria-hidden="true" /><span>{message}</span></div>;
+}
+function AuthSuccess({ message }: { message: string }) {
+  return <div role="status" className="auth-msg auth-msg-ok"><CheckCircle2 size={15} aria-hidden="true" /><span>{message}</span></div>;
+}
+
 function SubmitBtn({ loading, disabled, label, loadingLabel, style }: { loading: boolean; disabled: boolean; label: string; loadingLabel?: string; style?: React.CSSProperties }) {
   return (
-    <button type="submit" disabled={disabled || loading} className="auth-submit" style={{ ...style, opacity: (disabled || loading) ? undefined : 1 }}>
-      {loading ? <><LoadingSpinner size={16} className="auth-submit-spinner" /> {loadingLabel || '…'}</> : <>{label} <ArrowRight size={18} /></>}
+    <button type="submit" disabled={disabled || loading} className="auth-submit" style={style}>
+      {loading ? <LoadingSpinner size={18} className="auth-submit-spinner" /> : <>{label} <ArrowRight size={18} /></>}
+      {loading && loadingLabel ? <span style={{ marginLeft: 8 }}>{loadingLabel}</span> : null}
     </button>
   );
 }
 
 const AUTH_CSS = `
-.auth-overlay { position: fixed; inset: 0; z-index: 2000; background: rgba(27,22,18,0.55); display: flex; align-items: flex-start; justify-content: center; padding-top: 7vh; overflow-y: auto; }
-.auth-modal { position: relative; width: 92%; max-width: 420px; background: var(--bg-card); border-radius: var(--radius-lg); box-shadow: var(--shadow-xl); border: var(--bw) solid var(--border-strong); padding: 32px; margin-bottom: 40px; }
-.auth-x { position: absolute; top: 14px; right: 14px; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: none; background: transparent; color: var(--text-muted); border-radius: var(--radius); cursor: pointer; transition: background 200ms ease, color 200ms ease; }
-.auth-x:hover { background: var(--interactive); color: var(--text); }
-.auth-tabs { position: relative; display: flex; border-bottom: var(--bw) solid var(--border-strong); margin-bottom: 24px; }
-.auth-tab { flex: 1; min-height: 44px; padding: 12px 8px; border: none; background: none; cursor: pointer; font-family: var(--font-body); font-weight: 600; font-size: 14px; transition: color 200ms ease; }
-.auth-tab-underline { position: absolute; bottom: calc(-1 * var(--bw)); left: 0; width: 50%; height: 3px; background: var(--accent); transition: transform 200ms ease; }
+.auth-overlay { position: fixed; inset: 0; z-index: 2000; background: rgba(8,8,12,0.72); display: flex; align-items: flex-start; justify-content: center; padding-top: 7vh; overflow-y: auto; }
+.auth-modal { position: relative; width: 92%; max-width: 480px; background: #111118; border: 1px solid #2D2D3A; box-shadow: 0 24px 48px rgba(0,0,0,0.6); padding: 40px; margin-bottom: 40px; }
+
+/* close */
+.auth-x { position: absolute; top: 16px; right: 16px; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; transition: color 200ms ease; }
+.auth-x:hover { color: var(--ink); }
+
+/* header */
+.auth-head { text-align: center; padding-bottom: 22px; margin-bottom: 24px; border-bottom: 1px solid var(--accent); }
+.auth-brand { display: inline-flex; align-items: center; gap: 11px; }
+.auth-brand-name { font-family: var(--font-display); font-style: italic; font-weight: 500; font-size: 20px; letter-spacing: 0; color: var(--ink); }
+.auth-tagline { margin: 12px 0 0; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #a98f4e; }
+
+/* back link (forgot view) */
+.auth-back { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 14px; padding: 0; background: none; border: none; cursor: pointer; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em; color: var(--text-muted); transition: color 200ms ease; }
+.auth-back:hover { color: var(--accent-text); }
+
+/* tabs */
+.auth-tabs { position: relative; display: flex; border-bottom: 1px solid #2D2D3A; margin-bottom: 26px; }
+.auth-tab { flex: 1; min-height: 44px; padding: 12px 8px; border: none; background: none; cursor: pointer; font-family: var(--font-body); font-weight: 600; font-size: 14px; color: var(--text-muted); transition: color 200ms ease; }
+.auth-tab-on { color: var(--accent); }
+.auth-tab-underline { position: absolute; bottom: -1px; left: 0; width: 50%; height: 2px; background: var(--accent); transition: transform 200ms ease; }
+
+/* fields */
 .auth-field { margin-bottom: 16px; }
-.auth-label { display: block; font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+.auth-label { display: block; font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: #a98f4e; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 7px; }
 .auth-input-wrap { position: relative; }
-.auth-input-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-light); pointer-events: none; }
-.auth-input { width: 100%; height: 52px; border: var(--bw) solid var(--border-strong); border-radius: var(--radius); padding: 0 16px 0 44px; font-size: 15px; font-family: var(--font-body); background: var(--bg-card); color: var(--text); outline: none; transition: border-color 200ms ease, box-shadow 200ms ease; }
-.auth-input:focus { border-color: var(--accent); box-shadow: 3px 3px 0 var(--accent-light); }
-.auth-eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: none; background: transparent; color: var(--text-muted); border-radius: var(--radius); cursor: pointer; }
-.auth-eye:hover { background: var(--interactive); color: var(--text); }
-.auth-forgot { display: block; margin: 8px 0 0 auto; background: none; border: none; color: var(--accent); font-size: 12px; font-weight: 600; cursor: pointer; text-align: right; padding: 2px; }
-.auth-forgot:hover { text-decoration: underline; }
-.auth-error { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--danger); margin: 6px 0 12px; }
-.auth-submit { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 52px; background: var(--accent); border: var(--bw) solid var(--border-strong); border-radius: var(--radius); color: #fff; font-weight: 700; font-size: 15px; font-family: var(--font-body); cursor: pointer; transition: transform 150ms var(--ease-out), box-shadow 150ms var(--ease-out), opacity 200ms ease; }
-.auth-submit:hover:not(:disabled) { transform: translate(-2px,-2px); box-shadow: var(--shadow); background: var(--accent-hover); }
-.auth-submit:active:not(:disabled) { transform: translate(0,0); box-shadow: 1px 1px 0 var(--shadow-color); }
-.auth-submit:disabled { opacity: 0.45; cursor: not-allowed; }
-.auth-submit-spinner { color: #fff !important; }
-.auth-or { display: flex; align-items: center; gap: 12px; margin: 20px 0; }
-.auth-or span { flex: 1; height: var(--bw); background: var(--border-strong); }
-.auth-or small { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-light); }
-.auth-demo { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 48px; background: var(--bg-card); border: var(--bw) solid var(--border-strong); border-radius: var(--radius); color: var(--text); font-weight: 600; font-size: 14px; font-family: var(--font-body); cursor: pointer; transition: transform 150ms var(--ease-out), box-shadow 150ms var(--ease-out); }
-.auth-demo:hover { transform: translate(-2px,-2px); box-shadow: var(--shadow); }
+.auth-input-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+.auth-input { width: 100%; height: 48px; border: 1px solid #2D2D3A; padding: 0 16px 0 42px; font-size: 15px; font-family: var(--font-body); background: #1A1A24; color: var(--ink); outline: none; transition: border-color 200ms ease, box-shadow 200ms ease; }
+.auth-input::placeholder { color: rgba(245,240,232,0.3); }
+/* focus: 2px gold border, no glow (inset shadow thickens the 1px border without layout shift) */
+.auth-input:focus { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.auth-eye { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; transition: color 200ms ease; }
+.auth-eye:hover { color: var(--ink); }
+
+/* forgot link */
+.auth-forgot { display: block; margin: 9px 0 0 auto; padding: 2px; background: none; border: none; cursor: pointer; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.03em; color: #a98f4e; text-align: right; transition: color 200ms ease; }
+.auth-forgot:hover { color: var(--accent-text); }
+
+/* remember */
+.auth-remember { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; font-size: 13px; color: var(--text-muted); cursor: pointer; }
+.auth-remember input { width: 16px; height: 16px; accent-color: var(--accent); }
+
+/* messages */
+.auth-msg { display: flex; align-items: center; gap: 8px; padding: 11px 14px; font-size: 13px; line-height: 1.4; font-family: var(--font-body); }
+.auth-msg svg { flex-shrink: 0; }
+.auth-msg-err { background: #1A0A0A; border: 1px solid #5a2a2a; color: #ef9a9a; }
+.auth-msg-ok { background: #0A1A0A; border: 1px solid #2f5a3f; color: #86c79b; }
+
+/* submit CTA */
+.auth-submit { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 48px; background: var(--accent); border: none; color: #0D0D0D; font-weight: 700; font-size: 14px; font-family: var(--font-body); cursor: pointer; transition: filter 150ms ease, opacity 200ms ease; }
+.auth-submit:hover:not(:disabled) { filter: brightness(1.1); }
+.auth-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+.auth-submit-spinner { color: #0D0D0D !important; }
+
+/* separator */
+.auth-or { display: flex; align-items: center; gap: 12px; margin: 22px 0 14px; }
+.auth-or span { flex: 1; height: 1px; background: #2D2D3A; }
+.auth-or small { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); }
+
+/* ghost buttons (magic link + demo) */
+.auth-ghost { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 46px; background: transparent; border: 1px solid #2D2D3A; color: var(--text-muted); font-weight: 600; font-size: 14px; font-family: var(--font-body); cursor: pointer; transition: border-color 200ms ease, color 200ms ease; }
+.auth-ghost:hover:not(:disabled) { border-color: var(--accent); color: var(--ink); }
+.auth-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
+.auth-demo { margin-top: 10px; }
 `;
