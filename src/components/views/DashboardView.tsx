@@ -2,13 +2,14 @@
 import { useMemo, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import {
-  Home, Cake, Clock, Sparkles, Sprout, Plus,
-  TreePine, Users, Calendar, BookOpen, ScanFace,
+  Cake, Clock, Sparkles, Sprout, Plus, ScanFace,
+  TreePine, Users, Calendar, BookOpen, BarChart3,
 } from 'lucide-react';
 import PersonAvatar from '../person/PersonAvatar';
-import { FamilyTree, ViewMode } from '@/types';
+import { FamilyTree, Person, ViewMode } from '@/types';
 import {
-  computeTreeStats, getUpcomingAnniversaries, getAge, getDisplayName,
+  computeTreeStats, getUpcomingAnniversaries, getAge, getDisplayName, formatYear,
+  getSpouses, getParents, getGeneration,
 } from '@/lib/treeUtils';
 
 interface Props {
@@ -18,28 +19,24 @@ interface Props {
   displayName?: string | null;
   userEmail?: string | null;
   onNavigate: (v: ViewMode) => void;
-  /** Open the tree selector / creation flow. */
   onNewTree: () => void;
-  /** Open the add-person flow on the active tree. */
   onAddPerson: () => void;
-  /** Switch to a person's tree (if needed) and open their panel. */
   onSelectPerson: (treeId: string, personId: string) => void;
-  /** Open the AI narrative report modal (active tree). */
   onNarrative: () => void;
-  /** Open the AI face-recognition photo analyzer. */
   onAnalyzePhoto: () => void;
 }
 
-/** Locale-aware coarse relative time (past only), e.g. "2 days ago" / "il y a 2 jours". */
+/** Locale-aware coarse relative time (past only). */
 function relativeTime(iso: string | undefined, locale: string): string {
   if (!iso) return '';
   const then = new Date(iso).getTime();
   if (Number.isNaN(then)) return '';
   const diff = Math.max(0, Date.now() - then);
-  const day = 86400000;
-  const days = Math.floor(diff / day);
+  const min = 60000, hour = 3600000, day = 86400000;
   const rtf = new Intl.RelativeTimeFormat(locale === 'en' ? 'en' : 'fr', { numeric: 'auto' });
-  if (days <= 0) return rtf.format(0, 'day');
+  if (diff < hour) return rtf.format(-Math.max(1, Math.floor(diff / min)), 'minute');
+  if (diff < day) return rtf.format(-Math.floor(diff / hour), 'hour');
+  const days = Math.floor(diff / day);
   if (days < 7) return rtf.format(-days, 'day');
   if (days < 30) return rtf.format(-Math.floor(days / 7), 'week');
   if (days < 365) return rtf.format(-Math.floor(days / 30), 'month');
@@ -65,107 +62,133 @@ function earliestYear(tree?: FamilyTree | null): number | null {
   return Number.isFinite(min) ? min : null;
 }
 
-// ---------- shared card chrome ----------
-
-function Card({ children, eyebrow, title, Icon, full, delay, warm }: {
-  children: ReactNode; eyebrow?: string; title?: string; Icon?: typeof Home; full?: boolean; delay: number; warm?: boolean;
-}) {
-  return (
-    <section
-      className={`dash-card animate-fade-in ${warm ? 'dash-card-warm' : ''}`}
-      style={{ animationDelay: `${delay}s`, gridColumn: full ? '1 / -1' : undefined }}
-    >
-      {(title || eyebrow) && (
-        <header style={{ marginBottom: '14px' }}>
-          <div className="label" style={{ display: 'flex', alignItems: 'center', gap: '7px', color: 'var(--accent-text)', marginBottom: '5px' }}>
-            {Icon && <Icon size={14} aria-hidden="true" />}
-            {eyebrow}
-          </div>
-          {title && <h3 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '1.4rem', fontWeight: 600, letterSpacing: '-0.005em' }}>{title}</h3>}
-        </header>
-      )}
-      {children}
-    </section>
-  );
-}
-
-function EmptyLine({ children }: { children: ReactNode }) {
-  return <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: 0 }}>{children}</p>;
+function memberDates(p: Person): string {
+  const b = formatYear(p.birthDate);
+  const d = formatYear(p.deathDate);
+  if (!p.isAlive) return b && d ? `${b} – ${d}` : d ? `† ${d}` : b ? `${b} – ?` : '';
+  return b || '';
 }
 
 export default function DashboardView({ trees, activeTree, canEdit = true, displayName, userEmail, onNavigate, onNewTree, onAddPerson, onSelectPerson, onNarrative, onAnalyzePhoto }: Props) {
   const t = useTranslations('dashboard');
   const tn = useTranslations('nav');
   const ts = useTranslations('sidebar');
-  const tp = useTranslations('photoAnalyzer');
   const locale = useLocale();
   const en = locale === 'en';
   const firstName = firstNameOf(displayName, userEmail);
-  const today = useMemo(() => {
-    const d = new Date();
-    return d.toLocaleDateString(en ? 'en-US' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  }, [en]);
 
-  // Active-tree figures drive the hero + the big stat row.
+  const today = useMemo(
+    () => new Date().toLocaleDateString(en ? 'en-US' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+    [en],
+  );
+
+  // Active-tree figures. DOYEN·NE = oldest LIVING person (fixes the 176 bug from
+  // deceased people without a death date); falls back to the oldest deceased with
+  // both dates (age at death) only when nobody living has a birth date.
   const stats = useMemo(() => {
     if (!activeTree || activeTree.persons.length === 0) return null;
     const s = computeTreeStats(activeTree);
-    const aged = activeTree.persons
-      .map(p => ({ name: getDisplayName(p), age: getAge(p.birthDate, p.deathDate) ?? -1, alive: p.isAlive }))
-      .filter(x => x.age >= 0);
-    const elder = aged.sort((a, b) => b.age - a.age)[0] ?? null;
+    const living = activeTree.persons
+      .filter(p => p.isAlive && p.birthDate)
+      .map(p => ({ person: p, age: getAge(p.birthDate) ?? -1 }))
+      .filter(x => x.age >= 0)
+      .sort((a, b) => b.age - a.age);
+    let elder = living[0] ?? null;
+    if (!elder) {
+      elder = activeTree.persons
+        .filter(p => !p.isAlive && p.birthDate && p.deathDate)
+        .map(p => ({ person: p, age: getAge(p.birthDate, p.deathDate) ?? -1 }))
+        .filter(x => x.age >= 0)
+        .sort((a, b) => b.age - a.age)[0] ?? null;
+    }
     return { members: activeTree.persons.length, generations: s.totalGenerations, since: earliestYear(activeTree), elder };
   }, [activeTree]);
 
-  // Birthdays within the next 30 days, all trees, soonest first.
+  // Birthdays: this month (30d). If none, fall back to the next 3 within 90 days.
   const birthdays = useMemo(() => {
-    const all = trees.flatMap(tr => getUpcomingAnniversaries(tr.persons, tr.relationships, 30).filter(a => a.type === 'birthday'));
-    return all.sort((a, b) => a.daysUntil - b.daysUntil).slice(0, 6);
+    const within = (days: number) => trees
+      .flatMap(tr => getUpcomingAnniversaries(tr.persons, tr.relationships, days).filter(a => a.type === 'birthday'))
+      .sort((a, b) => a.daysUntil - b.daysUntil);
+    const month = within(30);
+    if (month.length > 0) return { items: month.slice(0, 6), upcoming: false };
+    return { items: within(90).slice(0, 3), upcoming: true };
   }, [trees]);
 
-  // 5 most recently created/edited persons, all trees.
+  // Recent activity with family context (kinship + generation).
   const recent = useMemo(() => {
-    const all = trees.flatMap(tr => tr.persons.map(p => ({ person: p, treeId: tr.id, treeName: tr.name })));
+    const all = trees.flatMap(tr => tr.persons.map(p => ({ person: p, tree: tr })));
     return all
       .filter(x => x.person.updatedAt)
       .sort((a, b) => new Date(b.person.updatedAt).getTime() - new Date(a.person.updatedAt).getTime())
       .slice(0, 5);
   }, [trees]);
 
+  // Latest 4 members by creation date (active tree first, else all).
+  const latest = useMemo(() => {
+    const pool = activeTree ? activeTree.persons.map(p => ({ person: p, tree: activeTree })) : trees.flatMap(tr => tr.persons.map(p => ({ person: p, tree: tr })));
+    return [...pool]
+      .filter(x => x.person.createdAt)
+      .sort((a, b) => new Date(b.person.createdAt).getTime() - new Date(a.person.createdAt).getTime())
+      .slice(0, 4);
+  }, [activeTree, trees]);
+
   const hasTree = !!stats;
 
-  // Quick access kept to 4 essentials (the rest live in the sidebar nav).
-  const QUICK: { view: ViewMode; Icon: typeof Home; navKey: string }[] = [
+  // Recent-activity sub-line: kinship + generation.
+  const contextLine = (p: Person, tree: FamilyTree): string => {
+    const sp = getSpouses(p.id, tree.relationships, tree.persons)[0];
+    let ctx: string | null = null;
+    if (sp) ctx = p.gender === 'female' ? t('spouseOfF', { name: getDisplayName(sp) }) : t('spouseOfM', { name: getDisplayName(sp) });
+    else {
+      const par = getParents(p.id, tree.relationships, tree.persons)[0];
+      if (par) ctx = t('childOf', { name: getDisplayName(par) });
+    }
+    const gen = getGeneration(p.id, tree.relationships, tree.persons);
+    return [ctx, t('generationLabel', { n: gen + 1 })].filter(Boolean).join('  ·  ');
+  };
+
+  const actionOf = (p: Person): string => {
+    const created = new Date(p.createdAt).getTime();
+    const updated = new Date(p.updatedAt).getTime();
+    return Number.isFinite(created) && Number.isFinite(updated) && Math.abs(updated - created) < 60000 ? t('actionAdded') : t('actionUpdated');
+  };
+
+  const QUICK: { view: ViewMode; Icon: typeof TreePine; navKey: string }[] = [
     { view: 'tree', Icon: TreePine, navKey: 'tree' },
     { view: 'list', Icon: Users, navKey: 'persons' },
     { view: 'timeline', Icon: Calendar, navKey: 'timeline' },
     { view: 'journal', Icon: BookOpen, navKey: 'journal' },
+    { view: 'birthdays', Icon: Cake, navKey: 'birthdays' },
+    { view: 'statistics', Icon: BarChart3, navKey: 'statistics' },
   ];
 
-  const heroTitle = activeTree?.name || (firstName ? t('greeting', { name: firstName }) : t('greetingGeneric'));
-  const subtitle = stats
-    ? (en
-        ? `Your lineage holds ${stats.members} members across ${stats.generations} generations${stats.since ? ` — since ~${stats.since}` : ''}`
-        : `Votre lignée compte ${stats.members} membres sur ${stats.generations} générations${stats.since ? ` — depuis ~${stats.since}` : ''}`)
-    : null;
-
   return (
-    <div style={{ flex: 1, overflowY: 'auto', background: 'radial-gradient(130% 80% at 50% -5%, rgba(201,168,76,0.05), transparent 58%), var(--bg)' }}>
+    <div className="dash-root" style={{ flex: 1, overflowY: 'auto', background: 'radial-gradient(130% 80% at 50% -5%, rgba(201,168,76,0.06), transparent 58%), var(--bg)' }}>
       <div className="dash-wrap">
 
-        {/* HERO — the active tree's name dominates the view. */}
-        <header className="dash-hero animate-fade-in">
-          <div className="label" style={{ color: 'var(--accent-text)', marginBottom: '14px' }}>
-            {today}{firstName ? `  ·  ${t('greeting', { name: firstName }).replace(/\s*!\s*$/, '')}` : ''}
+        {/* ===== HERO ===== */}
+        <header className="dash-hero">
+          <div className="dash-hero-top">
+            <span className="dash-date">{today}</span>
+            {firstName && (
+              <span className="dash-user">
+                <span className="dash-user-ava">{firstName.charAt(0).toUpperCase()}</span>
+                {firstName}
+              </span>
+            )}
           </div>
-          <h1 className="display-xxl">{heroTitle}</h1>
-          <hr className="rule-accent" style={{ marginTop: '18px', width: '80px' }} />
-          {subtitle ? (
-            <p className="dash-subtitle mono">{subtitle}</p>
+          <h1 className="dash-title">{hasTree ? activeTree!.name : (firstName ? t('greeting', { name: firstName }) : t('greetingGeneric'))}</h1>
+          <span className="dash-rule" aria-hidden="true" />
+          {hasTree ? (
+            <p className="dash-sub">
+              {t('generationsCount', { count: stats!.generations })}<span className="dash-dot">·</span>
+              {t('peopleCountInline', { count: stats!.members })}
+              {stats!.since ? <><span className="dash-dot">·</span>{t('since', { year: stats!.since })}</> : null}
+            </p>
           ) : (
-            <p style={{ margin: '18px 0 0', color: 'var(--text-muted)', fontSize: '16px', fontStyle: 'italic', maxWidth: '46ch' }}>{t('noTree')}</p>
+            <p className="dash-empty-sub">{t('noTree')}</p>
           )}
-          <div style={{ display: 'flex', gap: '10px', marginTop: '22px', flexWrap: 'wrap' }}>
+          <div className="dash-hero-actions">
             {hasTree && canEdit && (
               <button onClick={onAddPerson} className="btn btn-primary"><Plus size={16} aria-hidden="true" /> {ts('addPerson')}</button>
             )}
@@ -173,171 +196,228 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
               <button onClick={() => onNavigate('tree')} className="btn btn-secondary"><TreePine size={16} aria-hidden="true" /> {tn('tree')}</button>
             )}
             {!hasTree && (
-              <button onClick={onNewTree} className="btn btn-primary btn-lg" style={{ gap: '8px' }}>
-                <Sprout size={18} aria-hidden="true" /> {t('createFirst')}
-              </button>
+              <button onClick={onNewTree} className="btn btn-primary btn-lg" style={{ gap: '8px' }}><Sprout size={18} aria-hidden="true" /> {t('createFirst')}</button>
             )}
           </div>
         </header>
 
-        {/* BIG STATS — three horizontal cards, massive figures, terracotta edge. */}
+        {/* ===== STATS ===== */}
         {stats && (
           <div className="dash-stats">
-            <BigStat value={stats.members} label={en ? 'Members' : 'Membres'} delay={0.05} />
-            <BigStat value={stats.generations} label={en ? 'Generations' : 'Générations'} delay={0.1} />
-            <BigStat
+            <StatCard value={stats.members} label={t('statMembers')} />
+            <StatCard value={stats.generations} label={t('statGenerations')} />
+            <StatCard
               value={stats.elder ? stats.elder.age : '·'}
-              label={en ? 'Eldest' : 'Doyen·ne'}
-              sublabel={stats.elder ? stats.elder.name : undefined}
-              delay={0.15}
+              unit={stats.elder ? t('yearsUnit') : undefined}
+              label={t('statEldest')}
+              sublabel={stats.elder ? getDisplayName(stats.elder.person) : undefined}
             />
           </div>
         )}
 
-        {/* SECONDARY — birthdays, activity, quick access, AI. */}
-        <div className="dash-grid">
-          <Card eyebrow={t('birthdaysEyebrow')} title={t('birthdays')} Icon={Cake} delay={0.2} warm>
-            {birthdays.length > 0 ? (
-              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '9px' }}>
-                {birthdays.map((a, i) => {
-                  const d = new Date(a.date);
-                  const when = d.toLocaleDateString(en ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'long' });
-                  return (
-                    <li key={`${a.person.id}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <Cake size={15} aria-hidden="true" style={{ color: 'var(--accent-text)', flexShrink: 0 }} />
-                      <span className="mono" style={{ width: '40px', textAlign: 'right', flexShrink: 0, fontWeight: 700, color: 'var(--accent-text)', fontSize: '13px' }}>{a.daysUntil === 0 ? t('todayShort') : t('daysShort', { days: a.daysUntil })}</span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 700, fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getDisplayName(a.person)}</div>
-                        <div className="mono" style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{when} · {t('birthdayTurning', { age: a.age ?? 0 })}</div>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
+        {/* ===== BIRTHDAYS + ACTIVITY ===== */}
+        <div className="dash-two">
+          <section className="dash-card dash-card-warm">
+            <Head Icon={Cake} eyebrow={t('birthdaysEyebrow')} title={t('birthdaysFull')} />
+            {birthdays.items.length > 0 ? (
+              <>
+                {birthdays.upcoming && <p className="dash-note">{t('upcomingBirthdays')}</p>}
+                <ul className="dash-rows">
+                  {birthdays.items.map((a, i) => {
+                    const when = new Date(a.date).toLocaleDateString(en ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'long' });
+                    return (
+                      <li key={`${a.person.id}-${i}`}>
+                        <button className="dash-row" onClick={() => onSelectPerson(trees.find(tr => tr.persons.some(p => p.id === a.person.id))?.id || '', a.person.id)}>
+                          <PersonAvatar person={a.person} size={32} />
+                          <span className="dash-row-body">
+                            <span className="dash-row-name">{getDisplayName(a.person)}</span>
+                            <span className="dash-row-sub">{when}</span>
+                          </span>
+                          <span className="dash-when">{a.daysUntil === 0 ? t('birthdayToday') : t('inDays', { days: a.daysUntil })}</span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </>
             ) : (
-              <EmptyLine>{t('noBirthdays')}</EmptyLine>
+              <p className="dash-empty">{t('noBirthdays')}</p>
             )}
-          </Card>
+          </section>
 
-          <Card eyebrow={t('activityEyebrow')} title={t('activity')} Icon={Clock} delay={0.25}>
+          <section className="dash-card">
+            <Head Icon={Clock} eyebrow={t('activityEyebrow')} title={t('activity')} />
             {recent.length > 0 ? (
-              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                {recent.map(({ person, treeId, treeName }) => (
+              <ul className="dash-rows">
+                {recent.map(({ person, tree }) => (
                   <li key={person.id}>
-                    <button onClick={() => onSelectPerson(treeId, person.id)} className="dash-recent">
-                      <PersonAvatar person={person} size={36} />
-                      <span style={{ flex: 1, minWidth: 0 }}>
-                        <span style={{ display: 'block', fontWeight: 700, fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getDisplayName(person)}</span>
-                        <span className="mono" style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{treeName} · {relativeTime(person.updatedAt, locale)}</span>
+                    <button className="dash-row" onClick={() => onSelectPerson(tree.id, person.id)}>
+                      <PersonAvatar person={person} size={32} />
+                      <span className="dash-row-body">
+                        <span className="dash-row-name">
+                          {getDisplayName(person)} <span className="dash-action">{actionOf(person)}</span>
+                          <span className="dash-row-time"> · {relativeTime(person.updatedAt, locale)}</span>
+                        </span>
+                        <span className="dash-row-sub">{contextLine(person, tree)}</span>
                       </span>
                     </button>
                   </li>
                 ))}
               </ul>
             ) : (
-              <EmptyLine>{t('noPersons')}</EmptyLine>
+              <p className="dash-empty">{t('noPersons')}</p>
             )}
-          </Card>
-
-          <Card eyebrow={t('quickAccessEyebrow')} title={t('quickAccess')} Icon={Home} delay={0.3}>
-            <div className="dash-quick">
-              {QUICK.map(q => (
-                <button key={q.view} onClick={() => onNavigate(q.view)} className="dash-quick-btn">
-                  <q.Icon size={18} aria-hidden="true" />
-                  <span style={{ fontSize: '12px', fontWeight: 600 }}>{tn(q.navKey)}</span>
-                </button>
-              ))}
-            </div>
-          </Card>
-
-          <Card eyebrow={t('narrativeEyebrow')} title={t('narrative')} Icon={Sparkles} delay={0.35}>
-            <p style={{ margin: '0 0 14px', color: 'var(--text-muted)', fontSize: '13px' }}>{t('narrativeIntro')}</p>
-            <button onClick={onNarrative} disabled={!stats} title={!stats ? t('narrativeNeedsTree') : undefined} className="btn btn-primary btn-sm" style={{ gap: '7px' }}>
-              <Sparkles size={15} aria-hidden="true" /> {t('generate')}
-            </button>
-          </Card>
-
-          <Card eyebrow={tp('cardTitle')} title={tp('title')} Icon={ScanFace} delay={0.4}>
-            <p style={{ margin: '0 0 14px', color: 'var(--text-muted)', fontSize: '13px' }}>{tp('subtitle')}</p>
-            <button onClick={onAnalyzePhoto} className="btn btn-primary btn-sm" style={{ gap: '7px' }}>
-              <ScanFace size={15} aria-hidden="true" /> {tp('analyzeAPhoto')}
-            </button>
-          </Card>
+          </section>
         </div>
+
+        {/* ===== QUICK ACCESS (3×2) ===== */}
+        <section className="dash-card">
+          <Head eyebrow={t('quickAccessEyebrow')} title={t('quickAccess')} />
+          <div className="dash-quick">
+            {QUICK.map(q => (
+              <button key={q.view} onClick={() => onNavigate(q.view)} className="dash-quick-btn">
+                <q.Icon size={18} aria-hidden="true" />
+                <span>{tn(q.navKey)}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* ===== AI — sober band ===== */}
+        <section className="dash-ai">
+          <div className="dash-ai-head">
+            <Sparkles size={15} aria-hidden="true" style={{ color: 'var(--accent)' }} />
+            <span className="dash-ai-title">{t('aiTitle')}</span>
+          </div>
+          <div className="dash-ai-actions">
+            <button onClick={onNarrative} disabled={!stats} title={!stats ? t('narrativeNeedsTree') : undefined} className="btn btn-secondary btn-sm" style={{ gap: '7px' }}>
+              <Sparkles size={14} aria-hidden="true" /> {t('narrativeAction')}
+            </button>
+            <button onClick={onAnalyzePhoto} className="btn btn-secondary btn-sm" style={{ gap: '7px' }}>
+              <ScanFace size={14} aria-hidden="true" /> {t('photoAction')}
+            </button>
+          </div>
+        </section>
+
+        {/* ===== LATEST MEMBERS ===== */}
+        {latest.length > 0 && (
+          <section className="dash-card">
+            <Head Icon={Users} title={t('latestMembers')} action={{ label: t('viewAllMembers'), onClick: () => onNavigate('list') }} />
+            <ul className="dash-rows">
+              {latest.map(({ person, tree }) => (
+                <li key={person.id}>
+                  <button className="dash-row" onClick={() => onSelectPerson(tree.id, person.id)}>
+                    <PersonAvatar person={person} size={32} />
+                    <span className="dash-row-body">
+                      <span className="dash-row-name">{getDisplayName(person)}</span>
+                      <span className="dash-row-sub">{[memberDates(person), person.birthPlace?.city].filter(Boolean).join('  ·  ')}</span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </div>
 
       <style>{`
-        .dash-wrap { padding: 40px; max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
-        .dash-hero { padding: 8px 0 4px; }
-        .dash-subtitle { margin: 16px 0 0; font-size: 13px; color: var(--accent-text); opacity: 0.82; letter-spacing: 0.04em; }
+        .dash-wrap { padding: 36px 40px 56px; max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 26px; }
 
+        /* Hero */
+        .dash-hero { padding: 4px 0 2px; }
+        .dash-hero-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 22px; }
+        .dash-date { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); }
+        .dash-user { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
+        .dash-user-ava { width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: #12131a; font-family: var(--font-display); font-weight: 700; font-size: 12px; }
+        .dash-title { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.75rem, 7vw, 5rem); line-height: 0.98; letter-spacing: -0.03em; color: var(--accent); margin: 0; text-wrap: balance; }
+        .dash-rule { display: block; width: 80px; height: 3px; background: var(--accent); margin: 18px 0 0; }
+        .dash-sub { font-family: var(--font-mono); font-size: 13px; color: var(--accent-text); opacity: 0.85; margin: 16px 0 0; letter-spacing: 0.02em; }
+        .dash-dot { margin: 0 10px; opacity: 0.5; }
+        .dash-empty-sub { margin: 16px 0 0; color: var(--text-muted); font-size: 16px; font-style: italic; max-width: 46ch; }
+        .dash-hero-actions { display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap; }
+
+        /* Stats */
         .dash-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .dash-stat { background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--accent);
+          padding: 22px 24px 20px; display: flex; flex-direction: column;
+          transition: box-shadow var(--t-base) var(--ease-out), transform var(--t-base) var(--ease-out); }
+        .dash-stat:hover { box-shadow: var(--shadow-accent); transform: translateY(-2px); }
+        .dash-stat-num { font-family: var(--font-display); font-weight: 700; line-height: 0.95; font-size: clamp(2.6rem, 5vw, 3.5rem); color: var(--accent); letter-spacing: -0.02em; }
+        .dash-stat-num small { font-size: 1.1rem; color: var(--text-muted); font-weight: 600; margin-left: 5px; }
+        .dash-stat-label { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-muted); margin-top: 10px; }
+        .dash-stat-sub { font-family: var(--font-body); font-size: 12px; color: var(--ink); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-        .dash-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-content: start; }
-        .dash-card {
-          background: var(--bg-card); border: 1px solid var(--border);
-          border-radius: var(--radius); padding: 24px 26px;
-          box-shadow: var(--shadow-sm);
-          display: flex; flex-direction: column;
-        }
-        .dash-card-warm {
-          background: linear-gradient(150% 120% at 0% 0%, rgba(201,168,76,0.07), transparent 55%), var(--bg-card);
-          border-color: color-mix(in srgb, var(--accent) 22%, var(--border));
-        }
+        /* Cards */
+        .dash-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+        .dash-card { background: var(--bg-card); border: 1px solid var(--border); padding: 22px 24px; display: flex; flex-direction: column; }
+        .dash-card-warm { background: linear-gradient(150% 120% at 0% 0%, rgba(201,168,76,0.07), transparent 55%), var(--bg-card); border-color: color-mix(in srgb, var(--accent) 22%, var(--border)); }
+        .dash-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+        .dash-eyebrow { display: flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-text); margin-bottom: 5px; }
+        .dash-h { margin: 0; font-family: var(--font-display); font-size: 1.3rem; font-weight: 600; letter-spacing: -0.005em; }
+        .dash-head-link { font-family: var(--font-mono); font-size: 11px; color: var(--accent-text); background: none; border: none; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+        .dash-head-link:hover { color: var(--accent); }
+        .dash-note { margin: 0 0 10px; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
 
-        .dash-recent { width: 100%; display: flex; align-items: center; gap: 11px; padding: 8px; border: none; background: transparent; cursor: pointer; text-align: left; transition: background var(--t-fast); }
-        .dash-recent:hover { background: var(--bg-muted); }
-        .dash-recent-av { width: 34px; height: 34px; flex-shrink: 0; background: var(--accent-light); display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--border); }
+        .dash-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+        .dash-row { width: 100%; display: flex; align-items: center; gap: 11px; padding: 8px; border: none; background: transparent; cursor: pointer; text-align: left; transition: background var(--t-fast); }
+        .dash-row:hover { background: var(--bg-muted); }
+        .dash-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+        .dash-row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+        .dash-row-name { font-family: var(--font-body); font-size: 14px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .dash-action { font-weight: 400; color: var(--text-muted); }
+        .dash-row-time { font-family: var(--font-mono); font-size: 11px; font-weight: 400; color: var(--text-light); }
+        .dash-row-sub { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .dash-when { font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--accent-text); flex-shrink: 0; }
+        .dash-empty { color: var(--text-muted); font-size: 13px; margin: 4px 0 0; }
 
-        .dash-quick { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-        .dash-quick-btn {
-          display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;
-          padding: 14px 6px; min-height: 64px; cursor: pointer;
-          background: var(--bg); border: var(--bw) solid var(--border); color: var(--text-muted);
-          transition: transform var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out), color var(--t-fast), border-color var(--t-fast);
-        }
-        .dash-quick-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-accent); background: var(--accent); color: #0d0d0d; border-color: var(--accent); }
-        @media (prefers-reduced-motion: reduce) { .dash-quick-btn:hover { transform: none; } }
+        /* Quick access 3×2 */
+        .dash-quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .dash-quick-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 16px 6px; min-height: 72px; cursor: pointer; background: var(--bg); border: 1px solid var(--border); color: var(--text-muted); font-family: var(--font-body); font-size: 12px; font-weight: 600; transition: transform var(--t-fast) var(--ease-out), box-shadow var(--t-fast), color var(--t-fast), border-color var(--t-fast), background var(--t-fast); }
+        .dash-quick-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-accent); background: var(--accent); color: #12131a; border-color: var(--accent); }
 
-        @media (max-width: 1000px) {
-          .dash-grid { grid-template-columns: repeat(2, 1fr); }
+        /* AI sober band */
+        .dash-ai { background: #1A1A24; border: 1px solid #2D2D3A; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+        .dash-ai-head { display: flex; align-items: center; gap: 9px; }
+        .dash-ai-title { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink); }
+        .dash-ai-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+        @media (prefers-reduced-motion: reduce) {
+          .dash-stat:hover, .dash-quick-btn:hover { transform: none; }
         }
-        @media (max-width: 720px) {
-          .dash-wrap { padding: 20px; gap: 20px; }
+        @media (max-width: 880px) {
+          .dash-two { grid-template-columns: 1fr; }
           .dash-stats { grid-template-columns: 1fr; }
-          .dash-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 640px) {
+          .dash-wrap { padding: 22px 18px 44px; gap: 20px; }
+          .dash-quick { grid-template-columns: repeat(2, 1fr); }
+          .dash-ai { flex-direction: column; align-items: flex-start; }
         }
       `}</style>
     </div>
   );
 }
 
-/** Massive terracotta figure on a card with a left terracotta edge. */
-function BigStat({ value, label, sublabel, delay }: { value: string | number; label: string; sublabel?: string; delay: number }) {
+function Head({ Icon, eyebrow, title, action }: { Icon?: typeof Cake; eyebrow?: string; title: string; action?: { label: string; onClick: () => void } }) {
   return (
-    <div className="dash-bigstat animate-fade-in" style={{ animationDelay: `${delay}s` }}>
-      <div className="dash-bigstat-num">{value}</div>
-      <div className="label dash-bigstat-label" style={{ marginTop: '8px' }}>{label}</div>
-      {sublabel && (
-        <div title={sublabel} style={{ marginTop: '4px', fontSize: '13px', color: 'var(--text)', lineHeight: 1.3, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{sublabel}</div>
+    <header className="dash-head">
+      <div>
+        {eyebrow && <div className="dash-eyebrow">{Icon && <Icon size={13} aria-hidden="true" />}{eyebrow}</div>}
+        <h3 className="dash-h">{title}</h3>
+      </div>
+      {action && (
+        <button className="dash-head-link" onClick={action.onClick}>{action.label}</button>
       )}
-      <style>{`
-        .dash-bigstat {
-          background: var(--bg-card); border: 1px solid var(--border);
-          border-left: 3px solid var(--accent); padding: 26px 28px 24px;
-          box-shadow: var(--shadow-sm);
-          display: flex; flex-direction: column;
-          transition: box-shadow var(--t-base) var(--ease-out), border-color var(--t-base) var(--ease-out), transform var(--t-base) var(--ease-out);
-        }
-        .dash-bigstat:hover { box-shadow: var(--shadow-accent); border-left-color: var(--accent-hover); transform: translateY(-2px); }
-        @media (prefers-reduced-motion: reduce) { .dash-bigstat:hover { transform: none; } }
-        .dash-bigstat-num {
-          font-family: var(--font-display); font-weight: 700; line-height: 0.92;
-          font-size: clamp(3.2rem, 6vw, 4rem); color: var(--accent);
-          letter-spacing: -0.015em;
-        }
-        .dash-bigstat-label { color: var(--accent-text); opacity: 0.72; }
-      `}</style>
+    </header>
+  );
+}
+
+function StatCard({ value, unit, label, sublabel }: { value: string | number; unit?: string; label: string; sublabel?: string }) {
+  return (
+    <div className="dash-stat">
+      <div className="dash-stat-num">{value}{unit && <small>{unit}</small>}</div>
+      <div className="dash-stat-label">{label}</div>
+      {sublabel && <div className="dash-stat-sub" title={sublabel}>{sublabel}</div>}
     </div>
   );
 }
