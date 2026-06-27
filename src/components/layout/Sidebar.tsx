@@ -253,8 +253,8 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         {showActions && (
           <div className="sb-actions">
             {canAdd && onAddPerson && (
-              <button className="sb-add" onClick={() => { onAddPerson(); onClose(); }}>
-                <Plus size={15} aria-hidden="true" /> {ts('addPerson')}
+              <button className="sb-add" onClick={() => { onAddPerson(); onClose(); }} title={ts('addPerson')} aria-label={ts('addPerson')}>
+                <Plus size={15} aria-hidden="true" /> {ts('addPersonShort')}
               </button>
             )}
             <div className="sb-action-grid">
@@ -395,6 +395,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
           width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
           background: var(--accent); color: #0d0d0d; border: 1px solid var(--accent); cursor: pointer;
           font-family: var(--font-display); font-size: 13px; font-weight: 700; padding: 8px 12px;
+          white-space: nowrap; line-height: 1;
           transition: background var(--t-fast), box-shadow var(--t-fast);
         }
         .sb-add:hover { background: var(--accent-hover); box-shadow: var(--shadow-accent); }

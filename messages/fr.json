@@ -962,7 +962,8 @@
     "badgeOwner": "Propriétaire",
     "badgeGuest": "Invité",
     "export": "Exporter",
-    "sectionView": "Vue"
+    "sectionView": "Vue",
+    "addPersonShort": "Ajouter"
   },
   "commandPalette": {
     "dialogLabel": "Palette de commandes",
@@ -1162,7 +1163,18 @@
     "profileBadge": "Profil",
     "lightboxAlt": "{name} — photo en grand",
     "close": "Fermer",
-    "clickToViewProfile": "Cliquer pour voir le profil"
+    "clickToViewProfile": "Cliquer pour voir le profil",
+    "galleryTitle": "Galerie familiale",
+    "emptySubtitle": "Les visages de votre famille, réunis en un seul lieu.",
+    "addFirst": "Ajouter une première photo",
+    "modalTitle": "Ajouter une photo",
+    "dropHint": "Glissez une image ici, ou cliquez pour choisir",
+    "dropHintShort": "Cliquez ou déposez une image",
+    "save": "Enregistrer",
+    "changeImage": "Changer l’image",
+    "previewAlt": "Aperçu de la photo à ajouter",
+    "uploadingLabel": "Envoi en cours…",
+    "needPerson": "Choisissez d’abord une personne"
   },
   "photoAnalyzer": {
     "title": "Reconnaissance de visages",

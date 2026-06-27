@@ -319,9 +319,9 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
            gender tint (inline bg) stays visible — the ring alone marks focus. */
         .ft-node-focus { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent), var(--shadow-accent); }
         /* Gender bar — 6px coloured left edge, full height */
-        .ft-edge { position: absolute; top: 0; bottom: 0; left: 0; width: 6px; }
+        .ft-edge { position: absolute; top: 0; bottom: 0; left: 0; width: 8px; }
         /* Generation bar — 3px along the top, starting after the gender bar */
-        .ft-gen { position: absolute; top: 0; left: 6px; right: 0; height: 3px; }
+        .ft-gen { position: absolute; top: 0; left: 8px; right: 0; height: 3px; }
         .ft-gen-tag { position: absolute; top: 7px; right: 9px; font-family: var(--font-mono); font-size: 8.5px; font-weight: 700; letter-spacing: 0.06em; opacity: 0.9; }
         .ft-crown { position: absolute; top: 7px; right: 46px; color: var(--accent); }
         .ft-body { min-width: 0; display: flex; flex-direction: column; gap: 2px; }

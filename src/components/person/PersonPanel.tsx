@@ -454,8 +454,11 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
             paddingBottom:'env(safe-area-inset-bottom)',
           }
         : {
-            width:'360px', flexShrink:0, height:'100%', background:'var(--bg-card)',
-            borderLeft:'1px solid var(--border)', display:'flex', flexDirection:'column',
+            // Desktop: ABSOLUTE overlay anchored to the right of the shell (which is
+            // position:relative) — it floats over the canvas instead of taking flex
+            // space, so opening the panel never reflows / truncates the tree.
+            position:'absolute', top:0, right:0, bottom:0, width:'380px', background:'var(--bg-card)',
+            borderLeft:'var(--bw) solid var(--border-strong)', display:'flex', flexDirection:'column',
             boxShadow:'var(--shadow-lg)', zIndex:60,
           }
     }>

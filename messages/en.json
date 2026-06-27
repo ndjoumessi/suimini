@@ -962,7 +962,8 @@
     "badgeOwner": "Owner",
     "badgeGuest": "Guest",
     "export": "Export",
-    "sectionView": "View"
+    "sectionView": "View",
+    "addPersonShort": "Add"
   },
   "commandPalette": {
     "dialogLabel": "Command palette",
@@ -1162,7 +1163,18 @@
     "profileBadge": "Profile",
     "lightboxAlt": "{name} — enlarged photo",
     "close": "Close",
-    "clickToViewProfile": "Click to view profile"
+    "clickToViewProfile": "Click to view profile",
+    "galleryTitle": "Family gallery",
+    "emptySubtitle": "The faces of your family, gathered in one place.",
+    "addFirst": "Add a first photo",
+    "modalTitle": "Add a photo",
+    "dropHint": "Drag an image here, or click to choose",
+    "dropHintShort": "Click or drop an image",
+    "save": "Save",
+    "changeImage": "Change image",
+    "previewAlt": "Preview of the photo to add",
+    "uploadingLabel": "Uploading…",
+    "needPerson": "Choose a person first"
   },
   "photoAnalyzer": {
     "title": "Face recognition",
