@@ -1,5 +1,6 @@
 'use client';
 import { useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { CheckCircle2, XCircle, Info, AlertTriangle } from 'lucide-react';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
@@ -15,6 +16,7 @@ const ICONS = {
 const DURATION = 3000;
 
 function Toast({ toast, onDismiss }: { toast: ToastItem; onDismiss: (id: number) => void }) {
+  const tc = useTranslations('common');
   const Icon = ICONS[toast.type];
   useEffect(() => {
     const t = setTimeout(() => onDismiss(toast.id), DURATION);
@@ -27,7 +29,7 @@ function Toast({ toast, onDismiss }: { toast: ToastItem; onDismiss: (id: number)
       role="status"
       aria-live="polite"
       onClick={() => onDismiss(toast.id)}
-      title="Cliquez pour fermer"
+      title={tc('clickToClose')}
     >
       <span className="toast-icon"><Icon size={18} aria-hidden="true" /></span>
       <span style={{ flex: 1 }}>{toast.msg}</span>

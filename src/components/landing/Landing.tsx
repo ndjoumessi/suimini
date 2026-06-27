@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Spectral } from 'next/font/google';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useAuth } from '@/hooks/useAuth';
 import AuthModal from '@/components/AuthModal';
 import { LOCALE_COOKIE, LOCALES, type Locale } from '@/i18n/config';
@@ -86,14 +86,18 @@ function CountUp({ to, duration = 1700 }: { to: number; duration?: number }) {
   return <span ref={ref}>{val.toLocaleString('fr-FR')}</span>;
 }
 
-/* ---------- Locale toggle (dark) ---------- */
+/* ---------- Locale toggle (dark) ----------
+   Uses the same /api/locale redirect as the in-app switcher: set the cookie
+   client-side, then a full server navigation that sets it server-side too and
+   redirects back. A fresh document load re-reads the locale (no one-click lag). */
 function LangToggle() {
   const locale = useLocale();
   const choose = (next: Locale) => {
     if (next === locale) return;
     try { localStorage.setItem(LOCALE_COOKIE, next); } catch { /* ignore */ }
     document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
-    window.location.reload();
+    const back = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/';
+    window.location.href = `/api/locale?to=${next}&next=${encodeURIComponent(back)}`;
   };
   return (
     <div className="lp-lang" role="group" aria-label="Langue">
@@ -241,35 +245,19 @@ function Motif({ kind }: { kind: 'gather' | 'tell' | 'pass' }) {
   );
 }
 
-/* ---------- Testimonials ---------- */
-const TESTIMONIALS = [
-  { q: 'Nous avons retrouvé 4 générations perdues en une soirée.', who: 'Sophie M.', where: 'Lyon' },
-  { q: 'Mon père ne connaissait pas le nom de son arrière-grand-père. Maintenant si.', who: 'Karim B.', where: 'Marseille' },
-  { q: 'L’IA a écrit la biographie de ma grand-mère mieux que je n’aurais pu le faire.', who: 'Claire D.', where: 'Paris' },
-];
-
-const FEATURES = [
-  { kind: 'gather' as const, k: 'Réunir', t: 'Reliez les générations', d: 'Ajoutez vos proches et tracez les liens. L’arbre se dessine de lui-même, lisible des arrière-grands-parents aux petits-derniers.' },
-  { kind: 'tell' as const, k: 'Raconter', t: 'L’histoire prend des mots', d: 'À partir des dates, des lieux et des liens, Suimini compose le récit de votre lignée. Une mémoire qui se lit, pas seulement qui se range.' },
-  { kind: 'pass' as const, k: 'Transmettre', t: 'Léguez la lumière', d: 'Invitez la famille à contribuer, exportez un livret, partagez un lien. Une histoire faite pour passer de main en main.' },
-];
-
-const PLANS = [
-  {
-    name: 'Gratuit', monthly: 0, annual: 0, note: 'Pour toujours', popular: false, action: 'signup' as const, cta: 'Commencer gratuitement',
-    features: ['1 arbre généalogique', 'Jusqu’à 50 membres', 'Narratif IA (5/mois)', 'Export PDF basique'],
-  },
-  {
-    name: 'Famille', monthly: 9, annual: 7, note: 'Par famille', popular: true, action: 'signup' as const, cta: 'Choisir ce plan',
-    features: ['Arbres illimités', 'Membres illimités', 'Narratif IA illimité', 'Collaboration famille', 'Export PDF premium', 'Galerie photos'],
-  },
-  {
-    name: 'Héritage', monthly: 19, annual: 15, note: 'Pour les grandes familles', popular: false, action: 'contact' as const, cta: 'Nous contacter',
-    features: ['Tout du plan Famille', 'Reconnaissance faciale IA', 'Import GEDCOM', 'Accès API', 'Support prioritaire', 'Archivage longue durée'],
-  },
+/* ---------- Section metadata (text comes from messages/landing) ---------- */
+const FEATURE_KINDS = ['gather', 'tell', 'pass'] as const;
+type FeatureKind = (typeof FEATURE_KINDS)[number];
+interface Testimonial { q: string; by: string }
+const PLAN_META = [
+  { id: 'free', monthly: 0, annual: 0, popular: false, action: 'signup' as const },
+  { id: 'family', monthly: 9, annual: 7, popular: true, action: 'signup' as const },
+  { id: 'heritage', monthly: 19, annual: 15, popular: false, action: 'contact' as const },
 ];
 
 export default function Landing() {
+  const t = useTranslations('landing');
+  const testimonials = t.raw('testimonials') as Testimonial[];
   const { startDemo, user, isDemo, isApproved } = useAuth();
   const scrolled = useScrolled();
   const canEnterApp = isDemo || (!!user && isApproved);
@@ -297,11 +285,11 @@ export default function Landing() {
       <nav className={`lp-nav ${scrolled ? 'lp-nav-on' : ''}`}>
         <a href="#top" className="lp-word" aria-label="Suimini, accueil">Suimini</a>
         <div className="lp-nav-right">
-          <a href="#features" className="lp-nav-link">Comment ça marche</a>
-          <a href="#tarifs" className="lp-nav-link">Tarifs</a>
+          <a href="#features" className="lp-nav-link">{t('nav.how')}</a>
+          <a href="#tarifs" className="lp-nav-link">{t('nav.pricing')}</a>
           <LangToggle />
           <button onClick={canEnterApp ? goToApp : () => openAuth('login')} className="lp-nav-cta">
-            {canEnterApp ? 'Entrer' : 'Se connecter'}
+            {canEnterApp ? t('nav.enter') : t('nav.signin')}
           </button>
         </div>
       </nav>
@@ -312,20 +300,20 @@ export default function Landing() {
         <div className="lp-hero-veil" aria-hidden="true" />
         <div className="lp-hero-inner">
           <h1 className="lp-h1">
-            <span className="lp-h1-a">Votre famille</span>
-            <span className="lp-h1-b">est une <em>constellation.</em></span>
+            <span className="lp-h1-a">{t('hero.title1')}</span>
+            <span className="lp-h1-b">{t.rich('hero.title2', { em: (c) => <em>{c}</em> })}</span>
           </h1>
-          <p className="lp-hero-sub">Chaque nom, une étoile. Chaque lien, une ligne de lumière. Suimini réunit les vôtres et garde leur histoire vivante.</p>
+          <p className="lp-hero-sub">{t('hero.sub')}</p>
           <div className="lp-hero-cta">
             {canEnterApp ? (
-              <button onClick={goToApp} className="lp-btn lp-btn-amber">Ouvrir mon arbre</button>
+              <button onClick={goToApp} className="lp-btn lp-btn-amber">{t('hero.ctaOpen')}</button>
             ) : (
-              <button onClick={startSignup} className="lp-btn lp-btn-amber">Commencer mon arbre</button>
+              <button onClick={startSignup} className="lp-btn lp-btn-amber">{t('hero.ctaStart')}</button>
             )}
-            <button onClick={startDemo} className="lp-btn lp-btn-ghost">Voir la démo</button>
+            <button onClick={startDemo} className="lp-btn lp-btn-ghost">{t('hero.ctaDemo')}</button>
           </div>
-          <p className="lp-hero-count">Rejoignez <b className="lp-count-n"><CountUp to={2847} /></b> familles qui préservent leur histoire.</p>
-          <p className="lp-hero-fine">C’est gratuit. Aucune carte bancaire. Vos données restent en Europe.</p>
+          <p className="lp-hero-count">{t.rich('hero.count', { n: () => <b className="lp-count-n"><CountUp to={2847} /></b> })}</p>
+          <p className="lp-hero-fine">{t('hero.fine')}</p>
         </div>
         <div className="lp-cue" aria-hidden="true"><span /></div>
       </header>
@@ -334,15 +322,15 @@ export default function Landing() {
       <section className="lp-manifesto">
         <Reveal variant="fade">
           <p className="lp-manifesto-q">
-            <span className="lp-mani-lead">Tant qu’une histoire se raconte,</span>
-            <em>ceux qu’on aime<br />ne s’éteignent jamais.</em>
+            <span className="lp-mani-lead">{t('manifesto.lead')}</span>
+            <em>{t('manifesto.em1')}<br />{t('manifesto.em2')}</em>
           </p>
         </Reveal>
         <div className="lp-testi">
-          {TESTIMONIALS.map((tm, i) => (
-            <Reveal key={tm.who} as="div" className="lp-testi-item" delay={i * 90} variant="fade">
+          {testimonials.map((tm, i) => (
+            <Reveal key={i} as="div" className="lp-testi-item" delay={i * 90} variant="fade">
               <p className="lp-testi-q">“{tm.q}”</p>
-              <p className="lp-testi-by"><span className="lp-testi-dash">—</span> {tm.who}, {tm.where}</p>
+              <p className="lp-testi-by"><span className="lp-testi-dash">—</span> {tm.by}</p>
             </Reveal>
           ))}
         </div>
@@ -351,16 +339,16 @@ export default function Landing() {
       {/* ===== FEATURES (bandes art-dirigées) ===== */}
       <section id="features" className="lp-feats">
         <Reveal>
-          <h2 className="lp-h2">Trois gestes pour une mémoire</h2>
+          <h2 className="lp-h2">{t('features.heading')}</h2>
         </Reveal>
         <div className="lp-feat-list">
-          {FEATURES.map((f, i) => (
-            <Reveal key={f.k} as="div" className={`lp-feat lp-feat-${i} ${i % 2 ? 'lp-feat-alt' : ''}`} delay={i * 40}>
-              <div className="lp-feat-art"><Motif kind={f.kind} /></div>
+          {FEATURE_KINDS.map((kind: FeatureKind, i) => (
+            <Reveal key={kind} as="div" className={`lp-feat lp-feat-${i} ${i % 2 ? 'lp-feat-alt' : ''}`} delay={i * 40}>
+              <div className="lp-feat-art"><Motif kind={kind} /></div>
               <div className="lp-feat-body">
-                <span className="lp-feat-k">{f.k}</span>
-                <h3 className="lp-feat-t">{f.t}</h3>
-                <p className="lp-feat-d">{f.d}</p>
+                <span className="lp-feat-k">{t(`features.${kind}.k`)}</span>
+                <h3 className="lp-feat-t">{t(`features.${kind}.t`)}</h3>
+                <p className="lp-feat-d">{t(`features.${kind}.d`)}</p>
               </div>
             </Reveal>
           ))}
@@ -371,47 +359,50 @@ export default function Landing() {
       <section className="lp-figures">
         <Reveal variant="scale">
           <p className="lp-fig-line">
-            <em>Sept</em> générations.<br /><em>Cinquante-huit</em> vies reliées.<br /><em>Cent cinquante</em> ans de lumière.
+            {t.rich('figures.l1', { em: (c) => <em>{c}</em> })}<br />
+            {t.rich('figures.l2', { em: (c) => <em>{c}</em> })}<br />
+            {t.rich('figures.l3', { em: (c) => <em>{c}</em> })}
           </p>
-          <p className="lp-fig-note">Des vies réelles. Des liens vrais. Une mémoire vivante.</p>
+          <p className="lp-fig-note">{t('figures.note')}</p>
         </Reveal>
       </section>
 
       {/* ===== TARIFS ===== */}
       <section id="tarifs" className="lp-pricing">
         <Reveal>
-          <h2 className="lp-h2">Simple et transparent</h2>
-          <p className="lp-pricing-sub">Commencez gratuitement. Évoluez quand vous êtes prêt.</p>
-          <div className="lp-billing" role="group" aria-label="Période de facturation">
-            <button type="button" className={billing === 'monthly' ? 'lp-bill-on' : ''} aria-pressed={billing === 'monthly'} onClick={() => setBilling('monthly')}>Mensuel</button>
+          <h2 className="lp-h2">{t('pricing.heading')}</h2>
+          <p className="lp-pricing-sub">{t('pricing.sub')}</p>
+          <div className="lp-billing" role="group" aria-label={t('pricing.monthly') + ' / ' + t('pricing.annual')}>
+            <button type="button" className={billing === 'monthly' ? 'lp-bill-on' : ''} aria-pressed={billing === 'monthly'} onClick={() => setBilling('monthly')}>{t('pricing.monthly')}</button>
             <button type="button" className={billing === 'annual' ? 'lp-bill-on' : ''} aria-pressed={billing === 'annual'} onClick={() => setBilling('annual')}>
-              Annuel <span className="lp-bill-save">Économisez 20%</span>
+              {t('pricing.annual')} <span className="lp-bill-save">{t('pricing.save')}</span>
             </button>
           </div>
         </Reveal>
         <div className="lp-plans">
-          {PLANS.map((p, i) => {
+          {PLAN_META.map((p, i) => {
             const amount = billing === 'annual' ? p.annual : p.monthly;
+            const features = t.raw(`pricing.plans.${p.id}.features`) as string[];
             return (
-            <Reveal key={p.name} as="div" className={`lp-plan ${p.popular ? 'lp-plan-pop' : ''}`} delay={i * 80}>
-              {p.popular && <span className="lp-plan-badge">Populaire</span>}
-              <span className="lp-plan-name">{p.name}</span>
+            <Reveal key={p.id} as="div" className={`lp-plan ${p.popular ? 'lp-plan-pop' : ''}`} delay={i * 80}>
+              {p.popular && <span className="lp-plan-badge">{t('pricing.popular')}</span>}
+              <span className="lp-plan-name">{t(`pricing.plans.${p.id}.name`)}</span>
               <div className="lp-plan-price">
-                {billing === 'annual' && p.monthly > amount && <span className="lp-plan-was" aria-label={`${p.monthly}€ par mois`}>{p.monthly}€</span>}
-                <span className="lp-plan-amount" key={`${p.name}-${billing}`}>{amount}€</span>
-                {amount > 0 && <span className="lp-plan-period">/mois</span>}
+                {billing === 'annual' && p.monthly > amount && <span className="lp-plan-was">{p.monthly}€</span>}
+                <span className="lp-plan-amount" key={`${p.id}-${billing}`}>{amount}€</span>
+                {amount > 0 && <span className="lp-plan-period">{t('pricing.perMonth')}</span>}
               </div>
-              <span className="lp-plan-note">{billing === 'annual' && amount > 0 ? `Soit ${amount * 12}€ par an` : p.note}</span>
-              {p.popular && billing === 'annual' && <span className="lp-plan-save">Économisez 20%</span>}
+              <span className="lp-plan-note">{billing === 'annual' && amount > 0 ? t('pricing.perYear', { total: amount * 12 }) : t(`pricing.plans.${p.id}.note`)}</span>
+              {p.popular && billing === 'annual' && <span className="lp-plan-save">{t('pricing.save')}</span>}
               <ul className="lp-plan-feats">
-                {p.features.map((f) => (
+                {features.map((f) => (
                   <li key={f}><span className="lp-check" aria-hidden="true">✓</span>{f}</li>
                 ))}
               </ul>
               {p.action === 'contact' ? (
-                <a href="mailto:hello@suimini.app?subject=Suimini%20Héritage" className="lp-btn lp-btn-ghost lp-plan-cta">{p.cta}</a>
+                <a href="mailto:hello@suimini.app?subject=Suimini%20Héritage" className="lp-btn lp-btn-ghost lp-plan-cta">{t(`pricing.plans.${p.id}.cta`)}</a>
               ) : (
-                <button onClick={canEnterApp ? goToApp : startSignup} className={`lp-btn ${p.popular ? 'lp-btn-amber' : 'lp-btn-ghost'} lp-plan-cta`}>{p.cta}</button>
+                <button onClick={canEnterApp ? goToApp : startSignup} className={`lp-btn ${p.popular ? 'lp-btn-amber' : 'lp-btn-ghost'} lp-plan-cta`}>{t(`pricing.plans.${p.id}.cta`)}</button>
               )}
             </Reveal>
             );
@@ -433,17 +424,17 @@ export default function Landing() {
           </g>
         </svg>
         <Reveal className="lp-final-body">
-          <h2 className="lp-final-h">Commencez votre<br /><em>constellation.</em></h2>
-          <p className="lp-final-sub">Ajoutez une première étoile ce soir. Le reste de votre histoire suivra, génération après génération.</p>
+          <h2 className="lp-final-h">{t('cta.title1')}<br /><em>{t('cta.title2')}</em></h2>
+          <p className="lp-final-sub">{t('cta.sub')}</p>
           <div className="lp-hero-cta lp-final-cta">
             {canEnterApp ? (
-              <button onClick={goToApp} className="lp-btn lp-btn-amber lp-btn-xl">Ouvrir mon arbre</button>
+              <button onClick={goToApp} className="lp-btn lp-btn-amber lp-btn-xl">{t('hero.ctaOpen')}</button>
             ) : (
-              <button onClick={startSignup} className="lp-btn lp-btn-amber lp-btn-xl">Commencer mon arbre</button>
+              <button onClick={startSignup} className="lp-btn lp-btn-amber lp-btn-xl">{t('hero.ctaStart')}</button>
             )}
-            <button onClick={startDemo} className="lp-btn lp-btn-ghost">Voir la démo</button>
+            <button onClick={startDemo} className="lp-btn lp-btn-ghost">{t('hero.ctaDemo')}</button>
           </div>
-          <p className="lp-final-fine">Gratuit. Sans carte bancaire. Données en Europe.</p>
+          <p className="lp-final-fine">{t('cta.fine')}</p>
         </Reveal>
       </section>
 
@@ -452,26 +443,26 @@ export default function Landing() {
         <div className="lp-footer-top">
           <div className="lp-footer-brand">
             <div className="lp-word lp-footer-word">Suimini</div>
-            <p className="lp-footer-tag">L’histoire de votre famille, gardée vivante.</p>
+            <p className="lp-footer-tag">{t('footer.tagline')}</p>
           </div>
-          <nav className="lp-footer-col" aria-label="Produit">
-            <span className="lp-footer-h">Produit</span>
-            <a href="#features">Comment ça marche</a>
-            <a href="#tarifs">Tarifs</a>
-            <button onClick={startDemo} className="lp-footer-btn">Essayer la démo</button>
-            <button onClick={canEnterApp ? goToApp : startSignup} className="lp-footer-btn">{canEnterApp ? 'Entrer' : 'Commencer'}</button>
+          <nav className="lp-footer-col" aria-label={t('footer.product')}>
+            <span className="lp-footer-h">{t('footer.product')}</span>
+            <a href="#features">{t('nav.how')}</a>
+            <a href="#tarifs">{t('nav.pricing')}</a>
+            <button onClick={startDemo} className="lp-footer-btn">{t('footer.tryDemo')}</button>
+            <button onClick={canEnterApp ? goToApp : startSignup} className="lp-footer-btn">{canEnterApp ? t('nav.enter') : t('footer.start')}</button>
           </nav>
-          <nav className="lp-footer-col" aria-label="Légal">
-            <span className="lp-footer-h">Légal</span>
-            <a href="/cgu">Conditions générales</a>
-            <a href="/confidentialite">Confidentialité</a>
+          <nav className="lp-footer-col lp-footer-legal" aria-label={t('footer.legal')}>
+            <span className="lp-footer-h">{t('footer.legal')}</span>
+            <a href="/cgu">{t('footer.terms')}</a>
+            <a href="/confidentialite">{t('footer.privacy')}</a>
           </nav>
           <div className="lp-footer-col">
-            <span className="lp-footer-h">Langue</span>
+            <span className="lp-footer-h">{t('footer.language')}</span>
             <LangToggle />
           </div>
         </div>
-        <div className="lp-footer-bottom">© 2026 Suimini · Fait avec soin en France</div>
+        <div className="lp-footer-bottom">{t('footer.copyright')}</div>
       </footer>
 
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} initialTab={authTab} />}
@@ -697,8 +688,8 @@ const CSS = `
 .lp-footer-col a, .lp-footer-btn { appearance: none; background: none; border: none; padding: 0; cursor: pointer; font-family: var(--lp-serif); font-size: 1rem; color: var(--star-muted); text-decoration: none; text-align: left; transition: color 0.2s; }
 .lp-footer-col a:hover, .lp-footer-btn:hover { color: var(--amber); }
 /* legal links — mono tiny muted */
-.lp-footer [aria-label="Légal"] a { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em; color: var(--star-muted); }
-.lp-footer [aria-label="Légal"] a:hover { color: var(--amber); }
+.lp-footer-legal a { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em; color: var(--star-muted); }
+.lp-footer-legal a:hover { color: var(--amber); }
 .lp-footer-bottom { max-width: 1180px; margin: 22px auto 0; font-family: var(--lp-serif); font-style: italic; font-size: 0.88rem; color: var(--star-faint); }
 @media (max-width: 760px) { .lp-footer-top { grid-template-columns: 1fr 1fr; gap: 32px; } .lp-footer-brand { grid-column: 1 / -1; } }
 `;

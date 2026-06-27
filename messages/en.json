@@ -70,211 +70,129 @@
   },
   "landing": {
     "nav": {
-      "features": "Features",
+      "how": "How it works",
       "pricing": "Pricing",
-      "faq": "FAQ",
-      "enterApp": "Open the app"
+      "enter": "Enter",
+      "signin": "Sign in"
     },
     "hero": {
-      "eyebrow": "Family tree · Est. 2026",
-      "title": "Preserve your family history,",
-      "titleAccent": "generation after generation.",
-      "subtitle": "The modern family tree: structured, collaborative, and always with you.",
-      "cta": "Get started for free →",
-      "enterApp": "Open the app",
-      "welcome": "Welcome back, <hl>{name}</hl>",
-      "welcomeGeneric": "Welcome back",
-      "loginLink": "Already have an account? Sign in",
-      "scrollAria": "Scroll down",
-      "trust": {
-        "free": "Free to start",
-        "noCard": "No credit card",
-        "europe": "Data hosted in Europe"
+      "title1": "Your family",
+      "title2": "is a <em>constellation.</em>",
+      "sub": "Every name, a star. Every bond, a line of light. Suimini brings your people together and keeps their story alive.",
+      "ctaOpen": "Open my tree",
+      "ctaStart": "Start my tree",
+      "ctaDemo": "See the demo",
+      "count": "Join <n></n> families preserving their history.",
+      "fine": "It’s free. No credit card. Your data stays in Europe."
+    },
+    "manifesto": {
+      "lead": "As long as a story is told,",
+      "em1": "those we love",
+      "em2": "never fade away."
+    },
+    "testimonials": [
+      {
+        "q": "We recovered four lost generations in a single evening.",
+        "by": "Sophie M., Lyon"
+      },
+      {
+        "q": "My father didn’t know his great-grandfather’s name. Now he does.",
+        "by": "Karim B., Marseille"
+      },
+      {
+        "q": "The AI wrote my grandmother’s biography better than I ever could.",
+        "by": "Claire D., Paris"
+      }
+    ],
+    "features": {
+      "heading": "Three gestures for a memory",
+      "gather": {
+        "k": "Gather",
+        "t": "Connect the generations",
+        "d": "Add your loved ones and trace the links. The tree draws itself, readable from great-grandparents down to the youngest."
+      },
+      "tell": {
+        "k": "Tell",
+        "t": "The story finds its words",
+        "d": "From dates, places and links, Suimini composes the story of your lineage. A memory you read, not just one you file away."
+      },
+      "pass": {
+        "k": "Pass on",
+        "t": "Bequeath the light",
+        "d": "Invite the family to contribute, export a booklet, share a link. A story made to pass from hand to hand."
       }
     },
-    "demo": {
-      "title": "Try without signing up",
-      "subtitle": "Explore with the Dupont family",
-      "cta": "Try the demo for free →",
-      "noSignup": "No registration required",
-      "eyebrow": "The demo"
-    },
-    "features": {
-      "eyebrow": "Features",
-      "title": "Everything you need for your family story",
-      "badgeNew": "New",
-      "items": [
-        {
-          "title": "Interactive tree",
-          "desc": "See 5 generations at a glance."
-        },
-        {
-          "title": "Origins map",
-          "desc": "Discover where your family comes from."
-        },
-        {
-          "title": "Cloud sync",
-          "desc": "Available on all your devices, always saved."
-        },
-        {
-          "title": "Exploration",
-          "desc": "Find the links between any two members."
-        },
-        {
-          "title": "Family journal",
-          "desc": "Tell the story in words and photos."
-        },
-        {
-          "title": "Presentation mode",
-          "desc": "Share it at family gatherings."
-        },
-        {
-          "title": "Statistics",
-          "desc": "Analyze your lineage's trends."
-        },
-        {
-          "title": "DNA profile",
-          "desc": "Visualize your ethnic origins."
-        }
-      ]
-    },
-    "mockup": {
-      "eyebrow": "The interface",
-      "title": "An interface that brings your lineage to life",
-      "alt": "Family tree preview"
-    },
-    "steps": {
-      "eyebrow": "How it works",
-      "title": "Get started in three steps",
-      "items": [
-        {
-          "title": "Create your account",
-          "desc": "Magic link by email, no password."
-        },
-        {
-          "title": "Add your ancestors",
-          "desc": "Simple form or GEDCOM import."
-        },
-        {
-          "title": "Share with family",
-          "desc": "Link, PDF export, real-time collaboration."
-        }
-      ]
-    },
-    "testimonials": {
-      "eyebrow": "Testimonials",
-      "title": "They reconnected with their roots",
-      "prev": "Previous testimonial",
-      "next": "Next testimonial",
-      "goto": "Go to testimonial {n}",
-      "items": [
-        {
-          "name": "Awa Diallo",
-          "loc": "Dakar → Lyon",
-          "quote": "I found my great-grandfather's village and connected four generations. Moving."
-        },
-        {
-          "name": "Mathieu Lefèvre",
-          "loc": "Nantes",
-          "quote": "Finally an elegant tool. The whole family collaborates on the same tree, in real time."
-        },
-        {
-          "name": "Sofia Romano",
-          "loc": "Milan → Brussels",
-          "quote": "The origins map revealed Italian branches I had no idea existed."
-        }
-      ]
+    "figures": {
+      "l1": "<em>Seven</em> generations.",
+      "l2": "<em>Fifty-eight</em> lives linked.",
+      "l3": "<em>A hundred and fifty</em> years of light.",
+      "note": "Real lives. True bonds. A living memory."
     },
     "pricing": {
-      "eyebrow": "Pricing",
-      "title": "Start for free, grow later",
+      "heading": "Simple and transparent",
+      "sub": "Start for free. Upgrade when you’re ready.",
+      "monthly": "Monthly",
+      "annual": "Annual",
+      "save": "Save 20%",
       "popular": "Popular",
-      "period": "/mo",
-      "plans": [
-        {
+      "perMonth": "/mo",
+      "perYear": "That’s {total}€ per year",
+      "plans": {
+        "free": {
           "name": "Free",
-          "cta": "Get started free",
+          "note": "Forever",
+          "cta": "Start for free",
           "features": [
             "1 family tree",
-            "Up to 50 people",
-            "GEDCOM import/export",
-            "AI report (3/month)"
+            "Up to 50 members",
+            "AI narrative (5/mo)",
+            "Basic PDF export"
           ]
         },
-        {
+        "family": {
           "name": "Family",
+          "note": "Per family",
           "cta": "Choose this plan",
           "features": [
-            "5 trees",
-            "500 people",
+            "Unlimited trees",
+            "Unlimited members",
+            "Unlimited AI narrative",
             "Family collaboration",
-            "Unlimited AI report",
-            "Photo gallery",
-            "Cloud sync"
+            "Premium PDF export",
+            "Photo gallery"
           ]
         },
-        {
-          "name": "Pro",
+        "heritage": {
+          "name": "Heritage",
+          "note": "For large families",
           "cta": "Contact us",
           "features": [
-            "Unlimited trees",
-            "Unlimited people",
-            "Multi-organization",
+            "Everything in Family",
+            "AI face recognition",
+            "GEDCOM import",
             "API access",
             "Priority support",
-            "Advanced PDF export"
+            "Long-term archiving"
           ]
         }
-      ]
+      }
     },
-    "faq": {
-      "eyebrow": "Frequently asked questions",
-      "title": "Everything you want to know",
-      "items": [
-        {
-          "q": "Is my data secure?",
-          "a": "Your data is encrypted in transit (SSL) and hosted in Europe (Supabase, Stockholm). In guest mode, everything stays on your device. You remain the owner of your data and can export it at any time."
-        },
-        {
-          "q": "Can I import a GEDCOM file?",
-          "a": "Yes. Suimini imports standard GEDCOM (.ged) files: individuals, families, parent-child relationships and marriages are rebuilt automatically."
-        },
-        {
-          "q": "How does collaboration work?",
-          "a": "Invite relatives by email with read or write access. Changes sync in real time and everyone sees who is connected to the tree."
-        },
-        {
-          "q": "Do I need an account to try it?",
-          "a": "No. Guest mode works entirely offline with sample data. Create an account only when you want to save to the cloud."
-        },
-        {
-          "q": "Can I export my tree?",
-          "a": "Yes: JSON export (full backup), GEDCOM (universal standard) and PDF (list, cards, summary or visual A3 tree)."
-        },
-        {
-          "q": "Is Suimini paid?",
-          "a": "The Free plan is enough to get started. The Family and Pro plans unlock cloud sync, sharing and real-time collaboration."
-        }
-      ]
-    },
-    "ctaBanner": {
-      "title": "Your story deserves",
-      "titleAccent": "to be preserved.",
-      "createTree": "Create my tree",
-      "demoLink": "or explore the demo first →"
+    "cta": {
+      "title1": "Begin your",
+      "title2": "constellation.",
+      "sub": "Add a first star tonight. The rest of your story will follow, generation after generation.",
+      "fine": "Free. No credit card. Data in Europe."
     },
     "footer": {
-      "tagline": "The modern family tree: structured, collaborative, and always with you.",
-      "linksTitle": "Useful links",
-      "features": "Features",
-      "pricing": "Pricing",
-      "faq": "FAQ",
-      "privacy": "Privacy",
+      "tagline": "Your family’s story, kept alive.",
+      "product": "Product",
+      "legal": "Legal",
+      "language": "Language",
+      "tryDemo": "Try the demo",
+      "start": "Get started",
       "terms": "Terms",
-      "brandTitle": "Suimini",
-      "openApp": "Open the app",
-      "hosted": "Data hosted in Europe · SSL encryption",
-      "copyright": "© 2026 Suimini · All rights reserved"
+      "privacy": "Privacy",
+      "copyright": "© 2026 Suimini · Crafted with care in France"
     }
   },
   "tree": {
@@ -649,7 +567,8 @@
     "success": "Success",
     "confirm": "Confirm",
     "search": "Search",
-    "noResults": "No results"
+    "noResults": "No results",
+    "clickToClose": "Click to dismiss"
   },
   "demo": {
     "banner": "Demo mode · data not saved",
@@ -1419,7 +1338,18 @@
     "importing": "Importing…",
     "imported": "{count} people imported",
     "unsupported": "Unsupported format (.json, .ged, .gedcom)",
-    "error": "Error:"
+    "error": "Error:",
+    "title": "Import / Export",
+    "close": "Close",
+    "tabExport": "Export",
+    "tabImport": "Import",
+    "exportIntro": "Export your tree <b>{name}</b> ({count} people) in one of the following formats:",
+    "jsonDesc": "Native format, all data preserved. Recommended for backups.",
+    "gedcomDesc": "Universal standard. Compatible with Ancestry, MyHeritage, Geneanet, etc.",
+    "importIntro": "Import a tree. Formats: .json (Suimini), .ged / .gedcom (GEDCOM standard).",
+    "persons": "people",
+    "families": "families",
+    "cancel": "Cancel"
   },
   "ocr": {
     "title": "Scan a document",

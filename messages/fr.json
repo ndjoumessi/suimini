@@ -70,211 +70,129 @@
   },
   "landing": {
     "nav": {
-      "features": "Fonctions",
+      "how": "Comment ça marche",
       "pricing": "Tarifs",
-      "faq": "FAQ",
-      "enterApp": "Accéder à l’app"
+      "enter": "Entrer",
+      "signin": "Se connecter"
     },
     "hero": {
-      "eyebrow": "Arbre généalogique · Est. 2026",
-      "title": "Préservez l'histoire de votre famille,",
-      "titleAccent": "génération après génération.",
-      "subtitle": "L'arbre généalogique moderne : structuré, collaboratif, et toujours avec vous.",
-      "cta": "Commencer gratuitement →",
-      "enterApp": "Accéder à l’app",
-      "welcome": "Bon retour, <hl>{name}</hl>",
-      "welcomeGeneric": "Bon retour parmi nous",
-      "loginLink": "Déjà un compte ? Se connecter",
-      "scrollAria": "Faire défiler",
-      "trust": {
-        "free": "Gratuit pour commencer",
-        "noCard": "Sans carte bancaire",
-        "europe": "Données hébergées en Europe"
+      "title1": "Votre famille",
+      "title2": "est une <em>constellation.</em>",
+      "sub": "Chaque nom, une étoile. Chaque lien, une ligne de lumière. Suimini réunit les vôtres et garde leur histoire vivante.",
+      "ctaOpen": "Ouvrir mon arbre",
+      "ctaStart": "Commencer mon arbre",
+      "ctaDemo": "Voir la démo",
+      "count": "Rejoignez <n></n> familles qui préservent leur histoire.",
+      "fine": "C’est gratuit. Aucune carte bancaire. Vos données restent en Europe."
+    },
+    "manifesto": {
+      "lead": "Tant qu’une histoire se raconte,",
+      "em1": "ceux qu’on aime",
+      "em2": "ne s’éteignent jamais."
+    },
+    "testimonials": [
+      {
+        "q": "Nous avons retrouvé 4 générations perdues en une soirée.",
+        "by": "Sophie M., Lyon"
+      },
+      {
+        "q": "Mon père ne connaissait pas le nom de son arrière-grand-père. Maintenant si.",
+        "by": "Karim B., Marseille"
+      },
+      {
+        "q": "L’IA a écrit la biographie de ma grand-mère mieux que je n’aurais pu le faire.",
+        "by": "Claire D., Paris"
+      }
+    ],
+    "features": {
+      "heading": "Trois gestes pour une mémoire",
+      "gather": {
+        "k": "Réunir",
+        "t": "Reliez les générations",
+        "d": "Ajoutez vos proches et tracez les liens. L’arbre se dessine de lui-même, lisible des arrière-grands-parents aux petits-derniers."
+      },
+      "tell": {
+        "k": "Raconter",
+        "t": "L’histoire prend des mots",
+        "d": "À partir des dates, des lieux et des liens, Suimini compose le récit de votre lignée. Une mémoire qui se lit, pas seulement qui se range."
+      },
+      "pass": {
+        "k": "Transmettre",
+        "t": "Léguez la lumière",
+        "d": "Invitez la famille à contribuer, exportez un livret, partagez un lien. Une histoire faite pour passer de main en main."
       }
     },
-    "demo": {
-      "title": "Essayez sans vous inscrire",
-      "subtitle": "Explorez avec la famille Dupont",
-      "cta": "Essayer la démo gratuitement →",
-      "noSignup": "Aucune inscription requise",
-      "eyebrow": "La démo"
-    },
-    "features": {
-      "eyebrow": "Les fonctions",
-      "title": "Tout ce qu’il faut pour votre histoire familiale",
-      "badgeNew": "Nouveau",
-      "items": [
-        {
-          "title": "Arbre interactif",
-          "desc": "Visualisez 5 générations d’un seul coup d’œil."
-        },
-        {
-          "title": "Carte des origines",
-          "desc": "Découvrez d’où vient votre famille."
-        },
-        {
-          "title": "Sync cloud",
-          "desc": "Accessible sur tous vos appareils, toujours sauvegardé."
-        },
-        {
-          "title": "Exploration",
-          "desc": "Trouvez les liens entre n’importe quels membres."
-        },
-        {
-          "title": "Journal familial",
-          "desc": "Racontez l’histoire en mots et en photos."
-        },
-        {
-          "title": "Mode présentation",
-          "desc": "Partagez lors des réunions de famille."
-        },
-        {
-          "title": "Statistiques",
-          "desc": "Analysez les tendances de votre lignée."
-        },
-        {
-          "title": "Profil ADN",
-          "desc": "Visualisez vos origines ethniques."
-        }
-      ]
-    },
-    "mockup": {
-      "eyebrow": "L’interface",
-      "title": "Une interface qui donne vie à votre lignée",
-      "alt": "Aperçu de l’arbre généalogique"
-    },
-    "steps": {
-      "eyebrow": "La méthode",
-      "title": "Commencez en trois étapes",
-      "items": [
-        {
-          "title": "Créez votre compte",
-          "desc": "Magic link par e-mail, sans mot de passe."
-        },
-        {
-          "title": "Ajoutez vos ancêtres",
-          "desc": "Formulaire simple ou import GEDCOM."
-        },
-        {
-          "title": "Partagez avec la famille",
-          "desc": "Lien, export PDF, collaboration temps réel."
-        }
-      ]
-    },
-    "testimonials": {
-      "eyebrow": "Témoignages",
-      "title": "Ils ont retrouvé leurs racines",
-      "prev": "Témoignage précédent",
-      "next": "Témoignage suivant",
-      "goto": "Aller au témoignage {n}",
-      "items": [
-        {
-          "name": "Awa Diallo",
-          "loc": "Dakar → Lyon",
-          "quote": "J’ai retrouvé le village de mon arrière-grand-père et relié quatre générations. Émouvant."
-        },
-        {
-          "name": "Mathieu Lefèvre",
-          "loc": "Nantes",
-          "quote": "Enfin un outil élégant. Toute la famille collabore sur le même arbre, en temps réel."
-        },
-        {
-          "name": "Sofia Romano",
-          "loc": "Milan → Bruxelles",
-          "quote": "La carte des origines m’a fait découvrir des branches italiennes que j’ignorais totalement."
-        }
-      ]
+    "figures": {
+      "l1": "<em>Sept</em> générations.",
+      "l2": "<em>Cinquante-huit</em> vies reliées.",
+      "l3": "<em>Cent cinquante</em> ans de lumière.",
+      "note": "Des vies réelles. Des liens vrais. Une mémoire vivante."
     },
     "pricing": {
-      "eyebrow": "Les tarifs",
-      "title": "Commencez gratuitement, évoluez plus tard",
+      "heading": "Simple et transparent",
+      "sub": "Commencez gratuitement. Évoluez quand vous êtes prêt.",
+      "monthly": "Mensuel",
+      "annual": "Annuel",
+      "save": "Économisez 20%",
       "popular": "Populaire",
-      "period": "/mois",
-      "plans": [
-        {
+      "perMonth": "/mois",
+      "perYear": "Soit {total}€ par an",
+      "plans": {
+        "free": {
           "name": "Gratuit",
+          "note": "Pour toujours",
           "cta": "Commencer gratuitement",
           "features": [
             "1 arbre généalogique",
-            "50 personnes max",
-            "Import/Export GEDCOM",
-            "Rapport IA (3/mois)"
+            "Jusqu’à 50 membres",
+            "Narratif IA (5/mois)",
+            "Export PDF basique"
           ]
         },
-        {
+        "family": {
           "name": "Famille",
+          "note": "Par famille",
           "cta": "Choisir ce plan",
           "features": [
-            "5 arbres",
-            "500 personnes",
+            "Arbres illimités",
+            "Membres illimités",
+            "Narratif IA illimité",
             "Collaboration famille",
-            "Rapport IA illimité",
-            "Galerie photos",
-            "Sync cloud"
+            "Export PDF premium",
+            "Galerie photos"
           ]
         },
-        {
-          "name": "Pro",
+        "heritage": {
+          "name": "Héritage",
+          "note": "Pour les grandes familles",
           "cta": "Nous contacter",
           "features": [
-            "Arbres illimités",
-            "Personnes illimitées",
-            "Multi-organisations",
-            "API access",
+            "Tout du plan Famille",
+            "Reconnaissance faciale IA",
+            "Import GEDCOM",
+            "Accès API",
             "Support prioritaire",
-            "Export PDF avancé"
+            "Archivage longue durée"
           ]
         }
-      ]
+      }
     },
-    "faq": {
-      "eyebrow": "Questions fréquentes",
-      "title": "Tout ce que vous voulez savoir",
-      "items": [
-        {
-          "q": "Mes données sont-elles en sécurité ?",
-          "a": "Vos données sont chiffrées en transit (SSL) et hébergées en Europe (Supabase, Stockholm). En mode invité, tout reste sur votre appareil. Vous restez propriétaire de vos données et pouvez les exporter à tout moment."
-        },
-        {
-          "q": "Puis-je importer un fichier GEDCOM ?",
-          "a": "Oui. Suimini importe les fichiers GEDCOM (.ged) standards : individus, familles, relations parent-enfant et mariages sont reconstruits automatiquement."
-        },
-        {
-          "q": "Comment fonctionne la collaboration ?",
-          "a": "Invitez des proches par e-mail avec un accès en lecture ou écriture. Les modifications se synchronisent en temps réel et chacun voit qui est connecté sur l’arbre."
-        },
-        {
-          "q": "Ai-je besoin d’un compte pour essayer ?",
-          "a": "Non. Le mode invité fonctionne entièrement hors-ligne avec des données d’exemple. Créez un compte uniquement lorsque vous souhaitez sauvegarder dans le cloud."
-        },
-        {
-          "q": "Puis-je exporter mon arbre ?",
-          "a": "Oui : export JSON (sauvegarde complète), GEDCOM (standard universel) et PDF (liste, fiches, résumé ou arbre visuel A3)."
-        },
-        {
-          "q": "Suimini est-il payant ?",
-          "a": "Le plan Gratuit suffit pour démarrer. Les plans Famille et Pro débloquent la synchronisation cloud, le partage et la collaboration temps réel."
-        }
-      ]
-    },
-    "ctaBanner": {
-      "title": "Votre histoire mérite",
-      "titleAccent": "d’être préservée.",
-      "createTree": "Créer mon arbre",
-      "demoLink": "ou explorer la démo d’abord →"
+    "cta": {
+      "title1": "Commencez votre",
+      "title2": "constellation.",
+      "sub": "Ajoutez une première étoile ce soir. Le reste de votre histoire suivra, génération après génération.",
+      "fine": "Gratuit. Sans carte bancaire. Données en Europe."
     },
     "footer": {
-      "tagline": "L’arbre généalogique moderne : structuré, collaboratif, et toujours avec vous.",
-      "linksTitle": "Liens utiles",
-      "features": "Fonctions",
-      "pricing": "Tarifs",
-      "faq": "FAQ",
+      "tagline": "L’histoire de votre famille, gardée vivante.",
+      "product": "Produit",
+      "legal": "Légal",
+      "language": "Langue",
+      "tryDemo": "Essayer la démo",
+      "start": "Commencer",
+      "terms": "Conditions générales",
       "privacy": "Confidentialité",
-      "terms": "CGU",
-      "brandTitle": "Suimini",
-      "openApp": "Ouvrir l’app",
-      "hosted": "Données hébergées en Europe · Chiffrement SSL",
-      "copyright": "© 2026 Suimini · Tous droits réservés"
+      "copyright": "© 2026 Suimini · Fait avec soin en France"
     }
   },
   "tree": {
@@ -649,7 +567,8 @@
     "success": "Succès",
     "confirm": "Confirmer",
     "search": "Rechercher",
-    "noResults": "Aucun résultat"
+    "noResults": "Aucun résultat",
+    "clickToClose": "Cliquez pour fermer"
   },
   "demo": {
     "banner": "Mode démo · données non sauvegardées",
@@ -1419,7 +1338,18 @@
     "importing": "Import en cours…",
     "imported": "{count} personnes importées",
     "unsupported": "Format non supporté (.json, .ged, .gedcom)",
-    "error": "Erreur :"
+    "error": "Erreur :",
+    "title": "Import / Export",
+    "close": "Fermer",
+    "tabExport": "Exporter",
+    "tabImport": "Importer",
+    "exportIntro": "Exportez votre arbre <b>{name}</b> ({count} personnes) dans l’un des formats suivants :",
+    "jsonDesc": "Format natif, toutes les données préservées. Recommandé pour les sauvegardes.",
+    "gedcomDesc": "Standard universel. Compatible Ancestry, MyHeritage, Geneanet, etc.",
+    "importIntro": "Importez un arbre. Formats : .json (Suimini), .ged / .gedcom (GEDCOM standard).",
+    "persons": "personnes",
+    "families": "familles",
+    "cancel": "Annuler"
   },
   "ocr": {
     "title": "Scanner un document",

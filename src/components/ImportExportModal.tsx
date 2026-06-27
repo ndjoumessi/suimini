@@ -158,13 +158,13 @@ export default function ImportExportModal({ tree, onImport, onMerge, onClose, in
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div ref={overlayRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Import / Export" className="modal" style={{ maxWidth: '500px' }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 className="serif" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}><FolderOpen size={20} aria-hidden="true" /> Import / Export</h2>
-          <button onClick={onClose} aria-label="Fermer" className="btn btn-ghost btn-sm btn-icon"><X size={16} /></button>
+          <h2 className="serif" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}><FolderOpen size={20} aria-hidden="true" /> {tg('title')}</h2>
+          <button onClick={onClose} aria-label={tg('close')} className="btn btn-ghost btn-sm btn-icon"><X size={16} /></button>
         </div>
 
-        <div className="tabs" role="tablist" aria-label="Import / Export" style={{ margin: '0 24px', paddingTop: '4px' }}>
-          <TabBtn id="export" icon={<Download size={14} aria-hidden="true" />} label="Exporter" />
-          <TabBtn id="import" icon={<Upload size={14} aria-hidden="true" />} label="Importer" />
+        <div className="tabs" role="tablist" aria-label={tg('title')} style={{ margin: '0 24px', paddingTop: '4px' }}>
+          <TabBtn id="export" icon={<Download size={14} aria-hidden="true" />} label={tg('tabExport')} />
+          <TabBtn id="import" icon={<Upload size={14} aria-hidden="true" />} label={tg('tabImport')} />
           {onScanDocument && (
             <button onClick={() => { onClose(); onScanDocument(); }} className="tab" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', minHeight: '40px' }}>
               <ScanLine size={14} aria-hidden="true" /> {tOcr('scanButton')}
@@ -176,12 +176,12 @@ export default function ImportExportModal({ tree, onImport, onMerge, onClose, in
           {tab === 'export' && (
             <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: 0 }}>
-                Exportez votre arbre <strong>{tree.name}</strong> ({tree.persons.length} personnes) dans l&apos;un des formats suivants :
+                {tg.rich('exportIntro', { name: tree.name, count: tree.persons.length, b: (c) => <strong>{c}</strong> })}
               </p>
               <ExportCard icon={<FileJson size={26} aria-hidden="true" />} title="Suimini JSON" onClick={exportAsJSON}
-                desc="Format natif, toutes les données préservées. Recommandé pour les sauvegardes." />
+                desc={tg('jsonDesc')} />
               <ExportCard icon={<Globe size={26} aria-hidden="true" />} title="GEDCOM (.ged)" onClick={exportAsGEDCOM}
-                desc="Standard universel. Compatible Ancestry, MyHeritage, Geneanet, etc." />
+                desc={tg('gedcomDesc')} />
             </div>
           )}
 
@@ -190,7 +190,7 @@ export default function ImportExportModal({ tree, onImport, onMerge, onClose, in
               {!preview && (
                 <>
                   <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: 0 }}>
-                    Importez un arbre. Formats : <strong>.json</strong> (Suimini), <strong>.ged / .gedcom</strong> (GEDCOM standard).
+                    {tg('importIntro')}
                   </p>
                   <button
                     onClick={() => fileRef.current?.click()}
@@ -216,9 +216,9 @@ export default function ImportExportModal({ tree, onImport, onMerge, onClose, in
                   <div style={{ padding: '12px 14px', border: 'var(--bw) solid var(--border-strong)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', boxShadow: 'var(--shadow-sm)' }}>
                     <div className="label" style={{ marginBottom: '6px' }}>{preview.sourceName}</div>
                     <div style={{ fontSize: '14px' }}>
-                      <strong style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{preview.stats.persons}</strong> personnes
+                      <strong style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{preview.stats.persons}</strong> {tg('persons')}
                       {' · '}
-                      <strong style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{preview.stats.families}</strong> familles
+                      <strong style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{preview.stats.families}</strong> {tg('families')}
                     </div>
                     {preview.persons.length > 0 && (
                       <ul style={{ margin: '8px 0 0', padding: 0, listStyle: 'none', fontSize: '12px', color: 'var(--text-muted)', display: 'flex', flexWrap: 'wrap', gap: '4px 10px' }}>
@@ -255,7 +255,7 @@ export default function ImportExportModal({ tree, onImport, onMerge, onClose, in
                   )}
 
                   <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                    <button onClick={() => { setPreview(null); setProgress(null); }} className="btn btn-secondary btn-sm" disabled={progress !== null}>Annuler</button>
+                    <button onClick={() => { setPreview(null); setProgress(null); }} className="btn btn-secondary btn-sm" disabled={progress !== null}>{tg('cancel')}</button>
                     <button onClick={confirmImport} className="btn btn-primary btn-sm" style={{ gap: '6px' }} disabled={progress !== null}>
                       {progress !== null ? tg('importing') : <>{tg('confirm')} <ArrowRight size={14} aria-hidden="true" /></>}
                     </button>

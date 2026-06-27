@@ -63,6 +63,7 @@ function GenderDonut({ male, female, other, abbrMen, abbrWomen }: {
 
 /** Vertical bar chart: births per decade. Peak in gold, rest blue-grey. Hover tooltip. */
 function DecadeChart({ buckets, tooltipFor }: { buckets: DecadeBucket[]; tooltipFor: (b: DecadeBucket) => string }) {
+  const t = useTranslations('statistics');
   const wrapRef = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<{ i: number; x: number; y: number } | null>(null);
   const W = 760, H = 280;
@@ -85,7 +86,7 @@ function DecadeChart({ buckets, tooltipFor }: { buckets: DecadeBucket[]; tooltip
 
   return (
     <div ref={wrapRef} style={{ position: 'relative' }}>
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Naissances par décennie" style={{ display: 'block' }}>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={t('birthsByDecade')} style={{ display: 'block' }}>
         {/* y gridlines + labels */}
         {yTicks.map((tk, i) => {
           const y = padT + plotH - (tk / axisMax) * plotH;
