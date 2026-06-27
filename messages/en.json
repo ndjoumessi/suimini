@@ -486,7 +486,18 @@
     "toastPasswordSent": "Password reset email sent.",
     "toastPasswordFailed": "Failed to send the email.",
     "toastExported": "Data exported.",
-    "confirmClearCache": "Clear the local cache? Trees not synced to an account will be permanently lost."
+    "confirmClearCache": "Clear the local cache? Trees not synced to an account will be permanently lost.",
+    "language": "Language",
+    "editProfile": "Edit profile",
+    "syncedTrees": "{count, plural, =0 {No tree synced} one {# tree synced} other {# trees synced}}",
+    "cloudActive": "Cloud backup on",
+    "localMode": "Local mode (offline)",
+    "deleteTitle": "Delete account",
+    "about": "About",
+    "aboutTagline": "Your family memory, preserved forever.",
+    "linkTerms": "Terms of use",
+    "linkPrivacy": "Privacy policy",
+    "linkContact": "Contact"
   },
   "admin": {
     "title": "Administration",

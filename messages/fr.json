@@ -486,7 +486,18 @@
     "toastPasswordSent": "Email de modification du mot de passe envoyé.",
     "toastPasswordFailed": "Échec de l'envoi de l'email.",
     "toastExported": "Données exportées.",
-    "confirmClearCache": "Vider le cache local ? Les arbres non synchronisés sur un compte seront définitivement perdus."
+    "confirmClearCache": "Vider le cache local ? Les arbres non synchronisés sur un compte seront définitivement perdus.",
+    "language": "Langue",
+    "editProfile": "Modifier le profil",
+    "syncedTrees": "{count, plural, =0 {Aucun arbre synchronisé} one {# arbre synchronisé} other {# arbres synchronisés}}",
+    "cloudActive": "Sauvegarde cloud activée",
+    "localMode": "Mode local (hors-ligne)",
+    "deleteTitle": "Supprimer le compte",
+    "about": "À propos",
+    "aboutTagline": "Votre mémoire familiale, préservée pour toujours.",
+    "linkTerms": "Conditions d'utilisation",
+    "linkPrivacy": "Politique de confidentialité",
+    "linkContact": "Contact"
   },
   "admin": {
     "title": "Administration",
