@@ -13,10 +13,14 @@ export default function LanguageSwitcher({ tone = 'app' }: { tone?: 'app' | 'lan
   const locale = useLocale();
 
   function choose(next: Locale) {
-    // No `next === locale` guard: useLocale() can read stale by one navigation, which
-    // would block (and so visually lag) the switch. The route sets an explicit target,
-    // so an extra navigation to the current locale is just a harmless refresh.
+    // Set the cookie CLIENT-SIDE first so it's in the jar before any request: the
+    // browser applies a 302 Set-Cookie only AFTER issuing the redirected request, so
+    // the target page would otherwise load with the OLD cookie (render lags one click
+    // while document.cookie ends up correct). With the jar pre-set, both the route
+    // request and the final page carry the new locale. The route hop then forces a
+    // fresh navigation (reload() would hit the browser cache and not re-read it).
     try { localStorage.setItem(LOCALE_COOKIE, next); } catch { /* ignore */ }
+    document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
     const back = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/';
     window.location.href = `/api/locale?to=${next}&next=${encodeURIComponent(back)}`;
   }
