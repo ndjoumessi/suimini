@@ -321,7 +321,10 @@
     "privacyPrivate": "Privé",
     "cancel": "Annuler",
     "save": "Enregistrer",
-    "advancedSection": "Détails (optionnel)"
+    "advancedSection": "Détails (optionnel)",
+    "sectionIdentity": "Identité",
+    "sectionBio": "Biographie",
+    "sectionRelations": "Relations"
   },
   "addPerson": {
     "close": "Fermer",
@@ -865,7 +868,15 @@
     "historicalContext": "Contexte historique",
     "deletePhoto": "Supprimer la photo",
     "photoDeleteTitle": "Supprimer cette photo ?",
-    "photoDeleteText": "Cette action est définitive."
+    "photoDeleteText": "Cette action est définitive.",
+    "addParent": "Ajouter un parent",
+    "addSpouse": "Ajouter un conjoint",
+    "addChild": "Ajouter un enfant",
+    "searchPersonRel": "Rechercher une personne…",
+    "removeRelation": "Retirer la relation",
+    "relActive": "actif",
+    "relSeparated": "séparé",
+    "noMatch": "Aucune personne"
   },
   "sidebar": {
     "backToSiteAria": "Retour à l'accueil du site",

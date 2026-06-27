@@ -110,6 +110,9 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
   const eras = personEras(person);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [photoToDelete, setPhotoToDelete] = useState<number | null>(null);
+  // Relations editor (edit tab): which group is adding + its search query.
+  const [addRelKind, setAddRelKind] = useState<'parent' | 'spouse' | 'child' | null>(null);
+  const [relQuery, setRelQuery] = useState('');
   const [showAddRel, setShowAddRel] = useState(false);
   const [newRelType, setNewRelType] = useState<RelationType>('spouse');
   const [newRelPersonId, setNewRelPersonId] = useState('');
@@ -1139,10 +1142,74 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
 
         {tab==='edit' && (
           <div className="animate-fade-in">
-            <PersonForm initial={person} onSave={(updates)=>{onUpdate(updates);setTab('profile');}} onCancel={()=>setTab('profile')} />
+            <PersonForm
+              initial={person}
+              onSave={(updates)=>{onUpdate(updates);setTab('profile');}}
+              onCancel={()=>setTab('profile')}
+              relationsSlot={(() => {
+                const rels = tree.relationships;
+                const find = (id: string) => tree.persons.find(p => p.id === id);
+                type Row = { rel: Relationship; other: Person };
+                const parentRows = rels.filter(r => r.type === 'parent' && r.person2Id === person.id).map(r => ({ rel: r, other: find(r.person1Id) })).filter(x => x.other) as Row[];
+                const childRows = rels.filter(r => r.type === 'parent' && r.person1Id === person.id).map(r => ({ rel: r, other: find(r.person2Id) })).filter(x => x.other) as Row[];
+                const spouseRows = rels.filter(r => (r.type === 'spouse' || r.type === 'partner') && (r.person1Id === person.id || r.person2Id === person.id)).map(r => ({ rel: r, other: find(r.person1Id === person.id ? r.person2Id : r.person1Id) })).filter(x => x.other) as Row[];
+
+                const relatedIds = new Set<string>([person.id]);
+                [...parentRows, ...childRows, ...spouseRows].forEach(x => relatedIds.add(x.other.id));
+                const candidates = tree.persons.filter(p => !relatedIds.has(p.id) && getDisplayName(p).toLowerCase().includes(relQuery.trim().toLowerCase()));
+
+                const addRel = (kind: 'parent' | 'spouse' | 'child', otherId: string) => {
+                  if (kind === 'parent') onAddRelationship({ type: 'parent', person1Id: otherId, person2Id: person.id });
+                  else if (kind === 'child') onAddRelationship({ type: 'parent', person1Id: person.id, person2Id: otherId });
+                  else onAddRelationship({ type: 'spouse', person1Id: person.id, person2Id: otherId });
+                  setAddRelKind(null); setRelQuery('');
+                };
+
+                const groups: { kind: 'parent' | 'spouse' | 'child'; title: string; addLabel: string; rows: Row[] }[] = [
+                  { kind: 'parent', title: t('parents'), addLabel: t('addParent'), rows: parentRows },
+                  { kind: 'spouse', title: t('spousesPartners'), addLabel: t('addSpouse'), rows: spouseRows },
+                  { kind: 'child', title: t('childrenSection'), addLabel: t('addChild'), rows: childRows },
+                ];
+
+                // Inline JSX (no nested component) so the search input keeps focus on each keystroke.
+                return (
+                  <div className="pp-rel">
+                    {groups.map(g => (
+                      <div key={g.kind} className="pp-relgroup">
+                        <div className="pp-relgroup-title">{g.title}</div>
+                        {g.rows.map(({ rel, other }) => (
+                          <div key={rel.id} className="pp-relrow">
+                            <PersonAvatar person={other} size={24} />
+                            <button type="button" className="pp-relname" onClick={() => onSelectPerson(other.id)}>{getDisplayName(other)}</button>
+                            {g.kind === 'spouse' && <span className="pp-relstatus">{rel.endDate ? t('relSeparated') : t('relActive')}</span>}
+                            {!readOnly && <button type="button" className="pp-relx" onClick={() => onDeleteRelationship(rel.id)} aria-label={t('removeRelation')} title={t('removeRelation')}><X size={13} /></button>}
+                          </div>
+                        ))}
+                        {!readOnly && (addRelKind === g.kind ? (
+                          <div className="pp-reladd">
+                            <input autoFocus value={relQuery} onChange={e => setRelQuery(e.target.value)} className="input" placeholder={t('searchPersonRel')} />
+                            <div className="pp-relresults">
+                              {candidates.length === 0 ? <div className="pp-relempty">{t('noMatch')}</div>
+                                : candidates.slice(0, 6).map(p => (
+                                  <button key={p.id} type="button" className="pp-relresult" onClick={() => addRel(g.kind, p.id)}>
+                                    <PersonAvatar person={p} size={22} /> <span>{getDisplayName(p)}</span>
+                                  </button>
+                                ))}
+                            </div>
+                            <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setAddRelKind(null); setRelQuery(''); }}>{t('cancel')}</button>
+                          </div>
+                        ) : (
+                          <button type="button" className="pp-reladd-btn" onClick={() => { setAddRelKind(g.kind); setRelQuery(''); }}>+ {g.addLabel}</button>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            />
             <hr className="divider"/>
             {!confirmDelete ? (
-              <button onClick={()=>setConfirmDelete(true)} className="btn btn-danger btn-sm"><Trash2 size={14} /> {t('deletePerson')}</button>
+              <button onClick={()=>setConfirmDelete(true)} className="pp-delete-link"><Trash2 size={13} /> {t('deletePerson')}</button>
             ) : (
               <div style={{ padding:'12px', background:'var(--bg-muted)', border:'1.5px solid var(--danger)', borderRadius:'var(--radius)' }}>
                 <p style={{ margin:'0 0 10px', fontSize:'13px', color:'var(--text)', display:'flex', alignItems:'flex-start', gap:'6px' }}>
@@ -1215,6 +1282,28 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
         .pp-photo-del { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; background: rgba(176,42,42,0.9); color: #fff; border: none; cursor: pointer; opacity: 0; transition: opacity 150ms ease, background 150ms ease; }
         .pp-photo:hover .pp-photo-del, .pp-photo-del:focus-visible { opacity: 1; }
         .pp-photo-del:hover { background: #c0392b; }
+
+        /* Relations editor (edit tab) */
+        .pp-rel { display: flex; flex-direction: column; gap: 16px; }
+        .pp-relgroup { display: flex; flex-direction: column; gap: 6px; }
+        .pp-relgroup-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); }
+        .pp-relrow { display: flex; align-items: center; gap: 8px; }
+        .pp-relname { flex: 1; min-width: 0; text-align: left; background: none; border: none; padding: 0; cursor: pointer; font-family: var(--font-body); font-size: 13px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .pp-relname:hover { color: var(--accent-text); }
+        .pp-relstatus { flex-shrink: 0; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-light); }
+        .pp-relx { flex-shrink: 0; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; background: transparent; border: none; color: var(--text-muted); cursor: pointer; transition: color 150ms ease, background 150ms ease; }
+        .pp-relx:hover { color: #fff; background: rgba(176,42,42,0.9); }
+        .pp-reladd-btn { align-self: flex-start; background: none; border: none; padding: 2px 0; cursor: pointer; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.03em; color: var(--accent-text); transition: color 150ms ease; }
+        .pp-reladd-btn:hover { color: var(--accent); }
+        .pp-reladd { display: flex; flex-direction: column; gap: 6px; padding: 8px; background: var(--bg-muted); border: 1px solid var(--border); }
+        .pp-relresults { display: flex; flex-direction: column; gap: 2px; max-height: 180px; overflow-y: auto; }
+        .pp-relresult { display: flex; align-items: center; gap: 8px; padding: 5px 6px; background: none; border: none; cursor: pointer; text-align: left; font-family: var(--font-body); font-size: 13px; color: var(--ink); transition: background 150ms ease; }
+        .pp-relresult:hover { background: var(--bg-card); }
+        .pp-relempty { padding: 8px 6px; font-size: 12px; color: var(--text-muted); }
+
+        /* delete person — discreet ghost-red link, not a full red button */
+        .pp-delete-link { display: inline-flex; align-items: center; gap: 6px; padding: 4px 2px; background: none; border: none; cursor: pointer; font-family: var(--font-body); font-size: 12px; color: var(--text-muted); transition: color 150ms ease; }
+        .pp-delete-link:hover { color: var(--danger); }
       `}</style>
     </aside>
   );
