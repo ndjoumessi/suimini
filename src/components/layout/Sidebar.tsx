@@ -8,7 +8,7 @@ import { relativeSyncParts } from '@/lib/relativeTime';
 import { FamilyTree, ViewMode } from '@/types';
 import {
   Home, TreePine, Users, Calendar, Map as MapIcon, Images, BookOpen, Cake, Search, BarChart2, Settings,
-  ChevronRight, LogOut, LogIn, Check, CloudOff, Shield, ArrowLeft, RefreshCw,
+  ChevronRight, LogOut, LogIn, Shield, ArrowLeft, RefreshCw,
   Plus, Share2, Download, Printer,
 } from 'lucide-react';
 import { BrandMark } from '../Brand';
@@ -104,15 +104,6 @@ interface Props {
   onImport?: () => void;
   onPrint?: () => void;
   onExportPdf?: () => void;
-}
-
-function SyncIndicator({ status }: { status: 'idle' | 'saved' | 'syncing' | 'offline' | 'error' }) {
-  const ts = useTranslations('sidebar');
-  if (status === 'syncing') return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--accent-text)' }}><span className="spinner" style={{ width: 11, height: 11 }} /> {ts('syncSyncing')}</span>;
-  if (status === 'error') return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--danger)' }}><CloudOff size={12} /> {ts('syncError')}</span>;
-  if (status === 'offline') return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--danger)' }}><CloudOff size={12} /> {ts('syncOffline')}</span>;
-  if (status === 'saved') return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--success)' }}><Check size={12} /> {ts('syncSaved')}</span>;
-  return null;
 }
 
 export default function Sidebar({ activeView, onViewChange, activeTree, trees, onShowTreeSelector, canEdit = true, userRole, birthdayAlertCount = 0, isOpen, onClose, userEmail, displayName, isDemo, cloud, syncStatus = 'idle', lastSyncAt, onResync, presenceCount = 0, onSignIn, onSignOut, isAdmin = false, unreadCount = 0, onAddPerson, onShare, onImport, onPrint, onExportPdf }: Props) {
@@ -266,44 +257,45 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
           </div>
         )}
 
-        {/* Account footer */}
+        {/* Account footer — compact (≤100px): account line · sync line · back link */}
         <div className="sb-account">
           {userEmail ? (
             <>
-              <div className="sb-account-row">
+              {/* account: avatar · name · email · logout — one line */}
+              <div className="sb-acct">
                 <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/profil'; }}
-                  aria-label={ts('myProfile')} title={ts('myProfile')} className="sb-account-btn">
+                  aria-label={ts('myProfile')} title={ts('myProfile')} className="sb-acct-main">
                   <span className="sb-avatar mono">{initials(displayName, userEmail)}</span>
-                  <span className="sb-account-id">
-                    <span className="sb-account-name">{truncate(displayName || userEmail.split('@')[0], 18)}</span>
-                    <span className="sb-account-email">{truncate(userEmail, 24)}</span>
-                  </span>
+                  <span className="sb-acct-name">{truncate(displayName || userEmail.split('@')[0], 16)}</span>
+                  <span className="sb-acct-email">{truncate(userEmail, 22)}</span>
                 </button>
-                <button onClick={onSignOut} aria-label={ts('signOut')} title={ts('signOut')} className="sb-logout"><LogOut size={16} /></button>
+                <button onClick={onSignOut} aria-label={ts('signOut')} title={ts('signOut')} className="sb-logout"><LogOut size={14} /></button>
               </div>
-              {cloud && syncStatus !== 'idle' && (
-                <div style={{ fontSize: '10px', marginTop: '5px', textAlign: 'center', fontFamily: 'var(--font-mono)' }}><SyncIndicator status={syncStatus} /></div>
-              )}
-              {cloud && onResync && lastSyncAt != null && (() => {
-                const { key, count } = relativeSyncParts(lastSyncAt);
-                const time = count != null ? tSync(key, { count }) : tSync(key);
-                return (
-                  <button onClick={() => onResync()} disabled={syncStatus === 'syncing'} title={tSync('resync')} className="sb-resync">
-                    <RefreshCw size={10} aria-hidden="true" style={{ animation: syncStatus === 'syncing' ? 'spin 0.8s linear infinite' : undefined }} />
-                    {tSync('lastSync', { time })}
-                  </button>
+
+              {/* sync: status · last-sync · presence — one line (clickable to resync) */}
+              {cloud && !isDemo && (syncStatus !== 'idle' || lastSyncAt != null || presenceCount > 1) && (() => {
+                const word = syncStatus === 'syncing' ? ts('syncSyncing')
+                  : syncStatus === 'error' ? ts('syncError')
+                  : syncStatus === 'offline' ? ts('syncOffline')
+                  : syncStatus === 'saved' ? ts('syncSaved') : null;
+                const wordClass = syncStatus === 'syncing' ? 'sb-sync-busy'
+                  : (syncStatus === 'error' || syncStatus === 'offline') ? 'sb-sync-bad' : 'sb-sync-ok';
+                let rel: string | null = null;
+                if (lastSyncAt != null) { const { key, count } = relativeSyncParts(lastSyncAt); rel = count != null ? tSync(key, { count }) : tSync(key); }
+                const inner = (
+                  <>
+                    <RefreshCw size={10} aria-hidden="true" className="sb-sync-ico" style={{ animation: syncStatus === 'syncing' ? 'spin 0.8s linear infinite' : undefined }} />
+                    {word && <span className={`sb-sync-word ${wordClass}`}>{word}</span>}
+                    {rel && <span className="sb-sync-dim">· {rel}</span>}
+                    {presenceCount > 1 && <span className="sb-sync-dim sb-sync-pres">· <Users size={9} aria-hidden="true" /> {presenceCount}</span>}
+                  </>
                 );
+                return onResync
+                  ? <button onClick={() => onResync()} disabled={syncStatus === 'syncing'} title={tSync('resync')} className="sb-syncline">{inner}</button>
+                  : <div className="sb-syncline">{inner}</div>;
               })()}
-              {presenceCount > 1 && (
-                <div style={{ fontSize: '10px', color: 'var(--accent-text)', textAlign: 'center', marginTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', fontFamily: 'var(--font-mono)' }}>
-                  <Users size={11} /> {ts('presence', { count: presenceCount })}
-                </div>
-              )}
-              {isDemo && (
-                <div style={{ marginTop: '7px', textAlign: 'center' }}>
-                  <span className="badge badge-accent" style={{ fontSize: '9px' }}>{ts('demoBadge')}</span>
-                </div>
-              )}
+
+              {isDemo && <div className="sb-syncline"><span className="sb-demo">{ts('demoBadge')}</span></div>}
             </>
           ) : (
             <button onClick={onSignIn} className="sb-item" aria-label={ts('signIn')} title={ts('signIn')}>
@@ -311,8 +303,9 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
               <span className="sb-label">{ts('signIn')}</span>
             </button>
           )}
+          {/* back link — discreet, no uppercase */}
           <Link href="/" className="sb-foot-link" onClick={onClose} aria-label={ts('backToSite')} title={ts('backToSite')}>
-            <ArrowLeft size={14} aria-hidden="true" /> {ts('backToSite')}
+            <ArrowLeft size={10} aria-hidden="true" /> {ts('backToSite')}
           </Link>
         </div>
         </div>{/* /sb-foot — fixed actions + account */}
@@ -410,20 +403,32 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sb-chip:hover { border-color: var(--accent); color: var(--accent-text); background: var(--accent-light); }
         .sb-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-        /* Account footer */
-        .sb-account { padding: 8px 12px 10px; border-top: 1px solid var(--border); }
-        .sb-account-row { display: flex; align-items: center; gap: 8px; }
-        .sb-account-btn { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; background: none; border: none; padding: 4px; cursor: pointer; text-align: left; transition: background var(--t-fast); }
-        .sb-account-btn:hover { background: var(--bg-card); }
-        .sb-avatar { width: 22px; height: 22px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--accent); color: #0d0d0d; font-family: var(--font-display); font-size: 10px; font-weight: 700; }
-        .sb-account-id { display: flex; flex-direction: column; min-width: 0; }
-        .sb-account-name { font-size: 13px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .sb-account-email { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .sb-logout { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex-shrink: 0; border: none; background: transparent; color: var(--text-muted); cursor: pointer; transition: background var(--t-fast), color var(--t-fast); }
+        /* Account footer — compact (≤100px): account 36 · sync 22 · back 24 */
+        .sb-account { padding: 8px 10px 9px; border-top: 1px solid #2D2D3A; }
+        .sb-acct { display: flex; align-items: center; gap: 8px; height: 36px; }
+        .sb-acct-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; background: none; border: none; padding: 3px; cursor: pointer; text-align: left; transition: background var(--t-fast); }
+        .sb-acct-main:hover { background: var(--bg-card); }
+        .sb-avatar { width: 28px; height: 28px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--accent); color: #0d0d0d; font-family: var(--font-display); font-size: 12px; font-weight: 700; }
+        .sb-acct-name { flex-shrink: 0; max-width: 80px; font-family: var(--font-body); font-size: 12px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .sb-acct-email { min-width: 0; max-width: 100px; font-family: var(--font-mono); font-size: 10px; color: #a98f4e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .sb-logout { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex-shrink: 0; border: none; background: transparent; color: var(--text-muted); cursor: pointer; transition: background var(--t-fast), color var(--t-fast); }
         .sb-logout:hover { background: var(--bg-card); color: var(--danger); }
-        .sb-resync { display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; margin-top: 5px; padding: 4px; background: none; border: none; cursor: pointer; color: var(--text-light); font-family: var(--font-mono); font-size: 10px; }
-        .sb-foot-link { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 5px; padding: 6px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-light); text-decoration: none; transition: color var(--t-fast), background var(--t-fast); }
-        .sb-foot-link:hover { background: var(--bg-card); color: var(--accent-text); }
+        /* sync line — one row, everything inline */
+        .sb-syncline { display: flex; align-items: center; gap: 5px; height: 22px; width: 100%; padding: 0 3px; background: none; border: none; font-family: var(--font-mono); font-size: 9px; color: #a98f4e; overflow: hidden; }
+        button.sb-syncline { cursor: pointer; transition: opacity var(--t-fast); }
+        button.sb-syncline:hover:not(:disabled) { opacity: 0.8; }
+        button.sb-syncline:disabled { cursor: default; }
+        .sb-sync-ico { flex-shrink: 0; color: #a98f4e; }
+        .sb-sync-word { font-weight: 700; flex-shrink: 0; }
+        .sb-sync-ok { color: #5B8A6E; }
+        .sb-sync-busy { color: #c98a3a; }
+        .sb-sync-bad { color: var(--danger); }
+        .sb-sync-dim { color: #a98f4e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sb-sync-pres { display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; }
+        .sb-demo { font-family: var(--font-mono); font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-text); }
+        /* back link — discreet, lowercase */
+        .sb-foot-link { display: flex; align-items: center; justify-content: center; gap: 5px; height: 24px; margin-top: 2px; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.04em; color: var(--text-muted); text-decoration: none; transition: color var(--t-fast); }
+        .sb-foot-link:hover { color: var(--accent-text); }
 
         @media (max-width: 768px) {
           .sidebar { width: 0; }
