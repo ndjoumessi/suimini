@@ -1438,7 +1438,9 @@
     "banner": "Offline mode",
     "saved": "Changes saved locally",
     "syncing": "Syncing...",
-    "synced": "Synced ✓"
+    "synced": "Synced ✓",
+    "syncError": "Sync failed — showing your local data.",
+    "retry": "Retry"
   },
   "pdf": {
     "export": "Export booklet",

@@ -15,6 +15,25 @@ const MAX_HISTORY = 50;
 // next login (the local data is still on disk and would otherwise re-trigger it).
 const IMPORT_DONE_KEY = 'suimini_import_done';
 const IMPORT_DISMISSED_KEY = 'suimini_import_dismissed';
+// Cache schema version. Bump when the persisted tree/person shape changes
+// incompatibly: on mismatch the local cache (localStorage + IndexedDB) is purged
+// and re-hydrated (cloud → Supabase, guest → fresh sample), so stale data written
+// by an older build can never render. The owning userId is stamped alongside for
+// defence-in-depth (cross-account staleness is already prevented by the hard cache
+// replace on cloud login and the cache wipe in signOut).
+const CACHE_META_KEY = 'suimini_cache_meta';
+const STORE_VERSION = 3;
+// A cloud refetch is forced when the tab regains focus and the cache is older than
+// this (Supabase always wins).
+const STALE_MS = 5 * 60 * 1000;
+
+function readCacheVersion(): number | null {
+  if (typeof window === 'undefined') return null;
+  try { return (JSON.parse(localStorage.getItem(CACHE_META_KEY) || '{}').version ?? null); } catch { return null; }
+}
+function writeCacheMeta(userId: string) {
+  try { localStorage.setItem(CACHE_META_KEY, JSON.stringify({ version: STORE_VERSION, userId })); } catch { /* ignore */ }
+}
 
 /** True when the user already imported or dismissed the local-data migration prompt. */
 function importPromptSuppressed(): boolean {
@@ -68,6 +87,18 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
   useEffect(() => {
     if (!authReady || typeof window === 'undefined') return;
 
+    // Schema-version cache-bust (runs before any read). Purge ONLY when a KNOWN
+    // older version is recorded (a real downgrade from a prior build). A missing
+    // meta means a pre-versioning install: we adopt the current cache as-is and just
+    // stamp it — never wipe an existing guest's local-only trees on first upgrade.
+    const cachedVersion = readCacheVersion();
+    if (cachedVersion != null && cachedVersion < STORE_VERSION) {
+      try { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(ACTIVE_TREE_KEY); } catch { /* ignore */ }
+      offlineStorage.clear().catch(() => {});
+      console.info(`[store] Cache schema obsolète (v${cachedVersion} < v${STORE_VERSION}) → purge et rechargement.`);
+    }
+    writeCacheMeta(cloud && user ? user.id : 'guest');
+
     // Always cache localStorage into localCacheRef (migration detection), cheaply.
     const stored = localStorage.getItem(STORAGE_KEY);
     const parsed = stored ? (JSON.parse(stored) as FamilyTree[]) : [];
@@ -79,8 +110,15 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
       let active = true;
       let retryTimer: ReturnType<typeof setTimeout> | null = null;
       setSyncStatus('syncing');
-      // Safety net: never leave the indicator stuck on "syncing" (slow/hung network).
-      const safety = setTimeout(() => { if (active) setSyncStatus(s => (s === 'syncing' ? 'idle' : s)); }, 10000);
+      // Safety net: if the network hangs (loadTreesFromSupabase never settles) the
+      // user must NEVER be stuck on an infinite spinner. After 10s, reveal the app
+      // with whatever local data we have and flag the error (the in-app banner then
+      // offers "Réessayer"). `setLoaded(true)` is idempotent if the load already won.
+      const safety = setTimeout(() => {
+        if (!active) return;
+        setSyncStatus(s => (s === 'syncing' ? 'error' : s));
+        setLoaded(true);
+      }, 10000);
       const localTrees = localCacheRef.current;
       const onlySample = localTrees.length === 1 && localTrees[0].id === 'tree1';
       const hasRealLocal = localTrees.length > 0 && !onlySample;
@@ -294,6 +332,28 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
       return false;
     }
   }, [cloud, user]);
+
+  // Refs of the latest sync state so the visibility listener stays subscribed once
+  // (no re-bind on every status tick) while still reading fresh values.
+  const syncStatusRef = useRef(syncStatus); syncStatusRef.current = syncStatus;
+  const lastSyncRef = useRef(lastSyncAt); lastSyncRef.current = lastSyncAt;
+
+  // Stale-cache guard: when the tab regains focus and the last successful cloud sync
+  // is older than STALE_MS, silently pull fresh data (Supabase always wins). Never
+  // fires mid-sync; resync() revalidates the session before touching anything.
+  useEffect(() => {
+    if (!cloud) return;
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible' || syncStatusRef.current === 'syncing') return;
+      const last = lastSyncRef.current;
+      if (last != null && Date.now() - last > STALE_MS) {
+        console.info('[store] Cache périmé (>5 min) → resync au retour de focus.');
+        resync();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [cloud, resync]);
 
   // Migrate local trees to the cloud (on user confirmation).
   const runMigration = useCallback(async () => {

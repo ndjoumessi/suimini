@@ -42,7 +42,7 @@ import ShareModal from './ShareModal';
 import ToastStack, { ToastType, ToastItem } from './Toast';
 import { BrandLockup } from './Brand';
 import OnboardingWizard, { OnboardingData } from './OnboardingWizard';
-import { Menu, Search, TreePine, Sprout, Cloud, WifiOff } from 'lucide-react';
+import { Menu, Search, TreePine, Sprout, Cloud, WifiOff, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 const MapView = dynamic(() => import('./views/MapView'), {
@@ -464,6 +464,17 @@ export default function SuiminiApp() {
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 16px', background: 'color-mix(in srgb, var(--accent) 12%, var(--bg-card))', borderBottom: 'var(--bw) solid var(--accent)', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--ink)', letterSpacing: '0.02em' }}>
             <WifiOff size={14} aria-hidden="true" style={{ flexShrink: 0, color: 'var(--accent)' }} />
             <span><strong>{tOffline('banner')}</strong> — {tOffline('saved')}</span>
+          </div>
+        )}
+        {/* Cloud sync failure: surface it prominently (not just the sidebar dot) with
+            a one-tap retry. Only when online — offline has its own banner above. */}
+        {isOnline && store.cloud && store.syncStatus === 'error' && (
+          <div role="alert" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '7px 16px', background: 'color-mix(in srgb, var(--danger) 16%, var(--bg-card))', borderBottom: 'var(--bw) solid var(--danger)', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--ink)', letterSpacing: '0.02em' }}>
+            <AlertTriangle size={14} aria-hidden="true" style={{ flexShrink: 0, color: 'var(--danger)' }} />
+            <span>{tOffline('syncError')}</span>
+            <button onClick={handleResync} className="btn btn-sm" style={{ minHeight: '26px', padding: '3px 10px', gap: '5px' }}>
+              <RefreshCw size={12} aria-hidden="true" /> {tOffline('retry')}
+            </button>
           </div>
         )}
         {isDemo && <DemoBanner onCreateAccount={() => openAuth('signup')} onExit={exitDemo} />}

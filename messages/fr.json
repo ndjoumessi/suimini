@@ -1438,7 +1438,9 @@
     "banner": "Mode hors-ligne",
     "saved": "Modifications sauvegardées localement",
     "syncing": "Synchronisation en cours...",
-    "synced": "Synchronisé ✓"
+    "synced": "Synchronisé ✓",
+    "syncError": "Synchronisation impossible — vos données locales sont affichées.",
+    "retry": "Réessayer"
   },
   "pdf": {
     "export": "Exporter le livret",
