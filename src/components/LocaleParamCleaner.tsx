@@ -11,10 +11,24 @@ import { useEffect } from 'react';
  */
 export default function LocaleParamCleaner() {
   useEffect(() => {
-    // Restore scroll where the user was before the switch.
+    // Restore scroll where the user was before the switch. The page may not be tall
+    // enough yet at mount (fonts/sections still laying out), so scrollTo would clamp
+    // to 0 — retry across a few frames until we actually reach the target.
     try {
-      const y = sessionStorage.getItem('localeScrollY');
-      if (y !== null) { window.scrollTo({ top: parseInt(y, 10) || 0, behavior: 'instant' as ScrollBehavior }); sessionStorage.removeItem('localeScrollY'); }
+      const raw = sessionStorage.getItem('localeScrollY');
+      if (raw !== null) {
+        sessionStorage.removeItem('localeScrollY');
+        const target = parseInt(raw, 10) || 0;
+        if (target > 0) {
+          let tries = 0;
+          const restore = () => {
+            window.scrollTo({ top: target, left: 0, behavior: 'instant' as ScrollBehavior });
+            tries += 1;
+            if (Math.abs(window.scrollY - target) > 2 && tries < 30) requestAnimationFrame(restore);
+          };
+          requestAnimationFrame(restore);
+        }
+      }
     } catch { /* ignore */ }
     // Safety: make sure the body fades in even if the head load handler didn't run.
     document.documentElement.classList.remove('locale-enter');
