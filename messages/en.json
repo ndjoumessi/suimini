@@ -862,7 +862,10 @@
     "world_publicWeb": "Public Web",
     "world_euro": "Switch to the euro",
     "world_covid": "COVID-19 pandemic",
-    "historicalContext": "Historical context"
+    "historicalContext": "Historical context",
+    "deletePhoto": "Delete photo",
+    "photoDeleteTitle": "Delete this photo?",
+    "photoDeleteText": "This can’t be undone."
   },
   "sidebar": {
     "backToSiteAria": "Back to the site home",
@@ -1117,7 +1120,13 @@
     "uploadingLabel": "Uploading…",
     "needPerson": "Choose a person first",
     "cropInstruction": "Adjust the frame to crop your photo",
-    "previewLabel": "Preview"
+    "previewLabel": "Preview",
+    "deletePhoto": "Delete photo",
+    "deleteConfirmTitle": "Delete this photo?",
+    "deleteConfirmText": "This can’t be undone.",
+    "deleteConfirm": "Delete",
+    "photoDeleted": "Photo deleted",
+    "photoAdded": "Photo added"
   },
   "photoAnalyzer": {
     "title": "Face recognition",

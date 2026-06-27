@@ -1,12 +1,12 @@
 'use client';
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { LayoutGrid, Rows3, ImagePlus, X, Plus, ScanFace, UploadCloud } from 'lucide-react';
+import { LayoutGrid, Rows3, ImagePlus, X, Plus, ScanFace, UploadCloud, Trash2 } from 'lucide-react';
 import ReactCrop, { centerCrop, makeAspectCrop, convertToPixelCrop, type Crop, type PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { FamilyTree, Person } from '@/types';
 import { getDisplayName, formatYear } from '@/lib/treeUtils';
-import { uploadAvatar } from '@/lib/uploadImage';
+import { uploadAvatar, deleteAvatarByUrl } from '@/lib/uploadImage';
 import { GENDER_BAR } from '../tree/nodeStyle';
 
 interface Props {
@@ -15,6 +15,8 @@ interface Props {
   onUpdatePerson?: (personId: string, updates: Partial<Person>) => void;
   /** Open the AI face-recognition analyzer. */
   onAnalyzePhoto?: () => void;
+  /** Toast feedback (added / deleted). */
+  onToast?: (msg: string) => void;
 }
 
 interface PhotoItem {
@@ -34,10 +36,11 @@ function lifeLine(p: Person): string {
   return b || '';
 }
 
-export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAnalyzePhoto }: Props) {
+export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAnalyzePhoto, onToast }: Props) {
   const t = useTranslations('gallery');
   const tp = useTranslations('photoAnalyzer');
   const [selected, setSelected] = useState<PhotoItem | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<PhotoItem | null>(null);
   const [filterPersonId, setFilterPersonId] = useState<string>('');
   const [layout, setLayout] = useState<'grid' | 'list'>('grid');
 
@@ -56,18 +59,33 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
 
   const canAdd = !!onUpdatePerson && tree.persons.length > 0;
+  const canDelete = !!onUpdatePerson;
+
+  // Remove a photo: drop it from the person record (profilePhoto or photos[]),
+  // best-effort clean the storage object, and toast. Works in demo (base64 in the
+  // store) and cloud alike — the store removal is what makes it disappear.
+  function doDelete(photo: PhotoItem) {
+    if (!onUpdatePerson) { setConfirmDelete(null); return; }
+    const p = photo.person;
+    if (photo.isProfile) onUpdatePerson(p.id, { profilePhoto: undefined });
+    else onUpdatePerson(p.id, { photos: (p.photos || []).filter(u => u !== photo.url) });
+    void deleteAvatarByUrl(photo.url);
+    onToast?.(t('photoDeleted'));
+    if (selected && selected.url === photo.url) setSelected(null);
+    setConfirmDelete(null);
+  }
 
   const resetCrop = () => { setCrop(undefined); setCompletedCrop(undefined); };
   const openModal = () => { setAddPersonId(''); setPendingFile(null); setPreviewUrl(''); setDragOver(false); resetCrop(); setShowAdd(true); };
   const closeModal = () => { setShowAdd(false); setPendingFile(null); setPreviewUrl(''); resetCrop(); };
 
-  // Esc closes the modal / lightbox.
+  // Esc closes the modal / lightbox / delete confirm.
   useEffect(() => {
-    if (!showAdd && !selected) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { closeModal(); setSelected(null); } };
+    if (!showAdd && !selected && !confirmDelete) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { closeModal(); setSelected(null); setConfirmDelete(null); } };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [showAdd, selected]);
+  }, [showAdd, selected, confirmDelete]);
 
   // Revoke object URLs to avoid leaks.
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
@@ -128,6 +146,7 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
       const res = await uploadAvatar(fileToUpload, addPersonId);
       const person = tree.persons.find(p => p.id === addPersonId);
       onUpdatePerson(addPersonId, { photos: [...(person?.photos || []), res.url] });
+      onToast?.(t('photoAdded'));
       closeModal();
       setFilterPersonId('');
     } catch { /* uploadAvatar already falls back to a data URL; only a hard failure lands here */ }
@@ -202,33 +221,49 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
         ) : layout === 'grid' ? (
           <div className="gv-grid">
             {photos.map((photo, i) => (
-              <button key={i} type="button" onClick={() => setSelected(photo)} className="gv-tile"
-                aria-label={t('viewPhotoOf', { name: getDisplayName(photo.person) })}>
-                <img src={photo.url} alt={t('photoAlt', { name: getDisplayName(photo.person), n: i + 1 })}
-                  loading="lazy" decoding="async"
-                  onError={e => { (e.target as HTMLImageElement).src = FALLBACK_IMG; }} />
+              <div key={i} className="gv-tile">
+                <button type="button" onClick={() => setSelected(photo)} className="gv-tile-open"
+                  aria-label={t('viewPhotoOf', { name: getDisplayName(photo.person) })}>
+                  <img src={photo.url} alt={t('photoAlt', { name: getDisplayName(photo.person), n: i + 1 })}
+                    loading="lazy" decoding="async"
+                    onError={e => { (e.target as HTMLImageElement).src = FALLBACK_IMG; }} />
+                  <span className="gv-overlay">
+                    <span className="serif gv-ov-name">{getDisplayName(photo.person)}</span>
+                    {lifeLine(photo.person) && <span className="gv-ov-dates">{lifeLine(photo.person)}</span>}
+                  </span>
+                </button>
                 <span className="gv-dot" style={{ background: genderDot(photo.person) }} aria-hidden="true" />
                 {photo.isProfile && <span className="gv-profile badge badge-accent">{t('profileBadge')}</span>}
-                <span className="gv-overlay">
-                  <span className="serif gv-ov-name">{getDisplayName(photo.person)}</span>
-                  {lifeLine(photo.person) && <span className="gv-ov-dates">{lifeLine(photo.person)}</span>}
-                </span>
-              </button>
+                {canDelete && (
+                  <button type="button" className="gv-del" onClick={() => setConfirmDelete(photo)}
+                    aria-label={t('deletePhoto')} title={t('deletePhoto')}>
+                    <Trash2 size={14} aria-hidden="true" />
+                  </button>
+                )}
+              </div>
             ))}
           </div>
         ) : (
           <div className="gv-list">
             {photos.map((photo, i) => (
-              <button key={i} type="button" onClick={() => setSelected(photo)} className="gv-row"
-                aria-label={t('viewPhotoOf', { name: getDisplayName(photo.person) })}>
-                <img src={photo.url} alt="" loading="lazy" decoding="async"
-                  onError={e => { (e.target as HTMLImageElement).src = FALLBACK_IMG; }} />
-                <span className="gv-row-body">
-                  <span className="serif gv-row-name">{getDisplayName(photo.person)}</span>
-                  {lifeLine(photo.person) && <span className="gv-row-dates">{lifeLine(photo.person)}</span>}
-                </span>
+              <div key={i} className="gv-row">
+                <button type="button" onClick={() => setSelected(photo)} className="gv-row-open"
+                  aria-label={t('viewPhotoOf', { name: getDisplayName(photo.person) })}>
+                  <img src={photo.url} alt="" loading="lazy" decoding="async"
+                    onError={e => { (e.target as HTMLImageElement).src = FALLBACK_IMG; }} />
+                  <span className="gv-row-body">
+                    <span className="serif gv-row-name">{getDisplayName(photo.person)}</span>
+                    {lifeLine(photo.person) && <span className="gv-row-dates">{lifeLine(photo.person)}</span>}
+                  </span>
+                </button>
                 <span className="gv-dot gv-dot-static" style={{ background: genderDot(photo.person) }} aria-hidden="true" />
-              </button>
+                {canDelete && (
+                  <button type="button" className="gv-del-row" onClick={() => setConfirmDelete(photo)}
+                    aria-label={t('deletePhoto')} title={t('deletePhoto')}>
+                    <Trash2 size={15} aria-hidden="true" />
+                  </button>
+                )}
+              </div>
             ))}
           </div>
         )}
@@ -306,6 +341,24 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
         </div>
       )}
 
+      {/* Delete confirmation */}
+      {confirmDelete && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setConfirmDelete(null)}>
+          <div role="dialog" aria-modal="true" aria-label={t('deleteConfirmTitle')} className="modal" style={{ maxWidth: '380px' }}>
+            <div style={{ padding: '24px' }}>
+              <h2 className="serif" style={{ margin: '0 0 8px', fontSize: '1.15rem', color: 'var(--ink)' }}>{t('deleteConfirmTitle')}</h2>
+              <p style={{ margin: '0 0 22px', fontSize: '14px', lineHeight: 1.5, color: 'var(--text-muted)' }}>{t('deleteConfirmText')}</p>
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                <button onClick={() => setConfirmDelete(null)} className="btn btn-ghost btn-sm">{t('cancel')}</button>
+                <button onClick={() => doDelete(confirmDelete)} className="btn btn-danger btn-sm" style={{ gap: '6px' }}>
+                  <Trash2 size={14} aria-hidden="true" /> {t('deleteConfirm')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Lightbox */}
       {selected && (
         <div className="gv-lightbox" onClick={() => setSelected(null)}>
@@ -348,25 +401,35 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
 
         /* Grid */
         .gv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
-        .gv-tile { position: relative; padding: 0; border: 1px solid var(--border); background: var(--bg-muted); cursor: pointer; overflow: hidden; aspect-ratio: 4 / 3; display: block; width: 100%; transition: border-color 200ms var(--ease-out), box-shadow 200ms var(--ease-out), transform 200ms var(--ease-out); }
+        .gv-tile { position: relative; border: 1px solid var(--border); background: var(--bg-muted); overflow: hidden; aspect-ratio: 4 / 3; transition: border-color 200ms var(--ease-out), box-shadow 200ms var(--ease-out), transform 200ms var(--ease-out); }
+        .gv-tile-open { position: absolute; inset: 0; padding: 0; border: none; background: none; cursor: pointer; width: 100%; height: 100%; }
         .gv-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .gv-tile:hover, .gv-tile:focus-visible { border-color: var(--accent); box-shadow: var(--shadow-accent); transform: translateY(-2px); outline: none; }
-        .gv-dot { position: absolute; top: 8px; right: 8px; width: 12px; height: 12px; border: 1.5px solid rgba(0,0,0,0.4); box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
-        .gv-profile { position: absolute; top: 8px; left: 8px; font-size: 9px; padding: 2px 7px; }
-        .gv-overlay { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: 1px; padding: 22px 10px 9px; background: linear-gradient(transparent, rgba(10,10,14,0.92)); opacity: 0; transition: opacity 180ms var(--ease-out); text-align: left; }
-        .gv-tile:hover .gv-overlay, .gv-tile:focus-visible .gv-overlay { opacity: 1; }
+        .gv-tile:hover, .gv-tile:focus-within { border-color: var(--accent); box-shadow: var(--shadow-accent); transform: translateY(-2px); }
+        .gv-tile-open:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+        .gv-dot { position: absolute; top: 8px; right: 8px; width: 12px; height: 12px; border: 1.5px solid rgba(0,0,0,0.4); box-shadow: 0 1px 3px rgba(0,0,0,0.4); pointer-events: none; }
+        .gv-profile { position: absolute; top: 8px; left: 8px; font-size: 9px; padding: 2px 7px; pointer-events: none; }
+        .gv-overlay { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: 1px; padding: 22px 10px 9px; background: linear-gradient(transparent, rgba(10,10,14,0.92)); opacity: 0; transition: opacity 180ms var(--ease-out); text-align: left; pointer-events: none; }
+        .gv-tile:hover .gv-overlay, .gv-tile:focus-within .gv-overlay { opacity: 1; }
         .gv-ov-name { color: #f5f0e8; font-size: 15px; font-weight: 700; line-height: 1.15; }
         .gv-ov-dates { color: var(--accent-text); font-family: var(--font-mono); font-size: 11px; }
+        /* delete button — appears on hover/focus, top-right (over the gender dot) */
+        .gv-del { position: absolute; top: 6px; right: 6px; z-index: 3; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; background: rgba(176,42,42,0.9); color: #fff; border: none; cursor: pointer; opacity: 0; transition: opacity 150ms ease, background 150ms ease; }
+        .gv-tile:hover .gv-del, .gv-del:focus-visible { opacity: 1; }
+        .gv-del:hover { background: #c0392b; }
 
         /* List */
         .gv-list { display: flex; flex-direction: column; gap: 6px; }
-        .gv-row { display: flex; align-items: center; gap: 12px; padding: 8px; border: 1px solid var(--border); background: var(--bg-card); cursor: pointer; text-align: left; transition: border-color 150ms, background 150ms; }
-        .gv-row:hover, .gv-row:focus-visible { border-color: var(--accent); background: var(--bg-muted); outline: none; }
+        .gv-row { display: flex; align-items: center; gap: 12px; padding: 8px; border: 1px solid var(--border); background: var(--bg-card); transition: border-color 150ms, background 150ms; }
+        .gv-row:hover, .gv-row:focus-within { border-color: var(--accent); background: var(--bg-muted); }
+        .gv-row-open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 0; border: none; background: none; cursor: pointer; text-align: left; }
+        .gv-row-open:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         .gv-row img { width: 64px; height: 48px; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border); }
         .gv-row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
         .gv-row-name { font-size: 15px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .gv-row-dates { font-family: var(--font-mono); font-size: 11px; color: var(--accent-text); }
         .gv-dot-static { position: static; flex-shrink: 0; }
+        .gv-del-row { flex-shrink: 0; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; background: transparent; color: var(--text-muted); border: none; cursor: pointer; transition: color 150ms ease, background 150ms ease; }
+        .gv-del-row:hover, .gv-del-row:focus-visible { color: #fff; background: rgba(176,42,42,0.9); outline: none; }
 
         /* Modal */
         .gv-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: var(--bw) solid var(--border-strong); }

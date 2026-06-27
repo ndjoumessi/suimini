@@ -88,3 +88,19 @@ export async function uploadAvatar(file: File, personId: string): Promise<Upload
     warning: `Image compressée (~${approxKB} Ko, stockée localement)`,
   };
 }
+
+/**
+ * Best-effort removal of a previously-uploaded avatar from Supabase Storage.
+ * No-op for base64/data URLs (demo/guest) or non-storage URLs. Never throws —
+ * the UI removal (dropping the URL from the person record) is what matters; the
+ * storage object is cleaned up opportunistically when a real session exists.
+ */
+export async function deleteAvatarByUrl(url: string): Promise<void> {
+  if (!supabase || !url || url.startsWith('data:')) return;
+  const marker = `/object/public/${AVATAR_BUCKET}/`;
+  const idx = url.indexOf(marker);
+  if (idx === -1) return;
+  const path = decodeURIComponent(url.slice(idx + marker.length).split('?')[0]);
+  if (!path) return;
+  try { await supabase.storage.from(AVATAR_BUCKET).remove([path]); } catch { /* best-effort */ }
+}

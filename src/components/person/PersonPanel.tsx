@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useMemo, useId } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Person, FamilyTree, Relationship, RelationType, FamilyEvent, EventType, Note, Citation, DnaOrigin, AiNarrative } from '@/types';
 import { getParents, getChildren, getSpouses, getSiblings, getAge, formatDate, formatYear, getDisplayName, generateId, safeHttpUrl } from '@/lib/treeUtils';
+import { deleteAvatarByUrl } from '@/lib/uploadImage';
 import { personEras, type HistoricalEvent } from '@/lib/history';
 import PersonAvatar from './PersonAvatar';
 import { fetchComments, addComment, subscribeComments, collaborationEnabled, type PersonComment, fetchPendingSuggestions, addSuggestion, resolveSuggestion, type PersonSuggestion } from '@/lib/collaboration';
@@ -108,6 +109,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
   const [eraEvent, setEraEvent] = useState<HistoricalEvent | null>(null);
   const eras = personEras(person);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [photoToDelete, setPhotoToDelete] = useState<number | null>(null);
   const [showAddRel, setShowAddRel] = useState(false);
   const [newRelType, setNewRelType] = useState<RelationType>('spouse');
   const [newRelPersonId, setNewRelPersonId] = useState('');
@@ -934,9 +936,17 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
             {(person.photos && person.photos.length > 0) ? (
               <div style={{ display:'grid', gridTemplateColumns:'repeat(2, 1fr)', gap:'8px' }}>
                 {person.photos.map((url, i) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img key={i} src={url} alt={t('galleryPhotoAlt', { name: person.firstName, index: i+1 })}
-                    style={{ width:'100%', aspectRatio:'1', objectFit:'cover', border:'1.5px solid var(--border-strong)', borderRadius:'var(--radius)' }} />
+                  <div key={i} className="pp-photo">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt={t('galleryPhotoAlt', { name: person.firstName, index: i+1 })}
+                      style={{ width:'100%', aspectRatio:'1', objectFit:'cover', border:'1.5px solid var(--border-strong)', borderRadius:'var(--radius)', display:'block' }} />
+                    {!readOnly && (
+                      <button type="button" className="pp-photo-del" onClick={()=>setPhotoToDelete(i)}
+                        aria-label={t('deletePhoto')} title={t('deletePhoto')}>
+                        <Trash2 size={14} aria-hidden="true" />
+                      </button>
+                    )}
+                  </div>
                 ))}
               </div>
             ) : (
@@ -1175,6 +1185,37 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
           </div>
         </div>
       )}
+
+      {/* Delete-photo confirmation */}
+      {photoToDelete !== null && (person.photos?.[photoToDelete] !== undefined) && (
+        <div className="modal-overlay" onMouseDown={e => e.target === e.currentTarget && setPhotoToDelete(null)}>
+          <div role="dialog" aria-modal="true" aria-label={t('photoDeleteTitle')} className="modal" style={{ maxWidth: '360px' }}>
+            <div style={{ padding: '22px' }}>
+              <h3 className="serif" style={{ margin: '0 0 8px', fontSize: '1.1rem' }}>{t('photoDeleteTitle')}</h3>
+              <p style={{ margin: '0 0 20px', fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>{t('photoDeleteText')}</p>
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                <button onClick={() => setPhotoToDelete(null)} className="btn btn-ghost btn-sm">{t('cancel')}</button>
+                <button
+                  onClick={() => {
+                    if (photoToDelete === null) return;
+                    const url = person.photos?.[photoToDelete];
+                    onUpdate({ photos: (person.photos || []).filter((_, idx) => idx !== photoToDelete) });
+                    if (url) void deleteAvatarByUrl(url);
+                    setPhotoToDelete(null);
+                  }}
+                  className="btn btn-danger btn-sm" style={{ gap: '6px' }}><Trash2 size={14} aria-hidden="true" /> {t('delete')}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        .pp-photo { position: relative; }
+        .pp-photo-del { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; background: rgba(176,42,42,0.9); color: #fff; border: none; cursor: pointer; opacity: 0; transition: opacity 150ms ease, background 150ms ease; }
+        .pp-photo:hover .pp-photo-del, .pp-photo-del:focus-visible { opacity: 1; }
+        .pp-photo-del:hover { background: #c0392b; }
+      `}</style>
     </aside>
   );
 }

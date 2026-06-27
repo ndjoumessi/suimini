@@ -862,7 +862,10 @@
     "world_publicWeb": "Web grand public",
     "world_euro": "Passage à l'euro",
     "world_covid": "Pandémie de COVID-19",
-    "historicalContext": "Contexte historique"
+    "historicalContext": "Contexte historique",
+    "deletePhoto": "Supprimer la photo",
+    "photoDeleteTitle": "Supprimer cette photo ?",
+    "photoDeleteText": "Cette action est définitive."
   },
   "sidebar": {
     "backToSiteAria": "Retour à l'accueil du site",
@@ -1117,7 +1120,13 @@
     "uploadingLabel": "Envoi en cours…",
     "needPerson": "Choisissez d’abord une personne",
     "cropInstruction": "Ajustez le cadre pour recadrer votre photo",
-    "previewLabel": "Aperçu"
+    "previewLabel": "Aperçu",
+    "deletePhoto": "Supprimer la photo",
+    "deleteConfirmTitle": "Supprimer cette photo ?",
+    "deleteConfirmText": "Cette action est définitive.",
+    "deleteConfirm": "Supprimer",
+    "photoDeleted": "Photo supprimée",
+    "photoAdded": "Photo ajoutée"
   },
   "photoAnalyzer": {
     "title": "Reconnaissance de visages",
