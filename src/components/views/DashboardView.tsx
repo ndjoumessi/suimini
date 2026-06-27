@@ -329,7 +329,7 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
         .dash-date { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); }
         .dash-user { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
         .dash-user-ava { width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: #12131a; font-family: var(--font-display); font-weight: 700; font-size: 12px; }
-        .dash-title { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.75rem, 7vw, 5rem); line-height: 0.98; letter-spacing: -0.03em; color: var(--accent); margin: 0; text-wrap: balance; }
+        .dash-title { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.5rem, 6vw, 4rem); line-height: 1; letter-spacing: -0.03em; color: var(--accent); margin: 0; text-wrap: balance; overflow-wrap: break-word; }
         .dash-rule { display: block; width: 80px; height: 3px; background: var(--accent); margin: 18px 0 0; }
         .dash-sub { font-family: var(--font-mono); font-size: 13px; color: var(--accent-text); opacity: 0.85; margin: 16px 0 0; letter-spacing: 0.02em; }
         .dash-dot { margin: 0 10px; opacity: 0.5; }

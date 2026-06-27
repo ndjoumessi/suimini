@@ -1,9 +1,12 @@
 import { Person } from '@/types';
 
 /* Shared node palette so FocusTree, TreeNode and TreeView render persons
- * identically. Gender is the primary signal (tinted face + bright left bar +
- * legible name colour); the pivot/founder reads gold; a spouse in the Focus
- * couple reads gold (conjugal link, paired with the diamond connector). */
+ * identically. Gender is carried by the tinted face + bright left bar; the name
+ * itself stays cream (#F5F0E8) for maximum legibility on the dark tint — the
+ * coloured-name variant failed the contrast bar. The pivot/founder reads gold;
+ * a spouse in the Focus couple reads gold (conjugal link, paired with the
+ * diamond connector). Surname is muted (#9094A6), dates gold — set by the
+ * rendering components, not here. */
 
 export interface NodeStyle {
   /** Node face background. */
@@ -21,8 +24,8 @@ export const GENDER_BAR = {
 } as const;
 
 const STYLES = {
-  male:    { bg: '#1A2235', bar: GENDER_BAR.male,    name: '#7EB5F0' },
-  female:  { bg: '#251828', bar: GENDER_BAR.female,  name: '#E8A0C0' },
+  male:    { bg: '#1A2235', bar: GENDER_BAR.male,    name: '#F5F0E8' },
+  female:  { bg: '#251828', bar: GENDER_BAR.female,  name: '#F5F0E8' },
   unknown: { bg: '#1A1A28', bar: GENDER_BAR.unknown, name: '#F5F0E8' },
   spouse:  { bg: '#1A1A28', bar: '#C9A84C',          name: '#F5F0E8' },
   pivot:   { bg: '#2A2010', bar: '#C9A84C',          name: '#F5F0E8' },

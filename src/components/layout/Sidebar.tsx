@@ -180,7 +180,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         <div className="sb-head">
           <Link href="/" aria-label={ts('backToSiteAria')} title={ts('backToSiteTitle')} className="sb-brand">
             <span className="sb-logo" aria-hidden="true">
-              <BrandMark size={32} color="#0d0d0d" accent="#0d0d0d" surface="var(--accent)" />
+              <BrandMark size={28} color="#0d0d0d" accent="#0d0d0d" surface="var(--accent)" />
             </span>
             <span className="sb-brand-text">
               <span className="sb-wordmark serif">Suimini</span>
@@ -319,19 +319,29 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
       </div>
 
       <style>{`
-        .sidebar { width: 240px; flex-shrink: 0; position: relative; z-index: var(--z-sticky); }
+        /* Compact 200px (was 240) gives the content ~40px back on every page.
+           The shell is flex (.sidebar flex-shrink:0 + main flex:1), so narrowing
+           here widens the canvas automatically — no overlap is possible. */
+        .sidebar { width: 200px; flex-shrink: 0; position: relative; z-index: var(--z-sticky); }
         .sidebar-panel {
-          position: absolute; inset: 0; width: 240px;
+          position: absolute; inset: 0; width: 200px;
           background: var(--bg); border-right: 1px solid var(--border);
           display: flex; flex-direction: column; overflow: hidden;
         }
+        /* Standard desktop: drop to 180px so mid-size laptops keep more canvas. */
+        @media (min-width: 769px) and (max-width: 1200px) {
+          .sidebar, .sidebar-panel { width: 180px; }
+          .sb-item { font-size: 13px; gap: 10px; padding: 4px 14px; }
+          .sb-head, .sb-tree { padding-left: 12px; padding-right: 12px; }
+          .sb-section { padding-left: 14px; }
+        }
 
         /* Header */
-        .sb-head { display: flex; align-items: center; gap: 10px; padding: 13px 14px 11px; border-bottom: 1px solid var(--accent-light); }
-        .sb-brand { display: inline-flex; align-items: center; gap: 11px; text-decoration: none; color: inherit; flex: 1; min-width: 0; }
-        .sb-logo { width: 32px; height: 32px; flex-shrink: 0; display: inline-flex; }
+        .sb-head { display: flex; align-items: center; gap: 8px; padding: 13px 12px 11px; border-bottom: 1px solid var(--accent-light); }
+        .sb-brand { display: inline-flex; align-items: center; gap: 9px; text-decoration: none; color: inherit; flex: 1; min-width: 0; }
+        .sb-logo { width: 28px; height: 28px; flex-shrink: 0; display: inline-flex; }
         .sb-brand-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.05; }
-        .sb-wordmark { font-size: 22px; font-weight: 600; font-style: italic; letter-spacing: 0.01em; color: var(--accent-text); }
+        .sb-wordmark { font-size: 20px; font-weight: 600; font-style: italic; letter-spacing: 0.01em; color: var(--accent-text); white-space: nowrap; }
         .sb-tagline { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-light); margin-top: 1px; }
 
         /* Active tree block */
@@ -392,7 +402,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
            the names). Saves the vertical space the stacked icon+label grid used. */
         .sb-action-grid { display: flex; gap: 6px; margin-top: 6px; }
         .sb-chip {
-          flex: 1; height: 32px; display: inline-flex; align-items: center; justify-content: center;
+          flex: 1; height: 28px; display: inline-flex; align-items: center; justify-content: center;
           background: transparent; border: 1px solid var(--border); color: var(--text-muted); cursor: pointer;
           transition: border-color var(--t-fast), color var(--t-fast), background var(--t-fast);
         }
@@ -404,7 +414,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sb-account-row { display: flex; align-items: center; gap: 8px; }
         .sb-account-btn { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; background: none; border: none; padding: 4px; cursor: pointer; text-align: left; transition: background var(--t-fast); }
         .sb-account-btn:hover { background: var(--bg-card); }
-        .sb-avatar { width: 32px; height: 32px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--accent); color: #0d0d0d; font-family: var(--font-display); font-size: 12px; font-weight: 700; }
+        .sb-avatar { width: 28px; height: 28px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--accent); color: #0d0d0d; font-family: var(--font-display); font-size: 11px; font-weight: 700; }
         .sb-account-id { display: flex; flex-direction: column; min-width: 0; }
         .sb-account-name { font-size: 13px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .sb-account-email { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
