@@ -15,7 +15,7 @@ import { LOCALE_COOKIE, LOCALES, type Locale } from '@/i18n/config';
 
 const serif = Spectral({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600'],
+  weight: ['200', '300', '400', '500', '600', '700'],
   style: ['normal', 'italic'],
   variable: '--lp-serif',
   display: 'swap',
@@ -38,22 +38,24 @@ function useScrolled(threshold = 16) {
   return s;
 }
 
-/* ---------- Reveal: visible-by-default + replay on view (skill-safe) ---------- */
-function Reveal({ children, delay = 0, as = 'div', className = '', style }: { children: React.ReactNode; delay?: number; as?: 'div' | 'section' | 'li'; className?: string; style?: React.CSSProperties }) {
+/* ---------- Reveal: visible-by-default + replay on view (skill-safe) ----------
+   variant varies the entrance per section (the uniform fade-up-everywhere is the
+   saturated default the impeccable skill warns against). */
+function Reveal({ children, delay = 0, as = 'div', variant = 'up', className = '', style }: { children: React.ReactNode; delay?: number; as?: 'div' | 'section' | 'li'; variant?: 'up' | 'fade' | 'scale'; className?: string; style?: React.CSSProperties }) {
   const ref = useRef<HTMLElement>(null);
   const [seen, setSeen] = useState(false);
   useEffect(() => {
     if (prefersReduced()) { setSeen(true); return; }
     const el = ref.current;
     if (!el) return;
-    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setSeen(true); io.disconnect(); } }, { threshold: 0.18, rootMargin: '0px 0px -8% 0px' });
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setSeen(true); io.disconnect(); } }, { threshold: 0.16, rootMargin: '0px 0px -10% 0px' });
     io.observe(el);
     const t = window.setTimeout(() => setSeen(true), 1600); // fallback: never stay hidden
     return () => { io.disconnect(); clearTimeout(t); };
   }, []);
   const Tag = as as React.ElementType;
   return (
-    <Tag ref={ref} className={`lp-rv ${seen ? 'lp-rv-in' : ''} ${className}`} style={{ ...style, transitionDelay: `${delay}ms` }}>
+    <Tag ref={ref} className={`lp-rv lp-rv-${variant} ${seen ? 'lp-rv-in' : ''} ${className}`} style={{ ...style, transitionDelay: `${delay}ms` }}>
       {children}
     </Tag>
   );
@@ -97,7 +99,7 @@ const PATHS = [
   'M470 137 L470 220 M250 220 L720 220 M250 220 L250 312 M470 220 L470 312 M720 220 L720 344', // bus to gen2
   'M478 312 L478 420 M318 420 L658 420 M318 420 L318 510 M486 420 L486 528 M658 420 L658 506', // bus to gen3
 ];
-// Ambient field stars (percent coords), curated for a calm scatter.
+// Ambient field stars (percent coords), curated for a calm, dense scatter.
 const FIELD = [
   [6, 18, 1.4, 0.7], [14, 64, 1, 0.5], [9, 86, 1.6, 0.6], [21, 32, 1, 0.45], [27, 78, 1.3, 0.7],
   [34, 12, 1, 0.5], [38, 52, 1.5, 0.6], [44, 88, 1, 0.4], [52, 22, 1.2, 0.6], [58, 70, 1, 0.5],
@@ -105,6 +107,12 @@ const FIELD = [
   [88, 74, 1.1, 0.55], [92, 44, 1, 0.5], [96, 16, 1.4, 0.65], [3, 46, 1, 0.4], [48, 8, 1, 0.5],
   [17, 6, 1.2, 0.6], [31, 94, 1, 0.45], [66, 92, 1.2, 0.55], [82, 6, 1, 0.5], [97, 90, 1.3, 0.6],
   [11, 38, 0.9, 0.4], [55, 48, 0.9, 0.45], [76, 36, 0.9, 0.4], [42, 70, 0.9, 0.5], [24, 56, 0.9, 0.45],
+  [2, 70, 1.1, 0.5], [8, 54, 0.8, 0.4], [19, 84, 1, 0.55], [29, 20, 0.9, 0.45], [36, 66, 1.1, 0.5],
+  [41, 36, 0.8, 0.4], [47, 60, 1, 0.5], [50, 92, 0.9, 0.45], [54, 14, 1.1, 0.55], [61, 58, 0.8, 0.4],
+  [67, 28, 1, 0.5], [71, 70, 0.9, 0.45], [78, 18, 1.1, 0.55], [83, 48, 0.8, 0.4], [86, 62, 1, 0.5],
+  [90, 34, 0.9, 0.45], [94, 60, 1.1, 0.5], [99, 38, 0.8, 0.4], [13, 24, 0.8, 0.4], [22, 48, 1, 0.5],
+  [33, 40, 0.8, 0.4], [45, 26, 0.9, 0.45], [59, 34, 0.8, 0.4], [64, 80, 1, 0.5], [74, 50, 0.8, 0.4],
+  [80, 88, 0.9, 0.45], [87, 14, 0.8, 0.4], [93, 78, 1, 0.5], [5, 32, 0.8, 0.4], [70, 6, 0.9, 0.45],
 ] as const;
 
 function Constellation() {
@@ -148,7 +156,7 @@ function Constellation() {
       <g className="lp-near">
         {KIN.map((k, i) => (
           <g key={k.name} className="lp-kin" style={{ animationDelay: `${0.7 + i * 0.12}s` }}>
-            <circle cx={k.x} cy={k.y} r={k.bright ? 26 : 20} fill="url(#lp-halo)" />
+            <circle cx={k.x} cy={k.y} r={k.bright ? 30 : 20} fill="url(#lp-halo)" className={k.bright ? 'lp-kin-glow' : undefined} />
             <circle cx={k.x} cy={k.y} r={k.bright ? 4.5 : 3.2} fill={k.bright ? '#f6d79a' : '#f2eee4'} />
             <text x={k.x} y={k.y + 30} textAnchor="middle" className="lp-kin-name">{k.name}</text>
           </g>
@@ -158,18 +166,37 @@ function Constellation() {
   );
 }
 
-/* ---------- Small per-section constellation motifs ---------- */
+/* ---------- Per-feature constellation motifs (distinct, lightly animated) ---------- */
 function Motif({ kind }: { kind: 'gather' | 'tell' | 'pass' }) {
   return (
-    <svg viewBox="0 0 200 200" className="lp-motif" aria-hidden="true">
-      <g fill="none" stroke="#e7b45c" strokeWidth="1.2" strokeLinecap="round" opacity="0.85">
-        {kind === 'gather' && <path d="M100 40 L60 120 M100 40 L140 120 M60 120 L140 120 M100 40 L100 110" />}
-        {kind === 'tell' && <path d="M40 150 C 80 60, 120 60, 160 150" />}
-        {kind === 'pass' && <path d="M50 100 L150 100" strokeDasharray="2 10" />}
+    <svg viewBox="0 0 200 200" className={`lp-motif lp-motif-${kind}`} aria-hidden="true">
+      <g fill="none" stroke="#e7b45c" strokeWidth="1.1" strokeLinecap="round" opacity="0.7">
+        {kind === 'gather' && <path d="M100 44 L56 134 M100 44 L144 134 M56 134 L144 134 M100 44 L100 118" />}
+        {kind === 'tell' && <path d="M34 150 C 78 52, 122 52, 166 150" />}
+        {kind === 'pass' && <path d="M50 100 L150 100" />}
       </g>
-      {kind === 'gather' && [[100, 40, 4.5], [60, 120, 3], [140, 120, 3], [100, 110, 3]].map(([x, y, r], i) => <circle key={i} cx={x} cy={y} r={r} fill={i === 0 ? '#f6d79a' : '#f2eee4'} />)}
-      {kind === 'tell' && [[40, 150, 3], [100, 78, 4.5], [160, 150, 3]].map(([x, y, r], i) => <circle key={i} cx={x} cy={y} r={r} fill={i === 1 ? '#f6d79a' : '#f2eee4'} />)}
-      {kind === 'pass' && <><circle cx="50" cy="100" r="4.5" fill="#f6d79a" /><circle cx="150" cy="100" r="4.5" fill="#f2eee4" /></>}
+      {kind === 'gather' && (
+        <>
+          <circle className="lp-m-core" cx="100" cy="44" r="5" fill="#f6d79a" />
+          {[[56, 134], [144, 134], [100, 118]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r="3.2" fill="#f2eee4" />)}
+        </>
+      )}
+      {kind === 'tell' && (
+        <g className="lp-seq">
+          {[[34, 150], [68, 92], [100, 70], [132, 92], [166, 150]].map(([x, y], i) => (
+            <circle key={i} cx={x} cy={y} r={i === 2 ? 4.6 : 3} fill={i === 2 ? '#f6d79a' : '#f2eee4'} style={{ animationDelay: `${i * 0.26}s` }} />
+          ))}
+        </g>
+      )}
+      {kind === 'pass' && (
+        <>
+          <circle cx="50" cy="100" r="5" fill="#f6d79a" />
+          <g className="lp-seq">
+            {[[80, 100], [100, 100], [120, 100]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r="2.6" fill="#f2eee4" style={{ animationDelay: `${i * 0.3}s` }} />)}
+          </g>
+          <circle cx="150" cy="100" r="5" fill="#f2eee4" />
+        </>
+      )}
     </svg>
   );
 }
@@ -256,8 +283,11 @@ export default function Landing() {
 
       {/* ===== MANIFESTO ===== */}
       <section className="lp-manifesto">
-        <Reveal>
-          <p className="lp-manifesto-q">Tant qu’une histoire se raconte,<br /><em>ceux qu’on aime ne s’éteignent jamais.</em></p>
+        <Reveal variant="fade">
+          <p className="lp-manifesto-q">
+            <span className="lp-mani-lead">Tant qu’une histoire se raconte,</span>
+            <em>ceux qu’on aime<br />ne s’éteignent jamais.</em>
+          </p>
         </Reveal>
       </section>
 
@@ -268,7 +298,7 @@ export default function Landing() {
         </Reveal>
         <div className="lp-feat-list">
           {FEATURES.map((f, i) => (
-            <Reveal key={f.k} as="div" className={`lp-feat ${i % 2 ? 'lp-feat-alt' : ''}`} delay={60}>
+            <Reveal key={f.k} as="div" className={`lp-feat lp-feat-${i} ${i % 2 ? 'lp-feat-alt' : ''}`} delay={i * 40}>
               <div className="lp-feat-art"><Motif kind={f.kind} /></div>
               <div className="lp-feat-body">
                 <span className="lp-feat-k">{f.k}</span>
@@ -282,11 +312,11 @@ export default function Landing() {
 
       {/* ===== FIGURES (tissées dans une phrase) ===== */}
       <section className="lp-figures">
-        <Reveal>
+        <Reveal variant="scale">
           <p className="lp-fig-line">
-            <em>Sept</em> générations. <em>Cinquante-huit</em> vies reliées. <em>Cent cinquante</em> ans de lumière.
+            <em>Sept</em> générations.<br /><em>Cinquante-huit</em> vies reliées.<br /><em>Cent cinquante</em> ans de lumière.
           </p>
-          <p className="lp-fig-note">L’arbre de la famille Teda, reconstitué dans Suimini.</p>
+          <p className="lp-fig-note">Un arbre de démonstration, reconstitué dans Suimini.</p>
         </Reveal>
       </section>
 
@@ -322,8 +352,8 @@ export default function Landing() {
       <section className="lp-final">
         <span className="lp-final-star" aria-hidden="true" />
         <Reveal>
-          <h2 className="lp-final-h">Commencez votre constellation.</h2>
-          <p className="lp-final-sub">Une étoile suffit pour commencer. La vôtre.</p>
+          <h2 className="lp-final-h">Commencez votre<br /><em>constellation.</em></h2>
+          <p className="lp-final-sub">Ajoutez une première étoile ce soir. Le reste de votre histoire suivra, génération après génération.</p>
           <div className="lp-hero-cta lp-final-cta">
             {canEnterApp ? (
               <button onClick={goToApp} className="lp-btn lp-btn-amber">Ouvrir mon arbre</button>
@@ -382,8 +412,11 @@ const CSS = `
 }
 .lp-root ::selection { background: rgba(231,180,92,0.30); color: #fff; }
 
-/* Reveal */
-.lp-rv { opacity: 0; transform: translateY(22px); transition: opacity 0.8s var(--ease), transform 0.8s var(--ease); }
+/* Reveal — variant entrances (not the uniform fade-up-everywhere default) */
+.lp-rv { opacity: 0; transition: opacity 0.9s var(--ease), transform 0.9s var(--ease); will-change: opacity, transform; }
+.lp-rv-up { transform: translateY(28px); }
+.lp-rv-fade { transform: none; }
+.lp-rv-scale { transform: scale(0.965); }
 .lp-rv-in { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) { .lp-rv { opacity: 1; transform: none; transition: none; } }
 
@@ -415,27 +448,31 @@ const CSS = `
 
 /* HERO */
 .lp-hero { position: relative; min-height: 100vh; min-height: 100dvh; display: flex; align-items: center; justify-content: center; overflow: hidden; background: radial-gradient(140% 90% at 50% 0%, #161425 0%, var(--sky) 46%, var(--sky-deep) 100%); }
-.lp-sky { position: absolute; inset: -6% -6% -6% -6%; transform: translate(calc(var(--mx, 0) * 10px), calc(var(--my, 0) * 8px)); transition: transform 0.4s var(--ease); }
+.lp-sky { position: absolute; inset: -8% -8% -8% -8%; transform: translate(calc(var(--mx, 0) * 16px), calc(var(--my, 0) * 12px)); transition: transform 0.5s var(--ease); }
 .lp-sky-svg { width: 100%; height: 100%; }
 .lp-hero-veil { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(54% 44% at 50% 50%, rgba(13,15,22,0.90) 0%, rgba(13,15,22,0.74) 38%, rgba(13,15,22,0.30) 64%, transparent 84%); }
-.lp-hero-inner { position: relative; z-index: 3; text-align: center; padding: 96px 24px; max-width: 940px; }
-.lp-h1 { margin: 0; font-family: var(--lp-serif); font-weight: 300; letter-spacing: -0.02em; line-height: 1.0; text-wrap: balance; }
+.lp-hero-inner { position: relative; z-index: 3; text-align: center; padding: 96px 24px; max-width: 1040px; }
+.lp-h1 { margin: 0; font-family: var(--lp-serif); font-weight: 200; letter-spacing: -0.035em; line-height: 0.92; text-wrap: balance; }
 .lp-h1-a, .lp-h1-b { display: block; }
-.lp-h1-a { font-size: clamp(2.6rem, 7vw, 5rem); color: var(--star); }
-.lp-h1-b { font-size: clamp(2.6rem, 7vw, 5rem); color: var(--star); }
-.lp-h1-b em { font-style: italic; font-weight: 400; color: var(--amber); }
-.lp-hero-sub { margin: 28px auto 0; max-width: 50ch; font-size: clamp(1.05rem, 1.8vw, 1.3rem); line-height: 1.65; color: var(--star-muted); }
-.lp-hero-cta { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; margin-top: 40px; }
-.lp-hero-fine { margin: 26px 0 0; font-size: 0.92rem; color: var(--star-faint); letter-spacing: 0.01em; }
+.lp-h1-a { font-size: clamp(3rem, 8.4vw, 6rem); color: var(--star); }
+.lp-h1-b { font-size: clamp(3rem, 8.4vw, 6rem); color: var(--star); }
+.lp-h1-b em { font-style: italic; font-weight: 500; color: var(--amber); }
+.lp-hero-sub { margin: 34px auto 0; max-width: 46ch; font-size: clamp(1.1rem, 1.9vw, 1.35rem); line-height: 1.7; color: var(--star-muted); }
+.lp-hero-cta { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; margin-top: 44px; }
+.lp-hero-fine { margin: 28px 0 0; font-size: 0.9rem; color: var(--star-faint); letter-spacing: 0.02em; }
 .lp-cue { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); width: 1px; height: 46px; background: linear-gradient(var(--amber), transparent); z-index: 3; overflow: hidden; }
 .lp-cue span { position: absolute; inset: 0; background: var(--amber); animation: lp-cue 2.4s var(--ease) infinite; }
 @keyframes lp-cue { 0% { transform: translateY(-100%); } 60%, 100% { transform: translateY(100%); } }
 
 /* Sky animations */
+.lp-far { animation: lp-field-drift 84s ease-in-out infinite alternate; }
+@keyframes lp-field-drift { to { transform: translate(12px, -9px); } }
 .lp-amb { animation: lp-tw 4.5s ease-in-out infinite; }
 @keyframes lp-tw { 0%, 100% { opacity: var(--o, 0.6); } 50% { opacity: calc(var(--o, 0.6) * 0.35); } }
 .lp-kin { opacity: 0; animation: lp-kin-in 1s var(--ease) forwards; }
 @keyframes lp-kin-in { to { opacity: 1; } }
+.lp-kin-glow { animation: lp-glow 5s ease-in-out infinite; }
+@keyframes lp-glow { 0%, 100% { opacity: 0.65; } 50% { opacity: 1; } }
 .lp-kin-name { font-family: var(--lp-serif); font-style: italic; font-size: 15px; fill: var(--star-faint); }
 .lp-link { stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 0.5; animation: lp-draw 1.4s var(--ease) forwards; }
 @keyframes lp-draw { to { stroke-dashoffset: 0; } }
@@ -445,70 +482,90 @@ const CSS = `
 @keyframes lp-drift { to { transform: translate(36px, 22px) scale(1.06); } }
 @keyframes lp-drift2 { to { transform: translate(-30px, -20px) scale(1.08); } }
 @media (prefers-reduced-motion: reduce) {
-  .lp-amb, .lp-neb-a, .lp-neb-b, .lp-cue span { animation: none; }
+  .lp-amb, .lp-neb-a, .lp-neb-b, .lp-cue span, .lp-far, .lp-kin-glow { animation: none; }
   .lp-kin { opacity: 1; animation: none; }
   .lp-link { stroke-dashoffset: 0; animation: none; }
   .lp-sky { transform: none; }
 }
 
 /* MANIFESTO */
-.lp-manifesto { padding: clamp(96px, 16vw, 200px) 24px; background: linear-gradient(var(--sky-deep), var(--sky)); text-align: center; }
-.lp-manifesto-q { margin: 0 auto; max-width: 22ch; font-family: var(--lp-serif); font-weight: 300; font-size: clamp(1.7rem, 4.4vw, 3.1rem); line-height: 1.28; letter-spacing: -0.01em; color: var(--star); text-wrap: balance; }
-.lp-manifesto-q em { font-style: italic; color: var(--amber); }
+.lp-manifesto { padding: clamp(120px, 20vw, 260px) 24px; background: linear-gradient(var(--sky-deep), var(--sky)); text-align: center; }
+.lp-manifesto-q { margin: 0 auto; max-width: min(92vw, 880px); }
+.lp-mani-lead { display: block; font-family: var(--lp-serif); font-weight: 300; font-size: clamp(1.15rem, 2.4vw, 1.7rem); line-height: 1.3; letter-spacing: 0.01em; color: var(--star-muted); margin-bottom: clamp(14px, 2vw, 26px); }
+.lp-manifesto-q em { display: block; font-family: var(--lp-serif); font-style: italic; font-weight: 400; font-size: clamp(2rem, 5.4vw, 3.8rem); line-height: 1.16; letter-spacing: -0.02em; color: var(--amber); text-wrap: balance; }
 
 /* FEATURES */
-.lp-feats { padding: clamp(72px, 10vw, 132px) clamp(20px, 6vw, 80px); max-width: 1180px; margin: 0 auto; }
-.lp-h2 { margin: 0 0 clamp(48px, 7vw, 88px); text-align: center; font-family: var(--lp-serif); font-weight: 400; font-size: clamp(1.9rem, 4vw, 3rem); letter-spacing: -0.015em; color: var(--star); text-wrap: balance; }
-.lp-feat-list { display: flex; flex-direction: column; gap: clamp(40px, 6vw, 76px); }
-.lp-feat { display: grid; grid-template-columns: 240px 1fr; gap: clamp(28px, 5vw, 72px); align-items: center; }
-.lp-feat-alt { grid-template-columns: 1fr 240px; }
+.lp-feats { padding: clamp(96px, 13vw, 180px) clamp(20px, 6vw, 80px); max-width: 1180px; margin: 0 auto; }
+.lp-h2 { margin: 0 0 clamp(64px, 9vw, 120px); text-align: center; font-family: var(--lp-serif); font-weight: 300; font-size: clamp(2rem, 4.6vw, 3.4rem); letter-spacing: -0.02em; color: var(--star); text-wrap: balance; }
+.lp-feat-list { display: flex; flex-direction: column; gap: clamp(64px, 9vw, 128px); }
+.lp-feat { display: grid; grid-template-columns: 300px 1fr; gap: clamp(32px, 6vw, 96px); align-items: center; }
+.lp-feat-alt { grid-template-columns: 1fr 300px; }
 .lp-feat-alt .lp-feat-art { order: 2; }
-.lp-feat-art { display: flex; align-items: center; justify-content: center; aspect-ratio: 1; border: 1px solid var(--hair); background: radial-gradient(120% 120% at 50% 30%, rgba(231,180,92,0.06), transparent 70%); }
-.lp-motif { width: 64%; height: 64%; }
-.lp-feat-k { font-family: var(--lp-serif); font-style: italic; font-size: 1.05rem; color: var(--amber); }
-.lp-feat-t { margin: 10px 0 0; font-family: var(--lp-serif); font-weight: 400; font-size: clamp(1.5rem, 3vw, 2.2rem); line-height: 1.12; letter-spacing: -0.01em; color: var(--star); }
-.lp-feat-d { margin: 16px 0 0; max-width: 52ch; font-size: 1.08rem; line-height: 1.7; color: var(--star-muted); }
+.lp-feat-art { position: relative; display: flex; align-items: center; justify-content: center; aspect-ratio: 1; }
+.lp-feat-art::before { content: ''; position: absolute; inset: 0; pointer-events: none; }
+/* distinct art direction per feature: framed top-glow / frameless center-glow / framed bottom-glow */
+.lp-feat-0 .lp-feat-art { border: 1px solid var(--hair); }
+.lp-feat-0 .lp-feat-art::before { background: radial-gradient(80% 70% at 50% 22%, rgba(231,180,92,0.10), transparent 70%); }
+.lp-feat-1 .lp-feat-art::before { background: radial-gradient(62% 62% at 50% 50%, rgba(231,180,92,0.14), transparent 72%); }
+.lp-feat-2 .lp-feat-art { border: 1px solid var(--hair); }
+.lp-feat-2 .lp-feat-art::before { background: radial-gradient(80% 70% at 50% 80%, rgba(231,180,92,0.10), transparent 70%); }
+.lp-motif { position: relative; width: 70%; height: 70%; }
+.lp-feat-1 .lp-motif { width: 84%; height: 84%; }
+.lp-m-core { transform-box: fill-box; transform-origin: center; animation: lp-glow 4s ease-in-out infinite; }
+.lp-seq circle { animation: lp-seqpulse 2.8s ease-in-out infinite; }
+@keyframes lp-seqpulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+.lp-feat-k { font-family: var(--lp-serif); font-style: italic; font-size: 1.15rem; color: var(--amber); }
+.lp-feat-t { margin: 14px 0 0; font-family: var(--lp-serif); font-weight: 400; font-size: clamp(1.7rem, 3.4vw, 2.6rem); line-height: 1.1; letter-spacing: -0.02em; color: var(--star); text-wrap: balance; }
+.lp-feat-d { margin: 20px 0 0; max-width: 50ch; font-size: 1.12rem; line-height: 1.75; color: var(--star-muted); }
+@media (prefers-reduced-motion: reduce) { .lp-m-core, .lp-seq circle { animation: none; opacity: 1; } }
 @media (max-width: 760px) {
-  .lp-feat, .lp-feat-alt { grid-template-columns: 1fr; gap: 22px; }
+  .lp-feat, .lp-feat-alt { grid-template-columns: 1fr; gap: 28px; }
   .lp-feat-alt .lp-feat-art { order: 0; }
-  .lp-feat-art { max-width: 180px; }
+  .lp-feat-art { max-width: 220px; }
 }
 
 /* FIGURES */
-.lp-figures { padding: clamp(80px, 12vw, 160px) 24px; text-align: center; background: var(--sky-rise); border-top: 1px solid var(--hair); border-bottom: 1px solid var(--hair); }
-.lp-fig-line { margin: 0 auto; max-width: 26ch; font-family: var(--lp-serif); font-weight: 300; font-size: clamp(1.8rem, 4.6vw, 3.2rem); line-height: 1.25; letter-spacing: -0.01em; color: var(--star); text-wrap: balance; }
-.lp-fig-line em { font-style: normal; font-weight: 500; color: var(--amber); }
-.lp-fig-note { margin: 26px 0 0; font-family: var(--lp-serif); font-style: italic; font-size: 1rem; color: var(--star-faint); }
+.lp-figures { padding: clamp(110px, 16vw, 220px) 24px; text-align: center; background: var(--sky-rise); border-top: 1px solid var(--hair); border-bottom: 1px solid var(--hair); }
+.lp-fig-line { margin: 0 auto; max-width: 16ch; font-family: var(--lp-serif); font-weight: 200; font-size: clamp(2.4rem, 7vw, 5rem); line-height: 1.14; letter-spacing: -0.03em; color: var(--star); }
+.lp-fig-line em { font-style: normal; font-weight: 300; color: var(--amber); }
+.lp-fig-note { margin: clamp(32px, 4vw, 48px) 0 0; font-family: var(--lp-serif); font-style: italic; font-size: 1.05rem; color: var(--star-faint); }
 
 /* FINAL CTA */
-.lp-final { position: relative; padding: clamp(110px, 16vw, 220px) 24px; text-align: center; background: radial-gradient(80% 120% at 50% 110%, #1a1730 0%, var(--sky) 60%); overflow: hidden; }
-.lp-final-star { position: absolute; top: clamp(40px, 8vw, 96px); left: 50%; width: 10px; height: 10px; border-radius: 50%; background: var(--amber-soft); transform: translateX(-50%); box-shadow: 0 0 0 6px rgba(231,180,92,0.18), 0 0 40px 10px rgba(231,180,92,0.45); animation: lp-pulse 3.4s ease-in-out infinite; }
-@keyframes lp-pulse { 0%, 100% { opacity: 0.8; transform: translateX(-50%) scale(1); } 50% { opacity: 1; transform: translateX(-50%) scale(1.25); } }
-.lp-final-h { margin: 0; font-family: var(--lp-serif); font-weight: 300; font-size: clamp(2.2rem, 6vw, 4.4rem); line-height: 1.04; letter-spacing: -0.02em; color: var(--star); text-wrap: balance; }
-.lp-final-sub { margin: 22px auto 0; max-width: 40ch; font-family: var(--lp-serif); font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.5rem); color: var(--star-muted); }
-.lp-final-cta { margin-top: 40px; }
+.lp-final { position: relative; padding: clamp(140px, 20vw, 280px) 24px clamp(120px, 16vw, 220px); text-align: center; background: radial-gradient(90% 130% at 50% 116%, #221d3a 0%, #14111f 42%, var(--sky) 72%); overflow: hidden; }
+/* a thin meridian of light rising into the star */
+.lp-final::before { content: ''; position: absolute; left: 50%; top: 0; width: 1px; height: clamp(90px, 14vw, 200px); transform: translateX(-50%); background: linear-gradient(transparent, rgba(231,180,92,0.5)); pointer-events: none; }
+.lp-final-star { position: absolute; top: clamp(54px, 11vw, 150px); left: 50%; width: 12px; height: 12px; border-radius: 50%; background: var(--amber-soft); transform: translateX(-50%); box-shadow: 0 0 0 7px rgba(231,180,92,0.16), 0 0 0 16px rgba(231,180,92,0.07), 0 0 60px 16px rgba(231,180,92,0.5); animation: lp-pulse 3.6s ease-in-out infinite; }
+@keyframes lp-pulse { 0%, 100% { opacity: 0.85; transform: translateX(-50%) scale(1); } 50% { opacity: 1; transform: translateX(-50%) scale(1.3); } }
+.lp-final-h { margin: 0; font-family: var(--lp-serif); font-weight: 200; font-size: clamp(2.6rem, 7vw, 5rem); line-height: 1.0; letter-spacing: -0.03em; color: var(--star); text-wrap: balance; }
+.lp-final-h em { font-style: italic; font-weight: 400; color: var(--amber); }
+.lp-final-sub { margin: 28px auto 0; max-width: 44ch; font-family: var(--lp-serif); font-style: italic; font-size: clamp(1.15rem, 2.2vw, 1.5rem); line-height: 1.5; color: var(--star-muted); }
+.lp-final-cta { margin-top: 48px; }
 @media (prefers-reduced-motion: reduce) { .lp-final-star { animation: none; } }
 
 /* PRICING */
-.lp-pricing { background: #0f0f1a; border-top: 1px solid var(--hair); padding: clamp(80px, 11vw, 144px) clamp(20px, 6vw, 80px); }
-.lp-pricing-sub { margin: 18px auto 0; text-align: center; font-family: var(--lp-serif); font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.45rem); color: var(--star-muted); }
-.lp-plans { max-width: 1120px; margin: clamp(48px, 6vw, 76px) auto 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(18px, 2vw, 26px); align-items: stretch; }
-.lp-plan { position: relative; display: flex; flex-direction: column; background: #191922; border: 1px solid var(--hair); padding: clamp(28px, 3vw, 40px) clamp(24px, 2.4vw, 32px); }
-.lp-plan-pop { background: #20202c; border-color: var(--amber); transform: translateY(-10px); box-shadow: 0 24px 60px rgba(231,180,92,0.14), 0 0 0 1px var(--amber); }
-.lp-plan-badge { position: absolute; top: 0; right: clamp(24px, 2.4vw, 32px); transform: translateY(-50%); background: var(--amber); color: #1a1206; font-family: var(--lp-serif); font-style: italic; font-size: 0.85rem; padding: 3px 14px; letter-spacing: 0.01em; }
-.lp-plan-name { font-family: var(--lp-serif); font-size: 1.25rem; color: var(--star); }
-.lp-plan-price { margin: 18px 0 0; display: flex; align-items: baseline; gap: 6px; }
-.lp-plan-amount { font-family: var(--lp-serif); font-weight: 300; font-size: clamp(3rem, 5vw, 4rem); line-height: 1; letter-spacing: -0.02em; color: var(--star); }
+.lp-pricing { background: #0f0f1a; border-top: 1px solid var(--hair); padding: clamp(110px, 15vw, 200px) clamp(20px, 6vw, 80px); }
+.lp-pricing .lp-h2 { margin-bottom: 0; }
+.lp-pricing-sub { margin: 20px auto 0; text-align: center; font-family: var(--lp-serif); font-style: italic; font-size: clamp(1.15rem, 2.2vw, 1.5rem); color: var(--star-muted); }
+.lp-plans { max-width: 1100px; margin: clamp(64px, 7vw, 96px) auto 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(20px, 2.2vw, 28px); align-items: stretch; }
+.lp-plan { position: relative; display: flex; flex-direction: column; background: #16161f; border: 1px solid var(--hair); padding: clamp(32px, 3.2vw, 44px) clamp(26px, 2.6vw, 36px); transition: transform 0.3s var(--ease), border-color 0.3s var(--ease), box-shadow 0.3s var(--ease); }
+.lp-plan:not(.lp-plan-pop):hover { transform: translateY(-4px); border-color: var(--hair-2); }
+.lp-plan-pop { background: #1d1d27; border-color: var(--amber); transform: translateY(-14px); box-shadow: 0 30px 70px rgba(231,180,92,0.16), 0 0 0 1px var(--amber); }
+.lp-plan-badge { position: absolute; top: 0; right: clamp(26px, 2.6vw, 36px); transform: translateY(-50%); background: var(--amber); color: #1a1206; font-family: var(--lp-serif); font-style: italic; font-size: 0.85rem; padding: 4px 15px; letter-spacing: 0.01em; }
+.lp-plan-name { font-family: var(--lp-serif); font-weight: 500; font-size: 1.05rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--star-muted); }
+.lp-plan-pop .lp-plan-name { color: var(--amber); }
+.lp-plan-price { margin: 22px 0 0; display: flex; align-items: baseline; gap: 8px; }
+.lp-plan-amount { font-family: var(--lp-serif); font-weight: 200; font-size: clamp(3.4rem, 5.5vw, 4.6rem); line-height: 0.9; letter-spacing: -0.03em; color: var(--star); }
 .lp-plan-pop .lp-plan-amount { color: var(--amber-soft); }
-.lp-plan-period { font-family: var(--lp-serif); font-size: 1.05rem; color: var(--star-faint); }
-.lp-plan-note { margin-top: 6px; font-family: var(--lp-serif); font-style: italic; font-size: 1rem; color: var(--star-muted); }
-.lp-plan-feats { list-style: none; margin: clamp(22px, 2.4vw, 30px) 0 0; padding: clamp(22px, 2.4vw, 28px) 0 0; border-top: 1px solid var(--hair); display: flex; flex-direction: column; gap: 13px; flex: 1; }
-.lp-plan-feats li { display: flex; gap: 11px; align-items: flex-start; font-size: 1.02rem; line-height: 1.45; color: var(--star-muted); }
-.lp-check { color: var(--amber); font-size: 0.95rem; line-height: 1.5; flex-shrink: 0; }
-.lp-plan-cta { width: 100%; justify-content: center; margin-top: clamp(26px, 3vw, 36px); }
+.lp-plan-period { font-family: var(--lp-serif); font-size: 1.1rem; color: var(--star-faint); }
+.lp-plan-note { margin-top: 10px; font-family: var(--lp-serif); font-style: italic; font-size: 1.02rem; color: var(--star-muted); }
+.lp-plan-feats { list-style: none; margin: clamp(28px, 3vw, 38px) 0 0; padding: clamp(28px, 3vw, 36px) 0 0; border-top: 1px solid var(--hair); display: flex; flex-direction: column; gap: 15px; flex: 1; }
+.lp-plan-feats li { display: flex; gap: 12px; align-items: flex-start; font-size: 1.05rem; line-height: 1.5; color: var(--star-muted); }
+.lp-check { color: var(--amber); font-size: 0.92rem; line-height: 1.6; flex-shrink: 0; }
+.lp-plan-cta { width: 100%; justify-content: center; margin-top: clamp(30px, 3.4vw, 42px); }
 @media (max-width: 860px) {
-  .lp-plans { grid-template-columns: 1fr; max-width: 460px; gap: 20px; }
+  .lp-plans { grid-template-columns: 1fr; max-width: 440px; gap: 22px; }
   .lp-plan-pop { transform: none; }
+  .lp-plan:not(.lp-plan-pop):hover { transform: none; }
 }
 
 /* FOOTER */
