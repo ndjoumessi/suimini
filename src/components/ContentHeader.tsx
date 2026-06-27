@@ -1,31 +1,25 @@
 'use client';
 import { useTranslations } from 'next-intl';
 import { ViewMode } from '@/types';
-import { Plus, Play, Share2, FolderOpen, Printer, FileDown, Search } from 'lucide-react';
+import { Play, Search } from 'lucide-react';
 
 interface Props {
   activeView: ViewMode;
   activeTreeName?: string | null;
-  canEdit?: boolean;
-  onAddPerson: () => void;
   onPresent: () => void;
-  onShare: () => void;
-  onShowImportExport: () => void;
-  onPrint: () => void;
-  onExportPdf?: () => void;
   onOpenSearch: () => void;
 }
 
 /**
- * Desktop content header — homes the tree-scoped actions that used to crowd the
- * sidebar (Atelier Noir audit: the sidebar was doing nav + toolbar + account at
- * once). One labelled primary CTA, the rest as quiet icon buttons with tooltips.
- * Hidden on mobile (the mobile header + bottom nav cover that case).
+ * Desktop content header — title + the two actions that are NOT in the sidebar:
+ * global search (⌘K) and presentation mode. The tree-scoped actions (add, share,
+ * import/export, print, PDF) now live in the sidebar's quick-actions block, so
+ * they were removed here to avoid duplication. Hidden on mobile (header + bottom
+ * nav cover that case).
  */
-export default function ContentHeader({ activeView, activeTreeName, canEdit = true, onAddPerson, onPresent, onShare, onShowImportExport, onPrint, onExportPdf, onOpenSearch }: Props) {
+export default function ContentHeader({ activeView, activeTreeName, onPresent, onOpenSearch }: Props) {
   const t = useTranslations('nav');
   const ts = useTranslations('sidebar');
-  const tPdf = useTranslations('pdf');
 
   const titleKey: Record<string, string> = {
     dashboard: 'home', tree: 'tree', list: 'persons', map: 'map', timeline: 'timeline',
@@ -47,25 +41,6 @@ export default function ContentHeader({ activeView, activeTreeName, canEdit = tr
         <button onClick={onPresent} className="icon-btn" aria-label={ts('presentMode')} title={ts('presentMode')}>
           <Play size={18} aria-hidden="true" />
         </button>
-        <button onClick={onShare} className="icon-btn" aria-label={ts('share')} title={ts('share')}>
-          <Share2 size={18} aria-hidden="true" />
-        </button>
-        <button onClick={onShowImportExport} className="icon-btn" aria-label={ts('import')} title={ts('import')}>
-          <FolderOpen size={18} aria-hidden="true" />
-        </button>
-        <button onClick={onPrint} className="icon-btn" aria-label={ts('print')} title={ts('print')}>
-          <Printer size={18} aria-hidden="true" />
-        </button>
-        {onExportPdf && (
-          <button onClick={onExportPdf} className="icon-btn" aria-label={tPdf('export')} title={tPdf('export')}>
-            <FileDown size={18} aria-hidden="true" />
-          </button>
-        )}
-        {canEdit && (
-          <button onClick={onAddPerson} className="btn btn-primary btn-sm" style={{ marginLeft: '4px' }}>
-            <Plus size={16} aria-hidden="true" /> {ts('addPerson')}
-          </button>
-        )}
       </div>
 
       <style>{`

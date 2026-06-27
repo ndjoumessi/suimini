@@ -500,13 +500,7 @@ export default function SuiminiApp() {
               <ContentHeader
                 activeView={view}
                 activeTreeName={store.activeTree.name}
-                canEdit={canEdit}
-                onAddPerson={() => setShowAddPerson(true)}
                 onPresent={() => setShowPresentation(true)}
-                onShare={() => setShowShare(true)}
-                onShowImportExport={() => setImportExportTab('export')}
-                onPrint={() => setShowPrint(true)}
-                onExportPdf={() => setShowExportPdf(true)}
                 onOpenSearch={() => setShowPalette(true)}
               />
             )}

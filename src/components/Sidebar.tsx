@@ -161,7 +161,11 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
     );
   };
 
-  const showActions = canEdit && (onAddPerson || onShare || onImport || onPrint || onExportPdf);
+  // Add + Import mutate the tree → edit-gated. Share / Print / Export are
+  // read-safe and stay available to viewers (they previously lived in the header).
+  const canAdd = canEdit && !!onAddPerson;
+  const canImport = canEdit && !!onImport;
+  const showActions = canAdd || canImport || onShare || onPrint || onExportPdf;
 
   return (
     <aside className={`sidebar ${isOpen ? 'sidebar-open' : ''}`} aria-label={ts('navAria')}>
@@ -221,14 +225,14 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         {/* Quick actions */}
         {showActions && (
           <div className="sb-actions">
-            {onAddPerson && (
+            {canAdd && onAddPerson && (
               <button className="sb-add" onClick={() => { onAddPerson(); onClose(); }}>
                 <Plus size={15} aria-hidden="true" /> {ts('addPerson')}
               </button>
             )}
             <div className="sb-action-grid">
               {onShare && <button className="sb-chip" onClick={() => { onShare(); onClose(); }}><Share2 size={13} aria-hidden="true" /> {ts('share')}</button>}
-              {onImport && <button className="sb-chip" onClick={() => { onImport(); onClose(); }}><Download size={13} aria-hidden="true" /> {ts('import')}</button>}
+              {canImport && onImport && <button className="sb-chip" onClick={() => { onImport(); onClose(); }}><Download size={13} aria-hidden="true" /> {ts('import')}</button>}
               {onPrint && <button className="sb-chip" onClick={() => { onPrint(); onClose(); }}><Printer size={13} aria-hidden="true" /> {ts('print')}</button>}
               {onExportPdf && <button className="sb-chip" onClick={() => { onExportPdf(); onClose(); }}><BookOpen size={13} aria-hidden="true" /> {ts('export')}</button>}
             </div>
