@@ -175,6 +175,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
   return (
     <aside className={`sidebar ${isOpen ? 'sidebar-open' : ''}`} aria-label={ts('navAria')}>
       <div className="sidebar-panel">
+        <div className="sb-top">
         {/* Header — logo + wordmark + tagline */}
         <div className="sb-head">
           <Link href="/" aria-label={ts('backToSiteAria')} title={ts('backToSiteTitle')} className="sb-brand">
@@ -208,8 +209,9 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
             </span>
           )}
         </button>
+        </div>{/* /sb-top — fixed header + active tree */}
 
-        {/* Navigation */}
+        {/* Navigation — the only scrollable zone (header & footer stay fixed) */}
         <nav className="sb-nav" aria-label={ts('navAria')}>
           {NAV_GROUPS.map(group => (
             <div key={group.labelKey} className="sb-group">
@@ -217,36 +219,36 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
               {group.items.map(navItem)}
             </div>
           ))}
+          {/* Gérer — settings (+ admin) */}
+          <div className="sb-group">
+            <div className="sb-section">{ts('sectionManage')}</div>
+            <button
+              onClick={() => { onViewChange('settings'); onClose(); }}
+              aria-current={activeView === 'settings' ? 'page' : undefined}
+              aria-label={t('settings')}
+              className={`sb-item ${activeView === 'settings' ? 'sb-item-active' : ''}`}
+            >
+              {activeView === 'settings' && <span aria-hidden="true" className="sb-active-bar" />}
+              <span className="sb-icon"><Settings size={16} aria-hidden="true" /></span>
+              <span className="sb-label">{t('settings')}</span>
+            </button>
+            {isAdmin && (
+              <button
+                onClick={() => { onViewChange('admin'); onClose(); }}
+                aria-current={activeView === 'admin' ? 'page' : undefined}
+                aria-label={t('admin')}
+                className={`sb-item ${activeView === 'admin' ? 'sb-item-active' : ''}`}
+              >
+                {activeView === 'admin' && <span aria-hidden="true" className="sb-active-bar" />}
+                <span className="sb-icon"><Shield size={16} aria-hidden="true" /></span>
+                <span className="sb-label">{t('admin')}</span>
+                {unreadCount > 0 && <span className="sb-count">{unreadCount}</span>}
+              </button>
+            )}
+          </div>
         </nav>
 
-        {/* Gérer — settings (+ admin) : pinned (hors zone scrollable) so it stays visible */}
-        <div className="sb-group sb-manage">
-          <div className="sb-section">{ts('sectionManage')}</div>
-          <button
-            onClick={() => { onViewChange('settings'); onClose(); }}
-            aria-current={activeView === 'settings' ? 'page' : undefined}
-            aria-label={t('settings')}
-            className={`sb-item ${activeView === 'settings' ? 'sb-item-active' : ''}`}
-          >
-            {activeView === 'settings' && <span aria-hidden="true" className="sb-active-bar" />}
-            <span className="sb-icon"><Settings size={16} aria-hidden="true" /></span>
-            <span className="sb-label">{t('settings')}</span>
-          </button>
-          {isAdmin && (
-            <button
-              onClick={() => { onViewChange('admin'); onClose(); }}
-              aria-current={activeView === 'admin' ? 'page' : undefined}
-              aria-label={t('admin')}
-              className={`sb-item ${activeView === 'admin' ? 'sb-item-active' : ''}`}
-            >
-              {activeView === 'admin' && <span aria-hidden="true" className="sb-active-bar" />}
-              <span className="sb-icon"><Shield size={16} aria-hidden="true" /></span>
-              <span className="sb-label">{t('admin')}</span>
-              {unreadCount > 0 && <span className="sb-count">{unreadCount}</span>}
-            </button>
-          )}
-        </div>
-
+        <div className="sb-foot">
         {/* Quick actions */}
         {showActions && (
           <div className="sb-actions">
@@ -313,6 +315,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
             <ArrowLeft size={14} aria-hidden="true" /> {ts('backToSite')}
           </Link>
         </div>
+        </div>{/* /sb-foot — fixed actions + account */}
       </div>
 
       <style>{`
@@ -324,7 +327,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         }
 
         /* Header */
-        .sb-head { display: flex; align-items: center; gap: 10px; padding: 16px 14px 14px; border-bottom: 1px solid var(--accent-light); }
+        .sb-head { display: flex; align-items: center; gap: 10px; padding: 13px 14px 11px; border-bottom: 1px solid var(--accent-light); }
         .sb-brand { display: inline-flex; align-items: center; gap: 11px; text-decoration: none; color: inherit; flex: 1; min-width: 0; }
         .sb-logo { width: 32px; height: 32px; flex-shrink: 0; display: inline-flex; }
         .sb-brand-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.05; }
@@ -333,7 +336,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
 
         /* Active tree block */
         .sb-tree {
-          display: flex; flex-direction: column; gap: 3px; margin: 0; padding: 13px 14px;
+          display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 10px 14px;
           background: var(--bg-card); border: none; border-bottom: 1px solid var(--border);
           cursor: pointer; text-align: left; transition: background var(--t-fast);
         }
@@ -348,16 +351,23 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sb-badge-guest { color: var(--text-muted); }
         .sb-pending { min-width: 18px; height: 18px; padding: 0 5px; display: inline-flex; align-items: center; justify-content: center; background: var(--danger); color: #fff; font-family: var(--font-mono); font-size: 10px; font-weight: 700; flex-shrink: 0; }
 
-        /* Navigation */
-        .sb-nav { flex: 1; padding: 6px 0; overflow-y: auto; overflow-x: hidden; }
-        .sb-nav::-webkit-scrollbar { width: 0; }
-        .sb-group { padding: 6px 0; }
+        /* Layout: fixed top + fixed footer, only the nav scrolls */
+        .sb-top { flex-shrink: 0; }
+        .sb-foot { flex-shrink: 0; }
+
+        /* Navigation — the single scrollable zone, with a VISIBLE thin scrollbar
+           so overflow is never silent (the old hidden scrollbar made deep items
+           look like they had disappeared on short viewports). */
+        .sb-nav { flex: 1 1 auto; min-height: 0; padding: 4px 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+        .sb-nav::-webkit-scrollbar { width: 5px; }
+        .sb-nav::-webkit-scrollbar-thumb { background: var(--border-strong); }
+        .sb-nav::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+        .sb-group { padding: 2px 0; }
         .sb-group + .sb-group { border-top: 1px solid var(--border); }
-        .sb-manage { flex-shrink: 0; border-top: 1px solid var(--border); }
-        .sb-section { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-light); padding: 4px 16px 5px; }
+        .sb-section { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-light); padding: 3px 16px 3px; }
         .sb-item {
           position: relative; width: 100%; display: flex; align-items: center; gap: 12px;
-          padding: 8px 16px; border: none; background: transparent; cursor: pointer;
+          padding: 5px 16px; border: none; background: transparent; cursor: pointer;
           color: var(--text-muted); font-family: var(--font-body); font-size: 13.5px; font-weight: 500;
           text-align: left; text-decoration: none; transition: background var(--t-fast), color var(--t-fast);
         }
@@ -365,16 +375,16 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sb-item:hover .sb-icon { color: var(--accent-text); }
         .sb-item-active { color: var(--accent-text); font-weight: 700; background: var(--bg-card); }
         .sb-item-active .sb-icon { color: var(--accent); }
-        .sb-active-bar { position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--accent); }
+        .sb-active-bar { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); }
         .sb-icon { width: 16px; display: inline-flex; justify-content: center; position: relative; flex-shrink: 0; color: var(--accent-text); transition: color var(--t-fast); }
         .sb-count { margin-left: auto; background: var(--danger); color: #fff; padding: 1px 6px; font-family: var(--font-mono); font-size: 10px; font-weight: 700; }
 
         /* Quick actions */
-        .sb-actions { padding: 12px 12px 10px; border-top: 1px solid var(--border); }
+        .sb-actions { padding: 9px 12px 8px; border-top: 1px solid var(--border); }
         .sb-add {
           width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
           background: var(--accent); color: #0d0d0d; border: 1px solid var(--accent); cursor: pointer;
-          font-family: var(--font-display); font-size: 13px; font-weight: 700; padding: 9px 12px;
+          font-family: var(--font-display); font-size: 13px; font-weight: 700; padding: 8px 12px;
           transition: background var(--t-fast), box-shadow var(--t-fast);
         }
         .sb-add:hover { background: var(--accent-hover); box-shadow: var(--shadow-accent); }
@@ -388,7 +398,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sb-chip:hover { border-color: var(--accent); color: var(--accent-text); background: var(--accent-light); }
 
         /* Account footer */
-        .sb-account { padding: 10px 12px 12px; border-top: 1px solid var(--border); }
+        .sb-account { padding: 8px 12px 10px; border-top: 1px solid var(--border); }
         .sb-account-row { display: flex; align-items: center; gap: 8px; }
         .sb-account-btn { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; background: none; border: none; padding: 4px; cursor: pointer; text-align: left; transition: background var(--t-fast); }
         .sb-account-btn:hover { background: var(--bg-card); }
@@ -399,7 +409,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sb-logout { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex-shrink: 0; border: none; background: transparent; color: var(--text-muted); cursor: pointer; transition: background var(--t-fast), color var(--t-fast); }
         .sb-logout:hover { background: var(--bg-card); color: var(--danger); }
         .sb-resync { display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; margin-top: 5px; padding: 4px; background: none; border: none; cursor: pointer; color: var(--text-light); font-family: var(--font-mono); font-size: 10px; }
-        .sb-foot-link { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 8px; padding: 7px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-light); text-decoration: none; transition: color var(--t-fast), background var(--t-fast); }
+        .sb-foot-link { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 5px; padding: 6px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-light); text-decoration: none; transition: color var(--t-fast), background var(--t-fast); }
         .sb-foot-link:hover { background: var(--bg-card); color: var(--accent-text); }
 
         @media (max-width: 768px) {
