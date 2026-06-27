@@ -141,23 +141,23 @@ export default function ListView({ tree, onSelectPerson, onAddPerson, canEdit = 
                     padding: '10px 14px', border: 'none',
                     borderBottom: idx < visible.length - 1 ? '1px solid var(--border)' : 'none',
                     background: 'transparent', cursor: 'pointer', textAlign: 'left', width: '100%',
-                    transition: 'background var(--t-fast) var(--ease-out)', opacity: person.isAlive ? 1 : 0.75,
+                    transition: 'background var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out)', opacity: person.isAlive ? 1 : 0.75,
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-muted)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-muted)'; e.currentTarget.style.boxShadow = 'inset 3px 0 0 var(--accent), var(--shadow-accent)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.boxShadow = 'none'; }}
                 >
-                  {/* Avatar — photo, else initials in the display face on terracotta */}
+                  {/* Avatar — photo, else initials in the display face on gold */}
                   <div style={{
                     width: '44px', height: '44px', flexShrink: 0,
                     background: person.profilePhoto ? 'var(--bg-muted)' : 'var(--accent)',
-                    color: '#fff', border: 'var(--bw) solid var(--border-strong)',
+                    color: '#0d0d0d', border: 'var(--bw) solid var(--border)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     overflow: 'hidden',
                     fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '17px', letterSpacing: '0',
                   }}>
                     {person.profilePhoto
                       ? <img src={person.profilePhoto} alt="" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : ((person.firstName?.[0] || '') + (person.lastName?.[0] || '')).toUpperCase() || <User size={20} style={{ color: '#fff' }} aria-hidden="true" />
+                      : ((person.firstName?.[0] || '') + (person.lastName?.[0] || '')).toUpperCase() || <User size={20} style={{ color: '#0d0d0d' }} aria-hidden="true" />
                     }
                   </div>
 

@@ -243,7 +243,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
 
         .sb-head { display: flex; flex-direction: column; gap: 8px; padding: 16px 0 12px 17px; border-bottom: 1px solid var(--border); }
         .sb-brand { display: inline-flex; align-items: center; gap: 9px; text-decoration: none; color: inherit; }
-        .sb-wordmark { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; color: var(--ink); }
+        .sb-wordmark { font-size: 24px; font-weight: 600; font-style: italic; letter-spacing: 0.01em; color: var(--accent-text); }
         .sb-head-meta { display: flex; align-items: center; gap: 10px; padding-right: 14px; height: 18px; }
 
         .sb-nav { flex: 1; padding: 8px 0; overflow-y: auto; overflow-x: hidden; }
@@ -257,8 +257,8 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
           color: var(--text-muted); font-family: var(--font-body); font-size: 13px; font-weight: 500;
           text-align: left; text-decoration: none; transition: background var(--t-fast), color var(--t-fast);
         }
-        .sb-item:hover { background: var(--accent); color: #fff; }
-        .sb-item:hover .sb-icon { color: #fff; }
+        .sb-item:hover { background: var(--accent); color: #0d0d0d; }
+        .sb-item:hover .sb-icon { color: #0d0d0d; }
         .sb-item-active { color: var(--accent-text); font-weight: 700; background: var(--accent-light); }
         .sb-active-bar { position: absolute; left: 0; top: 7px; bottom: 7px; width: 3px; background: var(--accent); }
         .sb-icon { width: 18px; display: inline-flex; justify-content: center; position: relative; flex-shrink: 0; }
@@ -272,7 +272,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sb-tree:hover { background: var(--bg-muted); }
         .sb-tree-mark {
           width: 36px; height: 36px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
-          background: var(--accent); color: #fff; font-family: var(--font-display); font-weight: 600; font-size: 20px;
+          background: var(--accent); color: #0d0d0d; font-family: var(--font-display); font-weight: 600; font-size: 20px;
           border: 1px solid var(--accent);
         }
         .sb-tree-body { display: flex; flex-direction: column; min-width: 0; flex: 1; }
@@ -286,7 +286,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sb-account-row { display: flex; align-items: center; gap: 8px; }
         .sb-account-btn { flex: 1; min-width: 0; display: flex; align-items: center; gap: 11px; background: none; border: none; padding: 4px; cursor: pointer; text-align: left; }
         .sb-account-btn:hover { background: var(--bg-muted); }
-        .sb-avatar { width: 36px; height: 36px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--accent); color: #fff; font-size: 13px; font-weight: 700; border: var(--bw) solid var(--border-strong); }
+        .sb-avatar { width: 36px; height: 36px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--accent); color: #0d0d0d; font-size: 13px; font-weight: 700; border: var(--bw) solid var(--border); }
         .sb-account-id { display: flex; flex-direction: column; min-width: 0; }
         .sb-account-name { font-size: 13px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .sb-account-email { font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

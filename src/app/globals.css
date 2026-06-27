@@ -1,70 +1,68 @@
 @import "tailwindcss";
 
 /* =====================================================================
-   ATELIER — EDITORIAL HERITAGE · light by design
-   Archival cream canvas · ink serif · muted gold accent · hairline rules ·
-   magazine typography (asymmetric grid, drop caps, pull quotes).
+   MODERN HERITAGE · dark by design (ported from the constellation landing)
+   Near-black canvas · cream ink · muted gold accent · amber-glow on hover.
    Fonts loaded via next/font (layout.tsx) and exposed as CSS variables:
-     --font-display  Cormorant Garamond   (mastheads, names, drop caps)
-     --font-body     Libre Baskerville     (body — bookish, warm)
-     --font-mono     IBM Plex Mono         (archival labels, dates, IDs)
-   Light-only: `:root` IS the theme; `data-theme` stays "light".
+     --font-display  Spectral             (titles, names, key numbers)
+     --font-body     Libre Baskerville    (body)
+     --font-mono     IBM Plex Mono        (dates, labels, IDs)
+   Dark-only: `:root` IS the theme; `data-theme` stays "dark".
    Variable + class names are kept stable so the system cascades app-wide.
    ===================================================================== */
 
 :root {
-  /* Surfaces — warm paper, three tiers */
-  --bg: #fbf7ef;              /* archival cream canvas */
-  --bg-card: #ffffff;         /* cards, sidebar, raised surfaces */
-  --bg-muted: #f3eee3;        /* inert zones / hover fills */
+  /* Surfaces — near-black, three tiers */
+  --bg: #0d0d0d;              /* app canvas */
+  --bg-card: #1c1c1c;         /* cards, panels, raised surfaces */
+  --bg-muted: #242424;        /* inert zones / hover fills */
   --surface-1: var(--bg);
   --surface-2: var(--bg-card);
-  --surface-3: #fcfaf5;
-  --interactive: #efe9dc;     /* hover state */
+  --surface-3: #141414;       /* sidebars, toolbars, recessed chrome */
+  --interactive: #242424;     /* hover state */
 
-  /* Ink + text */
-  --ink: #1a1714;
-  --text: #1a1714;
-  --text-muted: #6b6358;      /* secondary — tuned ≥ 4.5:1 on cream & white */
-  --text-light: #8a8276;      /* tertiary — tuned ≥ 3:1 */
+  /* Ink + text (cream on near-black) */
+  --ink: #f5f0e8;
+  --text: #f5f0e8;
+  --text-muted: #9c968a;      /* secondary — ≥4.5:1 on #0d0d0d & #1c1c1c */
+  --text-light: #756f66;      /* tertiary — ≥3:1 (large / non-essential) */
 
-  /* Rules — quiet hairlines; the strong ink rule is the editorial divider */
-  --border: #e6decf;          /* hairline dividers + card outlines */
-  --border-strong: #2a241d;   /* editorial rules / input + button outlines */
-  --bw: 1px;                  /* structural border width (hairline editorial) */
+  /* Rules */
+  --border: #2a2a2a;          /* hairline dividers + card outlines */
+  --border-strong: #3a3a3a;   /* interactive outlines (inputs/buttons) */
+  --bw: 1px;                  /* structural border width */
 
-  /* Accent — muted gold, kept rare (links, drop caps, rules, CTA). The brand
-     fill colour is #a36b1e; `--accent-text` is a deeper bronze used wherever
-     the accent is small TEXT (eyebrows, links) so it clears WCAG AA on cream. */
-  --accent: #a36b1e;
-  --accent-hover: #8a5a18;
-  --accent-text: #7a4e12;     /* ≥4.5:1 on cream & white */
-  --accent-light: rgba(163, 107, 30, 0.12);
+  /* Accent — muted gold. Reads ≥4.5:1 on dark, so `--accent-text` ≈ accent.
+     Text ON the accent fill must be dark ink (see .btn-primary). */
+  --accent: #c9a84c;
+  --accent-hover: #dcbb5e;
+  --accent-text: #d4b257;     /* gold text on dark, ≥4.5:1 */
+  --accent-light: rgba(201, 168, 76, 0.14);
 
-  /* Signals (information, not decoration) — tuned for light paper */
-  --male: #2c5f8a;
-  --female: #a8456b;
-  --deceased: #6e6a62;
-  --success: #0e6e63;
-  --danger: #9e2b25;
-  --warning: #b06a12;
-  --info: #2c5f8a;
+  /* Signals (information, not decoration) — tuned for dark */
+  --male: #5b7fa6;            /* blue-gris */
+  --female: #b07d92;          /* rose-muted */
+  --deceased: #8a8276;
+  --success: #4fa890;
+  --danger: #d3645a;
+  --warning: #d3a24e;
+  --info: #5b7fa6;
 
-  /* Shadows — soft, editorial (depth from hairlines + whitespace, not blocks) */
-  --shadow-color: rgba(26, 23, 20, 0.10);
-  --shadow-sm: 0 1px 2px rgba(26, 23, 20, 0.06);
-  --shadow: 0 2px 10px rgba(26, 23, 20, 0.08);
-  --shadow-lg: 0 10px 30px rgba(26, 23, 20, 0.12);
-  --shadow-xl: 0 20px 50px rgba(26, 23, 20, 0.16);
-  --shadow-accent: 0 6px 20px rgba(163, 107, 30, 0.22);
-  --scrim: rgba(26, 23, 20, 0.45);   /* modal / overlay backdrop */
+  /* Shadows — neutral depth at rest; amber GLOW answers hover/elevation */
+  --shadow-color: rgba(0, 0, 0, 0.6);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow: 0 6px 22px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 18px 44px rgba(0, 0, 0, 0.58);
+  --shadow-xl: 0 28px 64px rgba(0, 0, 0, 0.62);
+  --shadow-accent: 0 0 0 1px rgba(201, 168, 76, 0.40), 0 12px 36px rgba(201, 168, 76, 0.20);
+  --scrim: rgba(0, 0, 0, 0.66);   /* modal / overlay backdrop */
 
-  /* Radii — sharp by design */
+  /* Radii — zero by design (Modern Heritage) */
   --radius-sm: 0px;
-  --radius: 2px;
-  --radius-md: 2px;
-  --radius-lg: 4px;
-  --radius-xl: 6px;
+  --radius: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
 
   --focus-ring: var(--accent);
 
@@ -265,7 +263,7 @@ input:-webkit-autofill:focus {
 .btn:active { transform: translateY(1px); box-shadow: none; }
 .btn:disabled, .btn[disabled] { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
 
-.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary { background: var(--accent); color: #0d0d0d; border-color: var(--accent); }
 .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); box-shadow: var(--shadow-accent); }
 
 .btn-secondary { background: var(--bg-card); color: var(--text); }
@@ -317,11 +315,11 @@ input[type="radio"]::before {
   transition: transform var(--t-fast) var(--ease-out);
 }
 input[type="checkbox"]::before {
-  /* terracotta check mark */
+  /* dark check mark (on the gold checked fill) */
   clip-path: polygon(14% 47%, 0 60%, 39% 100%, 100% 18%, 86% 5%, 39% 73%);
-  background: #fff;
+  background: var(--bg);
 }
-input[type="radio"]::before { border-radius: 50%; background: #fff; width: 8px; height: 8px; }
+input[type="radio"]::before { border-radius: 50%; background: var(--bg); width: 8px; height: 8px; }
 input[type="checkbox"]:checked,
 input[type="radio"]:checked { background: var(--accent); border-color: var(--accent); }
 input[type="checkbox"]:checked::before,

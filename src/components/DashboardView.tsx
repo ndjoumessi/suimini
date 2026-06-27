@@ -297,7 +297,7 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
           background: var(--bg); border: var(--bw) solid var(--border); color: var(--text-muted);
           transition: transform var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out), color var(--t-fast), border-color var(--t-fast);
         }
-        .dash-quick-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); color: var(--text); border-color: var(--accent); }
+        .dash-quick-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-accent); color: var(--text); border-color: var(--accent); }
 
         @media (max-width: 1000px) {
           .dash-grid { grid-template-columns: repeat(2, 1fr); }
@@ -327,7 +327,10 @@ function BigStat({ value, label, sublabel, delay }: { value: string | number; la
           border-left: 3px solid var(--accent); padding: 26px 28px 24px;
           box-shadow: var(--shadow-sm);
           display: flex; flex-direction: column;
+          transition: box-shadow var(--t-base) var(--ease-out), border-color var(--t-base) var(--ease-out), transform var(--t-base) var(--ease-out);
         }
+        .dash-bigstat:hover { box-shadow: var(--shadow-accent); border-left-color: var(--accent-hover); transform: translateY(-2px); }
+        @media (prefers-reduced-motion: reduce) { .dash-bigstat:hover { transform: none; } }
         .dash-bigstat-num {
           font-family: var(--font-display); font-weight: 600; line-height: 0.92;
           font-size: clamp(3rem, 5.5vw, 4rem); color: var(--accent-text);
