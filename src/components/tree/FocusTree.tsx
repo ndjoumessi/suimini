@@ -1,8 +1,9 @@
 'use client';
-import { useMemo, useRef, useEffect } from 'react';
+import { useMemo, useRef, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { FamilyTree, Person } from '@/types';
 import { getParents, getChildren, getSpouses, getDisplayName, formatYear, getAge, formatAge } from '@/lib/treeUtils';
-import { ChevronUp, ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronRight, Crosshair } from 'lucide-react';
 import TreeNode from './TreeNode';
 
 /* =====================================================================
@@ -17,20 +18,6 @@ const GAP = 28;
 const ROW_V = 120;   // vertical gap between generation rows
 const PADX = 52;
 const PADY = 72;
-
-// Gender (+ pivot) is carried by a 6px coloured left bar — the node face stays a
-// uniform dark surface so every card reads identically and the text never fights a
-// colour wash. M/F/unknown/pivot distinguished at a glance by the bar alone.
-const GENDER_EDGE = {
-  male:    '#5b7fa6',
-  female:  '#8a5b6e',
-  unknown: '#3a3a4a',
-  pivot:   '#c9a84c',
-} as const;
-function edgeColor(p: Person, isPivot: boolean): string {
-  if (isPivot) return GENDER_EDGE.pivot;
-  return p.gender === 'male' ? GENDER_EDGE.male : p.gender === 'female' ? GENDER_EDGE.female : GENDER_EDGE.unknown;
-}
 
 // Per-generation accent line (génération 0 = la plus ancienne).
 function genColor(g: number): string {
@@ -99,6 +86,7 @@ interface Props {
 }
 
 export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, onFocus, onSelectPerson }: Props) {
+  const t = useTranslations('tree');
   const genMap = useMemo(() => buildGenMap(tree), [tree]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -165,10 +153,13 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
 
   // ---- connectors ----
   const links: { x1: number; y1: number; x2: number; y2: number }[] = [];
+  // Diamond markers on each conjugal connector (◇ = lien conjugal).
+  const unions: { x: number; y: number }[] = [];
   // spouse bar
   for (let i = 1; i < focusRow.length; i++) {
     const ly = focusY + NODE_H / 2;
     links.push({ x1: focusX(i - 1) + NODE_W, y1: ly, x2: focusX(i), y2: ly });
+    unions.push({ x: (focusX(i - 1) + NODE_W + focusX(i)) / 2, y: ly });
   }
   // parents -> focus
   if (hasParents) {
@@ -193,12 +184,27 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
     });
   }
 
-  // Center the horizontal scroll on the focus whenever it changes.
-  useEffect(() => {
+  // Center the focus couple within the AVAILABLE area (the scroll container),
+  // not the viewport — so the sidebar and an open PersonPanel never hide the
+  // left nodes. Re-runs on focus change AND on container resize (panel toggles).
+  const recenter = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
     el.scrollLeft = Math.max(0, coupleCenterX - el.clientWidth / 2);
-  }, [focusId, coupleCenterX]);
+    el.scrollTop = Math.max(0, focusY + NODE_H / 2 - el.clientHeight / 2);
+  }, [coupleCenterX, focusY]);
+
+  useEffect(() => { recenter(); }, [focusId, recenter]);
+
+  // Recenter when the container's size changes (PersonPanel open/close, sidebar
+  // collapse, window resize) so the tree always stays framed in the visible zone.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => recenter());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [recenter]);
 
   if (!focus) return null;
 
@@ -214,12 +220,16 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         isPivot={isPivot}
         isSelected={p.id === selectedPersonId}
         isFocus={role === 'focus'}
+        /* Spouses keep their GENDER colour (so married women read rose, men blue —
+           the point of Bug 2); the conjugal link is shown by the gold diamond ◇
+           connector, not by recolouring the node. Pivot stays gold. */
+        isSpouse={false}
         dim={role === 'parent' || role === 'child'}
-        edge={edgeColor(p, isPivot)}
         genColor={genColor(g)}
         gen={g}
         dateStr={dateLine(p)}
-        displayName={getDisplayName(p)}
+        displayName={getDisplayName(p).trim() || t('unknownNode')}
+        unknownLabel={t('unknownNode')}
         onClick={() => { if (p.id !== focusId) onFocus(p.id); else onSelectPerson(p.id); }}
         onDoubleClick={() => onSelectPerson(p.id)}
       />
@@ -255,6 +265,12 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
             {links.map((l, i) => (
               <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke="var(--accent)" strokeOpacity={0.5} strokeWidth={1.5} strokeLinecap="round" />
             ))}
+            {/* Conjugal diamond (◇) on each spouse connector */}
+            {unions.map((u, i) => (
+              <rect key={`u-${i}`} x={u.x - 5} y={u.y - 5} width={10} height={10}
+                transform={`rotate(45 ${u.x} ${u.y})`}
+                fill="var(--bg)" stroke="var(--accent)" strokeWidth={1.5} />
+            ))}
           </svg>
           {/* Generation band labels, centred on the connector bus between rows */}
           {hasParents && (
@@ -272,6 +288,11 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
           {hasChildren && children.map((c, i) => renderNode(c, 'child', childX(i), childrenY))}
         </div>
       </div>
+
+      {/* Floating recenter — frames the tree in the visible zone (sidebar/panel aware) */}
+      <button className="ft-center-btn" onClick={recenter} title={t('center')} aria-label={t('center')}>
+        <Crosshair size={16} aria-hidden="true" />
+      </button>
 
       {/* Down nav — next generation */}
       {hasChildren && (
@@ -294,8 +315,9 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         .ft-node:hover { border-color: var(--accent); box-shadow: var(--shadow-accent); transform: translateY(-2px); z-index: 2; }
         .ft-node:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         .ft-node-sel { border-color: var(--accent); }
-        /* Focus/active node: 2px gold ring (inset, so it never shifts the layout) + lifted surface */
-        .ft-node-focus { background: #242435; border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent), var(--shadow-accent); }
+        /* Focus/active node: 2px gold ring (inset, never shifts layout) + glow. The
+           gender tint (inline bg) stays visible — the ring alone marks focus. */
+        .ft-node-focus { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent), var(--shadow-accent); }
         /* Gender bar — 6px coloured left edge, full height */
         .ft-edge { position: absolute; top: 0; bottom: 0; left: 0; width: 6px; }
         /* Generation bar — 3px along the top, starting after the gender bar */
@@ -331,6 +353,14 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         .ft-nav-down .ft-nav-arrow { animation: ftBounceDown 1.5s ease-in-out infinite; }
         @keyframes ftBounceUp { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
         @keyframes ftBounceDown { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(3px); } }
+
+        /* Floating recenter button (bottom-right of the canvas) */
+        .ft-center-btn { position: absolute; right: 16px; bottom: 64px; z-index: 4;
+          width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;
+          background: var(--bg-card); color: var(--accent-text); border: 1px solid var(--border-strong);
+          cursor: pointer; box-shadow: var(--shadow); transition: border-color 150ms, color 150ms, background 150ms; }
+        .ft-center-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--bg-muted); }
+        .ft-center-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
         @media (prefers-reduced-motion: reduce) {
           .ft-node, .ft-nav { transition: none; }

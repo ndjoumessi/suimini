@@ -301,6 +301,7 @@
     "centerOnRoot": "Center on root",
     "fitToScreen": "Fit to screen",
     "center": "Center",
+    "unknownNode": "Unknown",
     "zoomOut": "Zoom out",
     "zoomIn": "Zoom in",
     "resetZoom": "Reset zoom",

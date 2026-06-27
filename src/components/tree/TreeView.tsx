@@ -9,6 +9,7 @@ import { useIsMobile } from '@/hooks/useMediaQuery';
 import { Plus, Sprout, Camera, CheckCircle2, FileText, MapPin, Crown } from 'lucide-react';
 import FocusTree from './FocusTree';
 import TreeToolbar from './TreeToolbar';
+import { nodeStyle, nameLines, GENDER_BAR } from './nodeStyle';
 
 /** Runtime node-layout dimensions. On desktop these are EXACTLY the historical
  *  module constants (so desktop rendering is byte-for-byte unchanged); on phones
@@ -361,6 +362,9 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
     });
   };
   const recenter = () => centerOn(rootId);
+  // Latest recenter, so the resize observer (mounted once) never calls a stale one.
+  const recenterRef = useRef(recenter);
+  recenterRef.current = recenter;
 
   // Fit-to-screen: scale + offset so the WHOLE tree fits the viewport with padding.
   // The real cure for wide sibling rows (e.g. TSANA Sébastien's 11 children) running
@@ -415,11 +419,19 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rootId, nodes.length]);
 
-  // Track container size for the minimap viewport rectangle.
+  // Track container size for the minimap viewport rectangle. Also re-frame the
+  // tree when the AVAILABLE WIDTH changes (PersonPanel open/close, sidebar
+  // collapse, window resize) — panning never changes width, so this won't fight
+  // the user's pan; it only fires on real layout changes (fixes Bug 1).
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => setViewport({ w: el.clientWidth, h: el.clientHeight }));
+    let prevW = el.clientWidth;
+    const ro = new ResizeObserver(() => {
+      const w = el.clientWidth, h = el.clientHeight;
+      setViewport({ w, h });
+      if (Math.abs(w - prevW) > 1) { prevW = w; recenterRef.current(); }
+    });
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
@@ -577,16 +589,10 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
     setTimeout(() => centerOn(personId), 0);
   };
 
-  // Gender palette shared with FocusTree so both tree views read identically:
-  // blue-grey = male, rose = female, slate = unknown. (Used by the node bar, the
-  // legend and the minimap miniatures.)
+  // Gender palette shared with FocusTree/TreeNode (legend + minimap miniatures):
+  // blue = male, rose = female, slate = unknown.
   const genderColor = (g: string) =>
-    g === 'male' ? '#5b7fa6' : g === 'female' ? '#8a5b6e' : '#3a3a4a';
-
-  // Left-bar colour: the pivot/root reads as gold (it also carries the crown),
-  // everyone else by gender. Matches the FocusTree node exactly.
-  const spineColor = (node: TreeNode, isRoot: boolean) =>
-    isRoot ? 'var(--accent)' : genderColor(node.person.gender);
+    g === 'male' ? GENDER_BAR.male : g === 'female' ? GENDER_BAR.female : GENDER_BAR.unknown;
 
   const filteredPersons = showSearch && searchQ
     ? tree.persons.filter(p => getDisplayName(p).toLowerCase().includes(searchQ.toLowerCase()))
@@ -788,7 +794,11 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
               const isSelected = p.id === selectedPersonId;
               const isRoot = p.id === rootId;
               const dimmed = !inFocus(p.id);
-              const ariaLabel = `${getDisplayName(p)}${p.birthDate ? `, ${p.gender === 'female' ? t('bornF') : t('bornM')} ${t('inYear')} ${formatYear(p.birthDate)}` : ''}`;
+              // Gender-tinted style (pivot=gold); spouses stay gender-coloured here
+              // so gender reads across the whole tree. Robust name lines (Bug 3).
+              const st = nodeStyle(p, isRoot, false);
+              const { primary, secondary } = nameLines(p, t('unknownNode'));
+              const ariaLabel = `${getDisplayName(p).trim() || t('unknownNode')}${p.birthDate ? `, ${p.gender === 'female' ? t('bornF') : t('bornM')} ${t('inYear')} ${formatYear(p.birthDate)}` : ''}`;
               // Cap the stagger delay so big trees don't crawl in.
               const delay = Math.min(index * 50, 600);
 
@@ -830,18 +840,17 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                       opacity={isRoot ? 0.9 : 0.16} />
                   )}
 
-                  {/* Card — uniform dark face (--bg-card = #1e1e28). Gender lives on the
-                      left bar, generation on the top band, state on the outline + crown,
-                      so the text stays legible on every node including the pivot.
+                  {/* Card — gender-tinted face (blue=H, rose=F, gold=pivot). Generation
+                      on the top band, state on the outline + crown.
                       Root = 2px gold outline; selected = 2px gold; else thin border. */}
                   <rect className="tv-node-card" width={NODE_W} height={NODE_H} rx={0} ry={0}
-                    fill="var(--bg-card)"
+                    fill={st.bg}
                     stroke={isSelected || isRoot ? 'var(--accent)' : 'var(--border-strong)'}
                     strokeWidth={isRoot ? 2.5 : isSelected ? 2 : 1.25} />
 
                   {/* Gender bar (left, 6px) + generation band (top, 3px), clipped to the card */}
                   <g clipPath={`url(#card-${p.id})`}>
-                    <rect x={0} y={0} width={SPINE} height={NODE_H} fill={spineColor(node, isRoot)} />
+                    <rect x={0} y={0} width={SPINE} height={NODE_H} fill={st.bar} />
                     <rect x={SPINE} y={0} width={NODE_W - SPINE} height={3} fill={genColorTV(genOf(node.y))} />
                   </g>
 
@@ -860,18 +869,29 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                       fill="var(--accent)" stroke="var(--bg-card)" strokeWidth={0.6} />
                   )}
 
-                  {/* First name — body font, bold, cream */}
-                  <text x={SPINE + (isMobile ? 9 : 14)} y={NODE_H / 2 + (isMobile ? -9 : -12)} fontFamily="var(--font-body)" fontSize={dims.FONT_NAME} fontWeight={700} fill="var(--ink)">
-                    {p.firstName.length > (isMobile ? 13 : 18) ? p.firstName.slice(0, isMobile ? 12 : 17) + '…' : p.firstName}
-                  </text>
-                  {/* Last name — body font, muted */}
-                  <text x={SPINE + (isMobile ? 9 : 14)} y={NODE_H / 2 + (isMobile ? 4 : 5)} fontFamily="var(--font-body)" fontSize={dims.FONT_LAST} fontWeight={500} fill="var(--text-muted)">
-                    {p.lastName.length > (isMobile ? 15 : 20) ? p.lastName.slice(0, isMobile ? 14 : 19) + '…' : p.lastName}
-                  </text>
-                  {/* Dates — mono, gold-muted */}
-                  <text x={SPINE + (isMobile ? 9 : 14)} y={NODE_H / 2 + (isMobile ? 16 : 22)} fontFamily="var(--font-mono)" fontSize={dims.FONT_DATE} fill="var(--accent-text)">
-                    {dateLine(p)}
-                  </text>
+                  {/* Primary name — gender-coloured, bold. Falls back to last name,
+                      then "Inconnu·e" (Bug 3). Secondary line only when present. */}
+                  {(() => {
+                    const tx = SPINE + (isMobile ? 9 : 14);
+                    const maxP = isMobile ? 13 : 18;
+                    const maxS = isMobile ? 15 : 20;
+                    const pTrunc = primary.length > maxP ? primary.slice(0, maxP - 1) + '…' : primary;
+                    const sTrunc = secondary && secondary.length > maxS ? secondary.slice(0, maxS - 1) + '…' : secondary;
+                    // Centre the text block: 3 lines when a secondary exists, else 2.
+                    const nameY = sTrunc ? NODE_H / 2 + (isMobile ? -9 : -12) : NODE_H / 2 + (isMobile ? -3 : -5);
+                    const dateY = sTrunc ? NODE_H / 2 + (isMobile ? 16 : 22) : NODE_H / 2 + (isMobile ? 12 : 14);
+                    return (
+                      <>
+                        <text x={tx} y={nameY} fontFamily="var(--font-body)" fontSize={dims.FONT_NAME} fontWeight={700} fill={st.name}>{pTrunc}</text>
+                        {sTrunc && (
+                          <text x={tx} y={NODE_H / 2 + (isMobile ? 4 : 5)} fontFamily="var(--font-body)" fontSize={dims.FONT_LAST} fontWeight={500} fill="var(--text-muted)">{sTrunc}</text>
+                        )}
+                        {dateLine(p) && (
+                          <text x={tx} y={dateY} fontFamily="var(--font-mono)" fontSize={dims.FONT_DATE} fill="var(--accent-text)">{dateLine(p)}</text>
+                        )}
+                      </>
+                    );
+                  })()}
 
                   {/* Corner indicator badges (photos / completeness / sources) */}
                   <NodeBadges person={p} labels={{ photos: t('badgePhotos'), complete: t('badgeComplete'), sources: t('badgeSources') }} dims={dims} />
@@ -963,10 +983,10 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
             <div className="label" style={{ marginBottom: '8px', color: 'var(--text)' }}>{t('legend')}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '6px', height: '14px', background: '#5b7fa6', flexShrink: 0 }} /> {t('male')}
+                <span style={{ width: '6px', height: '14px', background: '#4A90D9', flexShrink: 0 }} /> {t('male')}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '6px', height: '14px', background: '#8a5b6e', flexShrink: 0 }} /> {t('female')}
+                <span style={{ width: '6px', height: '14px', background: '#C47BA0', flexShrink: 0 }} /> {t('female')}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ width: '6px', height: '14px', background: 'var(--accent)', flexShrink: 0 }} /> {t('root')}
