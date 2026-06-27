@@ -180,6 +180,21 @@ const FEATURES = [
   { kind: 'pass' as const, k: 'Transmettre', t: 'Léguez la lumière', d: 'Invitez la famille à contribuer, exportez un livret, partagez un lien. Une histoire faite pour passer de main en main.' },
 ];
 
+const PLANS = [
+  {
+    name: 'Gratuit', price: '0€', period: '', note: 'Pour toujours', popular: false, action: 'signup' as const, cta: 'Commencer gratuitement',
+    features: ['1 arbre généalogique', 'Jusqu’à 50 membres', 'Narratif IA (5/mois)', 'Export PDF basique'],
+  },
+  {
+    name: 'Famille', price: '9€', period: '/mois', note: 'Par famille', popular: true, action: 'signup' as const, cta: 'Choisir ce plan',
+    features: ['Arbres illimités', 'Membres illimités', 'Narratif IA illimité', 'Collaboration famille', 'Export PDF premium', 'Galerie photos'],
+  },
+  {
+    name: 'Héritage', price: '19€', period: '/mois', note: 'Pour les grandes familles', popular: false, action: 'contact' as const, cta: 'Nous contacter',
+    features: ['Tout du plan Famille', 'Reconnaissance faciale IA', 'Import GEDCOM', 'Accès API', 'Support prioritaire', 'Archivage longue durée'],
+  },
+];
+
 export default function Landing() {
   const { startDemo, user, isDemo, isApproved } = useAuth();
   const scrolled = useScrolled();
@@ -208,6 +223,7 @@ export default function Landing() {
         <a href="#top" className="lp-word" aria-label="Suimini, accueil">Suimini</a>
         <div className="lp-nav-right">
           <a href="#features" className="lp-nav-link">Comment ça marche</a>
+          <a href="#tarifs" className="lp-nav-link">Tarifs</a>
           <LangToggle />
           <button onClick={canEnterApp ? goToApp : () => openAuth('login')} className="lp-nav-cta">
             {canEnterApp ? 'Entrer' : 'Se connecter'}
@@ -274,6 +290,34 @@ export default function Landing() {
         </Reveal>
       </section>
 
+      {/* ===== TARIFS ===== */}
+      <section id="tarifs" className="lp-pricing">
+        <Reveal>
+          <h2 className="lp-h2">Simple et transparent</h2>
+          <p className="lp-pricing-sub">Commencez gratuitement. Évoluez quand vous êtes prêt.</p>
+        </Reveal>
+        <div className="lp-plans">
+          {PLANS.map((p, i) => (
+            <Reveal key={p.name} as="div" className={`lp-plan ${p.popular ? 'lp-plan-pop' : ''}`} delay={i * 80}>
+              {p.popular && <span className="lp-plan-badge">Populaire</span>}
+              <span className="lp-plan-name">{p.name}</span>
+              <div className="lp-plan-price"><span className="lp-plan-amount">{p.price}</span>{p.period && <span className="lp-plan-period">{p.period}</span>}</div>
+              <span className="lp-plan-note">{p.note}</span>
+              <ul className="lp-plan-feats">
+                {p.features.map((f) => (
+                  <li key={f}><span className="lp-check" aria-hidden="true">✓</span>{f}</li>
+                ))}
+              </ul>
+              {p.action === 'contact' ? (
+                <a href="mailto:hello@suimini.app?subject=Suimini%20Héritage" className="lp-btn lp-btn-ghost lp-plan-cta">{p.cta}</a>
+              ) : (
+                <button onClick={canEnterApp ? goToApp : startSignup} className={`lp-btn ${p.popular ? 'lp-btn-amber' : 'lp-btn-ghost'} lp-plan-cta`}>{p.cta}</button>
+              )}
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
       {/* ===== FINAL CTA ===== */}
       <section className="lp-final">
         <span className="lp-final-star" aria-hidden="true" />
@@ -301,6 +345,7 @@ export default function Landing() {
           <nav className="lp-footer-col" aria-label="Produit">
             <span className="lp-footer-h">Produit</span>
             <a href="#features">Comment ça marche</a>
+            <a href="#tarifs">Tarifs</a>
             <button onClick={startDemo} className="lp-footer-btn">Essayer la démo</button>
             <button onClick={canEnterApp ? goToApp : startSignup} className="lp-footer-btn">{canEnterApp ? 'Entrer' : 'Commencer'}</button>
           </nav>
@@ -443,6 +488,28 @@ const CSS = `
 .lp-final-sub { margin: 22px auto 0; max-width: 40ch; font-family: var(--lp-serif); font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.5rem); color: var(--star-muted); }
 .lp-final-cta { margin-top: 40px; }
 @media (prefers-reduced-motion: reduce) { .lp-final-star { animation: none; } }
+
+/* PRICING */
+.lp-pricing { background: #0f0f1a; border-top: 1px solid var(--hair); padding: clamp(80px, 11vw, 144px) clamp(20px, 6vw, 80px); }
+.lp-pricing-sub { margin: 18px auto 0; text-align: center; font-family: var(--lp-serif); font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.45rem); color: var(--star-muted); }
+.lp-plans { max-width: 1120px; margin: clamp(48px, 6vw, 76px) auto 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(18px, 2vw, 26px); align-items: stretch; }
+.lp-plan { position: relative; display: flex; flex-direction: column; background: #191922; border: 1px solid var(--hair); padding: clamp(28px, 3vw, 40px) clamp(24px, 2.4vw, 32px); }
+.lp-plan-pop { background: #20202c; border-color: var(--amber); transform: translateY(-10px); box-shadow: 0 24px 60px rgba(231,180,92,0.14), 0 0 0 1px var(--amber); }
+.lp-plan-badge { position: absolute; top: 0; right: clamp(24px, 2.4vw, 32px); transform: translateY(-50%); background: var(--amber); color: #1a1206; font-family: var(--lp-serif); font-style: italic; font-size: 0.85rem; padding: 3px 14px; letter-spacing: 0.01em; }
+.lp-plan-name { font-family: var(--lp-serif); font-size: 1.25rem; color: var(--star); }
+.lp-plan-price { margin: 18px 0 0; display: flex; align-items: baseline; gap: 6px; }
+.lp-plan-amount { font-family: var(--lp-serif); font-weight: 300; font-size: clamp(3rem, 5vw, 4rem); line-height: 1; letter-spacing: -0.02em; color: var(--star); }
+.lp-plan-pop .lp-plan-amount { color: var(--amber-soft); }
+.lp-plan-period { font-family: var(--lp-serif); font-size: 1.05rem; color: var(--star-faint); }
+.lp-plan-note { margin-top: 6px; font-family: var(--lp-serif); font-style: italic; font-size: 1rem; color: var(--star-muted); }
+.lp-plan-feats { list-style: none; margin: clamp(22px, 2.4vw, 30px) 0 0; padding: clamp(22px, 2.4vw, 28px) 0 0; border-top: 1px solid var(--hair); display: flex; flex-direction: column; gap: 13px; flex: 1; }
+.lp-plan-feats li { display: flex; gap: 11px; align-items: flex-start; font-size: 1.02rem; line-height: 1.45; color: var(--star-muted); }
+.lp-check { color: var(--amber); font-size: 0.95rem; line-height: 1.5; flex-shrink: 0; }
+.lp-plan-cta { width: 100%; justify-content: center; margin-top: clamp(26px, 3vw, 36px); }
+@media (max-width: 860px) {
+  .lp-plans { grid-template-columns: 1fr; max-width: 460px; gap: 20px; }
+  .lp-plan-pop { transform: none; }
+}
 
 /* FOOTER */
 .lp-footer { background: var(--sky-deep); border-top: 1px solid var(--hair); padding: 64px clamp(20px, 6vw, 80px) 32px; }
