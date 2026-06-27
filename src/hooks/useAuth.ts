@@ -168,22 +168,29 @@ export function useAuth() {
   }, []);
 
   // --- Sign out (wipes ALL local data so the next guest/demo starts clean) ---
+  // Every step is defensive and the hard redirect ALWAYS runs (finally): a thrown
+  // Supabase/IndexedDB error must never strand the user on a half-torn-down /app.
+  // We deliberately skip setUser/setSession here — a state update would re-render
+  // /app with a null session for a frame before the navigation, which can crash
+  // children that assume a user. The hard redirect replaces the whole document.
   const signOut = useCallback(async () => {
-    await supabase?.auth.signOut();
-    // CRITICAL: clear IndexedDB too, not just localStorage. Cloud mode mirrors the
-    // account's trees into IndexedDB; if we only clear localStorage, the next guest/
-    // demo load reads those stale rows back and leaks the previous account's data.
-    try { await offlineStorage.clear(); } catch { /* ignore */ }
     try {
-      localStorage.removeItem(TREES_KEY);
-      localStorage.removeItem(ACTIVE_KEY);
-      localStorage.removeItem(DEMO_KEY);
-    } catch { /* ignore */ }
-    setDemoCookie(false);
-    setUser(null);
-    setSession(null);
-    setDemo(false);
-    if (typeof window !== 'undefined') window.location.href = '/';
+      await supabase?.auth.signOut();
+    } catch (e) {
+      console.error('signOut error', e);
+    } finally {
+      // CRITICAL: clear IndexedDB too, not just localStorage. Cloud mode mirrors the
+      // account's trees into IndexedDB; if we only clear localStorage, the next guest/
+      // demo load reads those stale rows back and leaks the previous account's data.
+      try { await offlineStorage.clear(); } catch { /* ignore */ }
+      try {
+        localStorage.removeItem(TREES_KEY);
+        localStorage.removeItem(ACTIVE_KEY);
+        localStorage.removeItem(DEMO_KEY);
+      } catch { /* ignore */ }
+      try { setDemoCookie(false); } catch { /* ignore */ }
+      if (typeof window !== 'undefined') window.location.href = '/';
+    }
   }, []);
 
   // --- Demo mode (sample data, no cloud sync) ---

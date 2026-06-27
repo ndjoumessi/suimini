@@ -2,7 +2,7 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import { MESSAGES } from '@/i18n/messages';
-import { LOCALE_COOKIE, type Locale } from '@/i18n/config';
+import { LOCALE_COOKIE, DEFAULT_LOCALE, type Locale } from '@/i18n/config';
 
 interface LocaleSwitch {
   locale: Locale;
@@ -34,9 +34,13 @@ export default function IntlProvider({ initialLocale, children }: { initialLocal
     try { document.documentElement.lang = next; } catch { /* ignore */ }
   }, []);
 
+  // Defensive: always hand the provider a valid message set (fall back to fr) so a
+  // missing/unknown locale can never crash the tree with empty messages.
+  const messages = MESSAGES[locale] ?? MESSAGES[DEFAULT_LOCALE];
+
   return (
     <Ctx.Provider value={{ locale, setLocale }}>
-      <NextIntlClientProvider locale={locale} messages={MESSAGES[locale]}>
+      <NextIntlClientProvider locale={locale} messages={messages}>
         {children}
       </NextIntlClientProvider>
     </Ctx.Provider>

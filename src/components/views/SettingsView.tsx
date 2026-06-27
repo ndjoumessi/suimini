@@ -80,9 +80,9 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
     toast(error ? t('toastPasswordFailed') : t('toastPasswordSent'), error ? 'error' : 'success');
   }
   async function signOutAll() {
-    if (!supabase) return;
-    await supabase.auth.signOut({ scope: 'global' });
-    window.location.href = '/';
+    try { await supabase?.auth.signOut({ scope: 'global' }); }
+    catch (e) { console.error('signOut error', e); }
+    finally { if (typeof window !== 'undefined') window.location.href = '/'; }
   }
   function exportData() {
     const payload = { app: 'Suimini', exportedAt: new Date().toISOString(), treeCount: trees.length, trees };

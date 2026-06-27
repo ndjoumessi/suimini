@@ -457,7 +457,7 @@ export default function SuiminiApp() {
         isDemo={isDemo}
         isAdmin={isAdmin}
         unreadCount={admin.unreadCount}
-        onSignOut={async () => { await signOut(); showToast('Déconnecté'); }}
+        onSignOut={() => { void signOut(); }}
         onAddPerson={store.activeTree ? () => setShowAddPerson(true) : undefined}
         onShare={store.activeTree ? () => setShowShare(true) : undefined}
         onImport={store.activeTree ? () => setImportExportTab('import') : undefined}
