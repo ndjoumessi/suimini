@@ -54,18 +54,23 @@ import type { LucideIcon } from 'lucide-react';
 
 // `navKey` indexes into the `nav` message namespace (see messages/*.json).
 interface NavItem { view: ViewMode; Icon: LucideIcon; navKey: string }
-const NAV_ITEMS: NavItem[] = [
-  { view: 'dashboard', Icon: Home, navKey: 'home' },
-  { view: 'tree', Icon: TreePine, navKey: 'tree' },
-  { view: 'list', Icon: Users, navKey: 'persons' },
-  { view: 'map', Icon: MapIcon, navKey: 'map' },
-  { view: 'timeline', Icon: Calendar, navKey: 'timeline' },
-  { view: 'journal', Icon: BookOpen, navKey: 'journal' },
-  { view: 'birthdays', Icon: Cake, navKey: 'birthdays' },
-  { view: 'gallery', Icon: Images, navKey: 'gallery' },
-  { view: 'ancestors', Icon: Search, navKey: 'exploration' },
-  { view: 'statistics', Icon: BarChart2, navKey: 'statistics' },
-  { view: 'settings', Icon: Settings, navKey: 'settings' },
+// Two clear sub-groups: VUE (the core surfaces) and EXPLORER (the secondary
+// lenses). Settings + Admin live in their own quiet "Gérer" group below.
+const NAV_GROUPS: { labelKey: string; items: NavItem[] }[] = [
+  { labelKey: 'sectionView', items: [
+    { view: 'dashboard', Icon: Home, navKey: 'home' },
+    { view: 'tree', Icon: TreePine, navKey: 'tree' },
+    { view: 'list', Icon: Users, navKey: 'persons' },
+    { view: 'map', Icon: MapIcon, navKey: 'map' },
+  ] },
+  { labelKey: 'sectionExplore', items: [
+    { view: 'timeline', Icon: Calendar, navKey: 'timeline' },
+    { view: 'journal', Icon: BookOpen, navKey: 'journal' },
+    { view: 'birthdays', Icon: Cake, navKey: 'birthdays' },
+    { view: 'gallery', Icon: Images, navKey: 'gallery' },
+    { view: 'ancestors', Icon: Search, navKey: 'exploration' },
+    { view: 'statistics', Icon: BarChart2, navKey: 'statistics' },
+  ] },
 ];
 
 interface Props {
@@ -206,20 +211,39 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
 
         {/* Navigation */}
         <nav className="sb-nav" aria-label={ts('navAria')}>
-          {NAV_ITEMS.map(navItem)}
-          {isAdmin && (
+          {NAV_GROUPS.map(group => (
+            <div key={group.labelKey} className="sb-group">
+              <div className="sb-section">{ts(group.labelKey)}</div>
+              {group.items.map(navItem)}
+            </div>
+          ))}
+          {/* Gérer — settings (+ admin) */}
+          <div className="sb-group">
+            <div className="sb-section">{ts('sectionManage')}</div>
             <button
-              onClick={() => { onViewChange('admin'); onClose(); }}
-              aria-current={activeView === 'admin' ? 'page' : undefined}
-              aria-label={t('admin')}
-              className={`sb-item ${activeView === 'admin' ? 'sb-item-active' : ''}`}
+              onClick={() => { onViewChange('settings'); onClose(); }}
+              aria-current={activeView === 'settings' ? 'page' : undefined}
+              aria-label={t('settings')}
+              className={`sb-item ${activeView === 'settings' ? 'sb-item-active' : ''}`}
             >
-              {activeView === 'admin' && <span aria-hidden="true" className="sb-active-bar" />}
-              <span className="sb-icon"><Shield size={16} aria-hidden="true" /></span>
-              <span className="sb-label">{t('admin')}</span>
-              {unreadCount > 0 && <span className="sb-count">{unreadCount}</span>}
+              {activeView === 'settings' && <span aria-hidden="true" className="sb-active-bar" />}
+              <span className="sb-icon"><Settings size={16} aria-hidden="true" /></span>
+              <span className="sb-label">{t('settings')}</span>
             </button>
-          )}
+            {isAdmin && (
+              <button
+                onClick={() => { onViewChange('admin'); onClose(); }}
+                aria-current={activeView === 'admin' ? 'page' : undefined}
+                aria-label={t('admin')}
+                className={`sb-item ${activeView === 'admin' ? 'sb-item-active' : ''}`}
+              >
+                {activeView === 'admin' && <span aria-hidden="true" className="sb-active-bar" />}
+                <span className="sb-icon"><Shield size={16} aria-hidden="true" /></span>
+                <span className="sb-label">{t('admin')}</span>
+                {unreadCount > 0 && <span className="sb-count">{unreadCount}</span>}
+              </button>
+            )}
+          </div>
         </nav>
 
         {/* Quick actions */}
@@ -324,15 +348,18 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sb-pending { min-width: 18px; height: 18px; padding: 0 5px; display: inline-flex; align-items: center; justify-content: center; background: var(--danger); color: #fff; font-family: var(--font-mono); font-size: 10px; font-weight: 700; flex-shrink: 0; }
 
         /* Navigation */
-        .sb-nav { flex: 1; padding: 8px 0; overflow-y: auto; overflow-x: hidden; }
+        .sb-nav { flex: 1; padding: 6px 0; overflow-y: auto; overflow-x: hidden; }
         .sb-nav::-webkit-scrollbar { width: 0; }
+        .sb-group { padding: 6px 0; }
+        .sb-group + .sb-group { border-top: 1px solid var(--border); }
+        .sb-section { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-light); padding: 4px 16px 5px; }
         .sb-item {
           position: relative; width: 100%; display: flex; align-items: center; gap: 12px;
-          padding: 9px 16px; border: none; background: transparent; cursor: pointer;
-          color: var(--text-muted); font-family: var(--font-display); font-size: 14px; font-weight: 500;
+          padding: 8px 16px; border: none; background: transparent; cursor: pointer;
+          color: var(--text-muted); font-family: var(--font-body); font-size: 13.5px; font-weight: 500;
           text-align: left; text-decoration: none; transition: background var(--t-fast), color var(--t-fast);
         }
-        .sb-item:hover { background: #161616; color: var(--ink); }
+        .sb-item:hover { background: #1a1a24; color: var(--ink); }
         .sb-item:hover .sb-icon { color: var(--accent-text); }
         .sb-item-active { color: var(--accent-text); font-weight: 700; background: var(--bg-card); }
         .sb-item-active .sb-icon { color: var(--accent); }

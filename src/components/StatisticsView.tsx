@@ -12,7 +12,7 @@ interface Props {
 function Figure({ label, value, sub, color }: { label: string; value: string | number; sub?: string; color?: string }) {
   return (
     <div style={{ minWidth: '92px' }}>
-      <div style={{ fontSize: '1.6rem', fontWeight: 700, lineHeight: 1, color: color || 'var(--text)', fontFamily: 'var(--font-display)' }}>
+      <div style={{ fontSize: '1.6rem', fontWeight: 700, lineHeight: 1, color: color || 'var(--accent)', fontFamily: 'var(--font-display)' }}>
         {value}
       </div>
       <div className="label" style={{ marginTop: '4px' }}>{label}</div>
@@ -29,12 +29,12 @@ function BarChart({ data, maxValue, colorFn }: { data: { label: string; value: n
           <div style={{ width: '80px', fontSize: '12px', color: 'var(--text-muted)', textAlign: 'right', flexShrink: 0 }}>
             {item.label}
           </div>
-          <div style={{ flex: 1, background: 'var(--bg-muted)', borderRadius: '100px', overflow: 'hidden', height: '18px' }}>
+          <div style={{ flex: 1, background: 'var(--bg-muted)', borderRadius: 0, overflow: 'hidden', height: '18px' }}>
             <div style={{
               height: '100%',
               width: maxValue > 0 ? `${(item.value / maxValue) * 100}%` : '0',
               background: item.color || colorFn?.(item.label) || 'var(--accent)',
-              borderRadius: '100px',
+              borderRadius: 0,
               display: 'flex', alignItems: 'center',
               transition: 'width var(--t-base) var(--ease-out)',
               paddingLeft: '6px',
@@ -197,7 +197,7 @@ function DecadeTimeline({ buckets, ariaLabel }: { buckets: DecadeBucket[]; ariaL
         const isPeak = b.count === peak && peak > 0;
         return (
           <g key={b.decade}>
-            <rect x={cx - barW / 2} y={y} width={barW} height={h} fill={isPeak ? 'var(--accent)' : 'var(--text-muted)'} />
+            <rect x={cx - barW / 2} y={y} width={barW} height={h} fill={isPeak ? 'var(--accent)' : '#5b7fa6'} />
             {b.count > 0 && (
               <text x={cx} y={y - 5} textAnchor="middle" fontSize={11} fontWeight={700} fill={isPeak ? 'var(--accent)' : 'var(--text)'} fontFamily="var(--font-display)">{b.count}</text>
             )}
@@ -351,10 +351,10 @@ export default function StatisticsView({ tree }: Props) {
             })}
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '28px 32px' }}>
-            <Figure label={t('males')} value={stats.totalMales} color="var(--male)" />
-            <Figure label={t('females')} value={stats.totalFemales} color="var(--female)" />
-            <Figure label={t('alive')} value={stats.totalAlive} color="var(--success)" />
-            <Figure label={t('deceased')} value={stats.totalDeceased} color="var(--deceased)" />
+            <Figure label={t('males')} value={stats.totalMales} />
+            <Figure label={t('females')} value={stats.totalFemales} />
+            <Figure label={t('alive')} value={stats.totalAlive} />
+            <Figure label={t('deceased')} value={stats.totalDeceased} />
             <Figure label={t('relationships')} value={stats.totalRelationships} />
             <Figure label={t('withPhoto')} value={stats.totalPhotos} />
             <Figure label={t('events')} value={stats.totalEvents} />
@@ -427,7 +427,7 @@ export default function StatisticsView({ tree }: Props) {
                   <span style={{ width: '10px', height: '10px', background: 'var(--accent)', display: 'inline-block' }} /> {t('birthPeak')}
                 </span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ width: '10px', height: '10px', background: 'var(--text-muted)', display: 'inline-block' }} /> {t('otherDecades')}
+                  <span style={{ width: '10px', height: '10px', background: '#5b7fa6', display: 'inline-block' }} /> {t('otherDecades')}
                 </span>
               </div>
             </>
@@ -440,7 +440,7 @@ export default function StatisticsView({ tree }: Props) {
         {geoDist.length > 0 && (
           <div className="card" style={{ padding: '20px', marginBottom: '16px' }}>
             <SectionHead eyebrow={t('geographyEyebrow')} title={t('birthOrigins')} />
-            <BarChart data={geoDist} maxValue={maxGeo} colorFn={() => 'var(--text-muted)'} />
+            <BarChart data={geoDist} maxValue={maxGeo} colorFn={() => '#5b7fa6'} />
           </div>
         )}
 
@@ -484,7 +484,7 @@ export default function StatisticsView({ tree }: Props) {
           <SectionHead eyebrow={t('demographyEyebrow')} title={t('genderRatio')} />
           {stats.totalPersons > 0 ? (
             <div>
-              <div style={{ display: 'flex', height: '32px', borderRadius: '100px', overflow: 'hidden', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', height: '32px', borderRadius: 0, overflow: 'hidden', marginBottom: '8px' }}>
                 <div style={{
                   width: `${(stats.totalMales / stats.totalPersons) * 100}%`,
                   background: 'var(--male)', display: 'flex', alignItems: 'center', justifyContent: 'center',

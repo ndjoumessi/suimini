@@ -923,7 +923,8 @@
     "treeStats": "{persons, plural, one {# member} other {# members}} · {generations, plural, one {# generation} other {# generations}}",
     "badgeOwner": "Owner",
     "badgeGuest": "Guest",
-    "export": "Export"
+    "export": "Export",
+    "sectionView": "View"
   },
   "commandPalette": {
     "dialogLabel": "Command palette",

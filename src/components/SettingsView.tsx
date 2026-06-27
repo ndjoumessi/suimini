@@ -92,6 +92,13 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '32px 24px' }}>
+      <style>{`
+        .set-theme-card { transition: border-color var(--t-fast) var(--ease-out), box-shadow var(--t-base) var(--ease-out), transform var(--t-fast) var(--ease-out); }
+        .set-theme-card:hover { border-color: var(--accent); box-shadow: var(--shadow-accent); transform: translateY(-2px); }
+        .set-theme-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        .set-rule { border: none; border-top: 1px solid var(--accent-light); margin: 0 0 28px; }
+        @media (prefers-reduced-motion: reduce) { .set-theme-card { transition: border-color var(--t-fast) ease; } .set-theme-card:hover { transform: none; } }
+      `}</style>
       <div style={{ maxWidth: '720px', margin: '0 auto' }} className="animate-fade-in">
         <h2 className="serif" style={{ margin: '0 0 4px', fontSize: '1.6rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <SettingsIcon size={22} style={{ color: 'var(--accent)', flexShrink: 0 }} aria-hidden="true" />
@@ -108,7 +115,7 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
             {t('colorThemeHint')}
           </p>
           <div
-            style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px' }}
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '14px' }}
             onMouseLeave={onCancelPreview}
           >
             {COLOR_THEMES.map(theme => {
@@ -118,33 +125,33 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
                   key={theme.id}
                   onClick={() => onSelectTheme(theme.id)}
                   onMouseEnter={() => onPreviewTheme(theme.id)}
+                  className="set-theme-card"
+                  aria-pressed={active}
                   style={{
-                    textAlign: 'left', cursor: 'pointer', padding: '14px',
-                    borderRadius: 'var(--radius-lg)',
-                    border: '1px solid var(--border)',
+                    textAlign: 'left', cursor: 'pointer', padding: '18px',
+                    border: `1px solid ${active ? theme.accent : 'var(--border)'}`,
                     background: 'var(--bg-card)',
-                    boxShadow: active ? `0 0 0 2px ${theme.accent}, var(--shadow)` : 'none',
-                    transition: 'box-shadow var(--t-fast) var(--ease-out)',
+                    boxShadow: active ? `inset 0 0 0 1px ${theme.accent}` : 'none',
                     position: 'relative',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                    <span aria-hidden="true" style={{ width: '16px', height: '16px', borderRadius: '50%', background: theme.accent, border: '1px solid var(--border)', flexShrink: 0 }} />
-                    <span style={{ fontWeight: 700, fontSize: '14px' }}>{theme.name}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '14px' }}>
+                    <span aria-hidden="true" style={{ width: '18px', height: '18px', borderRadius: '50%', background: theme.accent, border: '1px solid var(--border)', flexShrink: 0 }} />
+                    <span className="serif" style={{ fontWeight: 600, fontSize: '15px' }}>{theme.name}</span>
                     {active && (
-                      <span style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: 700, color: theme.accent, display: 'inline-flex', alignItems: 'center', gap: '3px' }}><Check size={12} aria-hidden="true" /> {t('active')}</span>
+                      <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: '9px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#0d0d0d', background: theme.accent, padding: '2px 7px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}><Check size={11} aria-hidden="true" /> {t('active')}</span>
                     )}
                   </div>
                   {/* Swatches */}
-                  <div style={{ display: 'flex', gap: '6px' }}>
+                  <div style={{ display: 'flex', gap: '7px' }}>
                     {[
                       { c: theme.accent, k: 'accent', l: t('swatchAccent') },
                       { c: theme.male, k: 'male', l: t('swatchMale') },
                       { c: theme.female, k: 'female', l: t('swatchFemale') },
                     ].map(s => (
                       <div key={s.k} style={{ flex: 1 }}>
-                        <div style={{ height: '28px', borderRadius: '6px', background: s.c, marginBottom: '4px' }} />
-                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', textAlign: 'center' }}>{s.l}</div>
+                        <div style={{ height: '34px', borderRadius: 0, background: s.c, marginBottom: '5px' }} />
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-muted)', textAlign: 'center' }}>{s.l}</div>
                       </div>
                     ))}
                   </div>
@@ -157,6 +164,7 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
         {/* Account (signed-in only) */}
         {userEmail && (
           <section style={{ marginTop: '32px' }}>
+            <hr className="set-rule" />
             <h3 className="serif" style={{ fontSize: '1.15rem', marginBottom: '12px' }}>{t('account')}</h3>
             <div className="card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -193,6 +201,7 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
 
         {/* Data */}
         <section style={{ marginTop: '32px' }}>
+          <hr className="set-rule" />
           <h3 className="serif" style={{ fontSize: '1.15rem', marginBottom: '4px' }}>{t('data')}</h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '12px' }}>
             {t('dataHint')}
@@ -210,7 +219,7 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
             <button className="btn btn-secondary btn-sm" style={{ gap: '6px' }} onClick={exportData} disabled={trees.length === 0}>
               <Download size={14} aria-hidden="true" /> {t('exportAll')}{trees.length ? ` (${trees.length})` : ''}
             </button>
-            <button className="btn btn-secondary btn-sm" style={{ gap: '6px' }} onClick={clearCache}>
+            <button className="btn btn-sm" style={{ gap: '6px', background: 'transparent', color: 'var(--danger)', borderColor: 'var(--danger)' }} onClick={clearCache}>
               <Trash2 size={14} aria-hidden="true" /> {t('clearCache')}
             </button>
           </div>
@@ -228,6 +237,7 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
         {/* Danger zone (signed-in only) */}
         {userEmail && (
           <section style={{ marginTop: '32px' }}>
+            <hr className="set-rule" />
             <h3 className="serif" style={{ fontSize: '1.15rem', marginBottom: '4px', color: 'var(--danger)' }}>{t('dangerZone')}</h3>
             <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '12px' }}>
               {t('dangerHint')}

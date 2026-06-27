@@ -1,14 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { Spectral, Libre_Baskerville, IBM_Plex_Mono } from "next/font/google";
+import { Spectral, Plus_Jakarta_Sans, IBM_Plex_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
 
 // Modern Heritage type system — self-hosted via next/font (no FOUT, no render-blocking @import).
 // Display = Spectral (titles, names, key numbers — matches the constellation landing),
-// Body = Libre Baskerville, Mono = IBM Plex Mono (dates, labels, IDs).
+// Body/UI/labels = Plus Jakarta Sans (high-readability humanist sans with character),
+// Mono = IBM Plex Mono (dates, labels, IDs).
 const display = Spectral({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700"], style: ["normal", "italic"], variable: "--font-display", display: "swap" });
-const body = Libre_Baskerville({ subsets: ["latin"], weight: ["400", "700"], style: ["normal", "italic"], variable: "--font-body", display: "swap" });
+const body = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"], style: ["normal", "italic"], variable: "--font-body", display: "swap" });
 const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500", "700"], variable: "--font-mono", display: "swap" });
 
 const SITE_URL = "https://suimini.vercel.app";
@@ -54,7 +55,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0d0d0d",
+  themeColor: "#111118",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
