@@ -62,8 +62,8 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
   function chooseLocale(next: Locale) {
     if (next === locale) return;
     try { localStorage.setItem(LOCALE_COOKIE, next); } catch { /* ignore */ }
-    document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
-    window.location.reload();
+    const back = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/app';
+    window.location.href = `/api/locale?to=${next}&next=${encodeURIComponent(back)}`;
   }
 
   async function saveName() {

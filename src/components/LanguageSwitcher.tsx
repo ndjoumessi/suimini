@@ -3,9 +3,11 @@ import { useLocale } from 'next-intl';
 import { LOCALE_COOKIE, LOCALES, type Locale } from '@/i18n/config';
 
 /**
- * FR | EN segmented toggle, Atelier style. No URL routing: it writes the locale
- * to a cookie (read server-side by next-intl) + localStorage (so the choice is
- * remembered), then reloads so the whole tree re-renders in the new language.
+ * FR | EN segmented toggle, Atelier style. No URL routing: the locale lives in a
+ * cookie read by the server layout. The toggle navigates to /api/locale, which sets
+ * the cookie server-side and redirects back — a fresh navigation that reliably
+ * re-reads the locale in both directions (see the route for why this beats
+ * router.refresh and window.location.reload).
  */
 export default function LanguageSwitcher({ tone = 'app' }: { tone?: 'app' | 'landing' }) {
   const locale = useLocale();
@@ -13,8 +15,8 @@ export default function LanguageSwitcher({ tone = 'app' }: { tone?: 'app' | 'lan
   function choose(next: Locale) {
     if (next === locale) return;
     try { localStorage.setItem(LOCALE_COOKIE, next); } catch { /* ignore */ }
-    document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
-    window.location.reload();
+    const back = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/';
+    window.location.href = `/api/locale?to=${next}&next=${encodeURIComponent(back)}`;
   }
 
   const ink = tone === 'landing' ? '#1b1b1b' : 'var(--border-strong)';
