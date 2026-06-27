@@ -5,7 +5,8 @@ import { ColorThemeId, FamilyTree } from '@/types';
 import { COLOR_THEMES } from '@/lib/themes';
 import { supabase } from '@/lib/supabase';
 import { relativeSyncParts } from '@/lib/relativeTime';
-import { LOCALE_COOKIE, LOCALES, type Locale } from '@/i18n/config';
+import { LOCALES, type Locale } from '@/i18n/config';
+import { switchLocale } from '@/i18n/switchLocale';
 import { Settings2, Check, KeyRound, LogOut, Download, Trash2, RefreshCw, Cloud, CloudOff, X, Pencil } from 'lucide-react';
 
 interface Props {
@@ -60,12 +61,8 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
   const deleteWord = t('deleteConfirmPlaceholder');
 
   function chooseLocale(next: Locale) {
-    // Pre-set the cookie client-side so the redirected page loads with the new locale
-    // (the 302 Set-Cookie applies too late otherwise — see LanguageSwitcher).
-    try { localStorage.setItem(LOCALE_COOKIE, next); } catch { /* ignore */ }
-    document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
-    const back = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/app';
-    window.location.href = `/api/locale?to=${next}&next=${encodeURIComponent(back)}`;
+    if (next === locale) return;
+    switchLocale(next);
   }
 
   async function saveName() {

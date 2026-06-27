@@ -4,7 +4,8 @@ import { Spectral } from 'next/font/google';
 import { useLocale, useTranslations } from 'next-intl';
 import { useAuth } from '@/hooks/useAuth';
 import AuthModal from '@/components/AuthModal';
-import { LOCALE_COOKIE, LOCALES, type Locale } from '@/i18n/config';
+import { LOCALES, type Locale } from '@/i18n/config';
+import { switchLocale } from '@/i18n/switchLocale';
 
 /* =====================================================================
    Suimini — Landing « La constellation des vôtres »
@@ -87,17 +88,14 @@ function CountUp({ to, duration = 1700 }: { to: number; duration?: number }) {
 }
 
 /* ---------- Locale toggle (dark) ----------
-   Uses the same /api/locale redirect as the in-app switcher: set the cookie
-   client-side, then a full server navigation that sets it server-side too and
-   redirects back. A fresh document load re-reads the locale (no one-click lag). */
+   Shares switchLocale() with the in-app switcher: cookie set client-side, then a
+   cache-busted full navigation. No /api/locale redirect (its Set-Cookie raced the
+   redirected GET, leaving the render one click behind). */
 function LangToggle() {
   const locale = useLocale();
   const choose = (next: Locale) => {
     if (next === locale) return;
-    try { localStorage.setItem(LOCALE_COOKIE, next); } catch { /* ignore */ }
-    document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
-    const back = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/';
-    window.location.href = `/api/locale?to=${next}&next=${encodeURIComponent(back)}`;
+    switchLocale(next);
   };
   return (
     <div className="lp-lang" role="group" aria-label="Langue">

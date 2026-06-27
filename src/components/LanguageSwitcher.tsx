@@ -1,28 +1,20 @@
 'use client';
 import { useLocale } from 'next-intl';
-import { LOCALE_COOKIE, LOCALES, type Locale } from '@/i18n/config';
+import { LOCALES, type Locale } from '@/i18n/config';
+import { switchLocale } from '@/i18n/switchLocale';
 
 /**
  * FR | EN segmented toggle, Atelier style. No URL routing: the locale lives in a
- * cookie read by the server layout. The toggle navigates to /api/locale, which sets
- * the cookie server-side and redirects back — a fresh navigation that reliably
- * re-reads the locale in both directions (see the route for why this beats
- * router.refresh and window.location.reload).
+ * cookie read by the server layout. switchLocale() sets the cookie client-side
+ * then does a cache-busted full navigation, which re-reads the locale reliably in
+ * both directions (the old /api/locale 302 raced its Set-Cookie, lagging one click).
  */
 export default function LanguageSwitcher({ tone = 'app' }: { tone?: 'app' | 'landing' }) {
   const locale = useLocale();
 
   function choose(next: Locale) {
-    // Set the cookie CLIENT-SIDE first so it's in the jar before any request: the
-    // browser applies a 302 Set-Cookie only AFTER issuing the redirected request, so
-    // the target page would otherwise load with the OLD cookie (render lags one click
-    // while document.cookie ends up correct). With the jar pre-set, both the route
-    // request and the final page carry the new locale. The route hop then forces a
-    // fresh navigation (reload() would hit the browser cache and not re-read it).
-    try { localStorage.setItem(LOCALE_COOKIE, next); } catch { /* ignore */ }
-    document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
-    const back = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/';
-    window.location.href = `/api/locale?to=${next}&next=${encodeURIComponent(back)}`;
+    if (next === locale) return;
+    switchLocale(next);
   }
 
   const ink = tone === 'landing' ? '#1b1b1b' : 'var(--border-strong)';

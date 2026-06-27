@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Spectral, Plus_Jakarta_Sans, IBM_Plex_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
+import LocaleParamCleaner from "@/components/LocaleParamCleaner";
 import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
 
@@ -93,6 +94,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
+          <LocaleParamCleaner />
           {children}
         </NextIntlClientProvider>
         <script
