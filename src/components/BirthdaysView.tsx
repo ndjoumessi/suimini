@@ -1,8 +1,9 @@
 'use client';
 import { useMemo, useState, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { Cake, Flame, Heart, CalendarDays, User } from 'lucide-react';
+import { Cake, Flame, Heart, CalendarDays } from 'lucide-react';
 import { FamilyTree } from '@/types';
+import PersonAvatar from './PersonAvatar';
 import { getUpcomingAnniversaries } from '@/lib/treeUtils';
 import { getDisplayName } from '@/lib/treeUtils';
 
@@ -185,18 +186,7 @@ function AnniversaryCard({ a, onSelect, typeIcon, typeLabel, typeColor, t, dateL
       onMouseLeave={e => { e.currentTarget.style.borderColor = highlight ? 'var(--accent)' : 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
     >
       {/* Avatar */}
-      <div style={{
-        width: '42px', height: '42px', borderRadius: '50%', flexShrink: 0,
-        background: 'var(--accent-light)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        overflow: 'hidden',
-        border: '1px solid var(--border)',
-      }}>
-        {a.person.profilePhoto
-          ? <img src={a.person.profilePhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          : <User size={18} style={{ color: 'var(--text-light)' }} aria-hidden="true" />
-        }
-      </div>
+      <PersonAvatar person={a.person} size={44} />
 
       {/* Info */}
       <div style={{ flex: 1 }}>

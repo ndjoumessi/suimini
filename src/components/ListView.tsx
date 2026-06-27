@@ -3,8 +3,9 @@ import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { FamilyTree, SearchFilters } from '@/types';
 import { searchPersons, getAge, formatYear, getDisplayName } from '@/lib/treeUtils';
-import { UsersRound, Plus, ChevronDown, Filter, X, MapPin, User } from 'lucide-react';
+import { UsersRound, Plus, ChevronDown, Filter, X, MapPin } from 'lucide-react';
 import { EmptyState } from './ui/EmptyState';
+import PersonAvatar from './PersonAvatar';
 
 interface Props {
   tree: FamilyTree;
@@ -146,20 +147,8 @@ export default function ListView({ tree, onSelectPerson, onAddPerson, canEdit = 
                   onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-muted)'; e.currentTarget.style.boxShadow = 'inset 3px 0 0 var(--accent), var(--shadow-accent)'; }}
                   onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.boxShadow = 'none'; }}
                 >
-                  {/* Avatar — photo, else initials in the display face on gold */}
-                  <div style={{
-                    width: '44px', height: '44px', flexShrink: 0,
-                    background: person.profilePhoto ? 'var(--bg-muted)' : 'var(--accent)',
-                    color: '#0d0d0d', border: 'var(--bw) solid var(--border)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    overflow: 'hidden',
-                    fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '17px', letterSpacing: '0',
-                  }}>
-                    {person.profilePhoto
-                      ? <img src={person.profilePhoto} alt="" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : ((person.firstName?.[0] || '') + (person.lastName?.[0] || '')).toUpperCase() || <User size={20} style={{ color: '#0d0d0d' }} aria-hidden="true" />
-                    }
-                  </div>
+                  {/* Avatar — photo, else elegant gender-coloured initials */}
+                  <PersonAvatar person={person} size={48} />
 
                   {/* Info */}
                   <div style={{ flex: 1, minWidth: 0 }}>

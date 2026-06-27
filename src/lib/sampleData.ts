@@ -13,7 +13,6 @@ export const samplePersons: Person[] = [
     isAlive: false,
     occupation: 'Ingénieur',
     bio: 'Fondateur de la famille Dupont, Henri était un ingénieur talentueux ayant travaillé pour plusieurs grandes entreprises françaises.',
-    profilePhoto: 'https://api.dicebear.com/7.x/personas/svg?seed=Henri',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
     tags: ['fondateur', 'ingénieur'],
@@ -41,7 +40,6 @@ export const samplePersons: Person[] = [
     isAlive: false,
     occupation: 'Institutrice',
     bio: 'Marguerite était une institutrice dévouée qui a élevé trois enfants avec amour et sagesse.',
-    profilePhoto: 'https://api.dicebear.com/7.x/personas/svg?seed=Marguerite',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
     tags: ['enseignante'],
@@ -61,7 +59,6 @@ export const samplePersons: Person[] = [
     isAlive: true,
     occupation: 'Médecin',
     bio: 'Pierre est médecin généraliste à Toulouse depuis 1990.',
-    profilePhoto: 'https://api.dicebear.com/7.x/personas/svg?seed=Pierre',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
     tags: ['médecin'],
@@ -82,7 +79,6 @@ export const samplePersons: Person[] = [
     isAlive: true,
     occupation: 'Architecte',
     bio: "Isabelle est architecte renommée, spécialisée dans l'architecture bioclimatique.",
-    profilePhoto: 'https://api.dicebear.com/7.x/personas/svg?seed=Isabelle',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
     events: [
@@ -100,7 +96,6 @@ export const samplePersons: Person[] = [
     isAlive: true,
     occupation: 'Journaliste',
     bio: 'Sophie travaille pour un grand journal parisien depuis 1990.',
-    profilePhoto: 'https://api.dicebear.com/7.x/personas/svg?seed=Sophie',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
     events: [
@@ -117,7 +112,6 @@ export const samplePersons: Person[] = [
     isAlive: true,
     occupation: 'Chef cuisinier',
     bio: 'Thomas est chef étoilé au guide Michelin, propriétaire du restaurant "Le Dupont" à Paris.',
-    profilePhoto: 'https://api.dicebear.com/7.x/personas/svg?seed=Thomas',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
     tags: ['chef', 'étoilé'],
@@ -137,7 +131,6 @@ export const samplePersons: Person[] = [
     isAlive: true,
     occupation: 'Photographe',
     bio: "Claire est photographe artistique reconnue internationalement pour ses portraits de famille.",
-    profilePhoto: 'https://api.dicebear.com/7.x/personas/svg?seed=Claire',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
     events: [
@@ -155,7 +148,6 @@ export const samplePersons: Person[] = [
     isAlive: true,
     occupation: 'Développeur',
     bio: "Lucas est développeur web freelance. C'est lui qui maintient l'arbre de la famille à jour.",
-    profilePhoto: 'https://api.dicebear.com/7.x/personas/svg?seed=Lucas',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
     events: [
@@ -172,7 +164,6 @@ export const samplePersons: Person[] = [
     isAlive: true,
     occupation: 'Étudiante',
     bio: "Emma termine ses études d'ingénieure agronome à Toulouse, dans la lignée agricole de ses aïeux.",
-    profilePhoto: 'https://api.dicebear.com/7.x/personas/svg?seed=Emma',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
     events: [
@@ -189,7 +180,6 @@ export const samplePersons: Person[] = [
     isAlive: true,
     occupation: 'Musicien',
     bio: "Hugo est musicien : il joue du violoncelle dans un orchestre de chambre parisien.",
-    profilePhoto: 'https://api.dicebear.com/7.x/personas/svg?seed=Hugo',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
     events: [
@@ -206,7 +196,6 @@ export const samplePersons: Person[] = [
     isAlive: true,
     occupation: 'Lycéenne',
     bio: "Léa, la cadette de la branche parisienne, prépare le concours d'entrée d'une école d'art.",
-    profilePhoto: 'https://api.dicebear.com/7.x/personas/svg?seed=Lea',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
     events: [
@@ -225,7 +214,6 @@ export const samplePersons: Person[] = [
     deathPlace: { city: 'Bordeaux', country: 'France' },
     isAlive: false,
     occupation: 'Couturière',
-    profilePhoto: 'https://api.dicebear.com/7.x/personas/svg?seed=Marie',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
     events: [
@@ -243,7 +231,6 @@ export const samplePersons: Person[] = [
     deathPlace: { city: 'Bordeaux', country: 'France' },
     isAlive: false,
     occupation: 'Agriculteur',
-    profilePhoto: 'https://api.dicebear.com/7.x/personas/svg?seed=Andre',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
     events: [
@@ -262,7 +249,6 @@ export const samplePersons: Person[] = [
     isAlive: false,
     occupation: 'Menuisier',
     bio: "Patriarche de la lignée, Jules tenait un atelier de menuiserie réputé dans le Vieux Lyon. Il a transmis le goût du travail bien fait à toute sa descendance.",
-    profilePhoto: 'https://api.dicebear.com/7.x/personas/svg?seed=Jules',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
     tags: ['patriarche', 'artisan'],
@@ -284,7 +270,6 @@ export const samplePersons: Person[] = [
     isAlive: false,
     occupation: 'Couturière',
     bio: "Augustine cousait pour les grandes maisons lyonnaises de la soie. Femme de caractère, elle a tenu la maison familiale pendant la guerre.",
-    profilePhoto: 'https://api.dicebear.com/7.x/personas/svg?seed=Augustine',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
     events: [
@@ -301,7 +286,6 @@ export const samplePersons: Person[] = [
     isAlive: true,
     occupation: 'Professeur',
     bio: "Bernard enseigne l'histoire-géographie au lycée depuis trente ans. Passionné de généalogie, c'est lui qui a lancé la reconstitution de l'arbre familial.",
-    profilePhoto: 'https://api.dicebear.com/7.x/personas/svg?seed=Bernard',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
     tags: ['enseignant'],
@@ -320,7 +304,6 @@ export const samplePersons: Person[] = [
     isAlive: true,
     occupation: 'Vétérinaire',
     bio: "Camille a ouvert sa clinique vétérinaire à Nantes. Elle partage les photos de la ferme familiale sur le journal de l'arbre.",
-    profilePhoto: 'https://api.dicebear.com/7.x/personas/svg?seed=Camille',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
     events: [
@@ -338,7 +321,6 @@ export const samplePersons: Person[] = [
     isAlive: true,
     occupation: 'Infirmière',
     bio: "Nathalie est infirmière en pédiatrie au CHU de Toulouse. Elle a épousé Lucas en 2017.",
-    profilePhoto: 'https://api.dicebear.com/7.x/personas/svg?seed=Nathalie',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
     events: [
@@ -355,7 +337,6 @@ export const samplePersons: Person[] = [
     birthPlace: { city: 'Toulouse', country: 'France' },
     isAlive: true,
     bio: "Benjamin de la famille, Gabriel représente la cinquième génération recensée dans l'arbre.",
-    profilePhoto: 'https://api.dicebear.com/7.x/personas/svg?seed=Gabriel',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
     tags: ['benjamin'],

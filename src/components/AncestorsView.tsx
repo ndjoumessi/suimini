@@ -3,6 +3,7 @@ import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { FamilyTree, Person } from '@/types';
 import { Search, Link2, Scale, TreePine, Sprout, User, AlertCircle, Dna } from 'lucide-react';
+import PersonAvatar from './PersonAvatar';
 import {
   getDisplayName, formatYear, getAllAncestors, getAllDescendants,
   findCommonAncestors, findRelationPath, describeRelation, getAge
@@ -342,18 +343,7 @@ function PersonBubble({ person, onClick }: { person: Person | null; onClick: () 
   if (!person) return <div style={{ width: '80px' }} />;
   return (
     <button onClick={onClick} style={{ border: 'none', background: 'none', cursor: 'pointer', textAlign: 'center' }}>
-      <div style={{
-        width: '64px', height: '64px', borderRadius: '50%', margin: '0 auto 6px',
-        background: person.gender === 'male' ? 'color-mix(in srgb, var(--male) 16%, var(--bg-card))' : person.gender === 'female' ? 'color-mix(in srgb, var(--female) 16%, var(--bg-card))' : 'var(--bg-muted)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px',
-        overflow: 'hidden',
-        border: `3px solid ${person.gender === 'male' ? 'var(--male)' : person.gender === 'female' ? 'var(--female)' : 'var(--border)'}`,
-      }}>
-        {person.profilePhoto
-          ? <img src={person.profilePhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          : <User size={22} aria-hidden="true" style={{ color: person.gender === 'male' ? 'var(--male)' : person.gender === 'female' ? 'var(--female)' : 'var(--text-muted)' }} />
-        }
-      </div>
+      <div style={{ margin: '0 auto 6px', width: '64px' }}><PersonAvatar person={person} size={64} /></div>
       <div style={{ fontSize: '12px', fontWeight: '700' }}>{person.firstName}</div>
       <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{person.lastName}</div>
       {person.birthDate && <div style={{ fontSize: '10px', color: 'var(--text-light)' }}>{formatYear(person.birthDate)}</div>}
@@ -376,17 +366,7 @@ function PersonCard({ person, onClick }: { person: Person; onClick: () => void }
       onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = 'var(--shadow)'; }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.borderLeftColor = person.gender === 'male' ? 'var(--male)' : person.gender === 'female' ? 'var(--female)' : 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
     >
-      <div style={{
-        width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
-        background: person.gender === 'male' ? 'color-mix(in srgb, var(--male) 16%, var(--bg-card))' : 'color-mix(in srgb, var(--female) 16%, var(--bg-card))',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px',
-        overflow: 'hidden',
-      }}>
-        {person.profilePhoto
-          ? <img src={person.profilePhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          : <User size={22} aria-hidden="true" style={{ color: person.gender === 'male' ? 'var(--male)' : person.gender === 'female' ? 'var(--female)' : 'var(--text-muted)' }} />
-        }
-      </div>
+      <PersonAvatar person={person} size={36} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontWeight: '700', fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {getDisplayName(person)}

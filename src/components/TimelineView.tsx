@@ -1,7 +1,7 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { CalendarDays, MapPin } from 'lucide-react';
+import { CalendarDays, MapPin, Sparkles, Moon, Heart, Star } from 'lucide-react';
 import { EmptyState } from './ui/EmptyState';
 import { FamilyTree, EventType, Person } from '@/types';
 import { getDisplayName, formatDate, getChildren, getParents } from '@/lib/treeUtils';
@@ -16,19 +16,6 @@ interface TimelineEntry {
   description: string;
   place?: string;
 }
-
-// Event type → a design-system token (stays on-brand and retints in dark mode).
-const EVENT_COLORS: Record<string, string> = {
-  birth: 'var(--success)',
-  death: 'var(--deceased)',
-  marriage: 'var(--accent)',
-  divorce: 'var(--danger)',
-  baptism: 'var(--info)',
-  graduation: 'var(--warning)',
-  military: 'var(--text-muted)',
-  immigration: 'var(--info)',
-  other: 'var(--accent)',
-};
 
 // Generation → design token. Cycles through a curated on-brand palette so that
 // each generation reads as a distinct hue without becoming rainbow chaos.
@@ -108,6 +95,31 @@ function computeGenerations(tree: FamilyTree): Map<string, number> {
 function genColor(gen: number | null): string {
   if (gen == null) return NEUTRAL_GEN_COLOR;
   return GENERATION_PALETTE[gen % GENERATION_PALETTE.length];
+}
+
+// Event type → Lucide icon + accent colour for the timeline list.
+function eventVisual(type: string): { Icon: typeof Star; color: string } {
+  if (type === 'birth') return { Icon: Sparkles, color: 'var(--accent-text)' };
+  if (type === 'death') return { Icon: Moon, color: 'var(--male)' };
+  if (type === 'marriage') return { Icon: Heart, color: 'var(--female)' };
+  return { Icon: Star, color: 'var(--text)' };
+}
+
+// One timeline row: slides in from its side when scrolled into view (reduced-motion
+// + headless safe: visible by default, animation replays on intersect).
+function TLRow({ side, children }: { side: 'left' | 'right'; children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [seen, setSeen] = useState(false);
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) { setSeen(true); return; }
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setSeen(true); io.disconnect(); } }, { threshold: 0.2 });
+    io.observe(el);
+    const tm = window.setTimeout(() => setSeen(true), 1400);
+    return () => { io.disconnect(); clearTimeout(tm); };
+  }, []);
+  return <div ref={ref} className={`tl-row tl-row-${side} ${seen ? 'tl-in' : ''}`}>{children}</div>;
 }
 
 export default function TimelineView({ tree, onSelectPerson }: Props) {
@@ -337,65 +349,35 @@ export default function TimelineView({ tree, onSelectPerson }: Props) {
           <EmptyState icon={CalendarDays} title={t('empty')} />
         </div>
       ) : view === 'list' ? (
-        /* ─── LIST VIEW (existing) ───────────────────────────────────────── */
-        <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
-          {decades.map(decade => (
-            <div key={decade} style={{ marginBottom: '24px' }}>
-              {/* Decade header */}
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px'
-              }}>
-                <div className="label" style={{ fontSize: '13px', color: 'var(--text-light)', minWidth: '60px' }}>
-                  {t('decade', { decade })}
-                </div>
-                <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
-                <div style={{ fontSize: '11px', color: 'var(--text-light)' }}>
-                  {t('eventCount', { count: byDecade[decade].length })}
-                </div>
+        /* ─── LIST VIEW — central gold line, alternating event cards ──────── */
+        <div className="tl-scroll">
+          <div className="tl">
+            {decades.map(decade => (
+              <div key={decade}>
+                <div className="tl-decade"><span>{decade}<span className="tl-decade-s">s</span></span></div>
+                {byDecade[decade].map((entry, i) => {
+                  const { Icon, color } = eventVisual(entry.type);
+                  const side = i % 2 === 0 ? 'left' : 'right';
+                  return (
+                    <TLRow key={`${decade}-${i}`} side={side}>
+                      <span className="tl-node" style={{ borderColor: color }} aria-hidden="true" />
+                      <button className="tl-card" onClick={() => onSelectPerson(entry.personId)}>
+                        <span className="tl-card-head">
+                          <Icon size={15} style={{ color }} aria-hidden="true" />
+                          <span className="tl-year">{entry.year}</span>
+                        </span>
+                        <span className="tl-name">{entry.description}</span>
+                        <span className="tl-meta">
+                          <span className="tl-date"><CalendarDays size={11} aria-hidden="true" /> {formatDate(entry.date)}</span>
+                          {entry.place && <span className="tl-place"><MapPin size={11} aria-hidden="true" /> {entry.place}</span>}
+                        </span>
+                      </button>
+                    </TLRow>
+                  );
+                })}
               </div>
-
-              {/* Events — the single rail is drawn by .timeline-item::before */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-                {byDecade[decade].map((entry, i) => (
-                  <div key={i} className="timeline-item">
-                    <div
-                      className="timeline-dot"
-                      style={{ background: EVENT_COLORS[entry.type] || 'var(--accent)' }}
-                    />
-                    <button
-                      onClick={() => onSelectPerson(entry.personId)}
-                      style={{
-                        display: 'flex', alignItems: 'flex-start', gap: '12px',
-                        border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left',
-                        padding: '4px 8px', borderRadius: 'var(--radius)',
-                        transition: 'background 0.1s', width: '100%',
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-muted)'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'none'}
-                    >
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)', marginBottom: '2px' }}>
-                          {entry.description}
-                        </div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '12px' }}>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><CalendarDays size={11} aria-hidden="true" /> {formatDate(entry.date)}</span>
-                          {entry.place && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><MapPin size={11} aria-hidden="true" /> {entry.place}</span>}
-                        </div>
-                      </div>
-                      <span style={{
-                        fontSize: '11px', color: 'var(--text-muted)',
-                        fontWeight: '700',
-                        background: 'var(--bg-muted)',
-                        padding: '2px 8px', borderRadius: '100px', flexShrink: 0,
-                      }}>
-                        {entry.year}
-                      </span>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       ) : (
         /* ─── CENTURY VIEW (life bars) ───────────────────────────────────── */
@@ -512,6 +494,49 @@ export default function TimelineView({ tree, onSelectPerson }: Props) {
       )}
 
       <style>{`
+        /* ── Timeline list: central gold line + alternating event cards ── */
+        .tl-scroll { flex: 1; overflow-y: auto; }
+        .tl { position: relative; max-width: 940px; margin: 0 auto; padding: 16px 16px 64px; }
+        .tl::before { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; transform: translateX(-50%);
+          background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 14%, transparent)); }
+        .tl-decade { position: relative; display: flex; justify-content: center; margin: 32px 0 22px; }
+        .tl-decade > span { position: relative; z-index: 1; font-family: var(--font-display); font-weight: 600; font-size: 2rem; letter-spacing: -0.02em; color: var(--accent-text); background: var(--bg); padding: 2px 18px; }
+        .tl-decade-s { font-size: 0.58em; color: var(--text-light); }
+        .tl-row { position: relative; width: 50%; box-sizing: border-box; padding: 0 40px 18px; }
+        .tl-row-left { left: 0; }
+        .tl-row-right { left: 50%; }
+        .tl-node { position: absolute; top: 18px; width: 14px; height: 14px; background: var(--bg); border: 2px solid var(--accent); border-radius: 50%; z-index: 2; }
+        .tl-row-left .tl-node { right: -7px; }
+        .tl-row-right .tl-node { left: -7px; }
+        .tl-card { width: 100%; display: flex; flex-direction: column; gap: 5px; text-align: left;
+          background: var(--bg-card); border: 1px solid var(--border); border-radius: 0; padding: 13px 16px; cursor: pointer;
+          opacity: 0; transform: translateX(var(--tl-dx, 24px));
+          transition: opacity 600ms var(--ease-out), transform 600ms var(--ease-out), border-color 160ms ease, box-shadow 200ms ease; }
+        .tl-row-left .tl-card { --tl-dx: -24px; text-align: right; align-items: flex-end; }
+        .tl-row-right .tl-card { --tl-dx: 24px; }
+        .tl-in .tl-card { opacity: 1; transform: translateX(0); }
+        .tl-card:hover { border-color: var(--accent); box-shadow: var(--shadow-accent); transform: translateY(-2px); }
+        .tl-card-head { display: inline-flex; align-items: center; gap: 8px; }
+        .tl-row-left .tl-card-head { flex-direction: row-reverse; }
+        .tl-year { font-family: var(--font-display); font-size: 1.1rem; font-weight: 600; color: var(--accent-text); }
+        .tl-name { font-family: var(--font-display); font-size: 15px; color: var(--ink); line-height: 1.3; }
+        .tl-meta { display: flex; gap: 12px; flex-wrap: wrap; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+        .tl-row-left .tl-meta { justify-content: flex-end; }
+        .tl-date { display: inline-flex; align-items: center; gap: 4px; color: var(--accent-text); }
+        .tl-place { display: inline-flex; align-items: center; gap: 4px; }
+        @media (prefers-reduced-motion: reduce) {
+          .tl-card { opacity: 1; transform: none; transition: border-color 160ms ease, box-shadow 200ms ease; }
+          .tl-card:hover { transform: none; }
+        }
+        @media (max-width: 680px) {
+          .tl::before { left: 16px; }
+          .tl-row, .tl-row-left, .tl-row-right { width: 100%; left: 0; padding: 0 0 16px 44px; }
+          .tl-row .tl-card, .tl-row-left .tl-card { text-align: left; align-items: flex-start; --tl-dx: 24px; }
+          .tl-row-left .tl-card-head { flex-direction: row; }
+          .tl-row-left .tl-meta { justify-content: flex-start; }
+          .tl-node { left: 9px !important; right: auto !important; }
+        }
+
         .timeline-life-bar { transition: transform 0.1s, box-shadow 0.1s; }
         .timeline-life-bar:hover {
           transform: translate(-1px, -1px);

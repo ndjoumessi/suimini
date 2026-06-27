@@ -4,6 +4,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Person, FamilyTree, Relationship, RelationType, FamilyEvent, EventType, Note, Citation, DnaOrigin, AiNarrative } from '@/types';
 import { getParents, getChildren, getSpouses, getSiblings, getAge, formatDate, formatYear, getDisplayName, generateId, safeHttpUrl } from '@/lib/treeUtils';
 import { personEras, type HistoricalEvent } from '@/lib/history';
+import PersonAvatar from './PersonAvatar';
 import { fetchComments, addComment, subscribeComments, collaborationEnabled, type PersonComment, fetchPendingSuggestions, addSuggestion, resolveSuggestion, type PersonSuggestion } from '@/lib/collaboration';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/useMediaQuery';
@@ -476,16 +477,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
           <button onClick={onClose} className="icon-btn" aria-label={t('closePanel')} title={t('close')}><X size={18} aria-hidden="true" /></button>
         </div>
         <div style={{ display:'flex', alignItems:'flex-start', gap:'12px' }}>
-          <div style={{ width:'56px', height:'56px', borderRadius:'50%', flexShrink:0, overflow:'hidden',
-            background: person.gender==='male'?'color-mix(in srgb, var(--male) 16%, var(--bg-card))':person.gender==='female'?'color-mix(in srgb, var(--female) 16%, var(--bg-card))':'var(--bg-muted)',
-            display:'flex', alignItems:'center', justifyContent:'center',
-            border:`3px solid ${person.gender==='male'?'var(--male)':person.gender==='female'?'var(--female)':'var(--border)'}`,
-            fontSize:'18px', fontWeight:700, color: person.gender==='male'?'var(--male)':person.gender==='female'?'var(--female)':'var(--text-muted)'
-          }}>
-            {person.profilePhoto
-              ? <img src={person.profilePhoto} alt={t('profilePhotoAlt', { name: getDisplayName(person) })} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
-              : `${(person.firstName[0]||'').toUpperCase()}${(person.lastName[0]||'').toUpperCase()}`}
-          </div>
+          <PersonAvatar person={person} size={64} />
           <div style={{ flex:1, minWidth:0 }}>
             <h2 className="serif" style={{ margin:'0 0 4px', fontSize:'1.2rem', lineHeight:1.25 }}>
               {person.firstName} {person.maidenName?`(${person.maidenName}) `:''}{person.lastName}

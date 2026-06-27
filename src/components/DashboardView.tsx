@@ -2,9 +2,10 @@
 import { useMemo, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import {
-  Home, Cake, Clock, Sparkles, Sprout, User, Plus,
+  Home, Cake, Clock, Sparkles, Sprout, Plus,
   TreePine, Users, Map, Calendar, BookOpen, BarChart2, ScanFace,
 } from 'lucide-react';
+import PersonAvatar from './PersonAvatar';
 import { FamilyTree, ViewMode } from '@/types';
 import {
   computeTreeStats, getUpcomingAnniversaries, getAge, getDisplayName,
@@ -66,12 +67,12 @@ function earliestYear(tree?: FamilyTree | null): number | null {
 
 // ---------- shared card chrome ----------
 
-function Card({ children, eyebrow, title, Icon, full, delay }: {
-  children: ReactNode; eyebrow?: string; title?: string; Icon?: typeof Home; full?: boolean; delay: number;
+function Card({ children, eyebrow, title, Icon, full, delay, warm }: {
+  children: ReactNode; eyebrow?: string; title?: string; Icon?: typeof Home; full?: boolean; delay: number; warm?: boolean;
 }) {
   return (
     <section
-      className="dash-card animate-fade-in"
+      className={`dash-card animate-fade-in ${warm ? 'dash-card-warm' : ''}`}
       style={{ animationDelay: `${delay}s`, gridColumn: full ? '1 / -1' : undefined }}
     >
       {(title || eyebrow) && (
@@ -144,15 +145,13 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
 
   const heroTitle = activeTree?.name || (firstName ? t('greeting', { name: firstName }) : t('greetingGeneric'));
   const subtitle = stats
-    ? [
-        `${stats.generations} ${en ? 'generations' : 'générations'}`,
-        `${stats.members} ${en ? 'members' : 'membres'}`,
-        stats.since ? `${en ? 'since' : 'depuis'} ~${stats.since}` : null,
-      ].filter(Boolean).join('  ·  ')
+    ? (en
+        ? `Your lineage holds ${stats.members} members across ${stats.generations} generations${stats.since ? ` — since ~${stats.since}` : ''}`
+        : `Votre lignée compte ${stats.members} membres sur ${stats.generations} générations${stats.since ? ` — depuis ~${stats.since}` : ''}`)
     : null;
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', background: 'var(--bg)' }}>
+    <div style={{ flex: 1, overflowY: 'auto', background: 'radial-gradient(130% 80% at 50% -5%, rgba(201,168,76,0.05), transparent 58%), var(--bg)' }}>
       <div className="dash-wrap">
 
         {/* HERO — the active tree's name dominates the view. */}
@@ -161,7 +160,7 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
             {today}{firstName ? `  ·  ${t('greeting', { name: firstName }).replace(/\s*!\s*$/, '')}` : ''}
           </div>
           <h1 className="display-xxl">{heroTitle}</h1>
-          <hr className="rule-accent" style={{ marginTop: '18px' }} />
+          <hr className="rule-accent" style={{ marginTop: '18px', width: '80px' }} />
           {subtitle ? (
             <p className="dash-subtitle mono">{subtitle}</p>
           ) : (
@@ -198,14 +197,15 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
 
         {/* SECONDARY — birthdays, activity, quick access, AI. */}
         <div className="dash-grid">
-          <Card eyebrow={t('birthdaysEyebrow')} title={t('birthdays')} Icon={Cake} delay={0.2}>
+          <Card eyebrow={t('birthdaysEyebrow')} title={t('birthdays')} Icon={Cake} delay={0.2} warm>
             {birthdays.length > 0 ? (
               <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '9px' }}>
                 {birthdays.map((a, i) => {
                   const d = new Date(a.date);
                   const when = d.toLocaleDateString(en ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'long' });
                   return (
-                    <li key={`${a.person.id}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <li key={`${a.person.id}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <Cake size={15} aria-hidden="true" style={{ color: 'var(--accent-text)', flexShrink: 0 }} />
                       <span className="mono" style={{ width: '40px', textAlign: 'right', flexShrink: 0, fontWeight: 700, color: 'var(--accent-text)', fontSize: '13px' }}>{a.daysUntil === 0 ? t('todayShort') : t('daysShort', { days: a.daysUntil })}</span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 700, fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getDisplayName(a.person)}</div>
@@ -226,11 +226,7 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
                 {recent.map(({ person, treeId, treeName }) => (
                   <li key={person.id}>
                     <button onClick={() => onSelectPerson(treeId, person.id)} className="dash-recent">
-                      <span className="dash-recent-av">
-                        {person.profilePhoto
-                          ? <img src={person.profilePhoto} alt="" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          : <User size={16} style={{ color: 'var(--text-light)' }} aria-hidden="true" />}
-                      </span>
+                      <PersonAvatar person={person} size={36} />
                       <span style={{ flex: 1, minWidth: 0 }}>
                         <span style={{ display: 'block', fontWeight: 700, fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getDisplayName(person)}</span>
                         <span className="mono" style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{treeName} · {relativeTime(person.updatedAt, locale)}</span>
@@ -274,7 +270,7 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
       <style>{`
         .dash-wrap { padding: 40px; max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
         .dash-hero { padding: 8px 0 4px; }
-        .dash-subtitle { margin: 16px 0 0; font-size: 13px; color: var(--text-muted); letter-spacing: 0.04em; }
+        .dash-subtitle { margin: 16px 0 0; font-size: 13px; color: var(--accent-text); opacity: 0.82; letter-spacing: 0.04em; }
 
         .dash-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 
@@ -284,6 +280,10 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
           border-radius: var(--radius); padding: 24px 26px;
           box-shadow: var(--shadow-sm);
           display: flex; flex-direction: column;
+        }
+        .dash-card-warm {
+          background: linear-gradient(150% 120% at 0% 0%, rgba(201,168,76,0.07), transparent 55%), var(--bg-card);
+          border-color: color-mix(in srgb, var(--accent) 22%, var(--border));
         }
 
         .dash-recent { width: 100%; display: flex; align-items: center; gap: 11px; padding: 8px; border: none; background: transparent; cursor: pointer; text-align: left; transition: background var(--t-fast); }
@@ -297,7 +297,8 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
           background: var(--bg); border: var(--bw) solid var(--border); color: var(--text-muted);
           transition: transform var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out), color var(--t-fast), border-color var(--t-fast);
         }
-        .dash-quick-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-accent); color: var(--text); border-color: var(--accent); }
+        .dash-quick-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-accent); background: var(--accent); color: #0d0d0d; border-color: var(--accent); }
+        @media (prefers-reduced-motion: reduce) { .dash-quick-btn:hover { transform: none; } }
 
         @media (max-width: 1000px) {
           .dash-grid { grid-template-columns: repeat(2, 1fr); }
