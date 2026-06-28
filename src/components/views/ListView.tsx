@@ -164,7 +164,7 @@ export default function ListView({ tree, onSelectPerson, onAddPerson, canEdit = 
             <option value="generation">{t('sortGeneration')}</option>
           </select>
 
-          <div className="lv-seg" role="group" aria-label="Affichage">
+          <div className="lv-seg" role="group" aria-label={t('displayAria')}>
             <button className={`lv-seg-btn ${layout === 'list' ? 'lv-seg-active' : ''}`} aria-pressed={layout === 'list'}
               aria-label={t('viewList')} title={t('viewList')} onClick={() => setLayout('list')}><List size={16} aria-hidden="true" /></button>
             <button className={`lv-seg-btn ${layout === 'grid' ? 'lv-seg-active' : ''}`} aria-pressed={layout === 'grid'}

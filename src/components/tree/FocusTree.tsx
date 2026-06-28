@@ -240,7 +240,7 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
     <div className="ft-root">
       {/* Breadcrumb */}
       {crumbs.length > 1 && (
-        <nav className="ft-crumbs" aria-label="Lignée">
+        <nav className="ft-crumbs" aria-label={t('lineageAria')}>
           {crumbs.map((c, i) => (
             <span key={c.id} className="ft-crumb-wrap">
               <button className={`ft-crumb ${c.id === focusId ? 'ft-crumb-on' : ''}`} onClick={() => onFocus(c.id)}>

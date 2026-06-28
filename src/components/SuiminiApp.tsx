@@ -97,6 +97,7 @@ export default function SuiminiApp() {
     id: '', name: '', createdAt: '', updatedAt: '', persons: [], relationships: [],
   }), []);
   const tc = useTranslations('common');
+  const tnav = useTranslations('nav');
   const tOffline = useTranslations('offline');
 
   const [view, setView] = useState<ViewMode>('dashboard');
@@ -486,9 +487,9 @@ export default function SuiminiApp() {
         {isDemo && <DemoBanner onCreateAccount={() => openAuth('signup')} onExit={exitDemo} />}
         {/* Mobile header */}
         <div style={{ display: 'none', padding: '10px 16px', borderBottom: 'var(--bw) solid var(--border-strong)', background: 'var(--bg-card)', alignItems: 'center', gap: '12px' }} className="mobile-header">
-          <button onClick={() => setSidebarOpen(true)} className="btn btn-ghost btn-icon btn-sm" aria-label="Ouvrir le menu"><Menu size={18} aria-hidden="true" /></button>
+          <button onClick={() => setSidebarOpen(true)} className="btn btn-ghost btn-icon btn-sm" aria-label={tnav('openMenu')}><Menu size={18} aria-hidden="true" /></button>
           <BrandLockup size={24} color="var(--ink)" accent="var(--accent)" surface="var(--bg-card)" fontSize={18} />
-          <button onClick={() => setShowPalette(true)} className="btn btn-ghost btn-icon btn-sm" style={{ marginLeft: 'auto' }} aria-label="Rechercher"><Search size={18} aria-hidden="true" /></button>
+          <button onClick={() => setShowPalette(true)} className="btn btn-ghost btn-icon btn-sm" style={{ marginLeft: 'auto' }} aria-label={tc('search')}><Search size={18} aria-hidden="true" /></button>
           <span className="label" style={{ color: 'var(--text-muted)', textTransform: 'none' }}>{store.activeTree?.name}</span>
         </div>
 

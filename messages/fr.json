@@ -244,7 +244,8 @@
     "nextGeneration": "Génération suivante",
     "modeFocus": "Focus",
     "modeFull": "Complète",
-    "displayMode": "Mode d'affichage"
+    "displayMode": "Mode d'affichage",
+    "lineageAria": "Lignée"
   },
   "person": {
     "firstName": "Prénom",
@@ -574,7 +575,8 @@
     "confirm": "Confirmer",
     "search": "Rechercher",
     "noResults": "Aucun résultat",
-    "clickToClose": "Cliquez pour fermer"
+    "clickToClose": "Cliquez pour fermer",
+    "anonymous": "Anonyme"
   },
   "demo": {
     "banner": "Mode démo · données non sauvegardées",
@@ -628,7 +630,8 @@
     "genderOther": "Autre",
     "alive": "vivant",
     "deceased": "décédé",
-    "showMore": "{remaining, plural, one {Voir plus (# restante)} other {Voir plus (# restantes)}}"
+    "showMore": "{remaining, plural, one {Voir plus (# restante)} other {Voir plus (# restantes)}}",
+    "displayAria": "Affichage"
   },
   "mapView": {
     "title": "Carte des lieux",
@@ -1525,5 +1528,13 @@
   "homeGate": {
     "linkExpired": "Le lien de connexion a expiré. Veuillez en demander un nouveau.",
     "close": "Fermer"
+  },
+  "history": {
+    "undo": "Annuler",
+    "redo": "Rétablir",
+    "undoTooltip": "Annuler : {action}",
+    "redoTooltip": "Rétablir : {action}",
+    "nothingUndo": "Rien à annuler",
+    "nothingRedo": "Rien à rétablir"
   }
 }

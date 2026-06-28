@@ -20,6 +20,7 @@ interface Props {
 export default function ContentHeader({ activeView, activeTreeName, onPresent, onOpenSearch }: Props) {
   const t = useTranslations('nav');
   const ts = useTranslations('sidebar');
+  const tcom = useTranslations('common');
 
   const titleKey: Record<string, string> = {
     dashboard: 'home', tree: 'tree', list: 'persons', map: 'map', timeline: 'timeline',
@@ -35,7 +36,7 @@ export default function ContentHeader({ activeView, activeTreeName, onPresent, o
         <h1 className="ch-view">{title}</h1>
       </div>
       <div className="ch-actions">
-        <button onClick={onOpenSearch} className="icon-btn" aria-label="Rechercher" title="⌘K">
+        <button onClick={onOpenSearch} className="icon-btn" aria-label={tcom('search')} title="⌘K">
           <Search size={18} aria-hidden="true" />
         </button>
         <button onClick={onPresent} className="icon-btn" aria-label={ts('presentMode')} title={ts('presentMode')}>

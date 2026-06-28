@@ -97,6 +97,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
   const tc = useTranslations('collaboration');
   const ts = useTranslations('suggestions');
   const to = useTranslations('ocr');
+  const tcom = useTranslations('common');
   const locale = useLocale();
   const { user } = useAuth();
   // On phones the panel becomes a full-screen sheet (over the tree) with a
@@ -156,7 +157,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
 
   const commentsEnabled = collaborationEnabled() && !!user;
   const commentAuthor = user
-    ? { id: user.id, name: (user.user_metadata?.display_name as string) || user.email || 'Anonyme' }
+    ? { id: user.id, name: (user.user_metadata?.display_name as string) || user.email || tcom('anonymous') }
     : null;
 
   // Load + subscribe to comments when the Discussion tab is active for this person.
@@ -1066,7 +1067,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                     <div style={{ textAlign:'center', padding:'20px', color:'var(--text-muted)', fontSize:'13px' }}>{tc('noComments')}</div>
                   ) : (
                     comments.map(c => {
-                      const name = c.authorName || 'Anonyme';
+                      const name = c.authorName || tcom('anonymous');
                       const initials = name.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
                       return (
                         <div key={c.id} style={{ display:'flex', gap:'8px', alignItems:'flex-start' }}>

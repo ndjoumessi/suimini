@@ -244,7 +244,8 @@
     "nextGeneration": "Next generation",
     "modeFocus": "Focus",
     "modeFull": "Full",
-    "displayMode": "Display mode"
+    "displayMode": "Display mode",
+    "lineageAria": "Lineage"
   },
   "person": {
     "firstName": "First name",
@@ -574,7 +575,8 @@
     "confirm": "Confirm",
     "search": "Search",
     "noResults": "No results",
-    "clickToClose": "Click to dismiss"
+    "clickToClose": "Click to dismiss",
+    "anonymous": "Anonymous"
   },
   "demo": {
     "banner": "Demo mode · data not saved",
@@ -628,7 +630,8 @@
     "genderOther": "Other",
     "alive": "living",
     "deceased": "deceased",
-    "showMore": "{remaining, plural, one {Show more (# remaining)} other {Show more (# remaining)}}"
+    "showMore": "{remaining, plural, one {Show more (# remaining)} other {Show more (# remaining)}}",
+    "displayAria": "View"
   },
   "mapView": {
     "title": "Places map",
@@ -1525,5 +1528,13 @@
   "homeGate": {
     "linkExpired": "The sign-in link has expired. Please request a new one.",
     "close": "Close"
+  },
+  "history": {
+    "undo": "Undo",
+    "redo": "Redo",
+    "undoTooltip": "Undo: {action}",
+    "redoTooltip": "Redo: {action}",
+    "nothingUndo": "Nothing to undo",
+    "nothingRedo": "Nothing to redo"
   }
 }

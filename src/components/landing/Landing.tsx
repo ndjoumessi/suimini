@@ -105,13 +105,14 @@ function LpLogo({ tagline = false }: { tagline?: boolean }) {
 /* ---------- Locale toggle (dark) ----------
    Real-time switch via IntlProvider — no reload, the page re-renders in place. */
 function LangToggle() {
+  const t = useTranslations('landing');
   const { locale, setLocale } = useLocaleSwitch();
   const choose = (next: Locale) => {
     if (next === locale) return;
     setLocale(next);
   };
   return (
-    <div className="lp-lang" role="group" aria-label="Langue">
+    <div className="lp-lang" role="group" aria-label={t('footer.language')}>
       {LOCALES.map((l) => (
         <button key={l} type="button" onClick={() => choose(l)} aria-pressed={l === locale} aria-label={l === 'fr' ? 'Français' : 'English'} className={l === locale ? 'lp-lang-on' : ''}>
           {l.toUpperCase()}

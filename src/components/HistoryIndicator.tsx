@@ -1,4 +1,5 @@
 'use client';
+import { useTranslations } from 'next-intl';
 
 interface Props {
   canUndo: boolean;
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function HistoryIndicator({ canUndo, canRedo, lastAction, nextAction, onUndo, onRedo }: Props) {
+  const t = useTranslations('history');
   if (!canUndo && !canRedo) return null;
 
   return (
@@ -22,11 +24,11 @@ export default function HistoryIndicator({ canUndo, canRedo, lastAction, nextAct
       <button
         onClick={onUndo}
         disabled={!canUndo}
-        title={canUndo ? `Annuler : ${lastAction}` : 'Rien à annuler'}
+        title={canUndo ? t('undoTooltip', { action: lastAction ?? '' }) : t('nothingUndo')}
         className="btn btn-ghost btn-sm"
         style={{ opacity: canUndo ? 1 : 0.35, cursor: canUndo ? 'pointer' : 'default' }}
       >
-        ↩ Annuler
+        ↩ {t('undo')}
       </button>
 
       {canUndo && lastAction && (
@@ -40,11 +42,11 @@ export default function HistoryIndicator({ canUndo, canRedo, lastAction, nextAct
       <button
         onClick={onRedo}
         disabled={!canRedo}
-        title={canRedo ? `Rétablir : ${nextAction}` : 'Rien à rétablir'}
+        title={canRedo ? t('redoTooltip', { action: nextAction ?? '' }) : t('nothingRedo')}
         className="btn btn-ghost btn-sm"
         style={{ opacity: canRedo ? 1 : 0.35, cursor: canRedo ? 'pointer' : 'default' }}
       >
-        ↪ Rétablir
+        ↪ {t('redo')}
       </button>
     </div>
   );
