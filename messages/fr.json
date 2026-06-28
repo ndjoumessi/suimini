@@ -1546,5 +1546,132 @@
     "redoTooltip": "Rétablir : {action}",
     "nothingUndo": "Rien à annuler",
     "nothingRedo": "Rien à rétablir"
+  },
+  "cgu": {
+    "eyebrow": "Suimini · Légal",
+    "back": "Retour",
+    "title": "Conditions générales d'utilisation",
+    "updated": "Dernière mise à jour : juin 2026",
+    "s": {
+      "objet": {
+        "t": "Objet",
+        "p1": "Les présentes conditions régissent l'utilisation de <b>Suimini</b>, un service de généalogie numérique accessible à l'adresse <b>suimini.vercel.app</b>. En utilisant le service, vous acceptez sans réserve les présentes conditions."
+      },
+      "acces": {
+        "t": "Accès au service",
+        "p1": "Le service est <b>gratuit</b> pour un usage personnel. Une inscription est requise pour accéder aux fonctionnalités connectées.",
+        "p2": "Le plan gratuit donne droit à <b>un arbre</b> ; un nombre <b>illimité</b> d'arbres est disponible avec un abonnement."
+      },
+      "compte": {
+        "t": "Compte utilisateur",
+        "p1": "La création d'un compte nécessite une <b>adresse email valide</b>. Vous êtes responsable de l'exactitude et de la légalité des données que vous saisissez.",
+        "p2": "Il est <b>interdit</b> d'enregistrer des données concernant des tiers sans leur accord."
+      },
+      "donnees": {
+        "t": "Données généalogiques",
+        "p1": "Les arbres généalogiques peuvent contenir des <b>données sensibles</b> (origines, données de santé, etc.).",
+        "p2": "L'utilisateur est seul <b>responsable du contenu</b> qu'il publie.",
+        "p3": "Tout partage de données suppose le <b>consentement</b> préalable des personnes concernées."
+      },
+      "pi": {
+        "t": "Propriété intellectuelle",
+        "p1": "Le service, son code et son interface appartiennent à <b>Suimini</b>.",
+        "p2": "Les <b>données généalogiques</b> que vous saisissez restent votre propriété.",
+        "p3": "Suimini vous concède une simple <b>licence d'utilisation</b> du service."
+      },
+      "abos": {
+        "t": "Abonnements et tarifs",
+        "free": "<b>Gratuit</b> — 1 arbre, 50 personnes.",
+        "famille": "<b>Famille</b> — 9 €/mois, arbres illimités.",
+        "pro": "<b>Pro</b> — 19 €/mois, IA avancée et collaboration."
+      },
+      "resiliation": {
+        "t": "Résiliation",
+        "p1": "Vous pouvez résilier votre abonnement <b>librement, à tout moment</b>.",
+        "p2": "L'<b>export de vos données</b> est garanti au format GEDCOM.",
+        "p3": "Vos données sont <b>supprimées sous 30 jours</b> après la résiliation."
+      },
+      "responsabilite": {
+        "t": "Limitation de responsabilité",
+        "p1": "Le service est fourni « <b>en l'état</b> ». Suimini ne garantit pas une disponibilité 24/7 et ne saurait être tenu responsable des interruptions ou pertes de données. Nous vous recommandons d'exporter régulièrement vos arbres."
+      },
+      "droit": {
+        "t": "Droit applicable",
+        "p1": "Les présentes conditions sont soumises au <b>droit français</b>. En cas de litige, le <b>tribunal compétent</b> est celui de <b>Paris</b>."
+      },
+      "contact": {
+        "t": "Contact",
+        "p1": "Pour toute question relative aux présentes conditions : <mail>contact@suimini.app</mail>."
+      }
+    }
+  },
+  "privacy": {
+    "eyebrow": "Suimini · Légal",
+    "back": "Retour",
+    "title": "Politique de confidentialité",
+    "updated": "Dernière mise à jour : juin 2026",
+    "s": {
+      "responsable": {
+        "t": "Responsable du traitement",
+        "p1": "Le responsable du traitement des données personnelles collectées via le service est <b>Suimini</b> (société à préciser).",
+        "p2": "Pour toute question relative au traitement de vos données : <mail>contact@suimini.app</mail>."
+      },
+      "collectees": {
+        "t": "Données collectées",
+        "intro": "Suimini collecte les catégories de données suivantes :",
+        "compte": "<b>Données de compte</b> — adresse email, prénom et nom.",
+        "arbre": "<b>Données d'arbre</b> — données généalogiques que vous saisissez (personnes, relations, dates, lieux).",
+        "tierces": "<b>Données tierces</b> — photos que vous téléversez.",
+        "logs": "<b>Logs techniques</b> — adresse IP, type de navigateur."
+      },
+      "finalites": {
+        "t": "Finalités du traitement",
+        "intro": "Vos données sont traitées pour les finalités suivantes :",
+        "i1": "Fourniture du service de généalogie.",
+        "i2": "Authentification et sécurisation de votre compte.",
+        "i3": "Envoi d'emails (notamment les invitations).",
+        "i4": "Amélioration continue du service."
+      },
+      "base": {
+        "t": "Base légale",
+        "intro": "Chaque traitement repose sur l'une des bases légales prévues par le RGPD :",
+        "contrat": "<b>Exécution du contrat</b> (art. 6.1.b RGPD) — fourniture du service.",
+        "consentement": "<b>Consentement</b> — téléversement de photos et fonctionnalités d'IA.",
+        "interet": "<b>Intérêt légitime</b> — sécurité du service."
+      },
+      "destinataires": {
+        "t": "Destinataires des données",
+        "intro": "Pour fournir le service, Suimini fait appel à des sous-traitants techniques :",
+        "supabase": "<b>Supabase</b> — hébergement de la base de données (UE/USA).",
+        "anthropic": "<b>Anthropic</b> — traitement par IA (données anonymisées).",
+        "resend": "<b>Resend</b> — envoi des emails.",
+        "vercel": "<b>Vercel</b> — hébergement de l'application."
+      },
+      "duree": {
+        "t": "Durée de conservation",
+        "actif": "<b>Compte actif</b> — pendant toute la durée d'utilisation du service.",
+        "apres": "<b>Après suppression du compte</b> — 30 jours.",
+        "logs": "<b>Logs techniques</b> — 90 jours."
+      },
+      "droits": {
+        "t": "Droits des personnes",
+        "p1": "Conformément au RGPD, vous disposez des droits suivants sur vos données : droit d'<b>accès</b>, de <b>rectification</b>, d'<b>effacement</b>, de <b>portabilité</b> et d'<b>opposition</b>.",
+        "p2": "Pour exercer ces droits, contactez-nous à <mail>contact@suimini.app</mail>."
+      },
+      "transferts": {
+        "t": "Transferts hors UE",
+        "intro": "Certains sous-traitants sont situés en dehors de l'Union européenne. Ces transferts sont encadrés par des garanties appropriées :",
+        "anthropic": "<b>Anthropic</b> (USA) — clauses contractuelles types.",
+        "vercel": "<b>Vercel</b> (USA) — cadre successeur du Privacy Shield."
+      },
+      "cookies": {
+        "t": "Cookies",
+        "p1": "Suimini utilise uniquement des cookies <b>nécessaires</b> au fonctionnement du service, à savoir le cookie de session d'authentification. <mut>Aucun cookie de tracking publicitaire n'est utilisé.</mut>"
+      },
+      "dpo": {
+        "t": "Contact DPO",
+        "p1": "Pour toute question relative à la protection de vos données personnelles, vous pouvez contacter notre délégué à la protection des données à l'adresse <mail>contact@suimini.app</mail>."
+      }
+    }
   }
 }

@@ -1546,5 +1546,132 @@
     "redoTooltip": "Redo: {action}",
     "nothingUndo": "Nothing to undo",
     "nothingRedo": "Nothing to redo"
+  },
+  "cgu": {
+    "eyebrow": "Suimini · Legal",
+    "back": "Back",
+    "title": "Terms of Service",
+    "updated": "Last updated: June 2026",
+    "s": {
+      "objet": {
+        "t": "Purpose",
+        "p1": "These terms govern the use of <b>Suimini</b>, a digital genealogy service available at <b>suimini.vercel.app</b>. By using the service, you fully accept these terms."
+      },
+      "acces": {
+        "t": "Access to the service",
+        "p1": "The service is <b>free</b> for personal use. Registration is required to access connected features.",
+        "p2": "The free plan includes <b>one tree</b>; an <b>unlimited</b> number of trees is available with a subscription."
+      },
+      "compte": {
+        "t": "User account",
+        "p1": "Creating an account requires a <b>valid email address</b>. You are responsible for the accuracy and legality of the data you enter.",
+        "p2": "Recording data about third parties without their consent is <b>prohibited</b>."
+      },
+      "donnees": {
+        "t": "Genealogical data",
+        "p1": "Family trees may contain <b>sensitive data</b> (origins, health data, etc.).",
+        "p2": "The user is solely <b>responsible for the content</b> they publish.",
+        "p3": "Any data sharing requires the prior <b>consent</b> of the people concerned."
+      },
+      "pi": {
+        "t": "Intellectual property",
+        "p1": "The service, its code and its interface belong to <b>Suimini</b>.",
+        "p2": "The <b>genealogical data</b> you enter remains your property.",
+        "p3": "Suimini grants you a simple <b>license to use</b> the service."
+      },
+      "abos": {
+        "t": "Subscriptions and pricing",
+        "free": "<b>Free</b> — 1 tree, 50 people.",
+        "famille": "<b>Family</b> — €9/month, unlimited trees.",
+        "pro": "<b>Pro</b> — €19/month, advanced AI and collaboration."
+      },
+      "resiliation": {
+        "t": "Termination",
+        "p1": "You may cancel your subscription <b>freely, at any time</b>.",
+        "p2": "The <b>export of your data</b> is guaranteed in GEDCOM format.",
+        "p3": "Your data is <b>deleted within 30 days</b> after termination."
+      },
+      "responsabilite": {
+        "t": "Limitation of liability",
+        "p1": "The service is provided \"<b>as is</b>\". Suimini does not guarantee 24/7 availability and cannot be held liable for interruptions or data loss. We recommend exporting your trees regularly."
+      },
+      "droit": {
+        "t": "Governing law",
+        "p1": "These terms are governed by <b>French law</b>. In the event of a dispute, the <b>competent court</b> is that of <b>Paris</b>."
+      },
+      "contact": {
+        "t": "Contact",
+        "p1": "For any questions regarding these terms: <mail>contact@suimini.app</mail>."
+      }
+    }
+  },
+  "privacy": {
+    "eyebrow": "Suimini · Legal",
+    "back": "Back",
+    "title": "Privacy Policy",
+    "updated": "Last updated: June 2026",
+    "s": {
+      "responsable": {
+        "t": "Data controller",
+        "p1": "The controller of the personal data collected via the service is <b>Suimini</b> (company to be specified).",
+        "p2": "For any questions regarding the processing of your data: <mail>contact@suimini.app</mail>."
+      },
+      "collectees": {
+        "t": "Data collected",
+        "intro": "Suimini collects the following categories of data:",
+        "compte": "<b>Account data</b> — email address, first and last name.",
+        "arbre": "<b>Tree data</b> — genealogical data you enter (people, relationships, dates, places).",
+        "tierces": "<b>Third-party data</b> — photos you upload.",
+        "logs": "<b>Technical logs</b> — IP address, browser type."
+      },
+      "finalites": {
+        "t": "Purposes of processing",
+        "intro": "Your data is processed for the following purposes:",
+        "i1": "Providing the genealogy service.",
+        "i2": "Authenticating and securing your account.",
+        "i3": "Sending emails (notably invitations).",
+        "i4": "Continuous improvement of the service."
+      },
+      "base": {
+        "t": "Legal basis",
+        "intro": "Each processing operation relies on one of the legal bases provided by the GDPR:",
+        "contrat": "<b>Performance of the contract</b> (art. 6.1.b GDPR) — providing the service.",
+        "consentement": "<b>Consent</b> — uploading photos and AI features.",
+        "interet": "<b>Legitimate interest</b> — service security."
+      },
+      "destinataires": {
+        "t": "Data recipients",
+        "intro": "To provide the service, Suimini uses technical subprocessors:",
+        "supabase": "<b>Supabase</b> — database hosting (EU/USA).",
+        "anthropic": "<b>Anthropic</b> — AI processing (anonymized data).",
+        "resend": "<b>Resend</b> — email delivery.",
+        "vercel": "<b>Vercel</b> — application hosting."
+      },
+      "duree": {
+        "t": "Retention period",
+        "actif": "<b>Active account</b> — for the entire duration of service use.",
+        "apres": "<b>After account deletion</b> — 30 days.",
+        "logs": "<b>Technical logs</b> — 90 days."
+      },
+      "droits": {
+        "t": "Your rights",
+        "p1": "In accordance with the GDPR, you have the following rights over your data: the right to <b>access</b>, <b>rectification</b>, <b>erasure</b>, <b>portability</b> and <b>objection</b>.",
+        "p2": "To exercise these rights, contact us at <mail>contact@suimini.app</mail>."
+      },
+      "transferts": {
+        "t": "Transfers outside the EU",
+        "intro": "Some subprocessors are located outside the European Union. These transfers are governed by appropriate safeguards:",
+        "anthropic": "<b>Anthropic</b> (USA) — standard contractual clauses.",
+        "vercel": "<b>Vercel</b> (USA) — Privacy Shield successor framework."
+      },
+      "cookies": {
+        "t": "Cookies",
+        "p1": "Suimini uses only cookies <b>necessary</b> for the service to function, namely the authentication session cookie. <mut>No advertising tracking cookies are used.</mut>"
+      },
+      "dpo": {
+        "t": "DPO contact",
+        "p1": "For any questions regarding the protection of your personal data, you can contact our data protection officer at <mail>contact@suimini.app</mail>."
+      }
+    }
   }
 }
