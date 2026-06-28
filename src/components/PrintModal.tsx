@@ -1,10 +1,11 @@
 'use client';
 import { useOverlay } from '@/hooks/useOverlay';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { FamilyTree, Person } from '@/types';
 import { getDisplayName, formatDate, formatYear, formatAge, getAge, computeTreeStats, getGeneration } from '@/lib/treeUtils';
-import { buildTreeLayout, NODE_W, NODE_H } from '@/lib/treeLayout';
+import { buildTreeLayout, validateVisualTree, NODE_W, NODE_H } from '@/lib/treeLayout';
+import { GENDER_BAR } from './tree/nodeStyle';
 import { List, LayoutGrid, BarChart3, TreePine, BookOpen, Printer, X } from 'lucide-react';
 
 const PRINT_MODE_META = {
@@ -65,6 +66,27 @@ function PrintAvatar({ p, photos, size }: { p: Person; photos: boolean; size: nu
 // never for text (it fails contrast on white). Matches GENDER_BAR.pivot in the app.
 const ACCENT_BAR = '#C9A84C';
 
+// How the visual tree fits the page: 'scale' = whole tree on one A3 (default),
+// 'paginate' = slice into stacked A3 pages when it is taller than one page.
+const VISUAL_TREE_MODE: 'scale' | 'paginate' = 'scale';
+
+/** Initials colour on a gender/pivot fill (cream on the dark "unknown" slate). */
+function nodeInk(node: { person: Person; isPivot: boolean }): string {
+  if (node.isPivot) return '#1a1714';
+  return node.person.gender === 'male' || node.person.gender === 'female' ? '#1a1714' : '#f5f0e8';
+}
+/** Decorative accent for a tree node (GENDER_BAR is the app's single source). */
+function nodeAccent(node: { person: Person; isPivot: boolean }): string {
+  if (node.isPivot) return GENDER_BAR.pivot;
+  return node.person.gender === 'male' ? GENDER_BAR.male : node.person.gender === 'female' ? GENDER_BAR.female : GENDER_BAR.unknown;
+}
+function initialsOf(p: Person): string {
+  return (((p.firstName || '').trim()[0] || '') + ((p.lastName || '').trim()[0] || '')).toUpperCase() || '—';
+}
+function truncate(s: string, n: number): string {
+  return s.length > n ? s.slice(0, n - 1) + '…' : s;
+}
+
 function GenderDot({ g, pivot }: { g: string; pivot?: boolean }) {
   return <span aria-hidden="true" style={{ width: '8px', height: '8px', flexShrink: 0, background: pivot ? ACCENT_BAR : genderColor(g), display: 'inline-block' }} />;
 }
@@ -92,6 +114,14 @@ export default function PrintModal({ tree, onClose }: Props) {
 
   const treeLayout = buildTreeLayout(tree, tree.rootPersonId || tree.persons[0]?.id || null);
 
+  // Dev-only completeness check: renderedNodes must equal totalPersons.
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development' && mode === 'tree') {
+      // eslint-disable-next-line no-console
+      console.log('[VisualTree]', { ...validateVisualTree(tree), mode: VISUAL_TREE_MODE });
+    }
+  }, [mode, tree]);
+
   async function exportTreePdf() {
     if (!treeRef.current) return;
     setExporting(true);
@@ -104,7 +134,7 @@ export default function PrintModal({ tree, onClose }: Props) {
 
       const canvas = await html2canvas(treeRef.current, {
         backgroundColor: '#ffffff',
-        scale: 2,
+        scale: 3,
         useCORS: true,
         logging: false,
       });
@@ -118,29 +148,44 @@ export default function PrintModal({ tree, onClose }: Props) {
       const availW = pageW - margin * 2;
       const availH = pageH - topArea - bottomArea;
 
-      const ratio = Math.min(availW / canvas.width, availH / canvas.height);
-      const imgW = canvas.width * ratio;
-      const imgH = canvas.height * ratio;
-      const imgX = (pageW - imgW) / 2;
-      const imgY = topArea + (availH - imgH) / 2;
+      // Title + footer drawn on every page.
+      const stamp = () => {
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(20);
+        pdf.setTextColor(163, 107, 30); // P.gold
+        pdf.text(tree.name, pageW / 2, 14, { align: 'center' });
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(9);
+        pdf.setTextColor(110, 106, 98); // P.faint
+        pdf.text(t('pdfFooter', { count: tree.persons.length, date: new Date().toLocaleDateString(dateLocale) }), pageW / 2, pageH - 5, { align: 'center' });
+      };
 
-      // Title
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(20);
-      pdf.setTextColor(163, 107, 30); // P.gold
-      pdf.text(tree.name, pageW / 2, 14, { align: 'center' });
+      const ratioW = availW / canvas.width;          // mm per px to fill the page width
+      const wouldOverflow = canvas.height * ratioW > availH;
 
-      // Tree image
-      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', imgX, imgY, imgW, imgH);
-
-      // Footer
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(9);
-      pdf.setTextColor(110, 106, 98); // P.faint
-      pdf.text(
-        t('pdfFooter', { count: tree.persons.length, date: new Date().toLocaleDateString(dateLocale) }),
-        pageW / 2, pageH - 5, { align: 'center' }
-      );
+      if (VISUAL_TREE_MODE === 'paginate' && wouldOverflow) {
+        // Slice the canvas into stacked A3 pages.
+        const sliceH = Math.max(1, Math.floor(availH / ratioW)); // px of canvas per page
+        const pages = Math.ceil(canvas.height / sliceH);
+        for (let i = 0; i < pages; i++) {
+          if (i > 0) pdf.addPage();
+          const h = Math.min(sliceH, canvas.height - i * sliceH);
+          const slice = document.createElement('canvas');
+          slice.width = canvas.width;
+          slice.height = h;
+          const sctx = slice.getContext('2d');
+          if (sctx) { sctx.fillStyle = '#ffffff'; sctx.fillRect(0, 0, canvas.width, h); sctx.drawImage(canvas, 0, i * sliceH, canvas.width, h, 0, 0, canvas.width, h); }
+          stamp();
+          pdf.addImage(slice.toDataURL('image/png'), 'PNG', margin, topArea, availW, h * ratioW);
+        }
+      } else {
+        // Scale the whole tree onto a single page.
+        const ratio = Math.min(availW / canvas.width, availH / canvas.height);
+        const imgW = canvas.width * ratio;
+        const imgH = canvas.height * ratio;
+        stamp();
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', (pageW - imgW) / 2, topArea + (availH - imgH) / 2, imgW, imgH);
+      }
 
       pdf.save(`${tree.name.replace(/\s+/g, '_')}_${t('fileSuffix')}.pdf`);
     } catch (err) {
@@ -257,7 +302,7 @@ export default function PrintModal({ tree, onClose }: Props) {
             </label>
           )}
           {mode === 'tree' && (
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{t('treeRoot', { root: tree.persons.find(p => p.id === (tree.rootPersonId || tree.persons[0]?.id))?.firstName || '—' })}</span>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{t('treeRoot', { root: treeLayout.rootName || '—' })}</span>
           )}
           {mode === 'tree' ? (
             <button onClick={exportTreePdf} disabled={exporting || treeLayout.nodes.length === 0} className="btn btn-primary btn-sm" style={{ marginLeft: 'auto' }}>
@@ -460,45 +505,51 @@ export default function PrintModal({ tree, onClose }: Props) {
                   {t('treeEmpty')}
                 </div>
               ) : (
-                <div ref={treeRef} style={{ position: 'relative', width: `${treeLayout.width}px`, height: `${treeLayout.height}px`, background: P.paper }}>
+                // Single scalable SVG (viewBox) → fits the preview width and any tree size.
+                <div ref={treeRef} style={{ background: P.paper, padding: '8px' }}>
                   <svg
-                    width={treeLayout.width} height={treeLayout.height}
                     viewBox={`${treeLayout.minX} ${treeLayout.minY} ${treeLayout.width} ${treeLayout.height}`}
-                    style={{ position: 'absolute', top: 0, left: 0 }}
+                    width={treeLayout.width} height={treeLayout.height}
+                    style={{ display: 'block', width: '100%', height: 'auto', maxWidth: '100%' }}
                   >
+                    {/* connectors */}
                     {treeLayout.edges.map((e, i) => (
                       <line key={i} x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2}
-                        stroke={e.type === 'spouse' ? P.female : '#CFC7BB'}
-                        strokeWidth={e.type === 'spouse' ? 2.5 : 1.5}
-                        strokeDasharray={e.type === 'spouse' ? '7,4' : 'none'}
-                      />
+                        stroke={e.type === 'spouse' ? GENDER_BAR.female : '#CFC7BB'}
+                        strokeWidth={e.type === 'spouse' ? 2 : 1.4}
+                        strokeDasharray={e.type === 'spouse' ? '6,4' : 'none'} />
                     ))}
+                    {/* unattached band label */}
+                    {treeLayout.unattachedCount > 0 && (() => {
+                      const u = treeLayout.nodes.filter(n => n.unattached);
+                      const uy = Math.min(...u.map(n => n.y));
+                      const ux = Math.min(...u.map(n => n.x));
+                      return <text x={ux} y={uy - 14} fontFamily="var(--font-mono), monospace" fontSize={11} fontWeight={700} fill={P.gold} letterSpacing={1.5}>{t('unattached').toUpperCase()}</text>;
+                    })()}
+                    {/* nodes */}
+                    {treeLayout.nodes.map(node => {
+                      const p = node.person;
+                      const age = getAge(p.birthDate, p.deathDate);
+                      const by = formatYear(p.birthDate);
+                      const dy = formatYear(p.deathDate);
+                      const dates = !p.isAlive
+                        ? (by && dy ? `${by} – ${dy}` : dy ? `† ${dy}` : by ? `${by} – ?` : '')
+                        : (by ? `${by}${age !== null ? ' · ' + formatAge(age) : ''}` : (age !== null ? formatAge(age) : ''));
+                      const accent = nodeAccent(node);
+                      return (
+                        <g key={p.id} transform={`translate(${node.x},${node.y})`} opacity={p.isAlive ? 1 : 0.85}>
+                          <rect width={NODE_W} height={NODE_H} fill="#fff" stroke={node.unattached ? GENDER_BAR.unknown : P.border} strokeWidth={node.unattached ? 1.5 : 1} strokeDasharray={node.unattached ? '4,3' : 'none'} />
+                          <rect width={5} height={NODE_H} fill={accent} />
+                          <rect x={13} y={NODE_H / 2 - 15} width={30} height={30} fill={accent} />
+                          <text x={28} y={NODE_H / 2 + 1} textAnchor="middle" dominantBaseline="central" fontFamily="var(--font-display), Georgia, serif" fontSize={12} fontWeight={700} fill={nodeInk(node)}>{initialsOf(p)}</text>
+                          <text x={52} y={26} fontFamily="var(--font-display), Georgia, serif" fontSize={12} fontWeight={700} fill={P.ink}>{truncate(p.firstName || '', 16)}</text>
+                          <text x={52} y={43} fontFamily="var(--font-display), Georgia, serif" fontSize={11} fill={P.muted}>{truncate((p.lastName || '') + (!p.isAlive ? ' †' : ''), 18)}</text>
+                          {dates && <text x={52} y={59} fontFamily="var(--font-mono), monospace" fontSize={9} fill={P.faint}>{dates}</text>}
+                          {node.isPivot && <text x={NODE_W - 10} y={17} textAnchor="end" fontSize={12} fill={ACCENT_BAR}>✦</text>}
+                        </g>
+                      );
+                    })}
                   </svg>
-                  {treeLayout.nodes.map(node => {
-                    const p = node.person;
-                    const age = getAge(p.birthDate, p.deathDate);
-                    return (
-                      <div key={p.id} style={{
-                        position: 'absolute',
-                        left: `${node.x - treeLayout.minX}px`, top: `${node.y - treeLayout.minY}px`,
-                        width: `${NODE_W}px`, height: `${NODE_H}px`,
-                        background: P.paper, border: `1px solid ${P.border}`,
-                        boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: '8px',
-                        padding: '0 10px 0 12px', overflow: 'hidden',
-                      }}>
-                        <div style={{ position: 'absolute', left: 0, top: '8px', bottom: '8px', width: '4px', background: genderColor(p.gender) }} />
-                        <PrintAvatar p={p} photos={includePhotos} size={36} />
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div className="serif" style={{ fontWeight: 700, fontSize: '12px', color: P.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.firstName}</div>
-                          <div className="serif" style={{ fontSize: '11px', color: P.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.lastName}{!p.isAlive ? ' †' : ''}</div>
-                          <div className="mono" style={{ fontSize: '9px', color: P.faint }}>
-                            {p.birthDate ? `✦ ${formatYear(p.birthDate)}` : ''}
-                            {!p.isAlive && p.deathDate ? ` – ${formatYear(p.deathDate)}` : (age !== null && p.isAlive ? ` · ${formatAge(age)}` : '')}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
                 </div>
               )}
             </div>

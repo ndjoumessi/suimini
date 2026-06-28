@@ -1076,7 +1076,8 @@
     "treeEmpty": "No one to display.",
     "headerMeta": "{generations} {generations, plural, one {generation} other {generations}} · {persons} {persons, plural, one {member} other {members}}",
     "docFooterConfidential": "Confidential document — strictly for family use",
-    "membersEyebrow": "Members"
+    "membersEyebrow": "Members",
+    "unattached": "Unattached members"
   },
   "timeline": {
     "heading": "Timeline | {name}",
