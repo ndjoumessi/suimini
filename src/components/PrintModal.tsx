@@ -139,13 +139,28 @@ export default function PrintModal({ tree, onClose }: Props) {
         logging: false,
       });
 
-      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a3' });
-      const pageW = pdf.internal.pageSize.getWidth();   // 420mm
-      const pageH = pdf.internal.pageSize.getHeight();  // 297mm
+      const A3_W = 420, A3_H = 297;             // A3 landscape (mm)
       const margin = 12;
       const topArea = 26;     // title + subtitle + amber rule
       const bottomArea = 16;  // two footer lines
-      const availW = pageW - margin * 2;
+      const availW = A3_W - margin * 2;
+      const PX_TO_MM = 25.4 / 96;
+      const ratioW = availW / canvas.width;            // mm per px to fill the page width
+      const ratioFit = Math.min(ratioW, PX_TO_MM);     // fill width but never upscale past natural size
+      const scaleFactor = ratioW / PX_TO_MM;           // rendered vs natural size
+      const singleImgH = canvas.height * ratioFit;     // image height on a single page
+      const singlePageH = topArea + singleImgH + bottomArea;
+
+      // One page sized to its content (no top/bottom whitespace) unless the tree
+      // is too tall to read on one sheet → then paginate across A3 pages.
+      const shouldPaginate = VISUAL_TREE_MODE === 'paginate' || scaleFactor < 0.4 || singlePageH > A3_H;
+
+      const pdf = shouldPaginate
+        ? new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a3' })
+        // Custom page height = exactly the content height → page hugs the tree.
+        : new jsPDF({ orientation: A3_W >= singlePageH ? 'landscape' : 'portrait', unit: 'mm', format: [A3_W, singlePageH] });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
       const availH = pageH - topArea - bottomArea;
 
       // Subtitle: "{n} générations · {n} membres · depuis ~{year}" (year dynamic).
@@ -170,13 +185,6 @@ export default function PrintModal({ tree, onClose }: Props) {
         if (total > 1) { pdf.setFont('helvetica', 'normal'); pdf.text(t('pageNumber', { n: pageNo, total }), pageW - margin, pageH - 5, { align: 'right' }); }
       };
 
-      const ratioW = availW / canvas.width;            // mm per px to fill the page width
-      const PX_TO_MM = 25.4 / 96;
-      const scaleFactor = ratioW / PX_TO_MM;           // rendered vs natural size
-      const overflow = canvas.height * ratioW > availH;
-      // Auto-paginate a tree too wide to stay legible on one page (scale < 0.4).
-      const shouldPaginate = (VISUAL_TREE_MODE === 'paginate' || scaleFactor < 0.4) && overflow;
-
       if (shouldPaginate) {
         const pagePx = availH / ratioW;                // canvas px that fill one page tall
         const pxPerUnit = canvas.height / treeLayout.height;
@@ -199,12 +207,12 @@ export default function PrintModal({ tree, onClose }: Props) {
           pdf.addImage(slice.toDataURL('image/png'), 'PNG', margin, topArea, availW, h * ratioW); // top-aligned
         });
       } else {
-        // Whole tree on one page — TOP-aligned (no vertical centering → no top whitespace).
-        const ratio = Math.min(availW / canvas.width, availH / canvas.height);
-        const imgW = canvas.width * ratio;
-        const imgH = canvas.height * ratio;
+        // Whole tree on one content-sized page — fill width, top-aligned. The page
+        // height was set to topArea + singleImgH + bottomArea, so there is no blank
+        // band above or below the tree.
+        const imgW = canvas.width * ratioFit;
         stamp(1, 1);
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', (pageW - imgW) / 2, topArea, imgW, imgH);
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', (pageW - imgW) / 2, topArea, imgW, singleImgH);
       }
 
       pdf.save(`${tree.name.replace(/\s+/g, '_')}_${t('fileSuffix')}.pdf`);

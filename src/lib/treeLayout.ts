@@ -49,6 +49,17 @@ function descendantCount(id: string, childrenMap: Map<string, string[]>, memo: M
   return total;
 }
 
+/** Depth of the deepest descendant chain below `id` (leaf = 0; cycle-guarded). */
+function subtreeDepth(id: string, childrenMap: Map<string, string[]>, memo: Map<string, number>): number {
+  const cached = memo.get(id);
+  if (cached !== undefined) return cached;
+  memo.set(id, 0); // guard against cyclic data
+  let deepest = 0;
+  for (const childId of childrenMap.get(id) ?? []) deepest = Math.max(deepest, 1 + subtreeDepth(childId, childrenMap, memo));
+  memo.set(id, deepest);
+  return deepest;
+}
+
 /**
  * Generic, complete layout for the printable visual tree. Works for ANY tree
  * (1 to N members, single lineage or forest):
@@ -168,19 +179,27 @@ export function buildTreeLayout(tree: FamilyTree, rootId: string | null): TreeLa
   }
 
   // Spine = "main lineage": pivot's ancestor chain (up via first parent) + main
-  // descent (down via the child with the most descendants). Connectors along it
-  // are accented in amber; all others stay neutral grey.
+  // descent down to the MOST RECENT descendant — i.e. follow the child whose
+  // subtree reaches the deepest generation (tie-break: most descendants), all the
+  // way to the deepest leaf. (Heaviest-only would divert into a wide-but-shallow
+  // sibling branch and stop short of the latest generation.) Connectors along the
+  // spine are accented in amber; all others stay neutral grey.
   const spine = new Set<string>();
   if (pivotId) {
     spine.add(pivotId);
     let up = pivotId;
     for (let i = 0; i < 500; i++) { const ps = getParents(up, rels, persons); if (!ps.length) break; up = ps[0].id; spine.add(up); }
+    const depthMemo = new Map<string, number>();
     let down = pivotId;
     for (let i = 0; i < 500; i++) {
       const kids = childrenMap.get(down) ?? [];
       if (!kids.length) break;
-      let bestK = kids[0], bestD = -1;
-      for (const k of kids) { const d = descendantCount(k, childrenMap, dMemo); if (d > bestD) { bestD = d; bestK = k; } }
+      let bestK = kids[0], bestDepth = -1, bestDesc = -1;
+      for (const k of kids) {
+        const dep = subtreeDepth(k, childrenMap, depthMemo);
+        const dsc = descendantCount(k, childrenMap, dMemo);
+        if (dep > bestDepth || (dep === bestDepth && dsc > bestDesc)) { bestDepth = dep; bestDesc = dsc; bestK = k; }
+      }
       down = bestK; spine.add(down);
     }
   }
