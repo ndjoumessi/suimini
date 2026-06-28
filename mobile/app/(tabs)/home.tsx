@@ -30,10 +30,11 @@ export default function HomeScreen() {
   const { activeTree, persons, stats, refreshFromRemote } = useFamilyStore();
   const [refreshing, setRefreshing] = useState(false);
 
-  const firstName =
+  // Real name if we have one; demo → "Invité·e"; otherwise null (greet without a name).
+  const name =
     (user?.user_metadata?.display_name as string | undefined)?.split(' ')[0] ??
     user?.email?.split('@')[0] ??
-    (isDemo ? t('home.guest') : t('home.you'));
+    (isDemo ? t('home.guest') : null);
 
   const recent = useMemo(
     () =>
@@ -77,7 +78,11 @@ export default function HomeScreen() {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />
       }
     >
-      <Header eyebrow={t('home.greeting')} title={firstName} subtitle={activeTree.name} />
+      <Header
+        eyebrow={name ? t('home.greeting') : undefined}
+        title={name ?? t('home.greeting')}
+        subtitle={activeTree.name}
+      />
 
       {/* Active tree card */}
       <View style={styles.block}>

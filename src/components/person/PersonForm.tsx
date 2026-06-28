@@ -18,7 +18,6 @@ interface Props {
 
 export default function PersonForm({ initial, onSave, onCancel, submitLabel, relationsSlot }: Props) {
   const t = useTranslations('personForm');
-  const tc = useTranslations('common');
   const locale = useLocale();
   const dateLang = locale === 'en' ? 'en-GB' : 'fr-FR';
   const dateExample = locale === 'en' ? 'e.g. 1950-04-12' : 'ex. 12/04/1950';
@@ -111,7 +110,7 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel, rel
         customFields: Object.keys(cf).length ? cf : undefined,
       });
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : tc('error'));
+      setSaveError(err instanceof Error ? err.message : t('saveFailed'));
     } finally {
       setSaving(false);
     }
