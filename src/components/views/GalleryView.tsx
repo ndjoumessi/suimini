@@ -8,6 +8,7 @@ import { FamilyTree, Person } from '@/types';
 import { getDisplayName, formatYear } from '@/lib/treeUtils';
 import { uploadAvatar, deleteAvatarByUrl } from '@/lib/uploadImage';
 import { GENDER_BAR } from '../tree/nodeStyle';
+import { useOverlay } from '@/hooks/useOverlay';
 
 interface Props {
   tree: FamilyTree;
@@ -36,6 +37,29 @@ function lifeLine(p: Person): string {
   return b || '';
 }
 
+/** Full-screen photo lightbox. A real dialog via the shared useOverlay hook
+ *  (focus-trap + Esc + body scroll-lock + focus-restore) — mounted only while open. */
+function PhotoLightbox({ photo, onClose, onOpenPerson }: { photo: PhotoItem; onClose: () => void; onOpenPerson: (id: string) => void }) {
+  const t = useTranslations('gallery');
+  const ref = useOverlay<HTMLDivElement>(onClose);
+  return (
+    <div ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-label={getDisplayName(photo.person)} className="gv-lightbox" onClick={onClose}>
+      <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '80vh' }} onClick={e => e.stopPropagation()}>
+        <img src={photo.url} alt={t('lightboxAlt', { name: getDisplayName(photo.person) })}
+          style={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }} />
+        <button onClick={onClose} aria-label={t('close')} className="gv-lightbox-close"><X size={16} aria-hidden="true" /></button>
+      </div>
+      <button className="gv-lightbox-info" onClick={() => onOpenPerson(photo.person.id)}>
+        <span className="serif" style={{ fontWeight: 700, fontSize: '15px' }}>{getDisplayName(photo.person)}</span>
+        <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+          {photo.person.occupation || ''}{lifeLine(photo.person) ? ` · ${lifeLine(photo.person)}` : ''}
+        </span>
+        <span style={{ fontSize: '11px', marginTop: '2px', color: 'var(--accent)', fontWeight: 700 }}>{t('clickToViewProfile')}</span>
+      </button>
+    </div>
+  );
+}
+
 export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAnalyzePhoto, onToast }: Props) {
   const t = useTranslations('gallery');
   const tp = useTranslations('photoAnalyzer');
@@ -52,7 +76,6 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const lightboxRef = useRef<HTMLDivElement>(null);
   // Crop (1:1, profile-photo ratio) — see the upload modal.
   const imgRef = useRef<HTMLImageElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -80,35 +103,14 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
   const openModal = () => { setAddPersonId(''); setPendingFile(null); setPreviewUrl(''); setDragOver(false); resetCrop(); setShowAdd(true); };
   const closeModal = () => { setShowAdd(false); setPendingFile(null); setPreviewUrl(''); resetCrop(); };
 
-  // Esc closes the modal / lightbox / delete confirm.
+  // Esc closes the upload / delete modals. (The lightbox handles its own Esc via
+  // useOverlay in PhotoLightbox.)
   useEffect(() => {
-    if (!showAdd && !selected && !confirmDelete) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { closeModal(); setSelected(null); setConfirmDelete(null); } };
+    if (!showAdd && !confirmDelete) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { closeModal(); setConfirmDelete(null); } };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [showAdd, selected, confirmDelete]);
-
-  // Lightbox focus-trap: focus the first control on open, cycle Tab within the
-  // dialog, restore focus to the trigger on close. (Escape is handled above.)
-  useEffect(() => {
-    if (!selected) return;
-    const root = lightboxRef.current;
-    if (!root) return;
-    const prev = document.activeElement as HTMLElement | null;
-    const sel = 'button, a[href], input, [tabindex]:not([tabindex="-1"])';
-    const focusables = () => Array.from(root.querySelectorAll<HTMLElement>(sel)).filter(el => !el.hasAttribute('disabled'));
-    focusables()[0]?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Tab') return;
-      const f = focusables();
-      if (f.length === 0) return;
-      const first = f[0], last = f[f.length - 1];
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-    };
-    root.addEventListener('keydown', onKey);
-    return () => { root.removeEventListener('keydown', onKey); prev?.focus?.(); };
-  }, [selected]);
+  }, [showAdd, confirmDelete]);
 
   // Revoke object URLs to avoid leaks.
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
@@ -384,20 +386,11 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
 
       {/* Lightbox */}
       {selected && (
-        <div ref={lightboxRef} role="dialog" aria-modal="true" aria-label={getDisplayName(selected.person)} className="gv-lightbox" onClick={() => setSelected(null)}>
-          <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '80vh' }} onClick={e => e.stopPropagation()}>
-            <img src={selected.url} alt={t('lightboxAlt', { name: getDisplayName(selected.person) })}
-              style={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }} />
-            <button onClick={() => setSelected(null)} aria-label={t('close')} className="gv-lightbox-close"><X size={16} aria-hidden="true" /></button>
-          </div>
-          <button className="gv-lightbox-info" onClick={() => { onSelectPerson(selected.person.id); setSelected(null); }}>
-            <span className="serif" style={{ fontWeight: 700, fontSize: '15px' }}>{getDisplayName(selected.person)}</span>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-              {selected.person.occupation || ''}{lifeLine(selected.person) ? ` · ${lifeLine(selected.person)}` : ''}
-            </span>
-            <span style={{ fontSize: '11px', marginTop: '2px', color: 'var(--accent)', fontWeight: 700 }}>{t('clickToViewProfile')}</span>
-          </button>
-        </div>
+        <PhotoLightbox
+          photo={selected}
+          onClose={() => setSelected(null)}
+          onOpenPerson={(id) => { onSelectPerson(id); setSelected(null); }}
+        />
       )}
 
       <style>{`

@@ -1210,7 +1210,7 @@ function FanChart({ fan, fanGenColor, r0, ring, selectedPersonId, onSelectPerson
           style={{ cursor: 'pointer' }}
           onClick={() => onSelectPerson(root.person.id)}
           onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectPerson(root.person.id); } }}>
-          <circle cx={0} cy={0} r={r0} fill={fanGenColor(0)} stroke="var(--accent)" strokeWidth={root.person.id === selectedPersonId ? 3 : 2} />
+          <circle cx={0} cy={0} r={r0} fill={taupeScale(0.5)} stroke="var(--accent)" strokeWidth={root.person.id === selectedPersonId ? 3 : 2} />
           <text x={0} y={-6} textAnchor="middle" dominantBaseline="central" fontSize={13} fontWeight={700} fontFamily="var(--font-display)" fill="#1a1714" style={{ pointerEvents: 'none' }}>
             {root.person.firstName.length > 12 ? root.person.firstName.slice(0, 11) + '…' : root.person.firstName}
           </text>

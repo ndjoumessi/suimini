@@ -1329,7 +1329,7 @@ function Spinner() {
   const reduce = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   return (
     <span aria-hidden="true" style={{
-      width:'15px', height:'15px', flexShrink:0, display:'inline-block', borderRadius: 0,
+      width:'15px', height:'15px', flexShrink:0, display:'inline-block', borderRadius: '50%',
       border:'2px solid var(--border)', borderTopColor:'var(--accent)',
       animation: reduce ? 'none' : 'spin 0.7s linear infinite',
     }} />

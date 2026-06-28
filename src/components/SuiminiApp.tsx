@@ -104,6 +104,11 @@ export default function SuiminiApp() {
   const tOffline = useTranslations('offline');
   const tToast = useTranslations('toasts');
   const tApp = useTranslations('app');
+  // Always-current translator for toasts fired from memoized callbacks / long-lived
+  // effects (subscriptions), so a mid-session locale switch isn't shown stale —
+  // without re-creating the callback or re-subscribing realtime.
+  const tToastRef = useRef(tToast);
+  tToastRef.current = tToast;
 
   const [view, setView] = useState<ViewMode>('dashboard');
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
@@ -237,7 +242,7 @@ export default function SuiminiApp() {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     if (params.get('auth_error')) {
-      showToast(tToast('loginFailed'), 'error');
+      showToast(tToastRef.current('loginFailed'), 'error');
       window.history.replaceState({}, '', window.location.pathname);
     }
     try {
@@ -258,7 +263,7 @@ export default function SuiminiApp() {
     const reload = () => {
       if (Date.now() - store.lastLocalWriteRef.current < SELF_WRITE_WINDOW_MS) return;
       store.reloadTreeFromCloud(activeTreeId);
-      showToast(tToast('collaboratorEdited'), 'info');
+      showToast(tToastRef.current('collaboratorEdited'), 'info');
     };
     const channel = sb
       .channel(`tree:${activeTreeId}`)
@@ -267,7 +272,7 @@ export default function SuiminiApp() {
       // Notify the owner/manager when an invited member accepts and joins the tree.
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tree_members', filter: `tree_id=eq.${activeTreeId}` }, (payload) => {
         const row = payload.new as { email?: string; status?: string };
-        if (row?.status === 'accepted') showToast(tToast('memberJoined', { email: row.email ?? tToast('aMember'), tree: store.activeTree?.name ?? tToast('yourTree') }), 'success');
+        if (row?.status === 'accepted') showToast(tToastRef.current('memberJoined', { email: row.email ?? tToastRef.current('aMember'), tree: store.activeTree?.name ?? tToastRef.current('yourTree') }), 'success');
       })
       .on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState();
@@ -314,7 +319,7 @@ export default function SuiminiApp() {
     setShowOnboarding(false);
     setView('tree');
     setSelectedPersonId(person.id);
-    showToast(tToast('treeCreated', { name: data.treeName }));
+    showToast(tToastRef.current('treeCreated', { name: data.treeName }));
   }, [store, showToast]);
 
   const handleOnboardingSkip = useCallback(() => {

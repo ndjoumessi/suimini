@@ -1590,7 +1590,7 @@
       "resiliation": {
         "t": "Résiliation",
         "p1": "Vous pouvez résilier votre abonnement <b>librement, à tout moment</b>.",
-        "p2": "L'<b>export de vos données</b> est garanti au format GEDCOM.",
+        "p2": "<b>L'export de vos données</b> est garanti au format GEDCOM.",
         "p3": "Vos données sont <b>supprimées sous 30 jours</b> après la résiliation."
       },
       "responsabilite": {
@@ -1657,7 +1657,7 @@
       },
       "droits": {
         "t": "Droits des personnes",
-        "p1": "Conformément au RGPD, vous disposez des droits suivants sur vos données : droit d'<b>accès</b>, de <b>rectification</b>, d'<b>effacement</b>, de <b>portabilité</b> et d'<b>opposition</b>.",
+        "p1": "Conformément au RGPD, vous disposez des droits suivants sur vos données : <b>droit d'accès</b>, de <b>rectification</b>, <b>d'effacement</b>, de <b>portabilité</b> et <b>d'opposition</b>.",
         "p2": "Pour exercer ces droits, contactez-nous à <mail>contact@suimini.app</mail>."
       },
       "transferts": {

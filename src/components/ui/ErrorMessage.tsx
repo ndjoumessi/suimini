@@ -31,7 +31,7 @@ export function ErrorMessage({ message, onRetry }: { message: string; onRetry?: 
           style={{
             background: 'none',
             border: 'none',
-            color: 'var(--danger)',
+            color: 'var(--text)',
             fontFamily: 'var(--font-mono)',
             fontSize: '13px',
             textDecoration: 'underline',

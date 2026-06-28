@@ -27,7 +27,7 @@ export default function PersonAvatar({ person, size = 44, round = true, style }:
   const [broken, setBroken] = useState(false);
   const showPhoto = !!person.profilePhoto && !broken;
   const gender = person.gender;
-  const bg = gender === 'male' ? GENDER_BAR.male : gender === 'female' ? GENDER_BAR.female : '#2a2a2a';
+  const bg = gender === 'male' ? GENDER_BAR.male : gender === 'female' ? GENDER_BAR.female : GENDER_BAR.unknown;
   const fg = gender === 'male' || gender === 'female' ? '#0d0d0d' : '#f5f0e8';
 
   return (
