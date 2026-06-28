@@ -412,7 +412,7 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
           background: #1a1a24; border-bottom: 1px solid var(--border); padding: 8px 12px; }
         .ft-crumbs::-webkit-scrollbar { height: 0; }
         .ft-crumb { background: var(--bg-card); border: 1px solid var(--border); cursor: pointer; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.08em;
-          text-transform: uppercase; color: var(--text-muted); padding: 3px 8px; white-space: nowrap; transition: color 150ms, background 150ms, border-color 150ms; }
+          text-transform: uppercase; color: var(--text-muted); padding: 7px 10px; white-space: nowrap; transition: color 150ms, background 150ms, border-color 150ms; }
         .ft-crumb:hover { color: var(--ink); border-color: var(--accent); }
         .ft-crumb-on { background: var(--accent); color: #0d0d0d; border-color: var(--accent); }
         .ft-crumb-wrap { display: inline-flex; align-items: center; gap: 6px; }
@@ -432,7 +432,7 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
 
         /* Floating recenter button (bottom-right of the canvas) */
         .ft-center-btn { position: absolute; right: 16px; bottom: 64px; z-index: 4;
-          width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;
+          width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center;
           background: var(--bg-card); color: var(--accent-text); border: 1px solid var(--border-strong);
           cursor: pointer; box-shadow: var(--shadow); transition: border-color 150ms, color 150ms, background 150ms; }
         .ft-center-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--bg-muted); }

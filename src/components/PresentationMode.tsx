@@ -128,17 +128,17 @@ const rootStyle: React.CSSProperties = {
 };
 const closeStyle: React.CSSProperties = {
   position: 'absolute', top: '20px', right: '24px', zIndex: 10,
-  width: '44px', height: '44px', borderRadius: '2px', border: '1.5px solid rgba(244,241,234,0.4)',
+  width: '44px', height: '44px', borderRadius: 0, border: '1.5px solid rgba(244,241,234,0.4)',
   background: 'rgba(255,255,255,0.06)', color: '#f4f1ea', cursor: 'pointer',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
 };
 const arrowStyle: React.CSSProperties = {
   position: 'absolute', top: '50%', transform: 'translateY(-50%)', zIndex: 10,
-  width: '56px', height: '56px', borderRadius: '2px', border: '1.5px solid rgba(244,241,234,0.3)',
+  width: '56px', height: '56px', borderRadius: 0, border: '1.5px solid rgba(244,241,234,0.3)',
   background: 'rgba(255,255,255,0.06)', color: '#f4f1ea', cursor: 'pointer',
   display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
 };
 const pillStyle: React.CSSProperties = {
-  padding: '5px 14px', borderRadius: '2px', background: 'rgba(255,255,255,0.08)',
+  padding: '5px 14px', borderRadius: 0, background: 'rgba(255,255,255,0.08)',
   color: '#e8e0d0', fontSize: '0.8rem', fontFamily: "var(--font-mono)", border: '1px solid rgba(255,255,255,0.18)',
 };

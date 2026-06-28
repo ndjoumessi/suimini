@@ -22,7 +22,7 @@ export default function LanguageSwitcher({ tone = 'app' }: { tone?: 'app' | 'lan
     <div
       role="group"
       aria-label="Language"
-      style={{ display: 'inline-flex', border: `1.5px solid ${ink}`, borderRadius: '6px', overflow: 'hidden', background: tone === 'landing' ? '#fbf9f4' : 'var(--bg-card)' }}
+      style={{ display: 'inline-flex', border: `1.5px solid ${ink}`, borderRadius: 0, overflow: 'hidden', background: tone === 'landing' ? '#fbf9f4' : 'var(--bg-card)' }}
     >
       {LOCALES.map((l, i) => {
         const active = l === locale;

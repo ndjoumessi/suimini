@@ -115,7 +115,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
   return (
     <>
       {text.slice(0, idx)}
-      <mark style={{ background: 'var(--accent-light)', color: 'inherit', borderRadius: '2px', padding: '0 1px', fontWeight: 700 }}>
+      <mark style={{ background: 'var(--accent-light)', color: 'inherit', borderRadius: 0, padding: '0 1px', fontWeight: 700 }}>
         {text.slice(idx, idx + query.length)}
       </mark>
       {text.slice(idx + query.length)}
@@ -126,7 +126,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
 /** 32px square avatar: photo or initials on a tinted square (Atelier sharp corners). */
 function Avatar({ person }: { person: Person }) {
   const common: React.CSSProperties = {
-    width: '32px', height: '32px', flexShrink: 0, borderRadius: '2px',
+    width: '32px', height: '32px', flexShrink: 0, borderRadius: 0,
     border: '1.5px solid var(--border-strong)', objectFit: 'cover',
   };
   if (person.profilePhoto) {
@@ -368,7 +368,7 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
 
   const toggleBtnStyle = (on: boolean): React.CSSProperties => ({
     fontFamily: 'var(--font-mono)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em',
-    padding: '5px 9px', borderRadius: '2px', cursor: 'pointer',
+    padding: '5px 9px', borderRadius: 0, cursor: 'pointer',
     border: `1.5px solid ${on ? 'var(--accent)' : 'var(--border-strong)'}`,
     background: on ? 'var(--accent-light)' : 'var(--bg-card)',
     color: on ? 'var(--accent)' : 'var(--text-muted)',
@@ -394,7 +394,7 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
             aria-label={t('searchAriaLabel')}
             style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: '16px', color: 'var(--text)', fontFamily: 'var(--font-body)' }}
           />
-          <kbd style={{ fontSize: '10px', color: 'var(--text-light)', border: '1px solid var(--border)', borderRadius: '4px', padding: '2px 6px' }}>Esc</kbd>
+          <kbd style={{ fontSize: '10px', color: 'var(--text-light)', border: '1px solid var(--border)', borderRadius: 0, padding: '2px 6px' }}>Esc</kbd>
         </div>
 
         {/* Tools bar: Filters toggle + AI search */}
@@ -407,7 +407,7 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
           >
             <SlidersHorizontal size={13} aria-hidden="true" />
             {ts('filters')}
-            {hasFilters && <span style={{ width: '6px', height: '6px', background: 'var(--accent)', borderRadius: '50%' }} aria-hidden="true" />}
+            {hasFilters && <span style={{ width: '6px', height: '6px', background: 'var(--accent)', borderRadius: 0 }} aria-hidden="true" />}
           </button>
 
           <button
@@ -499,7 +499,7 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
                 style={{
                   marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: '6px',
                   fontFamily: 'var(--font-mono)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em',
-                  padding: '5px 9px', borderRadius: '2px', border: '1.5px solid var(--border-strong)',
+                  padding: '5px 9px', borderRadius: 0, border: '1.5px solid var(--border-strong)',
                   background: 'var(--bg-card)', color: 'var(--text-muted)',
                   cursor: hasFilters ? 'pointer' : 'not-allowed', opacity: hasFilters ? 1 : 0.45,
                 }}

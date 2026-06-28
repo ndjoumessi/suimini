@@ -18,7 +18,7 @@ export default function HistoryIndicator({ canUndo, canRedo, lastAction, nextAct
     <div style={{
       position: 'absolute', bottom: '16px', left: '50%', transform: 'translateX(-50%)',
       zIndex: 30, display: 'flex', alignItems: 'center', gap: '8px',
-      background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '100px',
+      background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 0,
       boxShadow: 'var(--shadow)', padding: '5px 8px', fontSize: '12px',
     }}>
       <button

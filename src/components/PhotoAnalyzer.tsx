@@ -348,7 +348,7 @@ const PA_CSS = `
 
 /* Result face frames */
 .pa-result-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
-.pa-face { position: absolute; border: 2px solid var(--accent); box-shadow: 4px 4px 0 var(--ink); border-radius: 2px; pointer-events: none; }
+.pa-face { position: absolute; border: 2px solid var(--accent); box-shadow: 4px 4px 0 var(--ink); border-radius: 0; pointer-events: none; }
 .pa-face-tag { position: absolute; top: -11px; left: -2px; min-width: 20px; height: 20px; padding: 0 5px; display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: #fff; font-family: var(--font-mono); font-size: 11px; font-weight: 700; border: 1.5px solid var(--ink); }
 .pa-empty { margin: 16px 0 0; font-size: 14px; color: var(--text-muted); text-align: center; }
 

@@ -88,7 +88,7 @@ export default function InvitePage() {
     maxWidth: '460px', width: '100%', backgroundColor: 'var(--bg-card, #ffffff)',
     border: '1.5px solid var(--border-strong, #1b1b1b)',
     boxShadow: '6px 6px 0 var(--shadow-color, rgba(27,22,18,0.9))',
-    borderRadius: '4px', overflow: 'hidden',
+    borderRadius: 0, overflow: 'hidden',
   };
   const headerStyle: React.CSSProperties = {
     backgroundColor: 'var(--ink, #1b1b1b)', padding: '16px 28px',
@@ -105,7 +105,7 @@ export default function InvitePage() {
   const mutedStyle: React.CSSProperties = { color: 'var(--text-muted, #4a4742)', fontSize: '13px' };
   const iconCircle: React.CSSProperties = {
     width: '52px', height: '52px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-    border: '1.5px solid var(--border-strong, #1b1b1b)', borderRadius: '4px',
+    border: '1.5px solid var(--border-strong, #1b1b1b)', borderRadius: 0,
     background: 'var(--accent-light, #f6e1d8)', color: 'var(--accent, #bf4b2c)',
   };
 

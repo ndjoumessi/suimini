@@ -89,7 +89,7 @@ export default function TreeToolbar({
                   onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-muted)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'none'}
                 >
-                  <span style={{ width: '22px', height: '22px', flexShrink: 0, borderRadius: '50%', background: 'var(--accent-light)', color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700 }}>{initials(p)}</span>
+                  <span style={{ width: '22px', height: '22px', flexShrink: 0, borderRadius: 0, background: 'var(--accent-light)', color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700 }}>{initials(p)}</span>
                   <span style={{ flex: 1 }}>{getDisplayName(p)}</span>
                   <span style={{ color: 'var(--text-light)', fontSize: '11px' }}>{formatYear(p.birthDate)}</span>
                 </button>

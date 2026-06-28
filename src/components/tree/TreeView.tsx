@@ -1005,7 +1005,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
         )}
 
         {/* Node count — terracotta figures, stronger outline (Atelier) */}
-        <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'var(--bg-card)', border: 'var(--bw) solid var(--border-strong)', borderRadius: '100px', padding: '4px 13px', fontSize: '12px', color: 'var(--text-muted)', boxShadow: 'var(--shadow-sm)' }}>
+        <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'var(--bg-card)', border: 'var(--bw) solid var(--border-strong)', borderRadius: 0, padding: '4px 13px', fontSize: '12px', color: 'var(--text-muted)', boxShadow: 'var(--shadow-sm)' }}>
           <strong style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{nodes.length}</strong>
           <span style={{ opacity: 0.6 }}> / {tree.persons.length}</span> {t('persons')}
         </div>
@@ -1020,7 +1020,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
               position: 'absolute', top: '48px', right: '12px', zIndex: 'var(--z-dropdown)',
               display: 'flex', alignItems: 'center', gap: '8px',
               background: 'var(--bg-card)', border: 'var(--bw, 1px) solid var(--border-strong, var(--border))',
-              borderRadius: '100px', padding: '4px 12px 4px 8px',
+              borderRadius: 0, padding: '4px 12px 4px 8px',
               boxShadow: 'var(--shadow)',
             }}
           >
@@ -1031,7 +1031,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                   className="tv-presence-avatar"
                   title={u.name}
                   style={{
-                    width: '26px', height: '26px', borderRadius: '50%',
+                    width: '26px', height: '26px', borderRadius: 0,
                     background: u.color || presenceColor(u.id), color: '#fff',
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: '11px', fontWeight: 700, fontFamily: 'var(--font-display)',
@@ -1048,7 +1048,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                   className="tv-presence-avatar"
                   title={peers.slice(4).map(u => u.name).join(', ')}
                   style={{
-                    width: '26px', height: '26px', borderRadius: '50%',
+                    width: '26px', height: '26px', borderRadius: 0,
                     background: 'var(--text-muted)', color: '#fff',
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: '10px', fontWeight: 700, fontFamily: 'var(--font-mono)',

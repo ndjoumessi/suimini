@@ -45,22 +45,25 @@ import OnboardingWizard, { OnboardingData } from './OnboardingWizard';
 import { Menu, Search, TreePine, Sprout, Cloud, WifiOff, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
+/** Loading fallback for dynamically-imported views (i18n via the `app` namespace).
+ *  Rendered inside the IntlProvider tree, so useTranslations is available. */
+function LazyFallback({ labelKey }: { labelKey: 'loadingMap' | 'loadingGallery' }) {
+  const t = useTranslations('app');
+  return (
+    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+      {t(labelKey)}
+    </div>
+  );
+}
+
 const MapView = dynamic(() => import('./views/MapView'), {
   ssr: false,
-  loading: () => (
-    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
-      Chargement de la carte…
-    </div>
-  ),
+  loading: () => <LazyFallback labelKey="loadingMap" />,
 });
 
 // Gallery pulls image-heavy UI; load it on demand to keep the initial app bundle lean.
 const GalleryView = dynamic(() => import('./views/GalleryView'), {
-  loading: () => (
-    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
-      Chargement de la galerie…
-    </div>
-  ),
+  loading: () => <LazyFallback labelKey="loadingGallery" />,
 });
 
 export default function SuiminiApp() {
@@ -99,6 +102,8 @@ export default function SuiminiApp() {
   const tc = useTranslations('common');
   const tnav = useTranslations('nav');
   const tOffline = useTranslations('offline');
+  const tToast = useTranslations('toasts');
+  const tApp = useTranslations('app');
 
   const [view, setView] = useState<ViewMode>('dashboard');
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
@@ -232,7 +237,7 @@ export default function SuiminiApp() {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     if (params.get('auth_error')) {
-      showToast('Échec de la connexion. Le lien a peut-être expiré.', 'error');
+      showToast(tToast('loginFailed'), 'error');
       window.history.replaceState({}, '', window.location.pathname);
     }
     try {
@@ -253,7 +258,7 @@ export default function SuiminiApp() {
     const reload = () => {
       if (Date.now() - store.lastLocalWriteRef.current < SELF_WRITE_WINDOW_MS) return;
       store.reloadTreeFromCloud(activeTreeId);
-      showToast('Un collaborateur a modifié cet arbre', 'info');
+      showToast(tToast('collaboratorEdited'), 'info');
     };
     const channel = sb
       .channel(`tree:${activeTreeId}`)
@@ -262,7 +267,7 @@ export default function SuiminiApp() {
       // Notify the owner/manager when an invited member accepts and joins the tree.
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tree_members', filter: `tree_id=eq.${activeTreeId}` }, (payload) => {
         const row = payload.new as { email?: string; status?: string };
-        if (row?.status === 'accepted') showToast(`${row.email ?? 'Un membre'} a rejoint « ${store.activeTree?.name ?? 'votre arbre'} »`, 'success');
+        if (row?.status === 'accepted') showToast(tToast('memberJoined', { email: row.email ?? tToast('aMember'), tree: store.activeTree?.name ?? tToast('yourTree') }), 'success');
       })
       .on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState();
@@ -309,7 +314,7 @@ export default function SuiminiApp() {
     setShowOnboarding(false);
     setView('tree');
     setSelectedPersonId(person.id);
-    showToast(`Arbre « ${data.treeName} » créé`);
+    showToast(tToast('treeCreated', { name: data.treeName }));
   }, [store, showToast]);
 
   const handleOnboardingSkip = useCallback(() => {
@@ -531,9 +536,9 @@ export default function SuiminiApp() {
               <JournalView
                 tree={store.activeTree ?? emptyTree}
                 onSelectPerson={handleSelectPerson}
-                onAdd={(entry) => { store.addJournalEntry(entry); showToast('Entrée ajoutée'); }}
-                onUpdate={(id, updates) => { store.updateJournalEntry(id, updates); showToast('Entrée mise à jour'); }}
-                onDelete={(id) => { store.deleteJournalEntry(id); showToast('Entrée supprimée', 'info'); }}
+                onAdd={(entry) => { store.addJournalEntry(entry); showToast(tToast('journalAdded')); }}
+                onUpdate={(id, updates) => { store.updateJournalEntry(id, updates); showToast(tToast('journalUpdated')); }}
+                onDelete={(id) => { store.deleteJournalEntry(id); showToast(tToast('journalDeleted'), 'info'); }}
               />
             )}
             {view === 'birthdays' && <BirthdaysView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} />}
@@ -542,7 +547,7 @@ export default function SuiminiApp() {
             {view === 'settings' && (
               <SettingsView
                 themeId={themeId}
-                onSelectTheme={(id) => { setTheme(id); showToast('Thème appliqué'); }}
+                onSelectTheme={(id) => { setTheme(id); showToast(tToast('themeApplied')); }}
                 onPreviewTheme={previewTheme}
                 onCancelPreview={cancelPreview}
                 userEmail={user?.email || null}
@@ -578,12 +583,12 @@ export default function SuiminiApp() {
           tree={store.activeTree}
           readOnly={!canEdit}
           onClose={() => setSelectedPersonId(null)}
-          onUpdate={(updates) => { store.updatePerson(selectedPerson.id, updates); showToast('Profil mis à jour'); }}
-          onDelete={() => { store.deletePerson(selectedPerson.id); setSelectedPersonId(null); showToast('Personne supprimée', 'info'); }}
+          onUpdate={(updates) => { store.updatePerson(selectedPerson.id, updates); showToast(tToast('profileUpdated')); }}
+          onDelete={() => { store.deletePerson(selectedPerson.id); setSelectedPersonId(null); showToast(tToast('personDeleted'), 'info'); }}
           onSelectPerson={handleSelectPerson}
           onAddRelationship={store.addRelationship}
-          onUpdateRelationship={(id, updates) => { store.updateRelationship(id, updates); showToast('Relation mise à jour'); }}
-          onDeleteRelationship={(id) => { store.deleteRelationship(id); showToast('Relation supprimée', 'info'); }}
+          onUpdateRelationship={(id, updates) => { store.updateRelationship(id, updates); showToast(tToast('relationUpdated')); }}
+          onDeleteRelationship={(id) => { store.deleteRelationship(id); showToast(tToast('relationDeleted'), 'info'); }}
           onAnalyzePhoto={() => openPhotoAnalyzer(selectedPerson.id)}
           onScanDocument={() => openDocumentScanner(selectedPerson.id)}
           onToast={showToast}
@@ -656,7 +661,9 @@ export default function SuiminiApp() {
             }
             if (created) {
               setSelectedPersonId(created.id);
-              showToast(`${created.firstName} ${created.lastName} ajouté(e)${relation ? ' avec relation' : ''}`);
+              showToast(relation
+                ? tToast('personAddedWithRelation', { name: `${created.firstName} ${created.lastName}` })
+                : tToast('personAdded', { name: `${created.firstName} ${created.lastName}` }));
             }
             setShowAddPerson(false);
           }}
@@ -668,11 +675,11 @@ export default function SuiminiApp() {
           trees={store.trees}
           activeTreeId={store.activeTreeId}
           shared={store.shared}
-          onSelect={(id) => { store.switchTree(id); showToast('Arbre changé'); }}
-          onCreate={(name, desc) => { store.createTree(name, desc); showToast(`Arbre « ${name} » créé`); }}
-          onDelete={(id) => { store.deleteTree(id); showToast('Arbre supprimé', 'info'); }}
-          onRename={(id, meta) => { store.updateTreeMeta(id, meta); showToast('Arbre mis à jour'); }}
-          onDuplicate={(id, newName) => { store.duplicateTree(id, newName); showToast(`Arbre dupliqué « ${newName} »`); }}
+          onSelect={(id) => { store.switchTree(id); showToast(tToast('treeSwitched')); }}
+          onCreate={(name, desc) => { store.createTree(name, desc); showToast(tToast('treeCreated', { name })); }}
+          onDelete={(id) => { store.deleteTree(id); showToast(tToast('treeDeleted'), 'info'); }}
+          onRename={(id, meta) => { store.updateTreeMeta(id, meta); showToast(tToast('treeRenamed')); }}
+          onDuplicate={(id, newName) => { store.duplicateTree(id, newName); showToast(tToast('treeDuplicated', { name: newName })); }}
           onClose={() => setShowTreeSelector(false)}
         />
       )}
@@ -685,13 +692,13 @@ export default function SuiminiApp() {
       {/* Migration prompt on first login with local data */}
       {store.migrationPending && (
         <div style={{ position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 1500, background: 'var(--bg-card)', border: '1px solid var(--accent)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', padding: '14px 18px', maxWidth: '440px', width: '92%' }}>
-          <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '7px' }}><Cloud size={16} style={{ color: 'var(--accent)', flexShrink: 0 }} aria-hidden="true" /> Importer vos données locales ?</div>
+          <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '7px' }}><Cloud size={16} style={{ color: 'var(--accent)', flexShrink: 0 }} aria-hidden="true" /> {tApp('migrateTitle')}</div>
           <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px' }}>
-            Vous avez des arbres enregistrés sur cet appareil. Voulez-vous les copier vers votre compte pour les synchroniser ?
+            {tApp('migrateDesc')}
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={() => { store.runMigration(); showToast('Données importées dans le cloud'); }} className="btn btn-primary btn-sm">Importer maintenant</button>
-            <button onClick={store.dismissMigration} className="btn btn-ghost btn-sm">Plus tard</button>
+            <button onClick={() => { store.runMigration(); showToast(tToast('migrationDone')); }} className="btn btn-primary btn-sm">{tApp('migrateImport')}</button>
+            <button onClick={store.dismissMigration} className="btn btn-ghost btn-sm">{tApp('migrateLater')}</button>
           </div>
         </div>
       )}
@@ -700,8 +707,8 @@ export default function SuiminiApp() {
         <ImportExportModal
           tree={store.activeTree}
           initialTab={importExportTab}
-          onImport={(t) => { store.importTree(t); showToast(`Arbre « ${t.name} » importé`); }}
-          onMerge={(t) => { store.updateTree(t); showToast(`Arbre « ${t.name} » mis à jour`); }}
+          onImport={(t) => { store.importTree(t); showToast(tToast('treeImported', { name: t.name })); }}
+          onMerge={(t) => { store.updateTree(t); showToast(tToast('treeMerged', { name: t.name })); }}
           onClose={() => setImportExportTab(null)}
           onScanDocument={() => openDocumentScanner()}
         />

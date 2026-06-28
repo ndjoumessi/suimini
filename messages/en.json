@@ -1675,5 +1675,39 @@
         "p1": "For any questions regarding the protection of your personal data, you can contact our data protection officer at <mail>contact@suimini.app</mail>."
       }
     }
+  },
+  "toasts": {
+    "loginFailed": "Sign-in failed. The link may have expired.",
+    "collaboratorEdited": "A collaborator edited this tree",
+    "memberJoined": "{email} joined “{tree}”",
+    "aMember": "A member",
+    "yourTree": "your tree",
+    "treeCreated": "Tree “{name}” created",
+    "journalAdded": "Entry added",
+    "journalUpdated": "Entry updated",
+    "journalDeleted": "Entry deleted",
+    "themeApplied": "Theme applied",
+    "profileUpdated": "Profile updated",
+    "personDeleted": "Person deleted",
+    "relationUpdated": "Relationship updated",
+    "relationDeleted": "Relationship deleted",
+    "personAdded": "{name} added",
+    "personAddedWithRelation": "{name} added with relationship",
+    "treeSwitched": "Tree switched",
+    "treeDeleted": "Tree deleted",
+    "treeRenamed": "Tree updated",
+    "treeDuplicated": "Tree duplicated “{name}”",
+    "migrationDone": "Local data imported to the cloud",
+    "treeImported": "Tree “{name}” imported",
+    "treeMerged": "Tree “{name}” updated",
+    "passwordUpdated": "Password updated, you are now signed in"
+  },
+  "app": {
+    "loadingMap": "Loading the map…",
+    "loadingGallery": "Loading the gallery…",
+    "migrateTitle": "Import your local data?",
+    "migrateDesc": "You have trees saved on this device. Copy them to your account to keep them in sync?",
+    "migrateImport": "Import now",
+    "migrateLater": "Later"
   }
 }

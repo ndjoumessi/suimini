@@ -56,12 +56,12 @@ const STATUS_BADGE: Record<UserStatus, { labelKey: string; bg: string; fg: strin
 function StatusBadge({ status }: { status: UserStatus }) {
   const t = useTranslations('admin');
   const b = STATUS_BADGE[status] ?? STATUS_BADGE.pending;
-  return <span style={{ display: 'inline-block', fontSize: '11px', fontWeight: 700, padding: '2px 10px', borderRadius: '100px', background: b.bg, color: b.fg }}>{t(b.labelKey)}</span>;
+  return <span style={{ display: 'inline-block', fontSize: '11px', fontWeight: 700, padding: '2px 10px', borderRadius: 0, background: b.bg, color: b.fg }}>{t(b.labelKey)}</span>;
 }
 
 function Avatar({ name, email }: { name?: string; email?: string }) {
   return (
-    <span style={{ width: '36px', height: '36px', flexShrink: 0, borderRadius: '50%', background: 'var(--accent-light)', color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700 }}>
+    <span style={{ width: '36px', height: '36px', flexShrink: 0, borderRadius: 0, background: 'var(--accent-light)', color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700 }}>
       {initials(name, email)}
     </span>
   );
@@ -103,7 +103,7 @@ export default function AdminDashboard({ admin, role, onToast }: { admin: AdminD
               <button key={tabDef.id} role="tab" aria-selected={active} onClick={() => setTab(tabDef.id)}
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', whiteSpace: 'nowrap', padding: '9px 14px', minHeight: '44px', border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: active ? 700 : 400, color: active ? 'var(--accent)' : 'var(--text-muted)', borderBottom: `2px solid ${active ? 'var(--accent)' : 'transparent'}` }}>
                 <tabDef.Icon size={15} aria-hidden="true" /> {tabDef.label}
-                {tabDef.badge ? <span style={{ background: 'var(--danger)', color: '#fff', fontSize: '10px', fontWeight: 700, borderRadius: '100px', padding: '1px 7px' }}>{tabDef.badge}</span> : null}
+                {tabDef.badge ? <span style={{ background: 'var(--danger)', color: '#fff', fontSize: '10px', fontWeight: 700, borderRadius: 0, padding: '1px 7px' }}>{tabDef.badge}</span> : null}
               </button>
             );
           })}
@@ -235,7 +235,7 @@ function UsersTab({ admin, isSuperAdmin, onToast }: { admin: AdminData; isSuperA
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>
                 {u.display_name || u.email}
-                {u.role !== 'user' && <span style={{ marginLeft: '6px', fontSize: '10px', fontWeight: 700, color: 'var(--accent)', background: 'var(--accent-light)', padding: '1px 7px', borderRadius: '100px' }}>{u.role}</span>}
+                {u.role !== 'user' && <span style={{ marginLeft: '6px', fontSize: '10px', fontWeight: 700, color: 'var(--accent)', background: 'var(--accent-light)', padding: '1px 7px', borderRadius: 0 }}>{u.role}</span>}
               </div>
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email}</div>
             </div>
@@ -336,7 +336,7 @@ function TenantsTab({ admin, onToast }: { admin: AdminData; onToast: Toast }) {
               <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>{tenant.name}</div>
               <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>/{tenant.slug} · {t('membersMax', { count: tenant.max_members })}</div>
             </div>
-            <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--accent)', background: 'var(--accent-light)', padding: '2px 8px', borderRadius: '100px', flexShrink: 0 }}>{tenant.plan}</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--accent)', background: 'var(--accent-light)', padding: '2px 8px', borderRadius: 0, flexShrink: 0 }}>{tenant.plan}</span>
             <span style={{ fontSize: '11px', fontWeight: 700, color: tenant.is_active ? 'var(--success)' : 'var(--text-light)', flexShrink: 0 }}>{tenant.is_active ? t('tenantActive') : t('tenantInactive')}</span>
           </div>
         ))}
@@ -370,7 +370,7 @@ function NotificationsTab({ admin, onToast }: { admin: AdminData; onToast: Toast
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {admin.notifications.map(n => (
             <div key={n.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '12px 14px' }}>
-              <span style={{ width: '34px', height: '34px', flexShrink: 0, borderRadius: '50%', background: 'var(--accent-light)', color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ width: '34px', height: '34px', flexShrink: 0, borderRadius: 0, background: 'var(--accent-light)', color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                 <UserPlus size={16} aria-hidden="true" />
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>

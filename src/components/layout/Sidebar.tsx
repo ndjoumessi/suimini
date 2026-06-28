@@ -359,7 +359,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         }
         .sb-tree:hover { background: var(--bg-muted); }
         .sb-tree-head { display: flex; align-items: center; gap: 6px; }
-        .sb-tree-eyebrow { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-light); flex: 1; }
+        .sb-tree-eyebrow { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); flex: 1; }
         .sb-tree-chev { color: var(--text-light); flex-shrink: 0; }
         .sb-tree-name { font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .sb-tree-meta { font-family: var(--font-mono); font-size: 10px; color: var(--accent-text); opacity: 0.85; }
@@ -451,6 +451,8 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
           .sidebar-panel { position: fixed; width: 248px; transform: translateX(-100%); transition: transform 0.3s ease; overflow-y: auto; -webkit-overflow-scrolling: touch; }
           .sidebar.sidebar-open .sidebar-panel { transform: translateX(0); box-shadow: var(--shadow-lg); }
           .sb-nav { flex: 0 0 auto; overflow: visible; }
+          /* Comfortable touch targets in the mobile drawer (≥44px). */
+          .sb-item { min-height: 44px; }
         }
       `}</style>
     </aside>

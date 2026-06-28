@@ -52,6 +52,7 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const lightboxRef = useRef<HTMLDivElement>(null);
   // Crop (1:1, profile-photo ratio) — see the upload modal.
   const imgRef = useRef<HTMLImageElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -86,6 +87,28 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [showAdd, selected, confirmDelete]);
+
+  // Lightbox focus-trap: focus the first control on open, cycle Tab within the
+  // dialog, restore focus to the trigger on close. (Escape is handled above.)
+  useEffect(() => {
+    if (!selected) return;
+    const root = lightboxRef.current;
+    if (!root) return;
+    const prev = document.activeElement as HTMLElement | null;
+    const sel = 'button, a[href], input, [tabindex]:not([tabindex="-1"])';
+    const focusables = () => Array.from(root.querySelectorAll<HTMLElement>(sel)).filter(el => !el.hasAttribute('disabled'));
+    focusables()[0]?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      const f = focusables();
+      if (f.length === 0) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+    root.addEventListener('keydown', onKey);
+    return () => { root.removeEventListener('keydown', onKey); prev?.focus?.(); };
+  }, [selected]);
 
   // Revoke object URLs to avoid leaks.
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
@@ -361,7 +384,7 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
 
       {/* Lightbox */}
       {selected && (
-        <div className="gv-lightbox" onClick={() => setSelected(null)}>
+        <div ref={lightboxRef} role="dialog" aria-modal="true" aria-label={getDisplayName(selected.person)} className="gv-lightbox" onClick={() => setSelected(null)}>
           <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '80vh' }} onClick={e => e.stopPropagation()}>
             <img src={selected.url} alt={t('lightboxAlt', { name: getDisplayName(selected.person) })}
               style={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }} />

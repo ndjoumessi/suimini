@@ -1675,5 +1675,39 @@
         "p1": "Pour toute question relative à la protection de vos données personnelles, vous pouvez contacter notre délégué à la protection des données à l'adresse <mail>contact@suimini.app</mail>."
       }
     }
+  },
+  "toasts": {
+    "loginFailed": "Échec de la connexion. Le lien a peut-être expiré.",
+    "collaboratorEdited": "Un collaborateur a modifié cet arbre",
+    "memberJoined": "{email} a rejoint « {tree} »",
+    "aMember": "Un membre",
+    "yourTree": "votre arbre",
+    "treeCreated": "Arbre « {name} » créé",
+    "journalAdded": "Entrée ajoutée",
+    "journalUpdated": "Entrée mise à jour",
+    "journalDeleted": "Entrée supprimée",
+    "themeApplied": "Thème appliqué",
+    "profileUpdated": "Profil mis à jour",
+    "personDeleted": "Personne supprimée",
+    "relationUpdated": "Relation mise à jour",
+    "relationDeleted": "Relation supprimée",
+    "personAdded": "{name} ajouté(e)",
+    "personAddedWithRelation": "{name} ajouté(e) avec relation",
+    "treeSwitched": "Arbre changé",
+    "treeDeleted": "Arbre supprimé",
+    "treeRenamed": "Arbre mis à jour",
+    "treeDuplicated": "Arbre dupliqué « {name} »",
+    "migrationDone": "Données importées dans le cloud",
+    "treeImported": "Arbre « {name} » importé",
+    "treeMerged": "Arbre « {name} » mis à jour",
+    "passwordUpdated": "Mot de passe mis à jour, vous êtes connecté"
+  },
+  "app": {
+    "loadingMap": "Chargement de la carte…",
+    "loadingGallery": "Chargement de la galerie…",
+    "migrateTitle": "Importer vos données locales ?",
+    "migrateDesc": "Vous avez des arbres enregistrés sur cet appareil. Voulez-vous les copier vers votre compte pour les synchroniser ?",
+    "migrateImport": "Importer maintenant",
+    "migrateLater": "Plus tard"
   }
 }

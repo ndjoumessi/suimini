@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Lock, Eye, EyeOff, Check, X, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { passwordChecks, passwordScore, strengthLevel } from '@/lib/password';
@@ -8,6 +9,7 @@ import { BrandLockup } from '@/components/Brand';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const tToast = useTranslations('toasts');
   const [ready, setReady] = useState<'checking' | 'ok' | 'invalid'>('checking');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -43,7 +45,7 @@ export default function ResetPasswordPage() {
     setLoading(false);
     if (error) { setError(error.message); return; }
     setDone(true);
-    try { sessionStorage.setItem('suimini_pending_toast', 'Mot de passe mis à jour, vous êtes connecté'); } catch { /* ignore */ }
+    try { sessionStorage.setItem('suimini_pending_toast', tToast('passwordUpdated')); } catch { /* ignore */ }
     setTimeout(() => router.push('/app'), 1400);
   }
 

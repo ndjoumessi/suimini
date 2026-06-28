@@ -26,7 +26,7 @@
   --ink: #f5f0e8;
   --text: #f5f0e8;
   --text-muted: #9094a6;      /* secondary — cool grey, ≥4.5:1 on --bg & --bg-card */
-  --text-light: #6c6c82;      /* tertiary — ≥3:1 (large / non-essential) */
+  --text-light: #80808e;      /* tertiary — ≈4.7:1 on --bg (WCAG AA for small text) */
 
   /* Rules */
   --border: #2d2d3a;          /* hairline dividers + card outlines */

@@ -521,7 +521,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
         ] as { id: typeof tab; Icon: typeof User; count?: number }[]).map(({ id, Icon, count }) => {
           const tabLabel = id==='narrative' ? tn('tab') : id==='discussion' ? tc('tab') : t(`tab_${id}`);
           return (
-          <button key={id} onClick={() => setTab(id as typeof tab)} className={`tab ${tab===id?'active':''}`} style={{ display:'inline-flex', flexDirection:'column', alignItems:'center', gap:'3px', padding:'7px 11px', whiteSpace:'nowrap' }} aria-label={tabLabel} title={tabLabel}>
+          <button key={id} onClick={() => setTab(id as typeof tab)} className={`tab ${tab===id?'active':''}`} style={{ display:'inline-flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'3px', padding:'7px 11px', minHeight:'44px', whiteSpace:'nowrap' }} aria-label={tabLabel} title={tabLabel}>
             <span style={{ display:'inline-flex', alignItems:'center', gap:'4px' }}>
               <Icon size={15} aria-hidden="true" />{count?<span className="mono" style={{ fontSize:'10px' }}>{count}</span>:null}
             </span>
@@ -543,7 +543,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                   <span style={{ fontSize:'13px', fontWeight:700, display:'inline-flex', alignItems:'center', gap:'5px' }}><Lightbulb size={14} aria-hidden="true" /> {t('suggestions')}</span>
                   <span style={{ fontSize:'13px', fontWeight:700, color:completionColor }}>{completionScore}%</span>
                 </div>
-                <div style={{ height:'7px', background:'var(--bg-muted)', borderRadius:'100px', overflow:'hidden', marginBottom:'10px' }}>
+                <div style={{ height:'7px', background:'var(--bg-muted)', borderRadius: 0, overflow:'hidden', marginBottom:'10px' }}>
                   <div style={{ width:`${completionScore}%`, height:'100%', background:completionColor, transition:'width 0.3s' }} />
                 </div>
                 <div style={{ display:'flex', flexDirection:'column', gap:'5px' }}>
@@ -1329,7 +1329,7 @@ function Spinner() {
   const reduce = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   return (
     <span aria-hidden="true" style={{
-      width:'15px', height:'15px', flexShrink:0, display:'inline-block', borderRadius:'50%',
+      width:'15px', height:'15px', flexShrink:0, display:'inline-block', borderRadius: 0,
       border:'2px solid var(--border)', borderTopColor:'var(--accent)',
       animation: reduce ? 'none' : 'spin 0.7s linear infinite',
     }} />
@@ -1539,7 +1539,7 @@ function DnaPie({ origins }: { origins: DnaOrigin[] }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', flex: 1, minWidth: '140px' }}>
         {origins.map((o, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px' }}>
-            <span style={{ width: '11px', height: '11px', borderRadius: '3px', background: DNA_COLORS[i % DNA_COLORS.length], flexShrink: 0 }} />
+            <span style={{ width: '11px', height: '11px', borderRadius: 0, background: DNA_COLORS[i % DNA_COLORS.length], flexShrink: 0 }} />
             <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.region}</span>
             <span style={{ fontWeight: 700, color: 'var(--text-muted)' }}>{Math.round(o.percent)}%</span>
           </div>
