@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Spectral } from 'next/font/google';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useAuth } from '@/hooks/useAuth';
 import AuthModal from '@/components/AuthModal';
 import { BrandMark } from '@/components/Brand';
@@ -64,7 +64,7 @@ function Reveal({ children, delay = 0, as = 'div', variant = 'up', className = '
 }
 
 /* ---------- Count-up (animates once, on view) ---------- */
-function CountUp({ to, duration = 1700 }: { to: number; duration?: number }) {
+function CountUp({ to, duration = 1700, locale = 'fr' }: { to: number; duration?: number; locale?: string }) {
   const ref = useRef<HTMLSpanElement>(null);
   const [val, setVal] = useState(0);
   useEffect(() => {
@@ -85,7 +85,7 @@ function CountUp({ to, duration = 1700 }: { to: number; duration?: number }) {
     io.observe(el);
     return () => { io.disconnect(); cancelAnimationFrame(raf); };
   }, [to, duration]);
-  return <span ref={ref}>{val.toLocaleString('fr-FR')}</span>;
+  return <span ref={ref}>{val.toLocaleString(locale === 'en' ? 'en-US' : 'fr-FR')}</span>;
 }
 
 /* ---------- Brand logo (mirrors the app sidebar mark: gold square + glyph) ---------- */
@@ -269,6 +269,7 @@ const PLAN_META = [
 
 export default function Landing() {
   const t = useTranslations('landing');
+  const locale = useLocale();
   const testimonials = t.raw('testimonials') as Testimonial[];
   const { startDemo, user, isDemo, isApproved } = useAuth();
   const scrolled = useScrolled();
@@ -324,7 +325,7 @@ export default function Landing() {
             )}
             <button onClick={startDemo} className="lp-btn lp-btn-ghost">{t('hero.ctaDemo')}</button>
           </div>
-          <p className="lp-hero-count">{t.rich('hero.count', { n: () => <b className="lp-count-n"><CountUp to={2847} /></b> })}</p>
+          <p className="lp-hero-count">{t.rich('hero.count', { n: () => <b className="lp-count-n"><CountUp to={2847} locale={locale} /></b> })}</p>
           <p className="lp-hero-fine">{t('hero.fine')}</p>
         </div>
         <div className="lp-cue" aria-hidden="true"><span /></div>
@@ -487,15 +488,17 @@ export default function Landing() {
 const CSS = `
 .lp-root {
   --sky: #0d0f16; --sky-deep: #090a10; --sky-rise: #12141d;
-  --star: #f2eee4; --star-muted: #a8a395; --star-faint: #75716a;
+  --star: #f2eee4; --star-muted: #a8a395; --star-faint: #8a857a;
   --amber: #e7b45c; --amber-soft: #f6d79a; --amber-deep: #caa35a;
   --hair: rgba(242,238,228,0.10); --hair-2: rgba(242,238,228,0.16);
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
   background: var(--sky); color: var(--star);
   font-family: var(--lp-serif), Georgia, serif; font-weight: 400;
-  overflow-x: hidden; -webkit-font-smoothing: antialiased;
+  overflow-x: hidden; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
 }
 .lp-root ::selection { background: rgba(231,180,92,0.30); color: #fff; }
+/* Keyboard focus — amber ring with offset so it reads on dark, on amber fills, and on ghost buttons alike */
+.lp-root a:focus-visible, .lp-root button:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
 
 /* Reveal — variant entrances (not the uniform fade-up-everywhere default) */
 .lp-rv { opacity: 0; transition: opacity 0.9s var(--ease), transform 0.9s var(--ease); will-change: opacity, transform; }
@@ -505,8 +508,6 @@ const CSS = `
 .lp-rv-in { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) { .lp-rv { opacity: 1; transform: none; transition: none; } }
 
-/* Wordmark + lang */
-.lp-word { font-family: var(--lp-serif); font-style: italic; font-weight: 500; font-size: 1.6rem; letter-spacing: 0.01em; color: var(--star); text-decoration: none; }
 /* Brand logo (gold square mark + wordmark) — matches the app sidebar */
 .lp-logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
 .lp-logo-text { display: flex; flex-direction: column; line-height: 1.05; min-width: 0; }
@@ -613,8 +614,6 @@ const CSS = `
 .lp-motif { position: relative; width: 70%; height: 70%; }
 .lp-feat-1 .lp-motif { width: 84%; height: 84%; }
 .lp-m-core { transform-box: fill-box; transform-origin: center; animation: lp-glow 4s ease-in-out infinite; }
-.lp-seq circle { animation: lp-seqpulse 2.8s ease-in-out infinite; }
-@keyframes lp-seqpulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
 /* Raconter: étoiles qui clignotent · Transmettre: relais gauche→droite */
 .lp-twinkle circle { animation: lp-twk 2.6s ease-in-out infinite; }
 @keyframes lp-twk { 0%, 100% { opacity: 0.22; } 50% { opacity: 1; } }
@@ -626,11 +625,11 @@ const CSS = `
 .lp-feat-k { font-family: var(--lp-serif); font-style: italic; font-size: 1.15rem; color: var(--amber); }
 .lp-feat-t { margin: 14px 0 0; font-family: var(--lp-serif); font-weight: 400; font-size: clamp(1.7rem, 3.4vw, 2.6rem); line-height: 1.1; letter-spacing: -0.02em; color: var(--star); text-wrap: balance; }
 .lp-feat-d { margin: 20px 0 0; max-width: 50ch; font-size: 1.12rem; line-height: 1.75; color: var(--star-muted); }
-@media (prefers-reduced-motion: reduce) { .lp-m-core, .lp-seq circle, .lp-twinkle circle, .lp-relay circle { animation: none; opacity: 1; } .lp-motif-line { stroke-dashoffset: 0; animation: none; } }
+@media (prefers-reduced-motion: reduce) { .lp-m-core, .lp-twinkle circle, .lp-relay circle { animation: none; opacity: 1; } .lp-motif-line { stroke-dashoffset: 0; animation: none; } }
 @media (max-width: 760px) {
   .lp-feat, .lp-feat-alt { grid-template-columns: 1fr; gap: 28px; }
   .lp-feat-alt .lp-feat-art { order: 0; }
-  .lp-feat-art { max-width: 220px; }
+  .lp-feat-art { max-width: 220px; justify-self: center; }
 }
 
 /* FIGURES */
@@ -698,7 +697,6 @@ const CSS = `
 /* FOOTER */
 .lp-footer { background: var(--sky-deep); border-top: 1px solid var(--hair); padding: 64px clamp(20px, 6vw, 80px) 32px; }
 .lp-footer-top { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; padding-bottom: 32px; border-bottom: 1px solid var(--hair); }
-.lp-footer-word { font-size: 1.7rem; }
 .lp-footer-tag { margin: 12px 0 0; font-size: 0.98rem; line-height: 1.6; color: var(--star-faint); white-space: nowrap; }
 .lp-footer-col { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
 .lp-footer-h { font-family: var(--lp-serif); font-style: italic; font-size: 0.95rem; color: var(--star-faint); }
