@@ -61,8 +61,12 @@ function PrintAvatar({ p, photos, size }: { p: Person; photos: boolean; size: nu
 }
 
 /** Small square gender chip — replaces the banned coloured side-stripe borders. */
-function GenderDot({ g }: { g: string }) {
-  return <span aria-hidden="true" style={{ width: '8px', height: '8px', flexShrink: 0, background: genderColor(g), display: 'inline-block' }} />;
+// Decorative app amber (brighter than P.gold) — for accent bars / pivot dots only,
+// never for text (it fails contrast on white). Matches GENDER_BAR.pivot in the app.
+const ACCENT_BAR = '#C9A84C';
+
+function GenderDot({ g, pivot }: { g: string; pivot?: boolean }) {
+  return <span aria-hidden="true" style={{ width: '8px', height: '8px', flexShrink: 0, background: pivot ? ACCENT_BAR : genderColor(g), display: 'inline-block' }} />;
 }
 
 interface Props {
@@ -277,9 +281,9 @@ export default function PrintModal({ tree, onClose }: Props) {
                 <div style={{ minHeight: '560px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', border: `2px solid ${P.ink}`, padding: '40px', pageBreakAfter: 'always' }}>
                   <div className="mono" style={{ textTransform: 'uppercase', letterSpacing: '4px', fontSize: '11px', color: P.gold, marginBottom: '18px' }}>{t('livretCover')}</div>
                   <h1 className="serif" style={{ fontSize: '40px', color: P.ink, margin: '0 0 14px', lineHeight: 1.05, border: 'none' }}>{tree.name}</h1>
-                  {tree.description && <div style={{ color: P.muted, fontSize: '14px', maxWidth: '70%', margin: '0 auto 24px' }}>{tree.description}</div>}
-                  <div style={{ width: '48px', height: '2px', background: P.gold, margin: '0 auto 20px' }} />
-                  <div className="mono" style={{ fontSize: '11px', color: P.faint, letterSpacing: '0.5px' }}>{t('coverMeta', { persons: stats.totalPersons, generations: genGroups.length, date: printedDate })}</div>
+                  {tree.description && <div style={{ color: P.muted, fontSize: '13px', maxWidth: '80%', margin: '0 auto 24px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tree.description}</div>}
+                  <div style={{ width: '48px', height: '2px', background: ACCENT_BAR, margin: '0 auto 20px' }} />
+                  <div className="mono" style={{ fontSize: '11px', color: P.muted, fontWeight: 600, letterSpacing: '1px' }}>{t('coverMeta', { persons: stats.totalPersons, generations: genGroups.length, date: printedDate })}</div>
                 </div>
                 {genGroups.map(({ gen, people }) => (
                   <div key={gen} style={{ pageBreakBefore: 'always', marginTop: '24px' }}>
@@ -315,7 +319,7 @@ export default function PrintModal({ tree, onClose }: Props) {
                   {tree.name}
                 </h1>
                 {tree.description && (
-                  <div style={{ color: P.muted, fontSize: '12px', marginBottom: '8px' }}>{tree.description}</div>
+                  <div style={{ color: P.muted, fontSize: '12px', marginBottom: '8px', maxWidth: '80%', margin: '0 auto 8px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tree.description}</div>
                 )}
                 <div className="mono" style={{ fontSize: '10px', letterSpacing: '1px', textTransform: 'uppercase', color: P.faint }}>
                   {t('headerMeta', { generations: stats.totalGenerations, persons: stats.totalPersons })}
@@ -335,20 +339,20 @@ export default function PrintModal({ tree, onClose }: Props) {
                     { val: stats.totalGenerations, lbl: t('statGenerations') },
                     { val: stats.totalRelationships, lbl: t('statRelationships') },
                   ].map(s => (
-                    <div key={s.lbl} style={{ background: P.panel, border: `1px solid ${P.border}`, padding: '14px 10px', textAlign: 'center' }}>
-                      <div className="serif" style={{ fontSize: '28px', fontWeight: 700, color: P.gold, lineHeight: 1 }}>{s.val}</div>
-                      <div className="mono" style={{ fontSize: '9px', color: P.faint, textTransform: 'uppercase', letterSpacing: '0.6px', marginTop: '6px' }}>{s.lbl}</div>
+                    <div key={s.lbl} style={{ background: P.paper, border: `1px solid ${P.border}`, borderTop: `3px solid ${ACCENT_BAR}`, padding: '16px 10px 14px', textAlign: 'center' }}>
+                      <div className="serif" style={{ fontSize: '34px', fontWeight: 700, color: P.gold, lineHeight: 1 }}>{s.val}</div>
+                      <div className="mono" style={{ fontSize: '9px', color: P.muted, textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 600, marginTop: '8px' }}>{s.lbl}</div>
                     </div>
                   ))}
                 </div>
 
-                <h2 className="serif" style={{ fontSize: '16px', color: P.ink, borderBottom: `1px solid ${P.border}`, paddingBottom: '6px', marginBottom: '14px' }}>
-                  {t('allPersons')}
-                </h2>
-                <div style={{ columns: 2, columnGap: '20px' }}>
-                  {sortedPersons.map(p => (
-                    <div key={p.id} style={{ breakInside: 'avoid', marginBottom: '5px', fontSize: '12px', padding: '3px 0', display: 'flex', alignItems: 'center', gap: '6px', opacity: p.isAlive ? 1 : 0.7 }}>
-                      <GenderDot g={p.gender} />
+                <div className="mono" style={{ fontSize: '10px', color: P.gold, textTransform: 'uppercase', letterSpacing: '0.14em', fontWeight: 700, borderBottom: `1px solid ${P.border}`, paddingBottom: '6px', marginBottom: '12px' }}>
+                  {t('membersEyebrow')}
+                </div>
+                <div>
+                  {sortedPersons.map((p, i) => (
+                    <div key={p.id} style={{ breakInside: 'avoid', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', padding: '6px 8px', background: i % 2 ? '#F8F7F5' : P.paper, opacity: p.isAlive ? 1 : 0.7 }}>
+                      <GenderDot g={p.gender} pivot={p.id === (tree.rootPersonId || tree.persons[0]?.id)} />
                       <span><strong style={{ color: P.ink }}>{p.lastName}</strong>, {p.firstName}
                         {p.birthDate && <span className="mono" style={{ color: P.faint }}> · {formatYear(p.birthDate)}</span>}
                         {!p.isAlive && <span style={{ color: P.faint }}> †</span>}
@@ -443,7 +447,7 @@ export default function PrintModal({ tree, onClose }: Props) {
             <div className="mono" style={{ textAlign: 'center', marginTop: '24px', color: P.faint, fontSize: '10px', letterSpacing: '0.5px' }}>
               {t('docFooter', { date: printedDate })}
             </div>
-            <div className="mono" style={{ textAlign: 'center', marginTop: '4px', color: P.faint, fontSize: '9px', fontStyle: 'italic', opacity: 0.5 }}>
+            <div className="mono" style={{ textAlign: 'center', marginTop: '4px', color: '#555', fontSize: '9px', fontStyle: 'italic', opacity: 0.65 }}>
               {t('docFooterConfidential')}
             </div>
           </div>

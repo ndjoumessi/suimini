@@ -1075,7 +1075,8 @@
     "docFooter": "— Généré par Suimini · {date} —",
     "treeEmpty": "Aucune personne à représenter.",
     "headerMeta": "{generations} {generations, plural, one {génération} other {générations}} · {persons} {persons, plural, one {membre} other {membres}}",
-    "docFooterConfidential": "Document confidentiel — usage familial strictement"
+    "docFooterConfidential": "Document confidentiel — usage familial strictement",
+    "membersEyebrow": "Membres"
   },
   "timeline": {
     "heading": "Chronologie | {name}",
