@@ -443,6 +443,9 @@ export default function PrintModal({ tree, onClose }: Props) {
             <div className="mono" style={{ textAlign: 'center', marginTop: '24px', color: P.faint, fontSize: '10px', letterSpacing: '0.5px' }}>
               {t('docFooter', { date: printedDate })}
             </div>
+            <div className="mono" style={{ textAlign: 'center', marginTop: '4px', color: P.faint, fontSize: '9px', fontStyle: 'italic', opacity: 0.5 }}>
+              {t('docFooterConfidential')}
+            </div>
           </div>
 
           {/* Visual tree preview (captured for PDF export) */}
