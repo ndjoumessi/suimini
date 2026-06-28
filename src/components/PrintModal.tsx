@@ -143,48 +143,68 @@ export default function PrintModal({ tree, onClose }: Props) {
       const pageW = pdf.internal.pageSize.getWidth();   // 420mm
       const pageH = pdf.internal.pageSize.getHeight();  // 297mm
       const margin = 12;
-      const topArea = 20;    // title band
-      const bottomArea = 12; // footer band
+      const topArea = 26;     // title + subtitle + amber rule
+      const bottomArea = 16;  // two footer lines
       const availW = pageW - margin * 2;
       const availH = pageH - topArea - bottomArea;
 
-      // Title + footer drawn on every page.
-      const stamp = () => {
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(20);
-        pdf.setTextColor(163, 107, 30); // P.gold
-        pdf.text(tree.name, pageW / 2, 14, { align: 'center' });
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(9);
-        pdf.setTextColor(110, 106, 98); // P.faint
-        pdf.text(t('pdfFooter', { count: tree.persons.length, date: new Date().toLocaleDateString(dateLocale) }), pageW / 2, pageH - 5, { align: 'center' });
+      // Subtitle: "{n} générations · {n} membres · depuis ~{year}" (year dynamic).
+      const years = tree.persons
+        .map(p => (p.birthDate ? Number(String(p.birthDate).match(/\d{4}/)?.[0]) : NaN))
+        .filter(y => Number.isFinite(y) && y >= 1000) as number[];
+      const earliest = years.length ? Math.min(...years) : null;
+      let subtitle = t('headerMeta', { generations: stats.totalGenerations, persons: stats.totalPersons });
+      if (earliest) subtitle += ' · ' + t('treeSince', { year: earliest });
+
+      // Title + subtitle + amber rule (top) and footer + confidential + page number (bottom).
+      const stamp = (pageNo: number, total: number) => {
+        pdf.setFont('helvetica', 'bold'); pdf.setFontSize(18); pdf.setTextColor(163, 107, 30);
+        pdf.text(tree.name, pageW / 2, 11, { align: 'center' });
+        pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9); pdf.setTextColor(110, 106, 98);
+        pdf.text(subtitle, pageW / 2, 17, { align: 'center' });
+        pdf.setDrawColor(201, 168, 76); pdf.setLineWidth(0.5); pdf.line(pageW / 2 - 28, 20.5, pageW / 2 + 28, 20.5);
+        pdf.setFontSize(8); pdf.setTextColor(110, 106, 98);
+        pdf.text(t('pdfFooter', { count: tree.persons.length, date: new Date().toLocaleDateString(dateLocale) }), pageW / 2, pageH - 9, { align: 'center' });
+        pdf.setFont('helvetica', 'italic'); pdf.setFontSize(7.5);
+        pdf.text(t('docFooterConfidential'), pageW / 2, pageH - 5, { align: 'center' });
+        if (total > 1) { pdf.setFont('helvetica', 'normal'); pdf.text(t('pageNumber', { n: pageNo, total }), pageW - margin, pageH - 5, { align: 'right' }); }
       };
 
-      const ratioW = availW / canvas.width;          // mm per px to fill the page width
-      const wouldOverflow = canvas.height * ratioW > availH;
+      const ratioW = availW / canvas.width;            // mm per px to fill the page width
+      const PX_TO_MM = 25.4 / 96;
+      const scaleFactor = ratioW / PX_TO_MM;           // rendered vs natural size
+      const overflow = canvas.height * ratioW > availH;
+      // Auto-paginate a tree too wide to stay legible on one page (scale < 0.4).
+      const shouldPaginate = (VISUAL_TREE_MODE === 'paginate' || scaleFactor < 0.4) && overflow;
 
-      if (VISUAL_TREE_MODE === 'paginate' && wouldOverflow) {
-        // Slice the canvas into stacked A3 pages.
-        const sliceH = Math.max(1, Math.floor(availH / ratioW)); // px of canvas per page
-        const pages = Math.ceil(canvas.height / sliceH);
-        for (let i = 0; i < pages; i++) {
-          if (i > 0) pdf.addPage();
-          const h = Math.min(sliceH, canvas.height - i * sliceH);
-          const slice = document.createElement('canvas');
-          slice.width = canvas.width;
-          slice.height = h;
-          const sctx = slice.getContext('2d');
-          if (sctx) { sctx.fillStyle = '#ffffff'; sctx.fillRect(0, 0, canvas.width, h); sctx.drawImage(canvas, 0, i * sliceH, canvas.width, h, 0, 0, canvas.width, h); }
-          stamp();
-          pdf.addImage(slice.toDataURL('image/png'), 'PNG', margin, topArea, availW, h * ratioW);
+      if (shouldPaginate) {
+        const pagePx = availH / ratioW;                // canvas px that fill one page tall
+        const pxPerUnit = canvas.height / treeLayout.height;
+        const rowPx = treeLayout.rowTops.map(t0 => (t0 - treeLayout.minY) * pxPerUnit).filter(v => v > 0);
+        const bounds = [0, ...rowPx, canvas.height];
+        const pages: Array<[number, number]> = [];
+        let pStart = 0;
+        for (let i = 1; i < bounds.length; i++) {
+          if (bounds[i] - pStart > pagePx && bounds[i - 1] > pStart) { pages.push([pStart, bounds[i - 1]]); pStart = bounds[i - 1]; }
         }
+        pages.push([pStart, canvas.height]);
+        pages.forEach(([y0, y1], i) => {
+          if (i > 0) pdf.addPage();
+          const h = y1 - y0;
+          const slice = document.createElement('canvas');
+          slice.width = canvas.width; slice.height = h;
+          const sctx = slice.getContext('2d');
+          if (sctx) { sctx.fillStyle = '#ffffff'; sctx.fillRect(0, 0, canvas.width, h); sctx.drawImage(canvas, 0, y0, canvas.width, h, 0, 0, canvas.width, h); }
+          stamp(i + 1, pages.length);
+          pdf.addImage(slice.toDataURL('image/png'), 'PNG', margin, topArea, availW, h * ratioW); // top-aligned
+        });
       } else {
-        // Scale the whole tree onto a single page.
+        // Whole tree on one page — TOP-aligned (no vertical centering → no top whitespace).
         const ratio = Math.min(availW / canvas.width, availH / canvas.height);
         const imgW = canvas.width * ratio;
         const imgH = canvas.height * ratio;
-        stamp();
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', (pageW - imgW) / 2, topArea + (availH - imgH) / 2, imgW, imgH);
+        stamp(1, 1);
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', (pageW - imgW) / 2, topArea, imgW, imgH);
       }
 
       pdf.save(`${tree.name.replace(/\s+/g, '_')}_${t('fileSuffix')}.pdf`);
@@ -515,9 +535,9 @@ export default function PrintModal({ tree, onClose }: Props) {
                     {/* connectors */}
                     {treeLayout.edges.map((e, i) => (
                       <line key={i} x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2}
-                        stroke={e.type === 'spouse' ? GENDER_BAR.female : '#CFC7BB'}
-                        strokeWidth={e.type === 'spouse' ? 2 : 1.4}
-                        strokeDasharray={e.type === 'spouse' ? '6,4' : 'none'} />
+                        stroke={e.type === 'parent-main' ? ACCENT_BAR : '#888888'}
+                        strokeWidth={1.5}
+                        strokeDasharray={e.type === 'spouse' ? '4 3' : 'none'} />
                     ))}
                     {/* unattached band label */}
                     {treeLayout.unattachedCount > 0 && (() => {
@@ -542,9 +562,9 @@ export default function PrintModal({ tree, onClose }: Props) {
                           <rect width={5} height={NODE_H} fill={accent} />
                           <rect x={13} y={NODE_H / 2 - 15} width={30} height={30} fill={accent} />
                           <text x={28} y={NODE_H / 2 + 1} textAnchor="middle" dominantBaseline="central" fontFamily="var(--font-display), Georgia, serif" fontSize={12} fontWeight={700} fill={nodeInk(node)}>{initialsOf(p)}</text>
-                          <text x={52} y={26} fontFamily="var(--font-display), Georgia, serif" fontSize={12} fontWeight={700} fill={P.ink}>{truncate(p.firstName || '', 16)}</text>
-                          <text x={52} y={43} fontFamily="var(--font-display), Georgia, serif" fontSize={11} fill={P.muted}>{truncate((p.lastName || '') + (!p.isAlive ? ' †' : ''), 18)}</text>
-                          {dates && <text x={52} y={59} fontFamily="var(--font-mono), monospace" fontSize={9} fill={P.faint}>{dates}</text>}
+                          <text x={50} y={24} fontFamily="var(--font-display), Georgia, serif" fontSize={12} fontWeight={700} fill={P.ink}>{truncate(p.firstName || '', 12)}</text>
+                          <text x={50} y={40} fontFamily="var(--font-display), Georgia, serif" fontSize={11} fill={P.muted}>{truncate((p.lastName || '') + (!p.isAlive ? ' †' : ''), 13)}</text>
+                          {dates && <text x={50} y={55} fontFamily="var(--font-mono), monospace" fontSize={9} fill={P.faint}>{dates}</text>}
                           {node.isPivot && <text x={NODE_W - 10} y={17} textAnchor="end" fontSize={12} fill={ACCENT_BAR}>✦</text>}
                         </g>
                       );

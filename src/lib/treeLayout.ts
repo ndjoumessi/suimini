@@ -1,10 +1,10 @@
 import { FamilyTree, Person } from '@/types';
 import { getParents, getChildren, getSpouses, getGeneration, getDisplayName } from '@/lib/treeUtils';
 
-export const NODE_W = 168;
-export const NODE_H = 84;
-export const H_GAP = 28;
-export const V_GAP = 70;
+export const NODE_W = 140;
+export const NODE_H = 64;
+export const H_GAP = 20;
+export const V_GAP = 84;
 
 export interface LayoutNode {
   person: Person;
@@ -28,6 +28,8 @@ export interface TreeLayout {
   minY: number;
   width: number;
   height: number;
+  /** Top Y of each rendered generation row (for generation-aware pagination). */
+  rowTops: number[];
   /** Dynamically-resolved root (pivot if set, else the most-connected founder). */
   pivotId: string | null;
   rootName: string;
@@ -62,7 +64,7 @@ function descendantCount(id: string, childrenMap: Map<string, string[]>, memo: M
 export function buildTreeLayout(tree: FamilyTree, rootId: string | null): TreeLayout {
   const persons = tree.persons;
   const rels = tree.relationships;
-  const empty: TreeLayout = { nodes: [], edges: [], minX: 0, minY: 0, width: 0, height: 0, pivotId: null, rootName: '', generations: 0, unattachedCount: 0 };
+  const empty: TreeLayout = { nodes: [], edges: [], minX: 0, minY: 0, width: 0, height: 0, rowTops: [], pivotId: null, rootName: '', generations: 0, unattachedCount: 0 };
   if (!persons.length) return empty;
 
   const byId = new Map(persons.map(p => [p.id, p]));
@@ -149,9 +151,11 @@ export function buildTreeLayout(tree: FamilyTree, rootId: string | null): TreeLa
   const attachedRows = rows.filter(r => r.length);
   const maxW = Math.max(rowW(unattached), NODE_W, ...attachedRows.map(rowW));
   const nodes: LayoutNode[] = [];
+  const rowTops: number[] = [];
   let y = 0;
   for (const row of rows) {
     if (!row.length) continue;
+    rowTops.push(y);
     let x = (maxW - rowW(row)) / 2;
     for (const p of row) { nodes.push({ person: p, x, y, isPivot: p.id === pivotId, unattached: false }); x += NODE_W + H_GAP; }
     y += NODE_H + V_GAP;
@@ -161,6 +165,24 @@ export function buildTreeLayout(tree: FamilyTree, rootId: string | null): TreeLa
     let x = (maxW - rowW(unattached)) / 2;
     for (const p of unattached) { nodes.push({ person: p, x, y, isPivot: false, unattached: true }); x += NODE_W + H_GAP; }
     y += NODE_H;
+  }
+
+  // Spine = "main lineage": pivot's ancestor chain (up via first parent) + main
+  // descent (down via the child with the most descendants). Connectors along it
+  // are accented in amber; all others stay neutral grey.
+  const spine = new Set<string>();
+  if (pivotId) {
+    spine.add(pivotId);
+    let up = pivotId;
+    for (let i = 0; i < 500; i++) { const ps = getParents(up, rels, persons); if (!ps.length) break; up = ps[0].id; spine.add(up); }
+    let down = pivotId;
+    for (let i = 0; i < 500; i++) {
+      const kids = childrenMap.get(down) ?? [];
+      if (!kids.length) break;
+      let bestK = kids[0], bestD = -1;
+      for (const k of kids) { const d = descendantCount(k, childrenMap, dMemo); if (d > bestD) { bestD = d; bestK = k; } }
+      down = bestK; spine.add(down);
+    }
   }
 
   // 6) Edges from real positions.
@@ -174,9 +196,10 @@ export function buildTreeLayout(tree: FamilyTree, rootId: string | null): TreeLa
         const px = par.x + NODE_W / 2, py = par.y + NODE_H;
         const cx = ch.x + NODE_W / 2, cy = ch.y;
         const midY = (py + cy) / 2;
-        edges.push({ x1: px, y1: py, x2: px, y2: midY, type: 'parent' });
-        edges.push({ x1: px, y1: midY, x2: cx, y2: midY, type: 'parent' });
-        edges.push({ x1: cx, y1: midY, x2: cx, y2: cy, type: 'parent' });
+        const kind = spine.has(r.person1Id) && spine.has(r.person2Id) ? 'parent-main' : 'parent';
+        edges.push({ x1: px, y1: py, x2: px, y2: midY, type: kind });
+        edges.push({ x1: px, y1: midY, x2: cx, y2: midY, type: kind });
+        edges.push({ x1: cx, y1: midY, x2: cx, y2: cy, type: kind });
       }
     } else if (r.type === 'spouse' || r.type === 'partner') {
       const a = pos.get(r.person1Id);
@@ -198,6 +221,7 @@ export function buildTreeLayout(tree: FamilyTree, rootId: string | null): TreeLa
   return {
     nodes, edges,
     minX, minY, width: maxX - minX, height: maxY - minY,
+    rowTops,
     pivotId, rootName,
     generations: attachedRows.length,
     unattachedCount: unattached.length,

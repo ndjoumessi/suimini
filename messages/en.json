@@ -1077,7 +1077,9 @@
     "headerMeta": "{generations} {generations, plural, one {generation} other {generations}} · {persons} {persons, plural, one {member} other {members}}",
     "docFooterConfidential": "Confidential document — strictly for family use",
     "membersEyebrow": "Members",
-    "unattached": "Unattached members"
+    "unattached": "Unattached members",
+    "treeSince": "since ~{year}",
+    "pageNumber": "Page {n} / {total}"
   },
   "timeline": {
     "heading": "Timeline | {name}",
