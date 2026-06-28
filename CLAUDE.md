@@ -51,7 +51,8 @@ src/
   hooks/               # useAuth, useFamilyStore, useAdminData, useTheme, useDarkMode, useMediaQuery…
   lib/                 # supabase.ts, supabaseSync.ts, treeUtils.ts, sampleData.ts,
                        #   emails.ts, sharing.ts, pdfTemplates.ts…
-  i18n/                # config.ts (constantes) + request.ts (locale depuis cookie)
+  i18n/                # config.ts (constantes) + request.ts (locale SSR depuis cookie)
+                       #   + messages.ts (bundle fr+en → bascule instantanée via IntlProvider)
 messages/              # fr.json + en.json
 supabase/              # schema.sql + migrations manuelles (share-public.sql, storage.sql,
                        #   push-tokens.sql, cleanup-demo-tree.sql…)
@@ -86,20 +87,23 @@ e2e/                   # tests Playwright
 - Toutes les routes email **no-op gracieusement** (`200 { skipped }`) sans `RESEND_API_KEY`.
 
 ### i18n (next-intl, sans routing URL)
-- Mode **"without i18n routing"** : la locale vient du **cookie `NEXT_LOCALE`** (+ localStorage), **pas de l'URL** (pas de `/en`). `app/` n'est PAS restructuré.
-- `src/i18n/request.ts` lit le cookie (défaut `fr`). `LanguageSwitcher.tsx` écrit le cookie + recharge.
-- Chaînes dans `messages/{fr,en}.json`. Composants : `useTranslations('namespace')`.
-- Lire un cookie dans le layout rend `/` **dynamique** (`ƒ`) — c'est voulu (la locale est honorée par requête).
+- Mode **"without i18n routing"** : la locale vient du **cookie `NEXT_LOCALE`** (défaut `fr`), **pas de l'URL** (pas de `/en`). `app/` n'est PAS restructuré.
+- **Bascule instantanée, sans reload** : `src/components/IntlProvider.tsx` garde la locale en **state React** et bundle les **deux** jeux de messages (`src/i18n/messages.ts` → `MESSAGES = {fr,en}`). `useLocaleSwitch().setLocale()` re-rend tous les `useTranslations` **en place** (aucune navigation) et écrit cookie + localStorage + `<html lang>` en arrière-plan. `LanguageSwitcher.tsx` l'utilise (web ; pas de `window.location.reload`).
+- SSR / premier paint : `src/i18n/request.ts` + `layout.tsx` (`getLocale()`) seedent `IntlProvider initialLocale` depuis le cookie. Lire le cookie rend `/` **dynamique** (`ƒ`) — voulu.
+- Chaînes dans `messages/{fr,en}.json` ; `useTranslations('namespace')`. **Parité fr/en obligatoire** (mêmes clés des deux côtés — vérifier avant commit).
+- ⚠️ **Piège ICU** : une **apostrophe d'élision juste avant un tag** rich (`d'<b>…`) casse le parseur ICU de next-intl (le `'` ouvre une citation littérale → le markup s'affiche en clair). Mettre l'apostrophe **dans** le tag : `<b>droit d'accès</b>`, `<b>L'export…</b>`. (Vérifiable avec `intl-messageformat`.)
+- ⚠️ « L'app affiche EN alors que FR semble sélectionné » n'est **pas un bug** : le cookie `NEXT_LOCALE` est à `en` ; toute l'app suit la locale de session.
 
-## Design — système « Atelier »
+## Design — système « Atelier » (thème dark « Modern Heritage »)
 
-Brutalisme raffiné. **Pas de classes utilitaires Tailwind** en pratique : on utilise des **styles inline + des variables CSS et classes définies dans `globals.css`**.
+Brutalisme raffiné, **thème sombre**. **Pas de classes utilitaires Tailwind** en pratique : **styles inline + variables CSS et classes de `globals.css`**.
 
-- Polices (via `next/font`) : **Bricolage Grotesque** (`--font-display`), **Hanken Grotesk** (`--font-body`), **IBM Plex Mono** (`--font-mono`). ⚠️ Ne PAS introduire Space Grotesk / Inter / Arial.
-- Variables clés : `--ink`, `--accent` (terracotta `#bf4b2c`), `--bg`, `--bg-card`, `--border-strong`, `--bw` (épaisseur de bordure), `--shadow` (`4px 4px 0`).
+- Polices (via `next/font`, **source de vérité = `src/app/layout.tsx`**) : **Spectral** (`--font-display` : titres, noms, chiffres) · **Plus Jakarta Sans** (`--font-body` : UI / corps / labels) · **IBM Plex Mono** (`--font-mono` : dates, IDs). ⚠️ Ne PAS introduire Inter / Arial / Space Grotesk. (Le commentaire d'en-tête de `globals.css` dit encore « Libre Baskerville » → **périmé**, c'est Plus Jakarta Sans.) La landing (`Landing.tsx`) charge **Spectral seul** (scopé `--lp-serif`).
+- Couleurs (dark) : `--bg #111118` · `--bg-card #1e1e28` · `--ink #f5f0e8` · `--accent` **or muted `#c9a84c`** (⚠️ PAS le terracotta `#bf4b2c` de l'ancien thème clair) · `--text-muted #9094a6` (secondaire, ≥4.5:1) · `--text-light #888896` (tertiaire, ≥4.5:1). `--border-strong`, `--bw`, `--shadow`.
+- **Zéro border-radius** : toute l'échelle `--radius*` = `0`. Pour les littéraux, mettre `0` — **exception : garder circulaires les vrais cercles** (spinner ring, `input[type=radio]`, points ronds).
 - Classes utiles : `.card`, `.btn` / `.btn-primary` / `.btn-secondary`, `.label` (mono uppercase), `.serif`, `.mono`, `.input`.
-- Cards : bordure `var(--bw) solid var(--border-strong)` + `box-shadow: var(--shadow)`. Chiffres mis en avant en terracotta.
-- Avant tout travail UI, lire `~/.claude/skills/frontend-design/SKILL.md`.
+- Cards : bordure `var(--bw) solid var(--border-strong)` + `box-shadow: var(--shadow)`. Chiffres mis en avant en or.
+- Avant tout travail UI, lire `.claude/skills/impeccable/SKILL.md` (`PRODUCT.md` décrit produit/registre). Sous-commandes : `/impeccable polish|audit|critique|craft`. Audit UI/UX de référence : **`AUDIT-V4.md`** (racine).
 
 ## Mobile (`mobile/` — React Native / Expo)
 
@@ -154,6 +158,8 @@ L'app **mobile** lit les mêmes valeurs Supabase via `EXPO_PUBLIC_SUPABASE_URL` 
 ## Pièges connus (à respecter)
 
 - **`onAuthStateChange` doit rester synchrone** (`useAuth.ts`) : ne jamais `await` un appel Supabase dedans → deadlock GoTrue (le login reste bloqué sur « Connexion en cours… »). Différer via `setTimeout(0)`.
+- **Logout sans crash** (`useAuth.ts`) : flag module-level `let isSigningOut` (+ `markSigningOut()` exporté). `onAuthStateChange` `return` tôt si le flag est posé, et `signOut` pose le flag **avant** `supabase.auth.signOut()` puis fait `window.location.replace('/')`. Sinon l'event `SIGNED_OUT` re-rend `/app` avec une session nulle → crash « Une erreur est survenue ».
+- **Sweep de `border-radius` à 0** : OK de passer les littéraux à `0` (zéro-radius), mais **ne pas carrer les vrais cercles** (spinner = `border` + `borderTopColor` + animation `spin` ; `input[type=radio]` ; pastilles rondes). Un sweep aveugle a déjà transformé un spinner en carré tournant.
 - **Committer `package.json` + `package-lock.json` ensemble** quand on ajoute une dépendance : sinon `npm ci` en CI/Vercel échoue (ex. oubli de `@playwright/test` / `next-intl`).
 - Routes sous `app/_xxx/` = **privées** (non routables) ; ne pas s'en servir pour des pages réelles.
 - `tsconfig.tsbuildinfo` est tracké (cache incrémental) ; en cas de tsc capricieux après suppression de routes, `rm -rf .next` puis rebuild.
@@ -168,3 +174,7 @@ L'app **mobile** lit les mêmes valeurs Supabase via `EXPO_PUBLIC_SUPABASE_URL` 
 - Commits en français, style `type: résumé` (`feat:`, `fix:`, `chore:`). Terminer par `Co-Authored-By: Claude …`.
 - Travailler sur `main` (l'historique du repo est direct-sur-main). Pousser puis `vercel --prod` quand demandé.
 - Préférer les styles inline + variables CSS du design system ; matcher le style du code environnant.
+- **Tout texte UI passe par `t()`** (next-intl) ; ajouter la clé dans `messages/fr.json` **et** `en.json` (parité). Pas de chaîne en dur (toasts inclus — voir namespaces `toasts.*` / `app.*`).
+- **Couleurs de genre** : source unique `GENDER_BAR` (`src/components/tree/nodeStyle.ts`) — homme bleu `#4A90D9`, femme rose `#C47BA0`, inconnu `#3A3A4A`. Arbre, liste (`PersonCard`), `PersonAvatar` et exploration la consomment ; l'or `#c9a84c` est réservé au **pivot/fondateur**, jamais au genre.
+- **Modales** : utiliser le hook `useOverlay(onClose)` (focus-trap + Esc + verrou de scroll + restauration du focus) ; ne pas réimplémenter à la main. Le composant doit être **monté seulement quand ouvert** (le hook agit au mount). Le `:focus-visible` est global dans `globals.css`.
+- **Pages légales** (`/cgu`, `/confidentialite`) : composant client partagé `LegalDoc.tsx` + namespaces `cgu.*` / `privacy.*` (rich text via `t.rich` avec tags `<b>`).
