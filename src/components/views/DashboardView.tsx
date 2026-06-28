@@ -53,12 +53,20 @@ function firstNameOf(displayName?: string | null, email?: string | null): string
   return token.charAt(0).toUpperCase() + token.slice(1);
 }
 
+/** Earliest real birth year across the tree's people. Extracts a plausible 4-digit
+ *  year straight from the stored value (handles partial/approx strings and avoids
+ *  new Date() timezone quirks on very old dates), ignores implausible years, and
+ *  returns null when NO person has a usable birth date (so the UI shows nothing
+ *  rather than a bogus default). */
 function earliestYear(tree?: FamilyTree | null): number | null {
   if (!tree) return null;
+  const nowYear = new Date().getFullYear();
   let min = Infinity;
   for (const p of tree.persons) {
-    const y = p.birthDate ? new Date(p.birthDate).getFullYear() : NaN;
-    if (!Number.isNaN(y) && y < min) min = y;
+    if (!p.birthDate) continue;
+    const m = String(p.birthDate).match(/\d{4}/);
+    const y = m ? Number(m[0]) : NaN;
+    if (Number.isFinite(y) && y >= 1000 && y <= nowYear && y < min) min = y;
   }
   return Number.isFinite(min) ? min : null;
 }
