@@ -245,7 +245,10 @@
     "modeFocus": "Focus",
     "modeFull": "Full",
     "displayMode": "Display mode",
-    "lineageAria": "Lineage"
+    "lineageAria": "Lineage",
+    "origin": "Origin",
+    "originTooltip": "Go to the founding ancestor",
+    "pivot": "Pivot"
   },
   "person": {
     "firstName": "First name",

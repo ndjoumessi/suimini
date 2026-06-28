@@ -2,7 +2,7 @@
 import { useMemo, useRef, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { FamilyTree, Person } from '@/types';
-import { getParents, getChildren, getSpouses, getDisplayName, formatYear, getAge, formatAge } from '@/lib/treeUtils';
+import { getParents, getChildren, getSpouses, getSiblings, getDisplayName, formatYear, getAge, formatAge } from '@/lib/treeUtils';
 import { ChevronUp, ChevronDown, ChevronRight, Crosshair } from 'lucide-react';
 import TreeNode from './TreeNode';
 
@@ -184,6 +184,51 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
     });
   }
 
+  // ---- Mobile swipe navigation (touch) ----
+  // Up → parents · Down → children · Left/Right → previous/next sibling.
+  const stageRef = useRef<HTMLDivElement>(null);
+  const touchRef = useRef<{ x: number; y: number; t: number } | null>(null);
+
+  const nudge = (dx: number, dy: number) => {
+    const el = stageRef.current;
+    if (!el || (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)) return;
+    el.style.transition = 'transform 160ms cubic-bezier(0.16,1,0.3,1)';
+    el.style.transform = `translate(${dx}px, ${dy}px)`;
+    window.setTimeout(() => { if (stageRef.current) stageRef.current.style.transform = 'translate(0,0)'; }, 160);
+  };
+
+  const goSibling = (dir: 1 | -1) => {
+    const par = parents[0];
+    const group = par ? getChildren(par.id, tree.relationships, tree.persons) : [focus, ...getSiblings(focus.id, tree.relationships, tree.persons)];
+    if (group.length < 2) return;
+    const idx = group.findIndex(g => g.id === focus.id);
+    if (idx === -1) return;
+    const next = group[(idx + dir + group.length) % group.length];
+    if (next && next.id !== focus.id) { nudge(dir * -20, 0); onFocus(next.id); }
+  };
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    const tc = e.touches[0];
+    touchRef.current = { x: tc.clientX, y: tc.clientY, t: Date.now() };
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const s = touchRef.current; touchRef.current = null;
+    if (!s) return;
+    const tc = e.changedTouches[0];
+    const dx = tc.clientX - s.x, dy = tc.clientY - s.y;
+    const dt = Date.now() - s.t;
+    const TH = 50;
+    if (dt > 600) return;                                   // slow drag = pan, not a swipe
+    if (Math.abs(dx) < TH && Math.abs(dy) < TH) return;     // too small
+    if (Math.abs(dx) > Math.abs(dy)) {
+      goSibling(dx < 0 ? 1 : -1);                           // left → next, right → previous
+    } else if (dy < 0) {
+      if (hasParents) { nudge(0, -20); onFocus(parents[0].id); }  // up → parents
+    } else {
+      if (hasChildren) { nudge(0, 20); onFocus((downTarget ?? children[0]).id); } // down → children
+    }
+  };
+
   // Center the focus couple within the AVAILABLE area (the scroll container),
   // not the viewport — so the sidebar and an open PersonPanel never hide the
   // left nodes. Re-runs on focus change AND on container resize (panel toggles).
@@ -226,7 +271,6 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         isSpouse={false}
         dim={role === 'parent' || role === 'child'}
         genColor={genColor(g)}
-        gen={g}
         dateStr={dateLine(p)}
         displayName={getDisplayName(p).trim() || t('unknownNode')}
         unknownLabel={t('unknownNode')}
@@ -259,8 +303,8 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         </button>
       )}
 
-      <div className="ft-scroll" ref={scrollRef}>
-        <div className="ft-stage" style={{ width: stageW, height: stageH }}>
+      <div className="ft-scroll" ref={scrollRef} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+        <div className="ft-stage" ref={stageRef} style={{ width: stageW, height: stageH }}>
           <svg className="ft-links" width={stageW} height={stageH} aria-hidden="true">
             {links.map((l, i) => (
               <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke="var(--accent)" strokeOpacity={0.5} strokeWidth={1.5} strokeLinecap="round" />
@@ -294,6 +338,14 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         <Crosshair size={16} aria-hidden="true" />
       </button>
 
+      {/* Discreet legend (bottom-left) — fades out on canvas hover so it never blocks nodes */}
+      <div className="ft-legend" aria-hidden="true">
+        <span className="ft-leg-item"><span className="ft-leg-bar" style={{ background: '#4A90D9' }} />{t('male')}</span>
+        <span className="ft-leg-item"><span className="ft-leg-bar" style={{ background: '#C47BA0' }} />{t('female')}</span>
+        <span className="ft-leg-item"><span className="ft-leg-bar" style={{ background: '#C9A84C' }} />{t('pivot')}</span>
+        <span className="ft-leg-item"><span className="ft-leg-dia" />{t('spouse')}</span>
+      </div>
+
       {/* Down nav — next generation */}
       {hasChildren && (
         <button className="ft-nav ft-nav-down" onClick={() => onFocus((downTarget ?? children[0]).id)}>
@@ -315,9 +367,11 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         .ft-node:hover { border-color: var(--accent); box-shadow: var(--shadow-accent); transform: translateY(-2px); z-index: 2; }
         .ft-node:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         .ft-node-sel { border-color: var(--accent); }
-        /* Focus/active node: 2px gold ring (inset, never shifts layout) + glow. The
-           gender tint (inline bg) stays visible — the ring alone marks focus. */
-        .ft-node-focus { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent), var(--shadow-accent); }
+        /* Focus/active node: double gold ring (2px + subtle inner) + glow + a slight
+           scale-up so it clearly stands out from the dimmed parents/children. The
+           gender tint (inline bg) stays visible underneath. */
+        .ft-node-focus { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent), inset 0 0 0 4px rgba(201,168,76,0.22), var(--shadow-accent); transform: scale(1.03); z-index: 3; }
+        .ft-node-focus:hover { transform: scale(1.03) translateY(-2px); }
         /* Gender bar — 6px coloured left edge, full height */
         .ft-edge { position: absolute; top: 0; bottom: 0; left: 0; width: 8px; }
         /* Generation bar — 3px along the top, starting after the gender bar */
@@ -362,9 +416,20 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         .ft-center-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--bg-muted); }
         .ft-center-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
+        /* Discreet legend — bottom-left, fades out while hovering the canvas */
+        .ft-legend { position: absolute; bottom: 16px; left: 16px; z-index: 4; display: flex; align-items: center; gap: 14px;
+          padding: 8px 12px; background: rgba(17,17,24,0.8); border: 1px solid #2D2D3A; backdrop-filter: blur(2px);
+          pointer-events: none; transition: opacity 200ms ease; }
+        .ft-scroll:hover ~ .ft-legend { opacity: 0; }
+        .ft-leg-item { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.04em; color: var(--text-muted); white-space: nowrap; }
+        .ft-leg-bar { width: 4px; height: 12px; flex-shrink: 0; }
+        .ft-leg-dia { width: 9px; height: 9px; flex-shrink: 0; background: var(--bg); border: 1.5px solid var(--accent); transform: rotate(45deg); }
+        @media (max-width: 560px) { .ft-legend { gap: 10px; padding: 6px 9px; } .ft-leg-item { font-size: 8px; } }
+
         @media (prefers-reduced-motion: reduce) {
-          .ft-node, .ft-nav { transition: none; }
+          .ft-node, .ft-nav, .ft-stage { transition: none !important; }
           .ft-node:hover { transform: none; }
+          .ft-node-focus, .ft-node-focus:hover { transform: scale(1.03); }
           .ft-nav-arrow { animation: none !important; }
         }
       `}</style>

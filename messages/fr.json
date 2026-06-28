@@ -245,7 +245,10 @@
     "modeFocus": "Focus",
     "modeFull": "Complète",
     "displayMode": "Mode d'affichage",
-    "lineageAria": "Lignée"
+    "lineageAria": "Lignée",
+    "origin": "Origine",
+    "originTooltip": "Aller à l’ancêtre fondateur",
+    "pivot": "Pivot"
   },
   "person": {
     "firstName": "Prénom",

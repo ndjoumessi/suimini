@@ -1,5 +1,4 @@
 'use client';
-import { useTranslations } from 'next-intl';
 import { Person } from '@/types';
 import { Crown } from 'lucide-react';
 import { nodeStyle, nameLines } from './nodeStyle';
@@ -9,9 +8,8 @@ interface Props {
   role: 'focus' | 'spouse' | 'parent' | 'child';
   x: number; y: number; w: number; h: number;
   isPivot: boolean; isSpouse: boolean; isSelected: boolean; isFocus: boolean; dim: boolean;
-  /** Generation accent colour (top bar + GÉN tag). */
+  /** Generation accent colour (top bar). */
   genColor: string;
-  gen: number;
   dateStr: string;
   displayName: string;
   unknownLabel: string;
@@ -24,16 +22,19 @@ interface Props {
  *  classes live in FocusTree's <style> block. */
 export default function TreeNode({
   person: p, role, x, y, w, h, isPivot, isSpouse, isSelected, isFocus, dim,
-  genColor, gen, dateStr, displayName, unknownLabel, onClick, onDoubleClick,
+  genColor, dateStr, displayName, unknownLabel, onClick, onDoubleClick,
 }: Props) {
-  const t = useTranslations('tree');
+  void dim; // opacity now derived per-role below
   const st = nodeStyle(p, isPivot, isSpouse);
   const { primary, secondary } = nameLines(p, unknownLabel);
   const place = p.birthPlace?.city;
+  // Atténuation par rôle : parents 0.75, enfants 0.85, focus/conjoint 1.0 — le nœud
+  // focus ressort nettement (voir aussi .ft-node-focus : ring + scale).
+  const opacity = role === 'parent' ? 0.75 : role === 'child' ? 0.85 : 1;
   return (
     <button
       className={`ft-node ${isFocus ? 'ft-node-focus' : ''} ${isSelected ? 'ft-node-sel' : ''}`}
-      style={{ left: x, top: y, width: w, height: h, opacity: dim ? 0.82 : 1, background: st.bg }}
+      style={{ left: x, top: y, width: w, height: h, opacity, background: st.bg }}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
       aria-label={displayName}
@@ -43,7 +44,6 @@ export default function TreeNode({
       <span className="ft-edge" style={{ background: st.bar }} aria-hidden="true" />
       <span className="ft-gen" style={{ background: genColor }} aria-hidden="true" />
       {isPivot && <Crown size={11} className="ft-crown" aria-hidden="true" />}
-      <span className="ft-gen-tag" style={{ color: genColor }} aria-hidden="true">{t('genAbbr')}&nbsp;{gen + 1}</span>
       <span className="ft-body">
         <span className="ft-name" style={{ color: st.name }}>{primary}</span>
         {secondary && <span className="ft-surname">{secondary}</span>}

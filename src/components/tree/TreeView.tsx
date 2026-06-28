@@ -958,7 +958,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
               <div style={{ opacity: 0.85, display: 'flex', alignItems: 'center', gap: '4px' }}>
                 {hp.id === rootId && <Crown size={11} aria-hidden="true" />}
                 <span>
-                  {hp.id === rootId ? t('root') : kin ? kin : ''}
+                  {hp.id === rootId ? t('origin') : kin ? kin : ''}
                   {childCount > 0 ? `${hp.id === rootId || kin ? ' · ' : ''}${childCount} ${childCount > 1 ? t('children') : t('child')}` : ''}
                 </span>
               </div>
@@ -989,7 +989,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                 <span style={{ width: '6px', height: '14px', background: '#C47BA0', flexShrink: 0 }} /> {t('female')}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '6px', height: '14px', background: 'var(--accent)', flexShrink: 0 }} /> {t('root')}
+                <span style={{ width: '6px', height: '14px', background: 'var(--accent)', flexShrink: 0 }} /> {t('origin')}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <svg width="26" height="8" style={{ flexShrink: 0 }}><line x1="0" y1="4" x2="26" y2="4" stroke="var(--ink)" strokeWidth="1.6" opacity="0.34" /></svg> {t('filiation')}

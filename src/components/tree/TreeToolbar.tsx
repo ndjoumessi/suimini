@@ -76,8 +76,8 @@ export default function TreeToolbar({
 
       {/* Change root */}
       <div style={{ position: 'relative' }}>
-        <button onClick={() => setShowSearch(!showSearch)} className="btn btn-secondary btn-sm" style={{ gap: '6px' }} title={t('changeRoot')} aria-label={t('changeRoot')} aria-expanded={showSearch}>
-          <Search size={14} aria-hidden="true" /> {!isMobile && t('root')}
+        <button onClick={() => setShowSearch(!showSearch)} className="btn btn-secondary btn-sm" style={{ gap: '6px' }} title={t('originTooltip')} aria-label={t('originTooltip')} aria-expanded={showSearch}>
+          <Search size={14} aria-hidden="true" /> {!isMobile && t('origin')}
         </button>
         {showSearch && (
           <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 200, marginTop: '4px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px', width: '240px', boxShadow: 'var(--shadow-lg)' }}>

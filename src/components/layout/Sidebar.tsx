@@ -329,6 +329,20 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
           .sb-section { padding-left: 14px; }
         }
 
+        /* Short viewports: compact items (30px / 11px) so all 11 nav items + footer
+           fit without the scroll cutting off « Statistiques ». The nav still scrolls
+           as a safety net. >= 800px keeps the comfortable 34px / 13px. */
+        @media (max-height: 800px) {
+          .sb-item { min-height: 30px; font-size: 11px; padding: 3px 16px; gap: 10px; }
+          .sb-icon { width: 15px; }
+          .sb-section { font-size: 7.5px; padding-top: 1px; padding-bottom: 1px; }
+          .sb-group { padding: 1px 0; }
+          .sb-add { min-height: 30px; font-size: 11px; }
+          .sb-chip { height: 24px; }
+          .sb-head { padding-top: 10px; padding-bottom: 9px; }
+          .sb-tree { padding-top: 8px; padding-bottom: 8px; }
+        }
+
         /* Header */
         .sb-head { display: flex; align-items: center; gap: 8px; padding: 13px 12px 11px; border-bottom: 1px solid var(--accent-light); }
         .sb-brand { display: inline-flex; align-items: center; gap: 9px; text-decoration: none; color: inherit; flex: 1; min-width: 0; }
