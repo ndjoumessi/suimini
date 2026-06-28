@@ -533,10 +533,12 @@ export default function PrintModal({ tree, onClose }: Props) {
                     style={{ display: 'block', width: '100%', height: 'auto', maxWidth: '100%' }}
                   >
                     {/* connectors */}
-                    {treeLayout.edges.map((e, i) => (
+                    {/* Main-lineage (amber) drawn LAST so it sits on top of grey stubs. */}
+                    {[...treeLayout.edges].sort((a, b) => (a.type === 'parent-main' ? 1 : 0) - (b.type === 'parent-main' ? 1 : 0)).map((e, i) => (
                       <line key={i} x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2}
                         stroke={e.type === 'parent-main' ? ACCENT_BAR : '#888888'}
-                        strokeWidth={1.5}
+                        strokeWidth={e.type === 'parent-main' ? 2 : 1.5}
+                        strokeLinecap="round"
                         strokeDasharray={e.type === 'spouse' ? '4 3' : 'none'} />
                     ))}
                     {/* unattached band label */}

@@ -217,7 +217,9 @@ export function buildTreeLayout(tree: FamilyTree, rootId: string | null): TreeLa
   const minX = Math.min(...xs) - PAD;
   const maxX = Math.max(...xs) + NODE_W + PAD;
   const minY = Math.min(...ys) - PAD;
-  const maxY = y + PAD;
+  // Bottom of the lowest node (NOT `y`, which has already advanced a full V_GAP
+  // past the last row) → no dead space under the last generation.
+  const maxY = Math.max(...ys) + NODE_H + PAD;
   return {
     nodes, edges,
     minX, minY, width: maxX - minX, height: maxY - minY,
