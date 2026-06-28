@@ -5,14 +5,14 @@ import { useTranslations, useLocale } from 'next-intl';
 import { FamilyTree } from '@/types';
 import { shareTree, listShares, unshareTree, getPublicShare, setTreePublic } from '@/lib/supabaseSync';
 import { useAuth } from '@/hooks/useAuth';
+import { BrandMark } from '@/components/Brand';
 import {
   getTreeMembers, inviteMember, updateMemberRole, removeMember, sharingEnabled,
   type ManagedMember, type MemberRole, type MemberStatus,
 } from '@/lib/sharing';
 import {
-  Share2, X, Cloud, Package, Download, Smartphone, Code2, Lightbulb,
-  Mail, Copy, Check, MessageCircle, TreePine, Pencil, Eye, Globe, ExternalLink,
-  Users, Trash2, UserPlus,
+  Share2, X, Download, Code2, Lightbulb, Mail, Copy, Check, MessageCircle,
+  Pencil, Eye, ExternalLink, Users, Trash2, UserPlus, ChevronRight, ArrowRight,
 } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
@@ -35,6 +35,10 @@ interface Props {
   onClose: () => void;
 }
 
+/** Recessed input/select tone — sits darker than the card surface so fields read
+ *  as inset wells. No exact token (between --bg and --bg-card), so a literal. */
+const RECESS = '#1a1a24';
+
 /** Status pill colors: pending=amber, accepted=green, declined=red — via signal tokens. */
 function statusStyle(status: MemberStatus): React.CSSProperties {
   const token = status === 'accepted' ? '--success' : status === 'declined' ? '--danger' : '--warning';
@@ -45,11 +49,75 @@ function statusStyle(status: MemberStatus): React.CSSProperties {
   };
 }
 
-function Eyebrow({ Icon, children }: { Icon: typeof Cloud; children: React.ReactNode }) {
+/** Section header for the Share tab: mono, uppercase, muted gold. No icon — the
+ *  section content carries the meaning; the label just files it. */
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{
+      fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 600,
+      letterSpacing: '1.6px', textTransform: 'uppercase', color: 'var(--accent-text)',
+      opacity: 0.92, marginBottom: '10px',
+    }}>
+      {children}
+    </div>
+  );
+}
+
+/** Members-tab eyebrow (icon + label) — kept for that panel's denser layout. */
+function Eyebrow({ Icon, children }: { Icon: typeof Users; children: React.ReactNode }) {
   return (
     <div className="label" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
       <Icon size={13} aria-hidden="true" /> {children}
     </div>
+  );
+}
+
+/** Square custom toggle (no native checkbox). Whole row is the control; the box
+ *  fills gold with a check when on. `desc` clamps to 2 lines. */
+function SquareToggle({
+  checked, disabled, onChange, label, desc, compact,
+}: {
+  checked: boolean; disabled?: boolean; onChange: (next: boolean) => void;
+  label: string; desc?: string; compact?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className="sq-toggle"
+      style={{
+        display: 'flex', gap: '12px', alignItems: desc ? 'flex-start' : 'center',
+        width: '100%', textAlign: 'left',
+        padding: compact ? '10px 12px' : '14px',
+        background: checked ? 'var(--accent-light)' : 'var(--bg-card)',
+        border: `var(--bw) solid ${checked ? 'var(--accent)' : 'var(--border)'}`,
+        cursor: disabled ? 'wait' : 'pointer',
+        transition: 'background .15s ease, border-color .15s ease',
+      }}
+    >
+      <span aria-hidden="true" style={{
+        width: '20px', height: '20px', flexShrink: 0, marginTop: desc ? '1px' : 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: checked ? 'var(--accent)' : 'transparent',
+        border: `2px solid ${checked ? 'var(--accent)' : 'var(--border-strong)'}`,
+        color: '#0d0d0d', transition: 'background .15s ease, border-color .15s ease',
+      }}>
+        {checked && <Check size={14} strokeWidth={3} />}
+      </span>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: 'block', fontWeight: 700, fontSize: '13px', color: 'var(--text)' }}>{label}</span>
+        {desc && (
+          <span style={{
+            fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)',
+            marginTop: '4px', lineHeight: 1.5,
+            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+          }}>{desc}</span>
+        )}
+      </span>
+    </button>
   );
 }
 
@@ -145,6 +213,7 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
   const [isPublic, setIsPublic] = useState(false);
   const [publicSlug, setPublicSlug] = useState<string | null>(null);
   const [togglingPublic, setTogglingPublic] = useState(false);
+  const [embedOpen, setEmbedOpen] = useState(false);
 
   useEffect(() => {
     if (cloud) {
@@ -217,9 +286,10 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
     URL.revokeObjectURL(url);
   }
 
-  const embedCode = `<iframe src="${typeof window !== 'undefined' ? window.location.origin : 'https://suimini.vercel.app'}?tree=${tree.id}" width="100%" height="600" frameborder="0"></iframe>`;
+  const embedCode = `<iframe src="${origin}?tree=${tree.id}" width="100%" height="600" frameborder="0"></iframe>`;
 
   const stats = t('statsLine', { name: tree.name, persons: tree.persons.length, relations: tree.relationships.length });
+  const statsShort = t('statsShort', { persons: tree.persons.length, relations: tree.relationships.length });
 
   const socialText = `${t('socialIntro', { name: tree.name })}\n${tree.description ? tree.description + '\n' : ''}${stats}`;
 
@@ -227,28 +297,26 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div ref={overlayRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={t('shareTitle')} className="modal" style={{ maxWidth: '520px' }}>
-        <div style={{ padding: '20px 24px', borderBottom: 'var(--bw) solid var(--border-strong)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 className="serif" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}><Share2 size={20} aria-hidden="true" /> {t('shareTitle')}</h2>
-          <button onClick={onClose} aria-label={t('close')} className="btn btn-ghost btn-sm btn-icon"><X size={16} /></button>
+        {/* Header */}
+        <div style={{ padding: '20px 24px', borderBottom: 'var(--bw) solid var(--border-strong)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+          <div style={{ minWidth: 0 }}>
+            <h2 className="serif" style={{ margin: 0, fontSize: '1.8rem', lineHeight: 1.1, display: 'flex', alignItems: 'center', gap: '9px' }}>
+              <Share2 size={20} style={{ color: 'var(--accent)', flexShrink: 0 }} aria-hidden="true" /> {t('shareTitle')}
+            </h2>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.6px', color: 'var(--accent-text)', opacity: 0.85, marginTop: '6px' }}>
+              {t('subtitle')}
+            </div>
+          </div>
+          <button onClick={onClose} aria-label={t('close')} className="btn btn-ghost btn-sm btn-icon" style={{ flexShrink: 0 }}><X size={16} /></button>
         </div>
 
         {/* Tabs */}
-        <div role="tablist" aria-label={t('tabsAria')} style={{ display: 'flex', gap: '8px', padding: '12px 24px 0', flexWrap: 'wrap' }}>
-          <button
-            role="tab"
-            aria-selected={tab === 'share'}
-            onClick={() => setTab('share')}
-            className={tab === 'share' ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'}
-          >
+        <div role="tablist" aria-label={t('tabsAria')} style={{ display: 'flex', gap: '8px', padding: '14px 24px 0', flexWrap: 'wrap' }}>
+          <button role="tab" aria-selected={tab === 'share'} onClick={() => setTab('share')} className={`share-tab ${tab === 'share' ? 'is-active' : ''}`}>
             <Share2 size={14} aria-hidden="true" /> {t('share')}
           </button>
           {canManageMembers && (
-            <button
-              role="tab"
-              aria-selected={tab === 'members'}
-              onClick={() => setTab('members')}
-              className={tab === 'members' ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'}
-            >
+            <button role="tab" aria-selected={tab === 'members'} onClick={() => setTab('members')} className={`share-tab ${tab === 'members' ? 'is-active' : ''}`}>
               <Users size={14} aria-hidden="true" /> {t('members')}
               {membersEnabled && members.length > 0 && (
                 <span className="badge" style={{ marginLeft: '4px' }}>{members.length}</span>
@@ -260,7 +328,7 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
         {/* Members tab */}
         <div role="tabpanel" hidden={tab !== 'members'} style={{ padding: '20px 24px', display: tab === 'members' ? 'flex' : 'none', flexDirection: 'column', gap: '16px' }}>
           {!membersEnabled ? (
-            <div style={{ padding: '12px', background: 'var(--bg-muted)', borderRadius: 'var(--radius)', fontSize: '13px', color: 'var(--text-muted)' }}>
+            <div className="share-info">
               {t('signInToManage')}
               {onRequireAuth && (
                 <button onClick={onRequireAuth} className="btn btn-primary btn-sm" style={{ marginTop: '8px', width: '100%', justifyContent: 'center' }}>{t('signIn')}</button>
@@ -279,18 +347,18 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
                     onChange={e => setMemberEmail(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') doInvite(); }}
                     placeholder={t('emailPlaceholder')}
-                    className="input"
+                    className="input field-recessed"
                     type="email"
                     autoComplete="email"
-                    style={{ flex: '1 1 160px', minWidth: 0 }}
+                    style={{ flex: '1 1 160px', minWidth: 0, background: RECESS }}
                   />
                   <label htmlFor="member-role" className="sr-only" style={{ position: 'absolute', width: '1px', height: '1px', overflow: 'hidden', clip: 'rect(0,0,0,0)' }}>{t('role')}</label>
                   <select
                     id="member-role"
                     value={memberRole}
                     onChange={e => setMemberRole(e.target.value as MemberRole)}
-                    className="input"
-                    style={{ width: 'auto' }}
+                    className="input field-recessed"
+                    style={{ width: 'auto', background: RECESS }}
                   >
                     <option value="viewer">{t('viewer')}</option>
                     <option value="editor">{t('editor')}</option>
@@ -312,14 +380,14 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
               <div>
                 <Eyebrow Icon={Users}>{t('members')}</Eyebrow>
                 {members.length === 0 ? (
-                  <div style={{ padding: '16px 12px', background: 'var(--bg-muted)', borderRadius: 'var(--radius)', fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center' }}>
+                  <div className="share-info" style={{ textAlign: 'center' }}>
                     {t('noMembers')}
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {members.map(m => (
-                      <div key={m.email} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', border: 'var(--bw) solid var(--border-strong)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', boxShadow: 'var(--shadow)', flexWrap: 'wrap' }}>
-                        <span aria-hidden="true" style={{ width: '34px', height: '34px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid var(--border-strong)', borderRadius: 'var(--radius)', background: 'var(--accent-light)', color: 'var(--accent)', fontFamily: 'var(--font-mono)', fontSize: '12px', fontWeight: 700 }}>
+                      <div key={m.email} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', border: 'var(--bw) solid var(--border)', background: 'var(--bg-card)', flexWrap: 'wrap' }}>
+                        <span aria-hidden="true" style={{ width: '34px', height: '34px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid var(--border-strong)', background: 'var(--accent-light)', color: 'var(--accent)', fontFamily: 'var(--font-mono)', fontSize: '12px', fontWeight: 700 }}>
                           {emailInitials(m.email)}
                         </span>
                         <div style={{ flex: '1 1 140px', minWidth: 0 }}>
@@ -336,9 +404,9 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
                           id={`role-${m.email}`}
                           value={m.role}
                           onChange={e => doChangeRole(m.email, e.target.value as MemberRole)}
-                          className="input"
+                          className="input field-recessed"
                           aria-label={`${t('role')} — ${m.email}`}
-                          style={{ width: 'auto', fontSize: '11px', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}
+                          style={{ width: 'auto', fontSize: '11px', fontFamily: 'var(--font-mono)', textTransform: 'uppercase', background: RECESS }}
                         >
                           <option value="viewer">{t('viewer')}</option>
                           <option value="editor">{t('editor')}</option>
@@ -362,30 +430,33 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
         </div>
 
         {/* Share tab */}
-        <div role="tabpanel" hidden={tab !== 'share'} style={{ padding: '20px 24px', display: tab === 'share' ? 'flex' : 'none', flexDirection: 'column', gap: '16px' }}>
-          {/* Supabase collaboration */}
+        <div role="tabpanel" hidden={tab !== 'share'} style={{ padding: '20px 24px', display: tab === 'share' ? 'flex' : 'none', flexDirection: 'column', gap: '22px' }}>
+
+          {/* Section 1 — Invite by email */}
           <div>
-            <Eyebrow Icon={Cloud}>{t('shareWithAccount')}</Eyebrow>
+            <SectionLabel>{t('inviteByEmail')}</SectionLabel>
             {!cloud ? (
-              <div style={{ padding: '12px', background: 'var(--bg-muted)', borderRadius: 'var(--radius)', fontSize: '13px', color: 'var(--text-muted)' }}>
+              <div className="share-info">
                 {t('signInToInvite')}
                 <button onClick={onRequireAuth} className="btn btn-primary btn-sm" style={{ marginTop: '8px', width: '100%', justifyContent: 'center' }}>{t('signIn')}</button>
               </div>
             ) : (
               <>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  <input value={shareEmail} onChange={e => setShareEmail(e.target.value)} placeholder={t('emailPlaceholder')} className="input" type="email" style={{ flex: 1 }} />
-                  <select value={sharePerm} onChange={e => setSharePerm(e.target.value as 'read' | 'write')} className="input" style={{ width: 'auto' }}>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  <input value={shareEmail} onChange={e => setShareEmail(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') doShare(); }} placeholder={t('emailPlaceholder')} className="input field-recessed" type="email" style={{ flex: '1 1 160px', minWidth: 0, background: RECESS }} />
+                  <select value={sharePerm} onChange={e => setSharePerm(e.target.value as 'read' | 'write')} className="input field-recessed" style={{ width: 'auto', background: RECESS }}>
                     <option value="read">{t('read')}</option>
                     <option value="write">{t('write')}</option>
                   </select>
-                  <button onClick={doShare} disabled={sharing} className="btn btn-primary btn-sm" style={{ opacity: sharing ? 0.7 : undefined }}>{sharing ? <LoadingSpinner size={14} /> : t('invite')}</button>
+                  <button onClick={doShare} disabled={sharing} className="btn btn-primary btn-sm" style={{ opacity: sharing ? 0.7 : undefined }}>
+                    {sharing ? <LoadingSpinner size={14} /> : <>{t('invite')} <ArrowRight size={14} aria-hidden="true" /></>}
+                  </button>
                 </div>
                 {shareError && <div style={{ marginTop: '8px' }}><ErrorMessage message={shareError} onRetry={doShare} /></div>}
                 {shares.length > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '8px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '10px' }}>
                     {shares.map(s => (
-                      <div key={s.email} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', padding: '6px 8px', background: 'var(--bg-muted)', borderRadius: 'var(--radius)' }}>
+                      <div key={s.email} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', padding: '7px 10px', background: 'var(--bg-card)', border: 'var(--bw) solid var(--border)' }}>
                         <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.email}</span>
                         <span className="badge badge-accent" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>{s.permission === 'write' ? <><Pencil size={10} /> {t('write')}</> : <><Eye size={10} /> {t('read')}</>}</span>
                         <button onClick={() => removeShare(s.email)} aria-label={t('removeShare')} className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--danger)' }}><X size={14} /></button>
@@ -397,30 +468,20 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
             )}
           </div>
 
-          {/* Public read-only link */}
+          {/* Section 2 — Public read-only link */}
           {cloud && (
             <div>
-              <Eyebrow Icon={Globe}>{t('publicLink')}</Eyebrow>
-              <label style={{ display: 'flex', gap: '10px', alignItems: 'center', cursor: togglingPublic ? 'wait' : 'pointer', padding: '10px 12px', border: 'var(--bw) solid var(--border-strong)', borderRadius: 'var(--radius)', background: isPublic ? 'var(--accent-light)' : 'var(--bg-card)' }}>
-                <input
-                  type="checkbox"
-                  role="switch"
-                  checked={isPublic}
-                  disabled={togglingPublic}
-                  onChange={e => togglePublic(e.target.checked)}
-                  style={{ width: '18px', height: '18px', accentColor: 'var(--accent)', flexShrink: 0 }}
-                />
-                <span style={{ flex: 1 }}>
-                  <span style={{ display: 'block', fontWeight: 700, fontSize: '13px' }}>{t('makePublic')}</span>
-                  <span style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)' }}>
-                    {t('publicDesc')}
-                  </span>
-                </span>
-              </label>
-
+              <SectionLabel>{t('publicLink')}</SectionLabel>
+              <SquareToggle
+                checked={isPublic}
+                disabled={togglingPublic}
+                onChange={togglePublic}
+                label={t('makePublic')}
+                desc={t('publicDesc')}
+              />
               {isPublic && publicSlug && (
                 <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
-                  <input readOnly value={publicUrl} className="input" style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: '12px' }} onFocus={e => e.currentTarget.select()} />
+                  <input readOnly value={publicUrl} className="input field-recessed" style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--accent-text)', background: RECESS }} onFocus={e => e.currentTarget.select()} />
                   <button onClick={() => copyToClipboard(publicUrl, 'public')} className="btn btn-secondary btn-sm" style={{ flexShrink: 0 }}>
                     {copied === 'public' ? <><Check size={14} /> {t('copied')}</> : <><Copy size={14} /> {t('copy')}</>}
                   </button>
@@ -430,73 +491,130 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
             </div>
           )}
 
-          <hr className="divider" style={{ margin: 0 }} />
-
-          {/* Tree info */}
-          <div style={{ padding: '12px', background: 'var(--bg-muted)', borderRadius: 'var(--radius)', display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <span style={{ width: '44px', height: '44px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid var(--border-strong)', borderRadius: 'var(--radius)', background: 'var(--accent-light)', color: 'var(--accent)' }}><TreePine size={22} aria-hidden="true" /></span>
-            <div>
-              <div style={{ fontWeight: '700' }}>{tree.name}</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{stats}</div>
+          {/* Section 3 — Tree preview */}
+          <div>
+            <SectionLabel>{t('treePreview')}</SectionLabel>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', padding: '14px', background: 'var(--bg-card)', border: 'var(--bw) solid var(--border)' }}>
+              <span style={{ width: '44px', height: '44px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid var(--border-strong)', background: RECESS }}>
+                <BrandMark size={26} surface={RECESS} />
+              </span>
+              <div style={{ minWidth: 0 }}>
+                <div className="serif" style={{ fontSize: '14px', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tree.name}</div>
+                <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginTop: '2px' }}>{statsShort}</div>
+              </div>
             </div>
           </div>
 
-          {/* Privacy option */}
-          <label style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '13px', cursor: 'pointer' }}>
-            <input type="checkbox" checked={includePrivate} onChange={e => setIncludePrivate(e.target.checked)} />
-            <span>{t('includePrivate')}</span>
-          </label>
-
-          {/* Download JSON */}
+          {/* Section 4 — Export */}
           <div>
-            <Eyebrow Icon={Package}>{t('exportableFile')}</Eyebrow>
+            <SectionLabel>{t('exportLabel')}</SectionLabel>
             <button onClick={downloadJSON} className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
               <Download size={15} /> {t('downloadJson', { name: tree.name })}
             </button>
-            <div style={{ fontSize: '11px', color: 'var(--text-light)', marginTop: '4px' }}>
-              {t('exportableDesc')}
+            <div style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--text-light)', marginTop: '6px', textAlign: 'center' }}>
+              {t('exportCompat')}
+            </div>
+            <div style={{ marginTop: '8px' }}>
+              <SquareToggle compact checked={includePrivate} onChange={setIncludePrivate} label={t('includePrivate')} />
             </div>
           </div>
 
-          {/* Social share */}
+          {/* Section 5 — Share (uniform, no brand colours) */}
           <div>
-            <Eyebrow Icon={Smartphone}>{t('shareSocial')}</Eyebrow>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <a href={`https://wa.me/?text=${encodeURIComponent(socialText)}`} target="_blank" rel="noopener noreferrer" className="btn btn-sm" style={{ background: '#25D366', color: 'white', textDecoration: 'none' }}>
-                <MessageCircle size={14} /> WhatsApp
+            <SectionLabel>{t('shareLabel')}</SectionLabel>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+              <a href={`https://wa.me/?text=${encodeURIComponent(socialText)}`} target="_blank" rel="noopener noreferrer" className="share-btn">
+                <MessageCircle size={15} aria-hidden="true" /> WhatsApp
               </a>
-              <a href={`https://www.facebook.com/sharer/sharer.php?quote=${encodeURIComponent(socialText)}`} target="_blank" rel="noopener noreferrer" className="btn btn-sm" style={{ background: '#1877F2', color: 'white', textDecoration: 'none' }}>
-                <Share2 size={14} /> Facebook
+              <a href={`https://www.facebook.com/sharer/sharer.php?quote=${encodeURIComponent(socialText)}`} target="_blank" rel="noopener noreferrer" className="share-btn">
+                <Share2 size={15} aria-hidden="true" /> Facebook
               </a>
-              <a href={`mailto:?subject=${encodeURIComponent(t('mailSubject', { name: tree.name }))}&body=${encodeURIComponent(socialText + '\n\n' + t('mailNote'))}`} className="btn btn-sm btn-secondary">
-                <Mail size={14} /> Email
+              <a href={`mailto:?subject=${encodeURIComponent(t('mailSubject', { name: tree.name }))}&body=${encodeURIComponent(socialText + '\n\n' + t('mailNote'))}`} className="share-btn">
+                <Mail size={15} aria-hidden="true" /> Email
               </a>
-              <button onClick={() => copyToClipboard(socialText, 'social')} className="btn btn-sm btn-secondary">
-                {copied === 'social' ? <><Check size={14} /> {t('copiedExcl')}</> : <><Copy size={14} /> {t('copyText')}</>}
+              <button onClick={() => copyToClipboard(socialText, 'social')} className="share-btn">
+                {copied === 'social' ? <><Check size={15} aria-hidden="true" /> {t('copiedExcl')}</> : <><Copy size={15} aria-hidden="true" /> {t('copyText')}</>}
               </button>
             </div>
           </div>
 
-          {/* Embed code */}
+          {/* Section 6 — Embed (collapsible) */}
           <div>
-            <Eyebrow Icon={Code2}>{t('embedCode')}</Eyebrow>
-            <div style={{ position: 'relative' }}>
-              <textarea readOnly value={embedCode} className="input" rows={2} style={{ resize: 'none', fontSize: '11px', fontFamily: 'var(--font-mono)', paddingRight: '92px' }} />
-              <button onClick={() => copyToClipboard(embedCode, 'embed')} className="btn btn-sm btn-secondary" style={{ position: 'absolute', right: '6px', top: '6px' }}>
-                {copied === 'embed' ? <Check size={14} /> : <><Copy size={14} /> {t('copy')}</>}
-              </button>
-            </div>
+            <button
+              type="button"
+              className="embed-summary"
+              aria-expanded={embedOpen}
+              onClick={() => setEmbedOpen(o => !o)}
+            >
+              <ChevronRight size={14} aria-hidden="true" style={{ transform: embedOpen ? 'rotate(90deg)' : 'none', transition: 'transform .15s ease' }} />
+              <Code2 size={14} aria-hidden="true" />
+              {t('embedToggle')}
+            </button>
+            {embedOpen && (
+              <div style={{ position: 'relative', marginTop: '8px' }}>
+                <textarea readOnly value={embedCode} className="input field-recessed" rows={2} style={{ resize: 'none', fontSize: '11px', fontFamily: 'var(--font-mono)', paddingRight: '92px', background: RECESS }} />
+                <button onClick={() => copyToClipboard(embedCode, 'embed')} className="btn btn-sm btn-secondary" style={{ position: 'absolute', right: '6px', top: '6px' }}>
+                  {copied === 'embed' ? <Check size={14} /> : <><Copy size={14} /> {t('copy')}</>}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Tip */}
-          <div style={{ padding: '10px', background: 'var(--bg-muted)', borderRadius: 'var(--radius)', fontSize: '12px', color: 'var(--text-muted)', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-            <Lightbulb size={18} style={{ flexShrink: 0, color: 'var(--warning)' }} aria-hidden="true" />
-            <span>
-              {t.rich('familyMeetingTip', { b: (c) => <strong>{c}</strong> })}
+          <div style={{ padding: '12px 14px', background: 'var(--accent-light)', border: 'var(--bw) solid color-mix(in srgb, var(--accent) 40%, transparent)', fontSize: '12px', color: 'var(--text-muted)', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+            <Lightbulb size={18} style={{ flexShrink: 0, color: 'var(--accent)' }} aria-hidden="true" />
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10.5px', lineHeight: 1.55 }}>
+              {t.rich('familyMeetingTip', { b: (c) => <strong style={{ color: 'var(--text)' }}>{c}</strong> })}
             </span>
           </div>
         </div>
-        <style>{`.modal .btn-primary svg.animate-spin { color: #fff !important; }`}</style>
+
+        <style>{`
+          .modal .btn-primary svg.animate-spin { color: #fff !important; }
+
+          .share-tab {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 14px; font-family: var(--font-body); font-size: 12px; font-weight: 700;
+            border: var(--bw) solid var(--border); background: var(--bg-card); color: var(--text-muted);
+            cursor: pointer; transition: background .15s ease, color .15s ease, border-color .15s ease;
+          }
+          .share-tab:hover { color: var(--text); border-color: var(--border-strong); }
+          .share-tab.is-active { background: var(--accent); color: #0d0d0d; border-color: var(--accent); }
+          .share-tab.is-active svg { color: #0d0d0d; }
+
+          .share-info {
+            padding: 12px; background: var(--bg-card); border: var(--bw) solid var(--border);
+            font-size: 13px; color: var(--text-muted);
+          }
+
+          .modal .field-recessed:focus {
+            border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); outline: none;
+          }
+
+          .sq-toggle:not(:disabled):hover { border-color: var(--accent); }
+          .sq-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+          .share-btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 11px 12px; font-family: var(--font-body); font-size: 13px; font-weight: 600;
+            background: var(--bg-card); border: var(--bw) solid var(--border); color: var(--text);
+            cursor: pointer; text-decoration: none;
+            transition: background .15s ease, border-color .15s ease;
+          }
+          .share-btn:hover { background: var(--bg-muted); border-color: var(--accent); }
+          .share-btn svg { color: var(--text-muted); transition: color .15s ease; }
+          .share-btn:hover svg { color: var(--accent); }
+
+          .embed-summary {
+            display: inline-flex; align-items: center; gap: 7px;
+            padding: 6px 2px; background: transparent; border: none; cursor: pointer;
+            font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.4px;
+            color: var(--text-muted); text-transform: none;
+            transition: color .15s ease;
+          }
+          .embed-summary:hover { color: var(--accent); }
+          .embed-summary svg { color: inherit; }
+        `}</style>
       </div>
     </div>
   );

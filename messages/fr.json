@@ -1321,7 +1321,15 @@
     "statsLine": "{name} — {persons} personnes, {relations} relations",
     "socialIntro": "Découvrez l'arbre généalogique de la {name} sur Suimini !",
     "mailSubject": "Arbre généalogique : {name}",
-    "mailNote": "Fichier joint : téléchargez le fichier .json et importez-le dans Suimini."
+    "mailNote": "Fichier joint : téléchargez le fichier .json et importez-le dans Suimini.",
+    "subtitle": "Invitez votre famille à contribuer",
+    "inviteByEmail": "Inviter par email",
+    "treePreview": "Aperçu de l'arbre",
+    "statsShort": "{persons} personnes · {relations} liens",
+    "exportLabel": "Exporter",
+    "exportCompat": "Compatible avec Import / Export Suimini",
+    "shareLabel": "Partager",
+    "embedToggle": "Code d'intégration (optionnel)"
   },
   "members": {
     "title": "Membres",

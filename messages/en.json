@@ -1321,7 +1321,15 @@
     "statsLine": "{name} — {persons} people, {relations} links",
     "socialIntro": "Discover the {name} family tree on Suimini!",
     "mailSubject": "Family tree: {name}",
-    "mailNote": "Attachment: download the .json file and import it into Suimini."
+    "mailNote": "Attachment: download the .json file and import it into Suimini.",
+    "subtitle": "Invite your family to contribute",
+    "inviteByEmail": "Invite by email",
+    "treePreview": "Tree preview",
+    "statsShort": "{persons} people · {relations} links",
+    "exportLabel": "Export",
+    "exportCompat": "Compatible with Suimini Import / Export",
+    "shareLabel": "Share",
+    "embedToggle": "Embed code (optional)"
   },
   "members": {
     "title": "Members",
