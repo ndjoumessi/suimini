@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Family Tree — TEDA (FOTIE) Family — v2 June 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700&family=Hanken+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  @page {
+    size: A4;
+    margin: 18mm 16mm 20mm 16mm;
+    @bottom-center {
+      content: "Reconstruction June 2026 · v2 · Family synthesis document";
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    font-family: "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+    color: #1c1a17;
+    font-size: 10.5px;
+    line-height: 1.5;
+    margin: 0;
+  }
+  :root {
+    --ink: #1c1a17;
+    --accent: #bf4b2c;
+    --accent-soft: #f3e2db;
+    --gold: #b8860b;
+    --gold-soft: #f7eccd;
+    --blue-soft: #dde7f0;
+    --rose-soft: #f3dde6;
+    --green-soft: #dfeadd;
+    --line: #d8d2c8;
+    --muted: #6f685e;
+    --bg-soft: #faf7f1;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: "Bricolage Grotesque", Georgia, serif;
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--ink);
+    margin: 0 0 8px 0;
+  }
+  .mono { font-family: "IBM Plex Mono", "SFMono-Regular", Menlo, monospace; }
+
+  /* ---------- Cover ---------- */
+  .cover {
+    height: 257mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    page-break-after: always;
+    border: 2px solid var(--ink);
+    padding: 22mm 18mm;
+    position: relative;
+  }
+  .cover .kicker {
+    font-family: "IBM Plex Mono", monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.28em;
+    font-size: 10px;
+    color: var(--accent);
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 14px;
+  }
+  .cover-center { text-align: left; }
+  .cover-center .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+  .cover-center h1 {
+    font-size: 56px;
+    letter-spacing: -0.02em;
+    margin: 0 0 6px 0;
+  }
+  .cover-center .family {
+    font-size: 30px;
+    color: var(--accent);
+    margin: 0 0 18px 0;
+    font-family: "Bricolage Grotesque", Georgia, serif;
+    font-weight: 700;
+  }
+  .cover-center .sub {
+    font-size: 15px;
+    font-style: italic;
+    color: var(--muted);
+    margin-bottom: 26px;
+  }
+  .cover-stats {
+    display: flex;
+    gap: 0;
+    border: 1.5px solid var(--ink);
+    margin-top: 8px;
+  }
+  .cover-stats div {
+    flex: 1;
+    padding: 14px 16px;
+    border-right: 1.5px solid var(--ink);
+  }
+  .cover-stats div:last-child { border-right: none; }
+  .cover-stats .num {
+    font-family: "Bricolage Grotesque", Georgia, serif;
+    font-size: 30px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .cover-stats .lbl {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 8.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 9.5px;
+    margin-top: 22px;
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 13px; height: 13px; border: 1px solid var(--ink); display: inline-block; }
+  .confidential {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+    border-top: 1px solid var(--line);
+    padding-top: 14px;
+  }
+
+  /* ---------- Sections ---------- */
+  section { page-break-before: always; }
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 6px;
+    margin-bottom: 16px;
+  }
+  .section-head .no {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 13px;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .section-head h2 { font-size: 21px; margin: 0; }
+
+  p { margin: 0 0 10px 0; }
+  .lead { font-size: 11.5px; color: #322e29; }
+  .muted { color: var(--muted); }
+  .accent { color: var(--accent); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 6px 0 16px 0;
+    font-size: 9.8px;
+  }
+  th, td {
+    text-align: left;
+    padding: 5px 8px;
+    border: 1px solid var(--line);
+    vertical-align: top;
+  }
+  thead th {
+    background: var(--ink);
+    color: #fff;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 8.6px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-weight: 500;
+  }
+  tbody tr:nth-child(even) { background: var(--bg-soft); }
+  .kv th { width: 32%; background: var(--bg-soft); color: var(--ink); font-family: inherit; text-transform: none; letter-spacing: 0; }
+
+  /* gen blocks */
+  .gen {
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--accent);
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    background: #fff;
+    page-break-inside: avoid;
+  }
+  .gen h3 {
+    font-size: 13px;
+    margin: 0 0 2px 0;
+  }
+  .gen .tag {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .gen ul { margin: 4px 0 0 0; padding-left: 18px; }
+  .gen li { margin-bottom: 2px; }
+  .gen.pivot { border-left-color: var(--gold); background: var(--gold-soft); }
+  .gen.pivot .tag { color: var(--gold); }
+  .gen.highlight { border-left-color: var(--accent); background: var(--accent-soft); }
+
+  .pill {
+    display: inline-block;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 7.6px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 1px 6px;
+    border: 1px solid currentColor;
+    border-radius: 2px;
+    vertical-align: middle;
+  }
+  .pill.ok { color: #2e6b3f; }
+  .pill.open { color: var(--accent); }
+  .pill.new { color: var(--gold); }
+
+  .corr-old { color: #9a3b3b; text-decoration: line-through; }
+  .corr-new { color: #1c1a17; font-weight: 700; }
+
+  .note {
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    padding: 9px 12px;
+    font-size: 10px;
+    margin: 12px 0;
+  }
+  .note strong { color: var(--accent); }
+
+  .twocol { column-count: 2; column-gap: 22px; }
+  .twocol .gen { break-inside: avoid; }
+
+  .group-band {
+    background: var(--ink);
+    color: #fff;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 8.4px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 4px 8px;
+    margin: 14px 0 0 0;
+  }
+  .small { font-size: 9px; }
+  .center { text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<div class="cover">
+  <div class="kicker">Family Tree — TEDA (FOTIE) Family · Confidential document · Family use</div>
+
+  <div class="cover-center">
+    <div class="eyebrow">Family reconstruction · Edition v2</div>
+    <h1>Family<br>Tree</h1>
+    <div class="family">TEDA (FOTIE) Family</div>
+    <div class="sub">7 generations · ~1870 – 1994 · Reconstructed from handwritten notes</div>
+
+    <div class="cover-stats">
+      <div><div class="num">7</div><div class="lbl">Generations</div></div>
+      <div><div class="num">60</div><div class="lbl">Members</div></div>
+      <div><div class="num">12</div><div class="lbl">TSANA Sébastien's children</div></div>
+      <div><div class="num">2026</div><div class="lbl">June corrections</div></div>
+    </div>
+
+    <div class="legend">
+      <span><i class="swatch" style="background:var(--blue-soft)"></i> Male</span>
+      <span><i class="swatch" style="background:var(--rose-soft)"></i> Female</span>
+      <span><i class="swatch" style="background:var(--gold-soft)"></i> Pivot ancestor</span>
+      <span><i class="swatch" style="background:var(--green-soft)"></i> Wife</span>
+    </div>
+  </div>
+
+  <div class="confidential">
+    ⚠ Confidential document — strictly family use · Do not circulate outside the family circle<br>
+    <span class="muted">Edition v2 · 20 June 2026 — incorporates the corrections of 13 June 2026 and the attachment of the extended branch to TSANA Sébastien.</span>
+  </div>
+</div>
+
+<!-- ============ 1. OVERVIEW ============ -->
+<section>
+  <div class="section-head"><span class="no">01</span><h2>General overview</h2></div>
+  <p class="lead">This document presents the reconstruction of the family tree of the <strong>TEDA (FOTIE)</strong> family,
+  traced across <strong>7 generations</strong> from the founders <strong>TEFOUETZAP &amp; MAFOKO</strong> down to
+  <strong>DEMANOU Donald</strong> (b. 1994). The central pivot ancestor is <strong>TEDA (FOTIE)</strong>, born around 1870,
+  who had four wives and many descendants.</p>
+  <p>The information was reconstructed from handwritten notes. This <strong>edition v2 (20 June 2026)</strong>
+  incorporates the oral corrections of 13 June 2026 <em>and</em> the attachment of the eleven members of the "extended branch"
+  to <strong>TSANA Sébastien</strong>, confirmed on 20 June 2026.</p>
+
+  <table class="kv">
+    <tr><th>Earliest ancestor</th><td>TEFOUETZAP × MAFOKO (generation 0, villages of Zem / Bansoa)</td></tr>
+    <tr><th>Pivot ancestor</th><td>TEDA (FOTIE), born ~1870 — 4 wives</td></tr>
+    <tr><th>Most recent descendant</th><td>DEMANOU Donald, b. 1994 (generation 6, 7<sup>th</sup> from TEFOUETZAP)</td></tr>
+    <tr><th>Number of generations</th><td>7 (TEFOUETZAP → DEMANOU Donald)</td></tr>
+    <tr><th>Members recorded</th><td><strong>60 members</strong> <span class="pill new">v2</span> &nbsp;— including 12 children of TSANA Sébastien</td></tr>
+    <tr><th>Source</th><td>Handwritten notes · Oral corrections June 2026</td></tr>
+    <tr><th>Status</th><td>Reconstruction — extended branch now attached; a few points still to be verified orally</td></tr>
+  </table>
+
+  <div class="note">
+    <strong>New in v2 —</strong> The eleven members previously filed as "extended branch / link to be clarified"
+    are now confirmed as <strong>children of TSANA Sébastien</strong> (~1948, village of Bouleng).
+    See the <em>Addendum (section 5)</em> and the <em>Integrated corrections (section 6)</em>.
+  </div>
+</section>
+
+<!-- ============ 2. MAIN LINEAGE ============ -->
+<section>
+  <div class="section-head"><span class="no">02</span><h2>Main lineage — 7 generations</h2></div>
+
+  <div class="gen">
+    <div class="tag">Generation 0 — The founders</div>
+    <h3>TEFOUETZAP × MAFOKO</h3>
+    <ul>
+      <li><strong>Husband:</strong> TEFOUETZAP — village of Zem</li>
+      <li><strong>Wife:</strong> MAFOKO — village of Bansoa</li>
+      <li><strong>Only child:</strong> METIOLO (daughter)</li>
+      <li class="muted">Correction: spelling TEFOUETZAP (not "TEFOUEZAD")</li>
+    </ul>
+  </div>
+
+  <div class="gen">
+    <div class="tag">Generation 1 — METIOLO × MO'O SOUKA</div>
+    <h3>METIOLO (daughter of TEFOUETZAP)</h3>
+    <ul>
+      <li><strong>Husband:</strong> MO'O SOUKA</li>
+      <li><strong>Children (3):</strong> MEZEKENG (married to Tetsa'a, Banzaï) · METSAGHO (married to Metsui-Tekeng, Zem) · <strong>MEGNIGUE</strong> (our lineage)</li>
+    </ul>
+  </div>
+
+  <div class="gen">
+    <div class="tag">Generation 2 — MEGNIGUE × Fo'o GAPGHO (Chief)</div>
+    <h3>MEGNIGUE (3<sup>rd</sup> daughter of METIOLO)</h3>
+    <ul>
+      <li><strong>Husband:</strong> Fo'o GAPGHO — Chief</li>
+      <li><strong>Children (2):</strong> TEDA'A FOTIE I (pivot ancestor) · MEFOUEGONG (married to KEMDONHAGHO, died without children)</li>
+      <li class="muted">Note: MERQUEGON cited in some notes as an intermediary — link to be clarified</li>
+    </ul>
+  </div>
+
+  <div class="gen pivot">
+    <div class="tag">Generation 3 — Pivot ancestor</div>
+    <h3>TEDA (FOTIE) — born ~1870</h3>
+    <ul>
+      <li><strong>Parents:</strong> MEGNIGUE × Fo'o GAPGHO · <strong>Spellings:</strong> TEDA CFOTIE, TEDA'A FOTIE I</li>
+      <li><strong>1<sup>st</sup> wife — MESSE (J.E. DONG):</strong> TSAGUE (Tsuelépo), KADJIO (Megnin-za, Sa'a quarter), MEFOKO (Letsie, Letsie quarter), MEPOPA, NONGNI (Saïa)<sup class="accent">▲</sup></li>
+      <li><strong>2<sup>nd</sup> wife — DONGHOCK / KEMDONG:</strong> DEMANOU FOTIE (1913–1988), GUIMATIO (~1913), NONGNI (Saïa) <span class="muted">— attached here (correction)</span></li>
+      <li><strong>3<sup>rd</sup> wife — DONGMO / TEJIOGUIM:</strong> TSANA Wamba Tchoupa (1918–2013), ZEKENG (~1923), GNINZEKO (1928, "Gaston"?), MEGNIGUE (1933), GUIMATIO (~1913)</li>
+      <li><strong>4<sup>th</sup> wife — DONGMO TELA (Foio Fueng):</strong> GHODA (Bfou), MEGHOFOUET (Tekang)</li>
+    </ul>
+  </div>
+
+  <div class="gen">
+    <div class="tag">Generation 4 — son of TEDA × DONGHOCK</div>
+    <h3>DEMANOU FOTIE — 1913–1988</h3>
+    <ul>
+      <li><strong>Father:</strong> TEDA (FOTIE) · <strong>Mother:</strong> DONGHOCK / KEMDONG · <strong>Spelling:</strong> DEMANOU CHOTIE</li>
+      <li><strong>⚠ Major correction:</strong> had <strong>8 WIVES</strong> (not "8 children") — wives not identified in the notes</li>
+      <li><strong>Known children (8):</strong> DONGMO Lucienne, MEKEUTIO Julienne, GUEFACK Berthe, DEMANOU Suzanne, MAGUE Marie, KAGHO Monique, DANCHI Martine, MEGNIGHO Francesca</li>
+    </ul>
+  </div>
+
+  <div class="gen">
+    <div class="tag">Generation 4 — daughter of TEDA × DONGMO Tejioguim</div>
+    <h3>TSANA Wamba Tchoupa — 1918–2013</h3>
+    <ul>
+      <li><strong>Father:</strong> TEDA (FOTIE) · <strong>Mother:</strong> DONGMO / TEJIOGUIM · <strong>Husband:</strong> WAMBA TCHOUPA</li>
+      <li><strong>Son:</strong> TSANA Sébastien (~1948, village of Bouleng)</li>
+      <li class="muted">Correction: birth fixed at 1918 (not ~1948 as initially noted)</li>
+    </ul>
+  </div>
+
+  <div class="gen highlight">
+    <div class="tag">Generation 5 — TSANA Sébastien <span class="pill new">extended branch attached</span></div>
+    <h3>TSANA Sébastien — born ~1948, village of Bouleng</h3>
+    <ul>
+      <li><strong>Parents:</strong> TSANA Wamba Tchoupa × WAMBA TCHOUPA</li>
+      <li><strong>Education:</strong> Primary (BEPE) · Lower secondary 1966–1970 · Dschang High School 1970–1976, Bac C 1977 · ENS College 1977–1979 · ENS GIT DUA 1980–1986</li>
+      <li><strong>Career:</strong> 1986–1998 — Electricity, Chemistry, Atangana</li>
+      <li><strong>Children (at least 12):</strong> DJOUMESSI Mathias, AKITIO Geneviève, DONFAKA Hortense, GAOHO Simplice, KADJIO Augustin, KENGO Dieudonné, NAMPA Léonie, TSANA Hégène, ZEKENG Delphine, ZEKENG Lucienne, GUEMESIO Lucie, <strong>DEMANOU Donald</strong></li>
+    </ul>
+  </div>
+
+  <div class="gen">
+    <div class="tag">Generation 6 — DEMANOU Donald</div>
+    <h3>DEMANOU Donald — born 1994</h3>
+    <ul>
+      <li><strong>Father:</strong> TSANA Sébastien (~1948) · <strong>Grandmother:</strong> TSANA Wamba Tchoupa (1918–2013)</li>
+      <li><strong>Great-grandfather:</strong> TEDA (FOTIE) ~1870 · <strong>Founders:</strong> TEFOUETZAP × MAFOKO</li>
+      <li>Most recent descendant — generation 6 (7<sup>th</sup> from TEFOUETZAP), youngest among the children of TSANA Sébastien</li>
+    </ul>
+  </div>
+
+  <p class="small muted"><sup class="accent">▲</sup> NONGNI (Saïa) belongs to the 2<sup>nd</sup> wife DONGHOCK, not to MESSE (correction of 13 June 2026).</p>
+</section>
+
+<!-- ============ 3. ALPHABETICAL INDEX ============ -->
+<section>
+  <div class="section-head"><span class="no">03</span><h2>Alphabetical index of members</h2></div>
+  <p class="muted small">60 members recorded. Names in CAPITALS = traditional (lineage) names; given names = Christian names.
+  The note <span class="accent">"TSANA Sébastien's child"</span> = member of the former "extended branch", now attached (v2).</p>
+  <table>
+    <thead><tr><th>Traditional name</th><th>Given name</th><th>Dates</th><th>Gen.</th><th>Main link</th></tr></thead>
+    <tbody>
+      <tr><td>AKITIO</td><td>Geneviève</td><td>1953</td><td>6</td><td class="accent">Daughter of TSANA Sébastien</td></tr>
+      <tr><td>DANCHI</td><td>Martine</td><td>—</td><td>4</td><td>Daughter of DEMANOU FOTIE</td></tr>
+      <tr><td>DEMANOU Donald</td><td>Donald</td><td>1994</td><td>6</td><td>Son of TSANA Sébastien</td></tr>
+      <tr><td>DEMANOU FOTIE</td><td>—</td><td>1913–1988</td><td>4</td><td>TEDA × DONGHOCK</td></tr>
+      <tr><td>DEMANOU (daughter)</td><td>Suzanne</td><td>—</td><td>4</td><td>Daughter of DEMANOU FOTIE</td></tr>
+      <tr><td>DJOUMESSI</td><td>Mathias</td><td>1956</td><td>6</td><td class="accent">Son of TSANA Sébastien</td></tr>
+      <tr><td>DONFAKA</td><td>Hortense</td><td>1972</td><td>6</td><td class="accent">Daughter of TSANA Sébastien</td></tr>
+      <tr><td>DONGHOCK</td><td>KEMDONG</td><td>—</td><td>Wife</td><td>2<sup>nd</sup> wife of TEDA</td></tr>
+      <tr><td>DONGMO (Tejioguim)</td><td>—</td><td>—</td><td>Wife</td><td>3<sup>rd</sup> wife of TEDA</td></tr>
+      <tr><td>DONGMO (Tela)</td><td>—</td><td>—</td><td>Wife</td><td>4<sup>th</sup> wife of TEDA</td></tr>
+      <tr><td>DONGMO</td><td>Lucienne</td><td>—</td><td>4</td><td>Daughter of DEMANOU FOTIE</td></tr>
+      <tr><td>GAOHO</td><td>Simplice</td><td>1971</td><td>6</td><td class="accent">Son of TSANA Sébastien</td></tr>
+      <tr><td>GHODA</td><td>Bfou</td><td>—</td><td>4</td><td>TEDA × DONGMO Tela</td></tr>
+      <tr><td>GNINZEKO</td><td>Gaston?</td><td>1928</td><td>4</td><td>TEDA × DONGMO Tejioguim</td></tr>
+      <tr><td>GUEFACK</td><td>Berthe</td><td>—</td><td>4</td><td>Daughter of DEMANOU FOTIE</td></tr>
+      <tr><td>GUEMESIO</td><td>Lucie</td><td>1983</td><td>6</td><td class="accent">Daughter of TSANA Sébastien (youngest)</td></tr>
+      <tr><td>GUIMATIO</td><td>—</td><td>~1913</td><td>4</td><td>TEDA × DONGMO Tejioguim</td></tr>
+      <tr><td>KADJIO</td><td>Megnin-za</td><td>—</td><td>4</td><td>TEDA × MESSE (Sa'a quarter)</td></tr>
+      <tr><td>KADJIO</td><td>Augustin</td><td>1958</td><td>6</td><td class="accent">Son of TSANA Sébastien</td></tr>
+      <tr><td>KAGHO</td><td>Monique</td><td>—</td><td>4</td><td>Daughter of DEMANOU FOTIE</td></tr>
+      <tr><td>KENGO</td><td>Dieudonné</td><td>1964</td><td>6</td><td class="accent">Son of TSANA Sébastien</td></tr>
+      <tr><td>MAFOKO</td><td>—</td><td>—</td><td>0</td><td>Founding mother × TEFOUETZAP</td></tr>
+      <tr><td>MAGUE</td><td>Marie</td><td>—</td><td>4</td><td>Daughter of DEMANOU FOTIE</td></tr>
+      <tr><td>MEGHOFOUET</td><td>Tekang</td><td>—</td><td>4</td><td>TEDA × DONGMO Tela</td></tr>
+      <tr><td>MEFOUEGONG</td><td>—</td><td>—</td><td>3</td><td>Sister of TEDA (no children)</td></tr>
+      <tr><td>MEGNIGUE</td><td>— (gen. 2)</td><td>—</td><td>2</td><td>Mother of TEDA × Fo'o Gapgho</td></tr>
+      <tr><td>MEGNIGUE</td><td>— (gen. 4)</td><td>1933</td><td>4</td><td>TEDA × DONGMO Tejioguim</td></tr>
+      <tr><td>MEGNIGHO</td><td>Francesca</td><td>—</td><td>4</td><td>Daughter of DEMANOU FOTIE</td></tr>
+      <tr><td>MEKEUTIO</td><td>Julienne</td><td>—</td><td>4</td><td>Daughter of DEMANOU FOTIE</td></tr>
+      <tr><td>MEPOPA</td><td>—</td><td>—</td><td>4</td><td>TEDA × MESSE</td></tr>
+      <tr><td>MESSE</td><td>J.E. DONG</td><td>—</td><td>Wife</td><td>1<sup>st</sup> wife of TEDA</td></tr>
+      <tr><td>METIOLO</td><td>—</td><td>—</td><td>1</td><td>Daughter of TEFOUETZAP × MAFOKO</td></tr>
+      <tr><td>METSAGHO</td><td>—</td><td>—</td><td>2</td><td>Daughter of METIOLO × MO'O SOUKA</td></tr>
+      <tr><td>MEZEKENG</td><td>—</td><td>—</td><td>2</td><td>Daughter of METIOLO × MO'O SOUKA</td></tr>
+      <tr><td>NAMPA</td><td>Léonie</td><td>1967</td><td>6</td><td class="accent">Daughter of TSANA Sébastien</td></tr>
+      <tr><td>NONGNI</td><td>Saïa</td><td>—</td><td>4</td><td>TEDA × DONGHOCK (correction)</td></tr>
+      <tr><td>TEDA FOTIE</td><td>—</td><td>~1870</td><td>3</td><td>MEGNIGUE × Fo'o GAPGHO (pivot)</td></tr>
+      <tr><td>TEFOUETZAP</td><td>—</td><td>—</td><td>0</td><td>Founder × MAFOKO</td></tr>
+      <tr><td>TSAGUE</td><td>Tsuelépo</td><td>—</td><td>4</td><td>TEDA × MESSE</td></tr>
+      <tr><td>TSANA</td><td>Wamba Tchoupa</td><td>1918–2013</td><td>4</td><td>TEDA × DONGMO Tejioguim</td></tr>
+      <tr><td>TSANA</td><td>Sébastien</td><td>~1948</td><td>5</td><td>Son of TSANA Wamba Tchoupa</td></tr>
+      <tr><td>TSANA</td><td>Hégène</td><td>1968</td><td>6</td><td class="accent">Son of TSANA Sébastien</td></tr>
+      <tr><td>WAMBA TCHOUPA</td><td>—</td><td>—</td><td>Husb.</td><td>Husband of TSANA Wamba Tchoupa</td></tr>
+      <tr><td>ZEKENG</td><td>— (gen. 4)</td><td>~1923</td><td>4</td><td>TEDA × DONGMO Tejioguim</td></tr>
+      <tr><td>ZEKENG</td><td>Delphine</td><td>1969</td><td>6</td><td class="accent">Daughter of TSANA Sébastien</td></tr>
+      <tr><td>ZEKENG</td><td>Lucienne</td><td>~1945</td><td>6</td><td class="accent">Daughter of TSANA Sébastien (eldest)</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ 4. ADDENDUM TSANA SÉBASTIEN ============ -->
+<section>
+  <div class="section-head"><span class="no">04</span><h2>Addendum — TSANA Sébastien's children</h2></div>
+  <p class="lead">Correction of <strong>20 June 2026.</strong> The eleven members filed as "extended branch" in the
+  original index are all <strong>children of TSANA Sébastien</strong> (~1948, village of Bouleng).</p>
+
+  <table>
+    <thead><tr><th>Name</th><th>Christian name</th><th>Birth</th><th>Sex</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>DJOUMESSI</td><td>Mathias</td><td>1956</td><td>M</td><td></td></tr>
+      <tr><td>AKITIO</td><td>Geneviève</td><td>1953</td><td>F</td><td></td></tr>
+      <tr><td>DONFAKA</td><td>Hortense</td><td>1972</td><td>F</td><td></td></tr>
+      <tr><td>GAOHO</td><td>Simplice</td><td>1971</td><td>M</td><td></td></tr>
+      <tr><td>KADJIO</td><td>Augustin</td><td>1958</td><td>M</td><td></td></tr>
+      <tr><td>KENGO</td><td>Dieudonné</td><td>1964</td><td>M</td><td></td></tr>
+      <tr><td>NAMPA</td><td>Léonie</td><td>1967</td><td>F</td><td></td></tr>
+      <tr><td>TSANA</td><td>Hégène</td><td>1968</td><td>M</td><td></td></tr>
+      <tr><td>ZEKENG</td><td>Delphine</td><td>1969</td><td>F</td><td></td></tr>
+      <tr><td>ZEKENG</td><td>Lucienne</td><td>~1945</td><td>F</td><td>Eldest</td></tr>
+      <tr><td>GUEMESIO</td><td>Lucie</td><td>1983</td><td>F</td><td>Youngest</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    TSANA Sébastien therefore has <strong>at least 12 children</strong> (the 11 above + <strong>DEMANOU Donald</strong>, b. 1994).
+    This correction closes <strong>"Open point #6"</strong> of the original synthesis document.
+  </div>
+  <p class="small muted">Attachments recorded in the database (tree <span class="mono">teda1</span>): relations
+  <span class="mono">teda-r57 → teda-r67</span>, type "parent", parent = <span class="mono">teda-p36</span> (TSANA Sébastien).</p>
+</section>
+
+<!-- ============ 5. INTEGRATED CORRECTIONS ============ -->
+<section>
+  <div class="section-head"><span class="no">05</span><h2>Integrated corrections</h2></div>
+
+  <div class="group-band">A · Attachments — 20 June 2026 (v2)</div>
+  <table>
+    <thead><tr><th>Item</th><th>Before</th><th>After (corrected)</th></tr></thead>
+    <tbody>
+      <tr><td>Extended branch (11 members)</td><td class="corr-old">Link to be clarified</td><td class="corr-new">Children of TSANA Sébastien</td></tr>
+      <tr><td>DJOUMESSI Mathias</td><td class="corr-old">Branch to be clarified (#1)</td><td class="corr-new">Son of TSANA Sébastien</td></tr>
+      <tr><td>TSANA Sébastien — descendants</td><td class="corr-old">1 known son (DEMANOU Donald)</td><td class="corr-new">≥ 12 children</td></tr>
+      <tr><td>Total members</td><td class="corr-old">~55 (partial index)</td><td class="corr-new">60 members</td></tr>
+    </tbody>
+  </table>
+
+  <div class="group-band">B · Given names &amp; spellings — 13 June 2026</div>
+  <table>
+    <thead><tr><th>Item</th><th>Before (incorrect)</th><th>After (corrected)</th></tr></thead>
+    <tbody>
+      <tr><td>Founder's name</td><td class="corr-old">TEFOUEZAD</td><td class="corr-new">TEFOUETZAP (village of Zem)</td></tr>
+      <tr><td>Given name DONHO</td><td class="corr-old">DONHO Lucienne</td><td class="corr-new">DONGMO Lucienne</td></tr>
+      <tr><td>Given name GUEFAKI</td><td class="corr-old">GUEFAKI Berthe</td><td class="corr-new">GUEFACK Berthe</td></tr>
+      <tr><td>Given name MEKEURIO</td><td class="corr-old">MEKEURIO Julienne</td><td class="corr-new">MEKEUTIO Julienne</td></tr>
+      <tr><td>Given name DANCHI</td><td class="corr-old">DANCHI Anastasie</td><td class="corr-new">DANCHI Martine</td></tr>
+      <tr><td>Given name MEGNISOH</td><td class="corr-old">MEGNISOH Françoise</td><td class="corr-new">MEGNIGHO Francesca</td></tr>
+    </tbody>
+  </table>
+
+  <div class="group-band">C · Dates &amp; structural errors — 13 June 2026</div>
+  <table>
+    <thead><tr><th>Item</th><th>Before (incorrect)</th><th>After (corrected)</th></tr></thead>
+    <tbody>
+      <tr><td>TSANA Wamba Tchoupa — birth</td><td class="corr-old">~1948</td><td class="corr-new">1918 (confirmed)</td></tr>
+      <tr><td>DEMANOU FOTIE</td><td class="corr-old">Has 8 children</td><td class="corr-new">Has 8 WIVES (crucial distinction)</td></tr>
+      <tr><td>NONGNI — branch</td><td class="corr-old">TEDA × MESSE</td><td class="corr-new">TEDA × DONGHOCK (2<sup>nd</sup> wife)</td></tr>
+      <tr><td>Sa'a · Letsie</td><td class="corr-old">Given names / names</td><td class="corr-new">Quarters (places of marriage)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="group-band">D · New information (generations 0–2) — 13 June 2026</div>
+  <table>
+    <thead><tr><th>Item</th><th>Before</th><th>After (corrected)</th></tr></thead>
+    <tbody>
+      <tr><td>Gen. 0 — children</td><td class="corr-old">Several assumed</td><td class="corr-new">A single child: METIOLO</td></tr>
+      <tr><td>Gen. 1 — METIOLO's children</td><td class="corr-old">2 children noted</td><td class="corr-new">3: MEZEKENG, METSAGHO, MEGNIGUE</td></tr>
+      <tr><td>Gen. 2 — sister of TEDA</td><td class="corr-old">Not mentioned</td><td class="corr-new">MEFOUEGONG (KEMDONHAGHO, no descendants)</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ 6. RESOLVED VS OPEN ============ -->
+<section>
+  <div class="section-head"><span class="no">06</span><h2>Resolved points &amp; open questions</h2></div>
+
+  <h3 style="font-size:14px;margin-top:4px;"><span class="pill ok">Resolved</span> &nbsp;as of 20 June 2026</h3>
+  <table>
+    <thead><tr><th>#</th><th>Topic</th><th>Resolution</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>DJOUMESSI Mathias — exact link</td><td>Son of TSANA Sébastien (extended branch attached)</td></tr>
+      <tr><td>6</td><td>DEMANOU Donald branch / extended branch</td><td>The 11 members are children of TSANA Sébastien — point closed by the addendum</td></tr>
+      <tr><td>9</td><td>Extended branch — attribution (DONFAKA, KENGO, KADJIO Augustin, GAOHO, AKITIO, ZEKENG Lucienne…)</td><td>All children of TSANA Sébastien (neither MESSE, nor DONGHOCK, nor DONGMO)</td></tr>
+      <tr><td>—</td><td>TSANA Wamba Tchoupa — birth</td><td>Fixed at 1918 (13 June 2026)</td></tr>
+      <tr><td>5</td><td>DANCHI: Martine or Albertine?</td><td>Martine confirmed (variant Albertine ruled out)</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="font-size:14px;margin-top:16px;"><span class="pill open">Still open</span></h3>
+  <table>
+    <thead><tr><th>#</th><th>Topic</th><th>Question</th></tr></thead>
+    <tbody>
+      <tr><td>2</td><td>MEZEKENG, METSAGHO</td><td>Children of METIOLO × MO'O SOUKA, or another branch?</td></tr>
+      <tr><td>3</td><td>MERQUEGON</td><td>Intermediary to TEDA — adoptive father, guardian, or MEGNIGUE's branch?</td></tr>
+      <tr><td>4</td><td>Wives of DEMANOU FOTIE</td><td>DEMANOU FOTIE has 8 wives — which ones? No names recorded.</td></tr>
+      <tr><td>7</td><td>GNINZEKO — given name</td><td>The Christian name "Gaston" is suggested — to be confirmed.</td></tr>
+      <tr><td>8</td><td>Generation 0 — exact order</td><td>Are TEFOUETZAP and MAFOKO direct parents of METIOLO, or grandparents?</td></tr>
+      <tr><td>—</td><td>TSANA Sébastien — wife/wives</td><td>Mother(s) of the 12 children not identified in the notes.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note" style="background:var(--green-soft);border-color:#2e6b3f;">
+    <strong style="color:#2e6b3f;">v2 summary —</strong> 5 points resolved (including the 3 major ones on the extended branch),
+    6 questions still open, requiring oral verification with family members.
+  </div>
+
+  <p class="small muted" style="margin-top:18px;">Conventions: dates preceded by <span class="mono">~</span> = approximate · names in CAPITALS = traditional (lineage) names · given names = Christian names · "Sa'a" and "Letsie" are quarters (places of marriage), not given names.</p>
+  <p class="small muted center" style="margin-top:24px;border-top:1px solid var(--line);padding-top:14px;">
+    — End of synthesis document · Edition v2 · 20 June 2026 —<br>
+    TEDA (FOTIE) Family Tree · Confidential document — do not circulate outside the family circle.
+  </p>
+</section>
+
+</body>
+</html>

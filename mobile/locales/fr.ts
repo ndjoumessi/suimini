@@ -49,6 +49,7 @@ export const fr = {
   home: {
     greeting: 'Bonjour',
     guest: 'Invité·e',
+    you: 'vous',
     activeTree: 'ARBRE ACTIF',
     quickAccess: 'ACCÈS RAPIDE',
     birthdays: 'ANNIVERSAIRES DU MOIS',

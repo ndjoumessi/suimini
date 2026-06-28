@@ -33,7 +33,7 @@ export default function HomeScreen() {
   const firstName =
     (user?.user_metadata?.display_name as string | undefined)?.split(' ')[0] ??
     user?.email?.split('@')[0] ??
-    (isDemo ? t('home.guest') : 'vous');
+    (isDemo ? t('home.guest') : t('home.you'));
 
   const recent = useMemo(
     () =>

@@ -121,7 +121,7 @@ export default function InvitePage() {
   }
 
   if (state.kind === 'loading') {
-    return <Shell><div style={{ ...mutedStyle, textAlign: 'center', padding: '8px 0' }} role="status"><span className="spinner" aria-hidden="true" /> Chargement…</div></Shell>;
+    return <Shell><div style={{ ...mutedStyle, textAlign: 'center', padding: '8px 0' }} role="status"><span className="spinner" aria-hidden="true" /> {ti('loading')}</div></Shell>;
   }
 
   if (state.kind === 'accepting') {
@@ -134,9 +134,9 @@ export default function InvitePage() {
         <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
           <span style={iconCircle} aria-hidden="true"><UserPlus size={24} /></span>
           <div role="status">
-            <h1 style={h1Style}>Vous avez rejoint l&apos;arbre «&nbsp;{state.treeName}&nbsp;» !</h1>
-            <p style={{ margin: '0 0 8px' }}>Bienvenue dans la famille.</p>
-            <p style={{ margin: 0, ...mutedStyle }}><span className="spinner" aria-hidden="true" /> Redirection en cours…</p>
+            <h1 style={h1Style}>{ti('joinedTitle', { tree: state.treeName })}</h1>
+            <p style={{ margin: '0 0 8px' }}>{ti('welcome')}</p>
+            <p style={{ margin: 0, ...mutedStyle }}><span className="spinner" aria-hidden="true" /> {ti('redirecting')}</p>
           </div>
         </div>
       </Shell>
@@ -151,9 +151,9 @@ export default function InvitePage() {
           <div>
             <h1 style={h1Style}>{t('joinExpired')}</h1>
             <p style={{ margin: '0 0 20px', ...mutedStyle }}>
-              Demandez au propriétaire de l&apos;arbre de vous renvoyer une invitation.
+              {ti('expiredHelp')}
             </p>
-            <a href="/" className="btn btn-secondary btn-sm"><ArrowLeft size={14} aria-hidden="true" /> Retour à l&apos;accueil</a>
+            <a href="/" className="btn btn-secondary btn-sm"><ArrowLeft size={14} aria-hidden="true" /> {ti('backHome')}</a>
           </div>
         </div>
       </Shell>
@@ -163,11 +163,11 @@ export default function InvitePage() {
   if (state.kind === 'invalid' || state.kind === 'error') {
     return (
       <Shell>
-        <h1 style={h1Style}>{state.kind === 'error' ? 'Une erreur est survenue' : 'Invitation introuvable'}</h1>
+        <h1 style={h1Style}>{state.kind === 'error' ? ti('errorTitle') : ti('invalidTitle')}</h1>
         <p style={{ margin: '0 0 20px', ...mutedStyle }}>
-          {state.kind === 'error' ? state.message : 'Ce lien d’invitation est invalide ou a déjà été utilisé.'}
+          {state.kind === 'error' ? state.message : ti('invalidDesc')}
         </p>
-        <a href="/" className="btn btn-secondary btn-sm"><ArrowLeft size={14} aria-hidden="true" /> Retour à l&apos;accueil</a>
+        <a href="/" className="btn btn-secondary btn-sm"><ArrowLeft size={14} aria-hidden="true" /> {ti('backHome')}</a>
       </Shell>
     );
   }

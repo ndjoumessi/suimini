@@ -158,7 +158,7 @@ export default function TreeSelectorModal({ trees, activeTreeId, shared = {}, on
                 <input
                   value={description}
                   onChange={e => setDescription(e.target.value)}
-                  placeholder="Description (optionnel)"
+                  placeholder={t('descPlaceholder')}
                   className="input"
                 />
                 <div style={{ display: 'flex', gap: '8px' }}>

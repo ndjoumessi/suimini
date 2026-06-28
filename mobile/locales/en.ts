@@ -51,6 +51,7 @@ export const en: Resources = {
   home: {
     greeting: 'Hello',
     guest: 'Guest',
+    you: 'you',
     activeTree: 'ACTIVE TREE',
     quickAccess: 'QUICK ACCESS',
     birthdays: 'BIRTHDAYS THIS MONTH',

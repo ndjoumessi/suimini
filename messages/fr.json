@@ -1360,7 +1360,16 @@
   },
   "invite": {
     "later": "Plus tard",
-    "expiresOn": "EXPIRE LE"
+    "expiresOn": "EXPIRE LE",
+    "loading": "Chargement…",
+    "joinedTitle": "Vous avez rejoint l’arbre « {tree} » !",
+    "welcome": "Bienvenue dans la famille.",
+    "redirecting": "Redirection en cours…",
+    "expiredHelp": "Demandez au propriétaire de l’arbre de vous renvoyer une invitation.",
+    "backHome": "Retour à l’accueil",
+    "invalidTitle": "Invitation introuvable",
+    "errorTitle": "Une erreur est survenue",
+    "invalidDesc": "Ce lien d’invitation est invalide ou a déjà été utilisé."
   },
   "roles": {
     "owner": "Propriétaire",
@@ -1709,5 +1718,10 @@
     "migrateDesc": "Vous avez des arbres enregistrés sur cet appareil. Voulez-vous les copier vers votre compte pour les synchroniser ?",
     "migrateImport": "Importer maintenant",
     "migrateLater": "Plus tard"
+  },
+  "publicTree": {
+    "homeAria": "Accueil Suimini",
+    "sharedLabel": "Arbre partagé",
+    "cta": "Découvrir Suimini"
   }
 }

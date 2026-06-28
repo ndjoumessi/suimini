@@ -1,4 +1,5 @@
 'use client';
+import { useTranslations } from 'next-intl';
 import { LOCALES, type Locale } from '@/i18n/config';
 import { useLocaleSwitch } from '@/components/IntlProvider';
 
@@ -9,6 +10,7 @@ import { useLocaleSwitch } from '@/components/IntlProvider';
  */
 export default function LanguageSwitcher({ tone = 'app' }: { tone?: 'app' | 'landing' }) {
   const { locale, setLocale } = useLocaleSwitch();
+  const t = useTranslations('language');
 
   function choose(next: Locale) {
     if (next === locale) return;
@@ -21,7 +23,7 @@ export default function LanguageSwitcher({ tone = 'app' }: { tone?: 'app' | 'lan
   return (
     <div
       role="group"
-      aria-label="Language"
+      aria-label={t('label')}
       style={{ display: 'inline-flex', border: `1.5px solid ${ink}`, borderRadius: 0, overflow: 'hidden', background: tone === 'landing' ? '#fbf9f4' : 'var(--bg-card)' }}
     >
       {LOCALES.map((l, i) => {
