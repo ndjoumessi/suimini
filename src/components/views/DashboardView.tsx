@@ -239,7 +239,7 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
                     return (
                       <li key={`${a.person.id}-${i}`}>
                         <button className="dash-row" onClick={() => onSelectPerson(trees.find(tr => tr.persons.some(p => p.id === a.person.id))?.id || '', a.person.id)}>
-                          <PersonAvatar person={a.person} size={32} />
+                          <PersonAvatar person={a.person} size={32} round={false} />
                           <span className="dash-row-body">
                             <span className="dash-row-name">{getDisplayName(a.person)}</span>
                             <span className="dash-row-sub">{when}</span>
@@ -263,7 +263,7 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
                 {recent.map(({ person, tree }) => (
                   <li key={person.id}>
                     <button className="dash-row" onClick={() => onSelectPerson(tree.id, person.id)}>
-                      <PersonAvatar person={person} size={32} />
+                      <PersonAvatar person={person} size={32} round={false} />
                       <span className="dash-row-body">
                         <span className="dash-row-name">
                           {getDisplayName(person)} <span className={`dash-action ${isAdded(person) ? 'dash-action-new' : ''}`}>{actionOf(person)}</span>
@@ -394,7 +394,7 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
         /* Quick access 3×2 */
         .dash-quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
         .dash-quick-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 16px 6px; min-height: 72px; cursor: pointer; background: var(--bg); border: 1px solid var(--border); color: var(--text-muted); font-family: var(--font-body); font-size: 12px; font-weight: 600; transition: transform var(--t-fast) var(--ease-out), box-shadow var(--t-fast), color var(--t-fast), border-color var(--t-fast), background var(--t-fast); }
-        .dash-quick-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-accent); background: var(--accent); color: #12131a; border-color: var(--accent); }
+        .dash-quick-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-accent); background: #1E1E28; color: var(--accent-text); border-color: var(--accent); }
 
         /* AI — two compact cards */
         .dash-ai { display: flex; flex-direction: column; gap: 14px; }
@@ -402,7 +402,7 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
         .dash-ai-title { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink); }
         .dash-ai-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .dash-ai-card { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 5px; text-align: left; cursor: pointer; padding: 20px 22px; background: #1A1A24; border: 1px solid #2D2D3A; transition: border-color var(--t-fast), background var(--t-fast), box-shadow var(--t-fast), transform var(--t-base) var(--ease-out); }
-        .dash-ai-card:hover { border-color: var(--accent); background: #252535; box-shadow: var(--shadow-accent); transform: translateY(-2px); }
+        .dash-ai-card:hover { border-color: var(--accent); background: #1E1E28; box-shadow: var(--shadow-accent); transform: translateY(-2px); }
         .dash-ai-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         .dash-ai-card:disabled { opacity: 0.45; cursor: not-allowed; }
         .dash-ai-card:disabled:hover { border-color: #2D2D3A; background: #1A1A24; box-shadow: none; transform: none; }

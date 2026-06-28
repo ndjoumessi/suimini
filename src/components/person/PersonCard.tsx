@@ -36,7 +36,12 @@ export default function PersonCard({ person: p, onSelect, variant = 'row' }: Pro
   const dates = dateStr(p);
   const city = p.birthPlace?.city;
   const firstName = (p.firstName || '').trim();
-  const lastName = (p.lastName || '').trim() || t('noFirstName');
+  const lastName = (p.lastName || '').trim();
+  // "Prénom NOM" si prénom ; sinon "NOM" seul (pas de « — » disgracieux) ;
+  // placeholder uniquement si les deux manquent.
+  const fullName = firstName && lastName
+    ? `${firstName} ${lastName}`
+    : (lastName || firstName || t('noFirstName'));
 
   const avatar = (cls: string) => (
     <span className={cls} style={{ background: bar, color: inkOnAvatar }} aria-hidden="true">
@@ -49,7 +54,7 @@ export default function PersonCard({ person: p, onSelect, variant = 'row' }: Pro
       <button className="lv-gcard" style={{ ['--bar' as string]: bar }} onClick={() => onSelect(p.id)}>
         <span className="lv-gbar" aria-hidden="true" />
         {avatar('lv-ava lv-ava-lg')}
-        <span className="lv-gname">{firstName ? `${firstName} ${lastName}` : lastName}</span>
+        <span className="lv-gname">{fullName}</span>
         {dates && <span className="lv-dates">{dates}</span>}
         {city && <span className="lv-place"><MapPin size={11} aria-hidden="true" /> {city}</span>}
       </button>
@@ -60,10 +65,7 @@ export default function PersonCard({ person: p, onSelect, variant = 'row' }: Pro
     <button className="lv-row" style={{ ['--bar' as string]: bar }} onClick={() => onSelect(p.id)}>
       <span className="lv-rbar" aria-hidden="true" />
       {avatar('lv-ava')}
-      <span className="lv-rname">
-        <span className="lv-rlast">{lastName}</span>
-        <span className="lv-rfirst">{firstName || t('noFirstName')}</span>
-      </span>
+      <span className="lv-rname">{fullName}</span>
       {dates && <span className="lv-rdates">{dates}</span>}
       <span className="lv-rtags">
         {!p.isAlive && <span className="lv-dagger" title={t('deceased')}>†</span>}

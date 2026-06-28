@@ -90,8 +90,8 @@ export default function ListView({ tree, onSelectPerson, onAddPerson, canEdit = 
         .lv-count { font-family: var(--font-mono); font-size: 11px; color: var(--accent-text); opacity: 0.85; flex-shrink: 0; }
 
         /* ---- shared avatar (square, gender-coloured, Spectral initials) ---- */
-        .lv-ava { width: 40px; height: 40px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
-          font-family: var(--font-display); font-weight: 700; font-size: 14px; overflow: hidden; border-radius: 0; }
+        .lv-ava { width: 36px; height: 36px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
+          font-family: var(--font-display); font-weight: 700; font-size: 13px; overflow: hidden; border-radius: 0; }
         .lv-ava-lg { width: 48px; height: 48px; font-size: 16px; }
         .lv-ava img { width: 100%; height: 100%; object-fit: cover; }
         .lv-dates { font-family: var(--font-mono); font-size: 11px; color: var(--accent-text); opacity: 0.9; }
@@ -99,16 +99,14 @@ export default function ListView({ tree, onSelectPerson, onAddPerson, canEdit = 
 
         /* ---- LIST rows ---- */
         .lv-list { max-width: 820px; margin: 0 auto; border: 1px solid var(--border); border-bottom: none; }
-        .lv-row { position: relative; width: 100%; display: flex; align-items: center; gap: 12px; height: 64px;
+        .lv-row { position: relative; width: 100%; display: flex; align-items: center; gap: 12px; height: 52px;
           padding: 0 14px 0 18px; background: transparent; border: none; border-bottom: 1px solid var(--border);
           text-align: left; cursor: pointer; transition: background var(--t-fast); }
-        .lv-row:hover { background: #1E1E28; }
+        .lv-row:hover { background: #1A1A24; }
         .lv-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-        .lv-rbar { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--bar); transition: background var(--t-fast); }
+        .lv-rbar { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--bar); transition: background var(--t-fast), width var(--t-fast); }
         .lv-row:hover .lv-rbar { background: var(--accent); }
-        .lv-rname { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-        .lv-rlast { font-family: var(--font-body); font-size: 14px; font-weight: 700; color: var(--ink); line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .lv-rfirst { font-family: var(--font-body); font-size: 13px; color: var(--text-muted); line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .lv-rname { flex: 1; min-width: 0; font-family: var(--font-body); font-size: 13px; font-weight: 700; color: var(--ink); line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .lv-rdates { font-family: var(--font-mono); font-size: 11px; color: var(--accent-text); opacity: 0.85; flex-shrink: 0; white-space: nowrap; }
         .lv-rtags { display: flex; align-items: center; gap: 10px; flex-shrink: 0; min-width: 0; }
         .lv-dagger { font-family: var(--font-mono); font-size: 14px; color: var(--text-muted); }
