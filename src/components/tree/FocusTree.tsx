@@ -2,9 +2,10 @@
 import { useMemo, useRef, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { FamilyTree, Person } from '@/types';
-import { getParents, getChildren, getSpouses, getSiblings, getDisplayName, formatYear, getAge, formatAge } from '@/lib/treeUtils';
+import { getParents, getChildren, getSpouses, getDisplayName, formatYear, getAge, formatAge } from '@/lib/treeUtils';
 import { ChevronUp, ChevronDown, ChevronRight, Crosshair } from 'lucide-react';
 import TreeNode from './TreeNode';
+import { GENDER_BAR } from './nodeStyle';
 
 /* =====================================================================
    FocusTree — « Focus centré » : 3 générations à la fois (parents · focus ·
@@ -197,9 +198,23 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
     window.setTimeout(() => { if (stageRef.current) stageRef.current.style.transform = 'translate(0,0)'; }, 160);
   };
 
+  // Shared by the on-screen ▲/▼ nav bars AND the swipe gesture so they always
+  // target the same person.
+  const navigateGeneration = (direction: 'up' | 'down') => {
+    if (direction === 'up') { if (hasParents) onFocus(parents[0].id); }
+    else if (hasChildren) onFocus((downTarget ?? children[0]).id);
+  };
+
   const goSibling = (dir: 1 | -1) => {
-    const par = parents[0];
-    const group = par ? getChildren(par.id, tree.relationships, tree.persons) : [focus, ...getSiblings(focus.id, tree.relationships, tree.persons)];
+    // Union of BOTH parents' children (deduped, in order) so half-siblings sharing
+    // only the second parent are reachable too.
+    const seen = new Set<string>();
+    const group: Person[] = [];
+    for (const par of parents) {
+      for (const c of getChildren(par.id, tree.relationships, tree.persons)) {
+        if (!seen.has(c.id)) { seen.add(c.id); group.push(c); }
+      }
+    }
     if (group.length < 2) return;
     const idx = group.findIndex(g => g.id === focus.id);
     if (idx === -1) return;
@@ -220,12 +235,20 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
     const TH = 50;
     if (dt > 600) return;                                   // slow drag = pan, not a swipe
     if (Math.abs(dx) < TH && Math.abs(dy) < TH) return;     // too small
+    // Only treat a flick as navigation when the canvas can't pan further that way —
+    // otherwise a normal pan of a large tree would teleport the focus.
+    const el = scrollRef.current;
+    const atTop = !el || el.scrollTop <= 1;
+    const atBottom = !el || el.scrollHeight - el.scrollTop - el.clientHeight <= 1;
+    const atLeft = !el || el.scrollLeft <= 1;
+    const atRight = !el || el.scrollWidth - el.scrollLeft - el.clientWidth <= 1;
     if (Math.abs(dx) > Math.abs(dy)) {
-      goSibling(dx < 0 ? 1 : -1);                           // left → next, right → previous
+      if (dx < 0 && atRight) goSibling(1);                  // left flick at right edge → next
+      else if (dx > 0 && atLeft) goSibling(-1);             // right flick at left edge → previous
     } else if (dy < 0) {
-      if (hasParents) { nudge(0, -20); onFocus(parents[0].id); }  // up → parents
-    } else {
-      if (hasChildren) { nudge(0, 20); onFocus((downTarget ?? children[0]).id); } // down → children
+      if (hasParents && atTop) { nudge(0, -20); navigateGeneration('up'); }      // up flick at top → parents
+    } else if (hasChildren && atBottom) {
+      nudge(0, 20); navigateGeneration('down');             // down flick at bottom → children
     }
   };
 
@@ -269,7 +292,6 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
            the point of Bug 2); the conjugal link is shown by the gold diamond ◇
            connector, not by recolouring the node. Pivot stays gold. */
         isSpouse={false}
-        dim={role === 'parent' || role === 'child'}
         genColor={genColor(g)}
         dateStr={dateLine(p)}
         displayName={getDisplayName(p).trim() || t('unknownNode')}
@@ -298,7 +320,7 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
 
       {/* Up nav — previous generation */}
       {hasParents && (
-        <button className="ft-nav ft-nav-up" onClick={() => onFocus(parents[0].id)}>
+        <button className="ft-nav ft-nav-up" onClick={() => navigateGeneration('up')}>
           <ChevronUp size={14} aria-hidden="true" className="ft-nav-arrow" /> {t('previousGeneration')}
         </button>
       )}
@@ -340,15 +362,15 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
 
       {/* Discreet legend (bottom-left) — fades out on canvas hover so it never blocks nodes */}
       <div className="ft-legend" aria-hidden="true">
-        <span className="ft-leg-item"><span className="ft-leg-bar" style={{ background: '#4A90D9' }} />{t('male')}</span>
-        <span className="ft-leg-item"><span className="ft-leg-bar" style={{ background: '#C47BA0' }} />{t('female')}</span>
-        <span className="ft-leg-item"><span className="ft-leg-bar" style={{ background: '#C9A84C' }} />{t('pivot')}</span>
+        <span className="ft-leg-item"><span className="ft-leg-bar" style={{ background: GENDER_BAR.male }} />{t('male')}</span>
+        <span className="ft-leg-item"><span className="ft-leg-bar" style={{ background: GENDER_BAR.female }} />{t('female')}</span>
+        <span className="ft-leg-item"><span className="ft-leg-bar" style={{ background: GENDER_BAR.pivot }} />{t('pivot')}</span>
         <span className="ft-leg-item"><span className="ft-leg-dia" />{t('spouse')}</span>
       </div>
 
       {/* Down nav — next generation */}
       {hasChildren && (
-        <button className="ft-nav ft-nav-down" onClick={() => onFocus((downTarget ?? children[0]).id)}>
+        <button className="ft-nav ft-nav-down" onClick={() => navigateGeneration('down')}>
           <ChevronDown size={14} aria-hidden="true" className="ft-nav-arrow" /> {t('nextGeneration')}
         </button>
       )}
@@ -419,8 +441,10 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         /* Discreet legend — bottom-left, fades out while hovering the canvas */
         .ft-legend { position: absolute; bottom: 16px; left: 16px; z-index: 4; display: flex; align-items: center; gap: 14px;
           padding: 8px 12px; background: rgba(17,17,24,0.8); border: 1px solid #2D2D3A; backdrop-filter: blur(2px);
-          pointer-events: none; transition: opacity 200ms ease; }
-        .ft-scroll:hover ~ .ft-legend { opacity: 0; }
+          transition: opacity 200ms ease; }
+        /* Fades out only while the pointer is over the legend itself (so it never
+           blocks a node it happens to overlap); visible the rest of the time. */
+        .ft-legend:hover { opacity: 0; }
         .ft-leg-item { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.04em; color: var(--text-muted); white-space: nowrap; }
         .ft-leg-bar { width: 4px; height: 12px; flex-shrink: 0; }
         .ft-leg-dia { width: 9px; height: 9px; flex-shrink: 0; background: var(--bg); border: 1.5px solid var(--accent); transform: rotate(45deg); }

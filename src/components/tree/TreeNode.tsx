@@ -7,7 +7,7 @@ interface Props {
   person: Person;
   role: 'focus' | 'spouse' | 'parent' | 'child';
   x: number; y: number; w: number; h: number;
-  isPivot: boolean; isSpouse: boolean; isSelected: boolean; isFocus: boolean; dim: boolean;
+  isPivot: boolean; isSpouse: boolean; isSelected: boolean; isFocus: boolean;
   /** Generation accent colour (top bar). */
   genColor: string;
   dateStr: string;
@@ -21,10 +21,9 @@ interface Props {
  *  face tint, left bar and name colour via the shared palette; the `.ft-*`
  *  classes live in FocusTree's <style> block. */
 export default function TreeNode({
-  person: p, role, x, y, w, h, isPivot, isSpouse, isSelected, isFocus, dim,
+  person: p, role, x, y, w, h, isPivot, isSpouse, isSelected, isFocus,
   genColor, dateStr, displayName, unknownLabel, onClick, onDoubleClick,
 }: Props) {
-  void dim; // opacity now derived per-role below
   const st = nodeStyle(p, isPivot, isSpouse);
   const { primary, secondary } = nameLines(p, unknownLabel);
   const place = p.birthPlace?.city;

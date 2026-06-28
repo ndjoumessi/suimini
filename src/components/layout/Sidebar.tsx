@@ -332,7 +332,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         /* Short viewports: compact items (30px / 11px) so all 11 nav items + footer
            fit without the scroll cutting off « Statistiques ». The nav still scrolls
            as a safety net. >= 800px keeps the comfortable 34px / 13px. */
-        @media (max-height: 800px) {
+        @media (max-height: 799px) {
           .sb-item { min-height: 30px; font-size: 11px; padding: 3px 16px; gap: 10px; }
           .sb-icon { width: 15px; }
           .sb-section { font-size: 7.5px; padding-top: 1px; padding-bottom: 1px; }

@@ -21,6 +21,7 @@ export const GENDER_BAR = {
   male: '#4A90D9',
   female: '#C47BA0',
   unknown: '#3A3A4A',
+  pivot: '#C9A84C',
 } as const;
 
 const STYLES = {
