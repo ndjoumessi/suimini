@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { supabase } from '@/lib/supabase';
+import { markSigningOut } from '@/hooks/useAuth';
 import type { UserStatus } from '@/types';
 import PendingApprovalScreen from '@/components/PendingApprovalScreen';
 import RejectedScreen from '@/components/RejectedScreen';
@@ -68,8 +69,9 @@ export default function HomeGate() {
   }, []);
 
   async function handleSignOut() {
+    markSigningOut();
     try { await supabase?.auth.signOut(); } catch { /* ignore */ }
-    if (typeof window !== 'undefined') window.location.href = '/';
+    if (typeof window !== 'undefined') window.location.replace('/');
   }
 
   useEffect(() => {

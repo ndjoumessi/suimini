@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { ColorThemeId, FamilyTree } from '@/types';
 import { COLOR_THEMES } from '@/lib/themes';
 import { supabase } from '@/lib/supabase';
+import { markSigningOut } from '@/hooks/useAuth';
 import { relativeSyncParts } from '@/lib/relativeTime';
 import { LOCALES, type Locale } from '@/i18n/config';
 import { useLocaleSwitch } from '@/components/IntlProvider';
@@ -80,9 +81,10 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
     toast(error ? t('toastPasswordFailed') : t('toastPasswordSent'), error ? 'error' : 'success');
   }
   async function signOutAll() {
+    markSigningOut();
     try { await supabase?.auth.signOut({ scope: 'global' }); }
     catch (e) { console.error('signOut error', e); }
-    finally { if (typeof window !== 'undefined') window.location.href = '/'; }
+    finally { if (typeof window !== 'undefined') window.location.replace('/'); }
   }
   function exportData() {
     const payload = { app: 'Suimini', exportedAt: new Date().toISOString(), treeCount: trees.length, trees };
@@ -102,11 +104,12 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
   }
   async function deleteAccount() {
     if (confirmText.trim() !== deleteWord.trim()) return;
+    markSigningOut();
     setBusy(true);
     try { await supabase?.rpc('delete_account'); } catch { /* server fn may not exist; proceed best-effort */ }
     try { await supabase?.auth.signOut({ scope: 'global' }); } catch { /* ignore */ }
     clearLocalSuimini();
-    window.location.href = '/';
+    window.location.replace('/');
   }
 
   return (

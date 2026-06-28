@@ -23,6 +23,18 @@ const DEMO_VALUE = 'true';
 const TREES_KEY = 'suimini_trees';
 const ACTIVE_KEY = 'suimini_active_tree';
 
+// Module-level (shared by ALL useAuth instances): once a sign-out starts, every
+// onAuthStateChange listener must STOP updating state. Otherwise the SIGNED_OUT
+// event re-renders /app with a null session for a frame before window.location
+// navigates away, crashing children that assume a user → the error boundary. The
+// flag is reset on the next full document load (logout does a hard navigation).
+let isSigningOut = false;
+
+/** Begin a sign-out: freezes auth-state listeners so the imminent SIGNED_OUT event
+ *  can't re-render the app with a null session before navigation. Call this BEFORE
+ *  any supabase.auth.signOut() that isn't routed through useAuth().signOut. */
+export function markSigningOut() { isSigningOut = true; }
+
 function origin() {
   return typeof window !== 'undefined' ? window.location.origin : '';
 }
@@ -77,6 +89,9 @@ export function useAuth() {
     // "Connexion en cours…". We defer the profile fetch with setTimeout(0) so the
     // lock is released first.
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+      // Sign-out in progress → do not touch state; the page is navigating away.
+      // A re-render with a null session here is exactly what crashed /app.
+      if (isSigningOut) return;
       setSession(s);
       setUser(s?.user ?? null);
       setIsLoading(false);
@@ -168,12 +183,14 @@ export function useAuth() {
   }, []);
 
   // --- Sign out (wipes ALL local data so the next guest/demo starts clean) ---
-  // Every step is defensive and the hard redirect ALWAYS runs (finally): a thrown
-  // Supabase/IndexedDB error must never strand the user on a half-torn-down /app.
-  // We deliberately skip setUser/setSession here — a state update would re-render
-  // /app with a null session for a frame before the navigation, which can crash
-  // children that assume a user. The hard redirect replaces the whole document.
+  // Bulletproof: set the module-level isSigningOut flag FIRST so no onAuthStateChange
+  // listener (this instance or any other) re-renders /app with a null session during
+  // teardown — that frame is what crashed the app into the error boundary. Everything
+  // is wrapped, and the hard redirect ALWAYS runs (finally) even on a thrown
+  // Supabase/IndexedDB error. We never call setUser/setSession here; the document is
+  // replaced instead.
   const signOut = useCallback(async () => {
+    isSigningOut = true;
     try {
       await supabase?.auth.signOut();
     } catch (e) {
@@ -189,7 +206,9 @@ export function useAuth() {
         localStorage.removeItem(DEMO_KEY);
       } catch { /* ignore */ }
       try { setDemoCookie(false); } catch { /* ignore */ }
-      if (typeof window !== 'undefined') window.location.href = '/';
+      // replace() rather than href: no history entry + faster, and a full document
+      // load resets the isSigningOut flag for the next session.
+      if (typeof window !== 'undefined') window.location.replace('/');
     }
   }, []);
 
