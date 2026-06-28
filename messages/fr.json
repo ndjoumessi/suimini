@@ -246,7 +246,8 @@
     "lineageAria": "Lignée",
     "origin": "Origine",
     "originTooltip": "Aller à l’ancêtre fondateur",
-    "pivot": "Pivot"
+    "pivot": "Pivot",
+    "minimap": "Minimap"
   },
   "person": {
     "firstName": "Prénom",
@@ -577,7 +578,8 @@
     "search": "Rechercher",
     "noResults": "Aucun résultat",
     "clickToClose": "Cliquez pour fermer",
-    "anonymous": "Anonyme"
+    "anonymous": "Anonyme",
+    "retry": "Réessayer"
   },
   "demo": {
     "banner": "Mode démo · données non sauvegardées",

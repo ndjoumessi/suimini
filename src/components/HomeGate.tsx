@@ -15,9 +15,9 @@ const Landing = dynamic(() => import('@/components/landing/Landing'), { ssr: fal
 
 function Splash() {
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '18px', background: '#f4f1ea' }}>
-      <BrandLockup size={36} color="#1b1b1b" accent="#bf4b2c" surface="#ffffff" fontSize={28} />
-      <span className="spinner" style={{ color: '#bf4b2c' }} />
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '18px', background: 'var(--bg)' }}>
+      <BrandLockup size={36} color="var(--ink)" accent="var(--accent)" surface="var(--bg-card)" fontSize={28} />
+      <span className="spinner" style={{ color: 'var(--accent)' }} />
     </div>
   );
 }
@@ -26,10 +26,10 @@ function Splash() {
 function ExpiredBanner({ onClose }: { onClose: () => void }) {
   const t = useTranslations('homeGate');
   return (
-    <div role="alert" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '13px 16px', background: '#c77d1a', color: '#1b1b1b', fontFamily: "var(--font-body)", fontSize: '14px', fontWeight: 700, borderBottom: '1.5px solid #1b1b1b', boxShadow: '0 4px 0 rgba(27,22,18,0.18)' }}>
+    <div role="alert" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '13px 16px', background: 'var(--warning)', color: '#12131a', fontFamily: "var(--font-body)", fontSize: '14px', fontWeight: 700, borderBottom: '1.5px solid rgba(0,0,0,0.35)', boxShadow: 'var(--shadow)' }}>
       <AlertTriangle size={16} aria-hidden="true" />
       <span>{t('linkExpired')}</span>
-      <button onClick={onClose} aria-label={t('close')} style={{ position: 'absolute', right: '12px', background: 'transparent', border: 'none', color: '#1b1b1b', fontSize: '20px', lineHeight: 1, cursor: 'pointer', padding: '2px 6px' }}>×</button>
+      <button onClick={onClose} aria-label={t('close')} style={{ position: 'absolute', right: '12px', background: 'transparent', border: 'none', color: '#12131a', fontSize: '20px', lineHeight: 1, cursor: 'pointer', padding: '2px 6px' }}>×</button>
     </div>
   );
 }

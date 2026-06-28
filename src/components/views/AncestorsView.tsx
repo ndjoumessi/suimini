@@ -5,7 +5,7 @@ import { FamilyTree, Person } from '@/types';
 import { Network, ArrowLeftRight, Scale, TreePine, Sprout, AlertCircle, Dna, ChevronDown } from 'lucide-react';
 import { GENDER_BAR } from '../tree/nodeStyle';
 import {
-  getDisplayName, formatYear, getAllAncestors, getAllDescendants,
+  getDisplayName, formatYear, formatAge, getAllAncestors, getAllDescendants,
   findCommonAncestors, findRelationPath, describeRelation, getAge,
 } from '@/lib/treeUtils';
 
@@ -434,7 +434,7 @@ function AncestorCard({ person, onClick }: { person: Person; onClick: () => void
         <span className="ex-acard-dates">
           {formatYear(person.birthDate)}
           {!person.isAlive && person.deathDate ? ` – ${formatYear(person.deathDate)}` : ''}
-          {age !== null ? ` · ${age} ans` : ''}
+          {age !== null ? ` · ${formatAge(age)}` : ''}
         </span>
       </span>
     </button>

@@ -904,14 +904,14 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                           </a>
                         )}
                       </div>
-                      <button onClick={()=>removeCitation(citation.id)} className="btn btn-ghost btn-sm" style={{ fontSize:'11px', color:'var(--danger)', flexShrink:0 }}><Trash2 size={13} /></button>
+                      {!readOnly && <button onClick={()=>removeCitation(citation.id)} className="btn btn-ghost btn-sm" style={{ fontSize:'11px', color:'var(--danger)', flexShrink:0 }}><Trash2 size={13} /></button>}
                     </div>
                   </div>
                 ))
               )}
             </div>
             {!showAddCitation ? (
-              <button onClick={()=>setShowAddCitation(true)} className="btn btn-secondary btn-sm">+ {t('addSource')}</button>
+              !readOnly && <button onClick={()=>setShowAddCitation(true)} className="btn btn-secondary btn-sm">+ {t('addSource')}</button>
             ) : (
               <div style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)' }} className="animate-fade-in">
                 <h4 style={{ margin:'0 0 10px', fontSize:'13px' }}>{t('newSource')}</h4>

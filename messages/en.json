@@ -246,7 +246,8 @@
     "lineageAria": "Lineage",
     "origin": "Origin",
     "originTooltip": "Go to the founding ancestor",
-    "pivot": "Pivot"
+    "pivot": "Pivot",
+    "minimap": "Minimap"
   },
   "person": {
     "firstName": "First name",
@@ -577,7 +578,8 @@
     "search": "Search",
     "noResults": "No results",
     "clickToClose": "Click to dismiss",
-    "anonymous": "Anonymous"
+    "anonymous": "Anonymous",
+    "retry": "Retry"
   },
   "demo": {
     "banner": "Demo mode · data not saved",

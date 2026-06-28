@@ -267,7 +267,7 @@ export default function TimelineView({ tree, onSelectPerson }: Props) {
   const segBtn = (active: boolean): React.CSSProperties => ({
     border: 'var(--bw) solid var(--border-strong)',
     background: active ? 'var(--accent)' : 'var(--bg-card)',
-    color: active ? '#fff' : 'var(--text)',
+    color: active ? '#12131a' : 'var(--text)',
     cursor: 'pointer',
     padding: '5px 12px',
     fontSize: '11px',

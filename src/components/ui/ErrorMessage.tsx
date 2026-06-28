@@ -1,6 +1,11 @@
+'use client';
 import { AlertCircle } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
+/** Inline error with optional retry. Uses the danger token (not the brand gold);
+ *  the message text stays cream for legibility, retry label is i18n'd. */
 export function ErrorMessage({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  const t = useTranslations('common');
   return (
     <div
       role="alert"
@@ -9,15 +14,15 @@ export function ErrorMessage({ message, onRetry }: { message: string; onRetry?: 
         alignItems: 'center',
         gap: '8px',
         padding: '12px 16px',
-        background: 'rgba(191, 75, 44, 0.08)',
-        border: '1px solid var(--accent)',
+        background: 'color-mix(in srgb, var(--danger) 12%, var(--bg-card))',
+        border: '1px solid var(--danger)',
         borderRadius: 'var(--radius)',
-        color: 'var(--accent)',
+        color: 'var(--text)',
         fontSize: '13px',
         fontFamily: 'var(--font-mono)',
       }}
     >
-      <AlertCircle size={14} aria-hidden="true" style={{ flexShrink: 0 }} />
+      <AlertCircle size={14} aria-hidden="true" style={{ flexShrink: 0, color: 'var(--danger)' }} />
       <span style={{ flex: 1 }}>{message}</span>
       {onRetry && (
         <button
@@ -26,7 +31,7 @@ export function ErrorMessage({ message, onRetry }: { message: string; onRetry?: 
           style={{
             background: 'none',
             border: 'none',
-            color: 'var(--accent)',
+            color: 'var(--danger)',
             fontFamily: 'var(--font-mono)',
             fontSize: '13px',
             textDecoration: 'underline',
@@ -35,7 +40,7 @@ export function ErrorMessage({ message, onRetry }: { message: string; onRetry?: 
             flexShrink: 0,
           }}
         >
-          Réessayer
+          {t('retry')}
         </button>
       )}
     </div>

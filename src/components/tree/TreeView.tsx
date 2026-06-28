@@ -1104,7 +1104,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                 })}
                 <rect x={vx} y={vy} width={vw} height={vh} fill="var(--accent)" fillOpacity={0.1} stroke="var(--accent)" strokeWidth={1.4} rx={2} />
               </svg>
-              <div className="label" style={{ position: 'absolute', top: '3px', left: '6px', fontSize: '9px', pointerEvents: 'none' }}>Minimap</div>
+              <div className="label" style={{ position: 'absolute', top: '3px', left: '6px', fontSize: '9px', pointerEvents: 'none' }}>{t('minimap')}</div>
             </div>
           );
         })()}
@@ -1197,7 +1197,7 @@ function FanChart({ fan, fanGenColor, r0, ring, selectedPersonId, onSelectPerson
               stroke={isSel ? 'var(--accent)' : 'var(--bg-card)'} strokeWidth={isSel ? 3 : 1.5} />
             <text x={tx} y={ty} transform={`rotate(${rot.toFixed(1)} ${tx.toFixed(2)} ${ty.toFixed(2)})`}
               textAnchor="middle" dominantBaseline="central" fontSize={fontSize} fontWeight={600}
-              fontFamily="var(--font-body)" fill="#fff" style={{ pointerEvents: 'none' }}>
+              fontFamily="var(--font-body)" fill="#1a1714" style={{ pointerEvents: 'none' }}>
               {label}
             </text>
           </g>
@@ -1211,10 +1211,10 @@ function FanChart({ fan, fanGenColor, r0, ring, selectedPersonId, onSelectPerson
           onClick={() => onSelectPerson(root.person.id)}
           onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectPerson(root.person.id); } }}>
           <circle cx={0} cy={0} r={r0} fill={fanGenColor(0)} stroke="var(--accent)" strokeWidth={root.person.id === selectedPersonId ? 3 : 2} />
-          <text x={0} y={-6} textAnchor="middle" dominantBaseline="central" fontSize={13} fontWeight={700} fontFamily="var(--font-display)" fill="#fff" style={{ pointerEvents: 'none' }}>
+          <text x={0} y={-6} textAnchor="middle" dominantBaseline="central" fontSize={13} fontWeight={700} fontFamily="var(--font-display)" fill="#1a1714" style={{ pointerEvents: 'none' }}>
             {root.person.firstName.length > 12 ? root.person.firstName.slice(0, 11) + '…' : root.person.firstName}
           </text>
-          <text x={0} y={12} textAnchor="middle" dominantBaseline="central" fontSize={10} fontFamily="var(--font-body)" fill="#fff" fillOpacity={0.85} style={{ pointerEvents: 'none' }}>
+          <text x={0} y={12} textAnchor="middle" dominantBaseline="central" fontSize={10} fontFamily="var(--font-body)" fill="#1a1714" fillOpacity={0.85} style={{ pointerEvents: 'none' }}>
             {root.person.lastName.length > 13 ? root.person.lastName.slice(0, 12) + '…' : root.person.lastName}
           </text>
         </g>

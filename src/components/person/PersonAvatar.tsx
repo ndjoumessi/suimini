@@ -1,13 +1,16 @@
 'use client';
 import { useState } from 'react';
 import { Person } from '@/types';
+import { GENDER_BAR } from '../tree/nodeStyle';
 
 /* =====================================================================
    PersonAvatar — élégant, Modern Heritage. Photo réelle si présente,
-   sinon initiales en Spectral sur fond coloré par genre :
-     homme  → or #C9A84C (initiales encre)
-     femme  → rose-muted #8A5B6E (initiales encre)
+   sinon initiales en Spectral sur fond coloré par genre. Le genre suit
+   la SOURCE UNIQUE GENDER_BAR (comme l'arbre, la liste, l'exploration) :
+     homme  → bleu  #4A90D9 (initiales encre)
+     femme  → rose  #C47BA0 (initiales encre)
      inconnu→ #2A2A2A (initiales crème)
+   L'or reste réservé au pivot/fondateur — l'avatar ne l'utilise plus.
    Pas d'avatar cartoon. Carré (zéro border-radius) ou rond via `round`.
    ===================================================================== */
 
@@ -24,7 +27,7 @@ export default function PersonAvatar({ person, size = 44, round = true, style }:
   const [broken, setBroken] = useState(false);
   const showPhoto = !!person.profilePhoto && !broken;
   const gender = person.gender;
-  const bg = gender === 'male' ? '#c9a84c' : gender === 'female' ? '#8a5b6e' : '#2a2a2a';
+  const bg = gender === 'male' ? GENDER_BAR.male : gender === 'female' ? GENDER_BAR.female : '#2a2a2a';
   const fg = gender === 'male' || gender === 'female' ? '#0d0d0d' : '#f5f0e8';
 
   return (
