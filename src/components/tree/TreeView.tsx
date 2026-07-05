@@ -88,6 +88,10 @@ interface Pearl { x: number; y: number; }
 interface Props {
   tree: FamilyTree;
   selectedPersonId: string | null;
+  /** One-shot person id to navigate to (e.g. from search): re-roots + centers the tree. */
+  navTarget?: string | null;
+  /** Called once navTarget has been consumed, so the parent can clear it. */
+  onNavConsumed?: () => void;
   onSelectPerson: (id: string) => void;
   onAddPerson: () => void;
   onExport?: () => void;
@@ -103,7 +107,7 @@ interface Props {
 const SPINE = 6;    // gender-coloured left bar width
 const GRID = 24; // canvas dot-grid spacing
 
-export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAddPerson, onExport, readOnly = false }: Props) {
+export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsumed, onSelectPerson, onAddPerson, onExport, readOnly = false }: Props) {
   const t = useTranslations('tree');
   const tc = useTranslations('collaboration');
   const { user } = useAuth();
@@ -369,6 +373,23 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
   const recenter = () => centerOn(rootId);
   // Latest recenter, so the resize observer (mounted once) never calls a stale one.
   const recenterRef = useRef(recenter);
+
+  // External navigation (e.g. from the command-palette search): re-root + center the
+  // tree on the requested person, then clear the one-shot request. Fires at mount when
+  // the view switches to the tree, and on each new target while already on the tree.
+  // (Placed among the hooks — never after an early return — and inlined rather than
+  //  calling pickRoot, which is declared further down.)
+  useEffect(() => {
+    if (!navTarget) return;
+    if (tree.persons.some(p => p.id === navTarget)) {
+      setRootId(navTarget);
+      setFocusPersonId(navTarget);
+      setFocusId(null);
+      setTimeout(() => centerOn(navTarget), 120);
+    }
+    onNavConsumed?.();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navTarget]);
   recenterRef.current = recenter;
 
   // Fit-to-screen: scale + offset so the WHOLE tree fits the viewport with padding.

@@ -112,6 +112,9 @@ export default function SuiminiApp() {
 
   const [view, setView] = useState<ViewMode>('dashboard');
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
+  // One-shot request to center/pivot the tree on a person (search → node navigation).
+  // TreeView consumes it (pickRoot) then calls onNavConsumed to clear it.
+  const [treeNavTarget, setTreeNavTarget] = useState<string | null>(null);
   const [showAddPerson, setShowAddPerson] = useState(false);
   const [showTreeSelector, setShowTreeSelector] = useState(false);
   const [importExportTab, setImportExportTab] = useState<'export' | 'import' | null>(null);
@@ -532,7 +535,7 @@ export default function SuiminiApp() {
                 onOpenSearch={() => setShowPalette(true)}
               />
             )}
-            {view === 'tree' && store.activeTree && <TreeView tree={store.activeTree} selectedPersonId={selectedPersonId} onSelectPerson={handleSelectPerson} onAddPerson={() => setShowAddPerson(true)} onExport={() => setShowPrint(true)} readOnly={!canEdit} />}
+            {view === 'tree' && store.activeTree && <TreeView tree={store.activeTree} selectedPersonId={selectedPersonId} navTarget={treeNavTarget} onNavConsumed={() => setTreeNavTarget(null)} onSelectPerson={handleSelectPerson} onAddPerson={() => setShowAddPerson(true)} onExport={() => setShowPrint(true)} readOnly={!canEdit} />}
             {view === 'list' && <ListView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} onAddPerson={() => setShowAddPerson(true)} canEdit={canEdit} />}
             {view === 'timeline' && <TimelineView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} />}
             {view === 'map' && <MapView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} />}
@@ -627,7 +630,7 @@ export default function SuiminiApp() {
           trees={store.trees}
           activeTreeId={store.activeTreeId}
           onClose={() => setShowPalette(false)}
-          onOpenPerson={(treeId, personId) => { if (treeId !== store.activeTreeId) store.switchTree(treeId); handleSelectPerson(personId); }}
+          onOpenPerson={(treeId, personId) => { if (treeId !== store.activeTreeId) store.switchTree(treeId); setView('tree'); setSelectedPersonId(personId); setTreeNavTarget(personId); }}
           onNavigate={setView}
           onAddPerson={canEdit ? () => setShowAddPerson(true) : undefined}
           onImportExport={(tab) => setImportExportTab(tab)}
