@@ -890,7 +890,7 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                       const lines: { text: string; font: number; weight: number; fill: string; italic?: boolean; mono?: boolean }[] = [
                         { text: pTrunc, font: dims.FONT_NAME, weight: 700, fill: st.name },
                         ...(sTrunc ? [{ text: sTrunc, font: dims.FONT_LAST, weight: 500, fill: 'var(--text-muted)' }] : []),
-                        { text: `« ${nTrunc} »`, font: nickFont, weight: 400, fill: 'var(--text-light)', italic: true },
+                        { text: nTrunc, font: nickFont, weight: 400, fill: 'var(--text-light)', italic: true },
                         ...(dl ? [{ text: dl, font: dims.FONT_DATE, weight: 400, fill: 'var(--accent-text)', mono: true }] : []),
                       ];
                       const step = isMobile ? 12 : 15;

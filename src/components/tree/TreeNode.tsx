@@ -46,7 +46,7 @@ export default function TreeNode({
       <span className="ft-body">
         <span className="ft-name" style={{ color: st.name }}>{primary}</span>
         {secondary && <span className="ft-surname">{secondary}</span>}
-        {p.nickName?.trim() && <span className="ft-nickname">«&nbsp;{p.nickName.trim()}&nbsp;»</span>}
+        {p.nickName?.trim() && <span className="ft-nickname">{p.nickName.trim()}</span>}
         {dateStr && <span className="ft-dates">{dateStr}</span>}
         {place && <span className="ft-place">{place}</span>}
       </span>

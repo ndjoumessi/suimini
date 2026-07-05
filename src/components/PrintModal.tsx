@@ -591,7 +591,7 @@ export default function PrintModal({ tree, onClose }: Props) {
                             const rows: { text: string; font: number; weight?: number; fill: string; italic?: boolean; mono?: boolean }[] = [
                               { text: fn, font: 12, weight: 700, fill: P.ink },
                               { text: ln, font: 11, fill: P.muted },
-                              { text: `« ${truncate(nick, 13)} »`, font: 9, fill: P.muted, italic: true },
+                              { text: truncate(nick, 13), font: 9, fill: P.muted, italic: true },
                               ...(dates ? [{ text: dates, font: 9, fill: P.faint, mono: true }] : []),
                             ];
                             const step = 13;
