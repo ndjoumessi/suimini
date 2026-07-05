@@ -4,7 +4,7 @@ import { FamilyTree, Person, Relationship, JournalEntry } from '@/types';
 import { sampleFamilyTree } from '@/lib/sampleData';
 import { generateId, getDisplayName } from '@/lib/treeUtils';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
-import { loadTreesFromSupabase, saveTreeToSupabase, deleteTreeFromSupabase, loadOneTree, SharedMeta } from '@/lib/supabaseSync';
+import { loadTreesFromSupabase, saveTreeToSupabase, deleteTreeFromSupabase, deleteChildRows, loadOneTree, SharedMeta } from '@/lib/supabaseSync';
 import { offlineStorage } from '@/lib/offlineStorage';
 
 const STORAGE_KEY = 'suimini_trees';
@@ -679,12 +679,18 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     // Remember the deletion so a reload within the favour-local window can't resurrect
     // this person (or its relations) from a not-yet-committed remote row.
     recordDeletedIds([personId, ...removedRelIds]);
+    // Suppression DIRECTE en base (immédiate) — ne pas dépendre uniquement de l'étape
+    // DELETE en fin de diff-push débouncé, qu'un F5 rapide peut couper.
+    if (cloud && user) {
+      if (removedRelIds.length) void deleteChildRows('relationships', removedRelIds);
+      void deleteChildRows('persons', [personId]);
+    }
     updateTreeWithHistory(
       { ...activeTree, persons, relationships },
       `Suppression de ${target ? getDisplayName(target) : 'la personne'}`,
       true
     );
-  }, [activeTree, updateTreeWithHistory]);
+  }, [activeTree, updateTreeWithHistory, cloud, user]);
 
   // Relationship CRUD
   const addRelationship = useCallback((rel: Omit<Relationship, 'id'>) => {
@@ -710,12 +716,13 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     if (!activeTree) return;
     const relationships = activeTree.relationships.filter(r => r.id !== relId);
     recordDeletedIds([relId]);
+    if (cloud && user) void deleteChildRows('relationships', [relId]);
     updateTreeWithHistory(
       { ...activeTree, relationships },
       `Suppression d'une relation`,
       true
     );
-  }, [activeTree, updateTreeWithHistory]);
+  }, [activeTree, updateTreeWithHistory, cloud, user]);
 
   // Journal CRUD
   const addJournalEntry = useCallback((entry: Omit<JournalEntry, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -741,12 +748,13 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
   const deleteJournalEntry = useCallback((id: string) => {
     if (!activeTree) return;
     recordDeletedIds([id]);
+    if (cloud && user) void deleteChildRows('journal_entries', [id]);
     updateTreeWithHistory(
       { ...activeTree, journal: (activeTree.journal || []).filter(e => e.id !== id) },
       `Suppression d'une entrée de journal`,
       true
     );
-  }, [activeTree, updateTreeWithHistory]);
+  }, [activeTree, updateTreeWithHistory, cloud, user]);
 
   const importTree = useCallback((tree: FamilyTree) => {
     const imported = { ...tree, id: generateId(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };

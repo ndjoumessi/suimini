@@ -206,6 +206,23 @@ async function syncChildTable(table: string, treeId: string, rows: any[]) {
   }
 }
 
+/**
+ * Suppression DIRECTE et immédiate de lignes enfants précises (persons /
+ * relationships / journal). Appelée par les actions de suppression du store pour
+ * qu'un retrait atteigne le serveur TOUT DE SUITE, indépendamment du diff-push
+ * débouncé dont l'étape DELETE se trouve à la fin d'une longue séquence async : un
+ * F5 rapide pouvait la couper et laisser la ligne en base (« je supprime, je F5, la
+ * personne réapparaît »). Best-effort : les erreurs sont loguées, le diff-push reste
+ * un filet de sécurité, et la RLS continue de gouverner l'écriture.
+ */
+export async function deleteChildRows(
+  table: 'persons' | 'relationships' | 'journal_entries', ids: string[],
+): Promise<void> {
+  if (!supabase || ids.length === 0) return;
+  const { error } = await supabase.from(table).delete().in('id', ids);
+  if (error) console.error(`[sync] suppression directe ${table} échouée:`, error.message, error.code ?? '');
+}
+
 export async function saveTreeToSupabase(tree: FamilyTree, ownerId: string, isOwner = true): Promise<void> {
   if (!supabase) return;
   // For shared trees the recipient may only write children, never the owning `trees` row.
