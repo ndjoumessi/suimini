@@ -52,6 +52,14 @@ function importPromptSuppressed(): boolean {
 // replace would drop the local edit. So for a tree edited within this window we
 // prefer the local cache and merge in remote-only entities (see mergeTreeFavoringLocal).
 const FAVOR_LOCAL_MS = 30_000;
+// Per-tab-session flag. The FAVOR_LOCAL merge only makes sense for an F5 *within* an
+// active session (protect a just-made edit from commit latency). On the FIRST cloud
+// load of a session — a fresh login (signOut clears the flag), a reopened tab, etc. —
+// the remote is the source of truth and must WIN outright: a full hard-replace, no
+// merge. This prevents a stale local cache from resurfacing an old version of the tree
+// (« l'arbre affiche une génération précédente au login »). sessionStorage survives F5
+// but not tab-close, and signOut removes it explicitly.
+const SESSION_LOADED_KEY = 'suimini_session_loaded';
 // Ids deleted locally are remembered (a bit longer than the favour window) so the
 // merge NEVER resurrects a delete from a not-yet-committed remote row — and the
 // subsequent re-push can't turn a resurrection into a permanent re-insert.
@@ -221,15 +229,21 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
           setShared(sharedMeta);
           if (remote.length > 0) {
             setMigrationPending(false);
-            // COMMIT-LATENCY GUARD: a fresh remote SELECT can still return the pre-edit
-            // rows if our just-pushed upsert hasn't committed server-side yet (F5 right
-            // after an edit). For a tree edited within FAVOR_LOCAL_MS we therefore keep
-            // the LOCAL cache and merge in remote-only entities (a collaborator's add),
-            // never resurrecting a local delete. Trees not edited that recently take the
-            // remote as-is → SQL-side changes still appear on the next (later) login.
+            // FRESH SESSION → HARD-REPLACE (no merge). On the first cloud load of a tab
+            // session (fresh login, reopened tab), the remote is authoritative and wins
+            // outright, so a stale local cache can't resurface an old version of the tree.
+            // The FAVOR_LOCAL commit-latency merge below applies only to a later F5 within
+            // the same session (flag already set).
+            const freshSession = typeof window !== 'undefined' && !sessionStorage.getItem(SESSION_LOADED_KEY);
+            try { if (typeof window !== 'undefined') sessionStorage.setItem(SESSION_LOADED_KEY, '1'); } catch { /* ignore */ }
+            // COMMIT-LATENCY GUARD (same-session F5 only): a fresh remote SELECT can still
+            // return the pre-edit rows if our just-pushed upsert hasn't committed server-
+            // side yet. For a tree edited within FAVOR_LOCAL_MS we keep the LOCAL cache and
+            // merge in remote-only entities (a collaborator's add), never resurrecting a
+            // local delete. Trees not edited that recently take the remote as-is.
             const nowTs = Date.now();
             const deleted = getRecentDeletedIds();
-            const effective = remote.map(rt => {
+            const effective = freshSession ? remote : remote.map(rt => {
               const lt = localTrees.find(t => t.id === rt.id);
               const ltAge = lt ? nowTs - Date.parse(lt.updatedAt || '') : Infinity;
               return (lt && ltAge < FAVOR_LOCAL_MS) ? mergeTreeFavoringLocal(lt, rt, deleted) : rt;

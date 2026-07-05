@@ -204,6 +204,10 @@ export function useAuth() {
         localStorage.removeItem(TREES_KEY);
         localStorage.removeItem(ACTIVE_KEY);
         localStorage.removeItem(DEMO_KEY);
+        // Force the NEXT login to hard-replace from Supabase (no FAVOR_LOCAL merge),
+        // so the tree can't reopen on a stale cached version. Key must match
+        // useFamilyStore's SESSION_LOADED_KEY ('suimini_session_loaded').
+        sessionStorage.removeItem('suimini_session_loaded');
       } catch { /* ignore */ }
       try { setDemoCookie(false); } catch { /* ignore */ }
       // replace() rather than href: no history entry + faster, and a full document
