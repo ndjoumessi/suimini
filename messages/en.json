@@ -266,6 +266,7 @@
   "personForm": {
     "firstName": "First name",
     "lastName": "Last name",
+    "atLeastOneName": "At least one field required",
     "firstNamePlaceholder": "e.g. Marie",
     "lastNamePlaceholder": "e.g. Dupont",
     "maidenName": "Maiden name",

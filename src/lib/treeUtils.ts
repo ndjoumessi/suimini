@@ -161,7 +161,9 @@ export function getFullName(person: Person): string {
 }
 
 export function getDisplayName(person: Person): string {
-  return `${person.firstName} ${person.lastName}`;
+  // Nom unique autorisé (ex. TEDA, MESSE) : on évite l'espace superflu / "undefined"
+  // quand l'un des deux champs est vide.
+  return `${person.firstName || ''} ${person.lastName || ''}`.trim();
 }
 
 export function getParents(personId: string, relationships: Relationship[], persons: Person[]): Person[] {

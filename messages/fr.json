@@ -266,6 +266,7 @@
   "personForm": {
     "firstName": "Prénom",
     "lastName": "Nom",
+    "atLeastOneName": "Au moins un champ requis",
     "firstNamePlaceholder": "Ex: Marie",
     "lastNamePlaceholder": "Ex: Dupont",
     "maidenName": "Nom de jeune fille",

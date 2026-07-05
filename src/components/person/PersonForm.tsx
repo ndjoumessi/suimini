@@ -93,7 +93,8 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel, rel
   const removeDna = (i: number) => setDna(dna.filter((_, idx) => idx !== i));
 
   const dateInvalid = !!(!form.isAlive && form.birthDate && form.deathDate && form.deathDate < form.birthDate);
-  const nameMissing = !form.firstName?.trim() || !form.lastName?.trim();
+  // Nom unique traditionnel autorisé (ex. MESSE, TEDA) : au moins UN des deux champs.
+  const nameMissing = !form.firstName?.trim() && !form.lastName?.trim();
   const blocked = nameMissing || dnaInvalid || dateInvalid;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -126,13 +127,14 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel, rel
       <section className="pf-sec pf-sec-first">
         <div className="pf-sec-title">{t('sectionIdentity')}</div>
         <div className="pf-grid2">
-          <label style={labelStyle}>{t('firstName')} *
-            <input value={form.firstName || ''} onChange={e => set('firstName', e.target.value)} className="input" placeholder={t('firstNamePlaceholder')} required />
+          <label style={labelStyle}>{t('firstName')}
+            <input value={form.firstName || ''} onChange={e => set('firstName', e.target.value)} className="input" placeholder={t('firstNamePlaceholder')} aria-required={nameMissing} />
           </label>
-          <label style={labelStyle}>{t('lastName')} *
-            <input value={form.lastName || ''} onChange={e => set('lastName', e.target.value)} className="input" placeholder={t('lastNamePlaceholder')} required />
+          <label style={labelStyle}>{t('lastName')}
+            <input value={form.lastName || ''} onChange={e => set('lastName', e.target.value)} className="input" placeholder={t('lastNamePlaceholder')} aria-required={nameMissing} />
           </label>
         </div>
+        <span className="field-help" style={{ color: nameMissing ? 'var(--danger)' : undefined }}>{t('atLeastOneName')}</span>
         <div className="pf-grid2">
           <label style={labelStyle}>{t('maidenName')}
             <input value={form.maidenName || ''} onChange={e => set('maidenName', e.target.value)} className="input" placeholder={t('maidenNamePlaceholder')} />
