@@ -159,22 +159,41 @@ export async function loadOneTree(treeId: string): Promise<FamilyTree | null> {
 
 async function syncChildTable(table: string, treeId: string, rows: any[]) {
   if (!supabase) return;
+  // GARDE 1 — anti-effacement total : ne JAMAIS synchroniser un cache local VIDE.
+  // Incident TEDA : un arbre chargé sans ses enfants (race RLS/token) puis une
+  // sauvegarde déclenchée → la purge « lignes absentes en local » supprimait TOUTES
+  // les lignes distantes de l'arbre (57 personnes effacées). Sur cache vide on
+  // abandonne la sync de cette table : mieux vaut ne pas propager une suppression
+  // (une vraie suppression de la dernière ligne se resynchronisera plus tard) que
+  // détruire les données à cause d'un cache partiel.
+  if (rows.length === 0) {
+    console.warn(`[sync] ${table}: cache local vide pour ${treeId} — sync ignorée (garde anti-effacement).`);
+    return;
+  }
   // NOTE: every Supabase result is error-checked and THROWN on failure. Previously
   // these errors were swallowed, so a blocked write (RLS / ownership / constraint)
   // left syncStatus on "saved" while nothing persisted — the data then vanished on
   // reload. Surfacing the error makes the cause visible and flips syncStatus to 'error'.
-  if (rows.length) {
-    const { error } = await supabase.from(table).upsert(rows);
-    if (error) {
-      console.error(`[sync] upsert ${table} échoué (${rows.length} lignes):`, error.message, error.code ?? '', error.details ?? '');
-      throw error;
-    }
+  const { error } = await supabase.from(table).upsert(rows);
+  if (error) {
+    console.error(`[sync] upsert ${table} échoué (${rows.length} lignes):`, error.message, error.code ?? '', error.details ?? '');
+    throw error;
   }
   // Remove rows that no longer exist locally.
   const { data: existing, error: selError } = await supabase.from(table).select('id').eq('tree_id', treeId);
   if (selError) { console.error(`[sync] lecture ${table} échouée:`, selError.message); throw selError; }
+  const remoteCount = (existing || []).length;
   const keep = new Set(rows.map(r => r.id));
   const remove = (existing || []).map((r: any) => r.id).filter((id: string) => !keep.has(id));
+  // GARDE 2 — anti-suppression massive : si l'état local vaut moins de la moitié des
+  // lignes distantes, on refuse la purge (probable cache partiel/corrompu, pas une
+  // vraie suppression de masse par l'utilisateur). L'upsert ci-dessus a déjà persisté
+  // les modifications ; seule la purge dangereuse est sautée. (remoteCount = lignes
+  // déjà lues ci-dessus, donc pas de requête count supplémentaire.)
+  if (remove.length && remoteCount > 0 && rows.length < remoteCount * 0.5) {
+    console.error(`[sync] ${table}: suppression massive refusée pour ${treeId} — local=${rows.length}, distant=${remoteCount} (garde anti-suppression).`);
+    return;
+  }
   if (remove.length) {
     const { error } = await supabase.from(table).delete().in('id', remove);
     if (error) { console.error(`[sync] suppression ${table} échouée:`, error.message); throw error; }
