@@ -226,6 +226,35 @@ export function getGeneration(personId: string, relationships: Relationship[], p
   return gen;
 }
 
+/**
+ * Génération canonique par personne — DÉTERMINISTE pour tout l'arbre, indépendante
+ * du focus/pivot affiché : BFS depuis la racine (rootPersonId) où enfant = +1,
+ * parent = −1, conjoint = même génération, puis normalisation pour que l'ancêtre le
+ * plus ancien = 0. Source unique utilisée par l'arbre, le tableau de bord et le
+ * panneau → un membre a TOUJOURS le même numéro de génération partout.
+ * (Les personnes isolées, hors du composant relié à la racine, restent à 0.)
+ */
+export function buildGenerationMap(tree: FamilyTree): Map<string, number> {
+  const { persons, relationships } = tree;
+  const gen = new Map<string, number>();
+  const start = (tree.rootPersonId && persons.some(p => p.id === tree.rootPersonId))
+    ? tree.rootPersonId : persons[0]?.id;
+  if (!start) return gen;
+  gen.set(start, 0);
+  const queue: string[] = [start];
+  while (queue.length) {
+    const id = queue.shift()!;
+    const g = gen.get(id)!;
+    for (const c of getChildren(id, relationships, persons)) if (!gen.has(c.id)) { gen.set(c.id, g + 1); queue.push(c.id); }
+    for (const par of getParents(id, relationships, persons)) if (!gen.has(par.id)) { gen.set(par.id, g - 1); queue.push(par.id); }
+    for (const sp of getSpouses(id, relationships, persons)) if (!gen.has(sp.id)) { gen.set(sp.id, g); queue.push(sp.id); }
+  }
+  let min = Infinity;
+  for (const v of gen.values()) min = Math.min(min, v);
+  if (min !== 0 && Number.isFinite(min)) for (const [k, v] of gen) gen.set(k, v - min);
+  return gen;
+}
+
 export function computeTreeStats(tree: FamilyTree): TreeStats {
   const { persons, relationships } = tree;
   

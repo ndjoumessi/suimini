@@ -10,7 +10,7 @@ import PersonAvatar from '../person/PersonAvatar';
 import { FamilyTree, Person, ViewMode } from '@/types';
 import {
   computeTreeStats, getUpcomingAnniversaries, getAge, getDisplayName, formatYear,
-  getSpouses, getParents, getGeneration,
+  getSpouses, getParents, buildGenerationMap,
 } from '@/lib/treeUtils';
 
 interface Props {
@@ -143,6 +143,13 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
 
   const hasTree = !!stats;
 
+  // Canonical generation map per tree (déterministe, même valeur que l'arbre).
+  const genMaps = useMemo(() => {
+    const m = new Map<string, Map<string, number>>();
+    for (const tr of trees) m.set(tr.id, buildGenerationMap(tr));
+    return m;
+  }, [trees]);
+
   // Recent-activity sub-line: kinship + generation.
   const contextLine = (p: Person, tree: FamilyTree): string => {
     const sp = getSpouses(p.id, tree.relationships, tree.persons)[0];
@@ -152,7 +159,7 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
       const par = getParents(p.id, tree.relationships, tree.persons)[0];
       if (par) ctx = t('childOf', { name: getDisplayName(par) });
     }
-    const gen = getGeneration(p.id, tree.relationships, tree.persons);
+    const gen = genMaps.get(tree.id)?.get(p.id) ?? 0;
     return [ctx, t('generationLabel', { n: gen + 1 })].filter(Boolean).join('  ·  ');
   };
 

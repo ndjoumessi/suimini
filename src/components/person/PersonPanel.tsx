@@ -491,7 +491,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
             <h2 className="serif" style={{ margin:'0 0 4px', fontSize:'1.2rem', lineHeight:1.25 }}>
               {person.firstName} {person.maidenName?`(${person.maidenName}) `:''}{person.lastName}
             </h2>
-            {person.nickName && <div style={{ fontSize:'12px', color:'var(--text-muted)', marginBottom:'4px', fontStyle:'italic' }}>«&nbsp;{person.nickName}&nbsp;»</div>}
+            {person.nickName && <div style={{ fontSize:'12px', color:'var(--text-muted)', marginBottom:'4px', fontStyle:'italic' }}>{person.nickName}</div>}
             <div style={{ display:'flex', gap:'5px', flexWrap:'wrap' }}>
               <span className={`badge badge-${person.gender==='male'?'male':person.gender==='female'?'female':'accent'}`}>
                 {person.gender==='male'?t('genderMale'):person.gender==='female'?t('genderFemale'):person.gender==='other'?t('genderOther'):'—'}

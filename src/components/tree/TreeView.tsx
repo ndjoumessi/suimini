@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { FamilyTree, Person } from '@/types';
-import { getParents, getChildren, getSpouses, getSiblings, getDisplayName, formatYear, getAge, formatAge, personCompleteness, findRelationPath, describeRelation } from '@/lib/treeUtils';
+import { getParents, getChildren, getSpouses, getSiblings, getDisplayName, formatYear, getAge, formatAge, personCompleteness, findRelationPath, describeRelation, buildGenerationMap } from '@/lib/treeUtils';
 import { joinTreeCursors, presenceColor, collaborationEnabled, type CursorPeer } from '@/lib/collaboration';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/useMediaQuery';
@@ -304,6 +304,11 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
   const rowStep = NODE_H + V_GAP;
   const minNodeY = nodes.length ? Math.min(...nodes.map(n => n.y)) : 0;
   const genOf = (y: number) => Math.max(0, Math.round((y - minNodeY) / rowStep));
+  // CANONICAL generation per person (déterministe, indépendante du pivot/focus) —
+  // même valeur qu'au tableau de bord et dans FocusTree. La position verticale
+  // (genOf) ne sert plus que de repli si une personne isolée n'est pas dans la map.
+  const genMap = buildGenerationMap(tree);
+  const genAbs = (node: { person: Person; y: number }): number => genMap.get(node.person.id) ?? genOf(node.y);
   const genColorTV = (g: number) =>
     g <= 1 ? 'var(--accent)' : g <= 3 ? '#5b7fa6' : g <= 5 ? '#5b8a6e' : '#8a5b6e';
 
@@ -851,14 +856,14 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                   {/* Gender bar (left, 6px) + generation band (top, 3px), clipped to the card */}
                   <g clipPath={`url(#card-${p.id})`}>
                     <rect x={0} y={0} width={SPINE} height={NODE_H} fill={st.bar} />
-                    <rect x={SPINE} y={0} width={NODE_W - SPINE} height={3} fill={genColorTV(genOf(node.y))} />
+                    <rect x={SPINE} y={0} width={NODE_W - SPINE} height={3} fill={genColorTV(genAbs(node))} />
                   </g>
 
                   {/* Generation tag — top-right (desktop only; mobile cards are too short) */}
                   {!isMobile && (
                     <text x={NODE_W - 9} y={14} textAnchor="end" fontFamily="var(--font-mono)" fontSize={8.5} fontWeight={700}
-                      fill={genColorTV(genOf(node.y))} opacity={0.9}>
-                      {t('genAbbr')} {genOf(node.y) + 1}
+                      fill={genColorTV(genAbs(node))} opacity={0.9}>
+                      {t('genAbbr')} {genAbs(node) + 1}
                     </text>
                   )}
 

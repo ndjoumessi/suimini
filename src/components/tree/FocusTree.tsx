@@ -2,7 +2,7 @@
 import { useMemo, useRef, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { FamilyTree, Person } from '@/types';
-import { getParents, getChildren, getSpouses, getDisplayName, formatYear, getAge, formatAge } from '@/lib/treeUtils';
+import { getParents, getChildren, getSpouses, getDisplayName, formatYear, getAge, formatAge, buildGenerationMap } from '@/lib/treeUtils';
 import { ChevronUp, ChevronDown, ChevronRight, Crosshair } from 'lucide-react';
 import TreeNode from './TreeNode';
 import { GENDER_BAR } from './nodeStyle';
@@ -50,33 +50,6 @@ function subtreeDepth(id: string, tree: FamilyTree, seen: Set<string>): number {
   return max + 1;
 }
 
-/** Generation depth per person, normalized so the oldest ancestor = 0. */
-function buildGenMap(tree: FamilyTree): Map<string, number> {
-  const gen = new Map<string, number>();
-  const start = (tree.rootPersonId && tree.persons.some(p => p.id === tree.rootPersonId))
-    ? tree.rootPersonId : tree.persons[0]?.id;
-  if (!start) return gen;
-  gen.set(start, 0);
-  const queue: string[] = [start];
-  while (queue.length) {
-    const id = queue.shift()!;
-    const g = gen.get(id)!;
-    for (const c of getChildren(id, tree.relationships, tree.persons)) {
-      if (!gen.has(c.id)) { gen.set(c.id, g + 1); queue.push(c.id); }
-    }
-    for (const par of getParents(id, tree.relationships, tree.persons)) {
-      if (!gen.has(par.id)) { gen.set(par.id, g - 1); queue.push(par.id); }
-    }
-    for (const sp of getSpouses(id, tree.relationships, tree.persons)) {
-      if (!gen.has(sp.id)) { gen.set(sp.id, g); queue.push(sp.id); }
-    }
-  }
-  let min = Infinity;
-  for (const v of gen.values()) min = Math.min(min, v);
-  if (min !== 0 && Number.isFinite(min)) for (const [k, v] of gen) gen.set(k, v - min);
-  return gen;
-}
-
 interface Props {
   tree: FamilyTree;
   focusId: string;
@@ -88,7 +61,7 @@ interface Props {
 
 export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, onFocus, onSelectPerson }: Props) {
   const t = useTranslations('tree');
-  const genMap = useMemo(() => buildGenMap(tree), [tree]);
+  const genMap = useMemo(() => buildGenerationMap(tree), [tree]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const focus = tree.persons.find(p => p.id === focusId) || tree.persons[0];
