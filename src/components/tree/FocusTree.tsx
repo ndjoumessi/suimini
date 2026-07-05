@@ -403,6 +403,7 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         .ft-body { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
         .ft-name { font-family: var(--font-body); font-size: 14px; font-weight: 700; color: var(--ink); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .ft-surname { font-family: var(--font-body); font-size: 13px; font-weight: 500; color: var(--text-muted); line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ft-nickname { font-family: var(--font-body); font-style: italic; font-size: 10.5px; font-weight: 400; color: var(--text-light); line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .ft-dates { font-family: var(--font-mono); font-size: 11px; color: var(--accent-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
         .ft-place { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .ft-genband { position: absolute; transform: translate(-50%, -50%); z-index: 1; font-family: var(--font-mono); font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-text); pointer-events: none; background: var(--bg); padding: 2px 12px; white-space: nowrap; }

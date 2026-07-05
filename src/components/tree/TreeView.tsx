@@ -877,6 +877,36 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                     const maxS = isMobile ? 15 : 20;
                     const pTrunc = primary.length > maxP ? primary.slice(0, maxP - 1) + '…' : primary;
                     const sTrunc = secondary && secondary.length > maxS ? secondary.slice(0, maxS - 1) + '…' : secondary;
+                    const dl = dateLine(p);
+                    const nick = (p.nickName || '').trim();
+
+                    // ── With a nickname: NOM / Prénom / « surnom » (italique, discret) +
+                    //    date éventuelle. On centre une pile de 2 à 4 lignes pour tenir dans
+                    //    la hauteur fixe du nœud (desktop 90 / mobile 64). Sans surnom, on
+                    //    garde EXACTEMENT le rendu d'origine (2-3 lignes) — inchangé.
+                    if (nick) {
+                      const nickFont = isMobile ? 9 : 11;                 // ≈ 0.8em du nom
+                      const nTrunc = nick.length > maxS ? nick.slice(0, maxS - 1) + '…' : nick;
+                      const lines: { text: string; font: number; weight: number; fill: string; italic?: boolean; mono?: boolean }[] = [
+                        { text: pTrunc, font: dims.FONT_NAME, weight: 700, fill: st.name },
+                        ...(sTrunc ? [{ text: sTrunc, font: dims.FONT_LAST, weight: 500, fill: 'var(--text-muted)' }] : []),
+                        { text: `« ${nTrunc} »`, font: nickFont, weight: 400, fill: 'var(--text-light)', italic: true },
+                        ...(dl ? [{ text: dl, font: dims.FONT_DATE, weight: 400, fill: 'var(--accent-text)', mono: true }] : []),
+                      ];
+                      const step = isMobile ? 12 : 15;
+                      const startY = NODE_H / 2 - ((lines.length - 1) * step) / 2 + (isMobile ? 3 : 4);
+                      return (
+                        <>
+                          {lines.map((ln, i) => (
+                            <text key={i} x={tx} y={startY + i * step}
+                              fontFamily={ln.mono ? 'var(--font-mono)' : 'var(--font-body)'}
+                              fontSize={ln.font} fontWeight={ln.weight} fill={ln.fill}
+                              fontStyle={ln.italic ? 'italic' : undefined}>{ln.text}</text>
+                          ))}
+                        </>
+                      );
+                    }
+
                     // Centre the text block: 3 lines when a secondary exists, else 2.
                     const nameY = sTrunc ? NODE_H / 2 + (isMobile ? -9 : -12) : NODE_H / 2 + (isMobile ? -3 : -5);
                     const dateY = sTrunc ? NODE_H / 2 + (isMobile ? 16 : 22) : NODE_H / 2 + (isMobile ? 12 : 14);
@@ -886,8 +916,8 @@ export default function TreeView({ tree, selectedPersonId, onSelectPerson, onAdd
                         {sTrunc && (
                           <text x={tx} y={NODE_H / 2 + (isMobile ? 4 : 5)} fontFamily="var(--font-body)" fontSize={dims.FONT_LAST} fontWeight={500} fill="var(--text-muted)">{sTrunc}</text>
                         )}
-                        {dateLine(p) && (
-                          <text x={tx} y={dateY} fontFamily="var(--font-mono)" fontSize={dims.FONT_DATE} fill="var(--accent-text)">{dateLine(p)}</text>
+                        {dl && (
+                          <text x={tx} y={dateY} fontFamily="var(--font-mono)" fontSize={dims.FONT_DATE} fill="var(--accent-text)">{dl}</text>
                         )}
                       </>
                     );

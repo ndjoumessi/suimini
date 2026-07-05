@@ -572,9 +572,41 @@ export default function PrintModal({ tree, onClose }: Props) {
                           <rect width={5} height={NODE_H} fill={accent} />
                           <rect x={13} y={NODE_H / 2 - 15} width={30} height={30} fill={accent} />
                           <text x={28} y={NODE_H / 2 + 1} textAnchor="middle" dominantBaseline="central" fontFamily="var(--font-display), Georgia, serif" fontSize={12} fontWeight={700} fill={nodeInk(node)}>{initialsOf(p)}</text>
-                          <text x={50} y={24} fontFamily="var(--font-display), Georgia, serif" fontSize={12} fontWeight={700} fill={P.ink}>{truncate(p.firstName || '', 12)}</text>
-                          <text x={50} y={40} fontFamily="var(--font-display), Georgia, serif" fontSize={11} fill={P.muted}>{truncate((p.lastName || '') + (!p.isAlive ? ' †' : ''), 13)}</text>
-                          {dates && <text x={50} y={55} fontFamily="var(--font-mono), monospace" fontSize={9} fill={P.faint}>{dates}</text>}
+                          {(() => {
+                            const fn = truncate(p.firstName || '', 12);
+                            const ln = truncate((p.lastName || '') + (!p.isAlive ? ' †' : ''), 13);
+                            const nick = (p.nickName || '').trim();
+                            // Sans surnom : rendu d'origine (inchangé). Avec surnom : on
+                            // ajoute une ligne « surnom » (italique, discret) et on recentre
+                            // la pile pour tenir dans la hauteur fixe du nœud (64).
+                            if (!nick) {
+                              return (
+                                <>
+                                  <text x={50} y={24} fontFamily="var(--font-display), Georgia, serif" fontSize={12} fontWeight={700} fill={P.ink}>{fn}</text>
+                                  <text x={50} y={40} fontFamily="var(--font-display), Georgia, serif" fontSize={11} fill={P.muted}>{ln}</text>
+                                  {dates && <text x={50} y={55} fontFamily="var(--font-mono), monospace" fontSize={9} fill={P.faint}>{dates}</text>}
+                                </>
+                              );
+                            }
+                            const rows: { text: string; font: number; weight?: number; fill: string; italic?: boolean; mono?: boolean }[] = [
+                              { text: fn, font: 12, weight: 700, fill: P.ink },
+                              { text: ln, font: 11, fill: P.muted },
+                              { text: `« ${truncate(nick, 13)} »`, font: 9, fill: P.muted, italic: true },
+                              ...(dates ? [{ text: dates, font: 9, fill: P.faint, mono: true }] : []),
+                            ];
+                            const step = 13;
+                            const startY = NODE_H / 2 - ((rows.length - 1) * step) / 2 + 4;
+                            return (
+                              <>
+                                {rows.map((r, i) => (
+                                  <text key={i} x={50} y={startY + i * step}
+                                    fontFamily={r.mono ? 'var(--font-mono), monospace' : 'var(--font-display), Georgia, serif'}
+                                    fontSize={r.font} fontWeight={r.weight} fill={r.fill}
+                                    fontStyle={r.italic ? 'italic' : undefined}>{r.text}</text>
+                                ))}
+                              </>
+                            );
+                          })()}
                           {node.isPivot && <text x={NODE_W - 10} y={17} textAnchor="end" fontSize={12} fill={ACCENT_BAR}>✦</text>}
                         </g>
                       );
