@@ -68,6 +68,14 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
   const [migrationPending, setMigrationPending] = useState(false);
   const [lastSyncAt, setLastSyncAt] = useState<number | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Flush plumbing for the debounced cloud push (see the push effect below):
+  //  • immediateSyncRef → the NEXT scheduled push runs at 0 ms instead of 700 ms.
+  //    Posé par les mutations CRUD explicites (updatePerson/add/delete, relations,
+  //    journal) : une action utilisateur explicite ne doit pas attendre le debounce.
+  //  • pendingPushRef → fonction qui pousse l'arbre COURANT immédiatement ; appelée
+  //    par le listener beforeunload/pagehide pour vider un save en attente avant F5.
+  const immediateSyncRef = useRef(false);
+  const pendingPushRef = useRef<null | (() => void)>(null);
   const localCacheRef = useRef<FamilyTree[]>([]);
   // Timestamp of the last cloud push made by THIS client. Realtime echoes our own
   // writes back; the app uses this to ignore them (see SuiminiApp) so we don't
@@ -279,23 +287,48 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
   const activeTree = trees.find(t => t.id === activeTreeId) || null;
 
   // Debounced cloud push of the active tree after any local change.
+  //  • Changement implicite (settings, updateTree en bloc) → debounce 700 ms.
+  //  • CRUD explicite (add/update/delete personne, relation, journal) → flush ~0 ms
+  //    via immediateSyncRef, ce qui réduit à quasi néant la fenêtre de course
+  //    « F5 juste après Enregistrer » (sinon le hard-replace au reload écrasait la
+  //    modif locale pas encore poussée).
   const activeTreeKey = activeTree ? JSON.stringify(activeTree) : '';
   useEffect(() => {
-    if (!cloud || !user || !activeTree || migrationPending) return;
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => {
+    if (!cloud || !user || !activeTree || migrationPending) { pendingPushRef.current = null; return; }
+    const treeSnapshot = activeTree;         // fresh capture each run (latest edit)
+    const isOwner = !shared[activeTree.id];
+    const doPush = () => {
+      if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null; }
+      pendingPushRef.current = null;         // nothing left pending once we fire
       setSyncStatus('syncing');
       // Mark before AND after the write: the realtime echo of our own push can
       // arrive either side of the REST response, so we bracket the whole window.
       lastLocalWriteRef.current = Date.now();
-      const isOwner = !shared[activeTree.id];
-      saveTreeToSupabase(activeTree, user.id, isOwner)
+      return saveTreeToSupabase(treeSnapshot, user.id, isOwner)
         .then(() => { lastLocalWriteRef.current = Date.now(); syncErrorKindRef.current = null; setSyncStatus('saved'); setLastSyncAt(Date.now()); })
         .catch((err) => { console.error('[store] Sauvegarde cloud échouée:', err?.message ?? err); syncErrorKindRef.current = 'save'; setSyncStatus('error'); });
-    }, 700);
+    };
+    pendingPushRef.current = doPush;          // beforeunload can flush the latest tree
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    const delay = immediateSyncRef.current ? 0 : 700;
+    immediateSyncRef.current = false;
+    saveTimer.current = setTimeout(doPush, delay);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTreeKey, cloud]);
+
+  // Flush a still-pending debounced save before the tab is hidden/unloaded, so a
+  // fast F5 right after an edit can't lose it (the reload hard-replace would other-
+  // wise overwrite the un-pushed local edit). Best-effort: a browser may cut a long
+  // request short on unload, but a small Supabase write usually lands — and the 0 ms
+  // flush on explicit CRUD above already makes this the rare fallback, not the norm.
+  useEffect(() => {
+    if (!cloud) return;
+    const flush = () => { pendingPushRef.current?.(); };
+    window.addEventListener('beforeunload', flush);
+    window.addEventListener('pagehide', flush);
+    return () => { window.removeEventListener('beforeunload', flush); window.removeEventListener('pagehide', flush); };
+  }, [cloud]);
 
   // Reload one tree from the cloud (used by realtime collaborator updates).
   const reloadTreeFromCloud = useCallback(async (treeId: string) => {
@@ -433,7 +466,10 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
   }, []);
 
   // updateTree is the primitive used by every editing action — it records history.
-  const updateTreeWithHistory = useCallback((updatedTree: FamilyTree, description: string) => {
+  const updateTreeWithHistory = useCallback((updatedTree: FamilyTree, description: string, immediate = false) => {
+    // Explicit CRUD passes immediate=true → the debounced cloud push fires at 0 ms
+    // instead of 700 ms (see the push effect). Bulk/implicit edits keep the debounce.
+    if (immediate) immediateSyncRef.current = true;
     const updated = trees.map(t => t.id === updatedTree.id ? { ...updatedTree, updatedAt: new Date().toISOString() } : t);
     commit(updated, description);
   }, [trees, commit]);
@@ -534,7 +570,8 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     };
     updateTreeWithHistory(
       { ...activeTree, persons: [...activeTree.persons, newPerson] },
-      `Ajout de ${newPerson.firstName} ${newPerson.lastName}`
+      `Ajout de ${newPerson.firstName} ${newPerson.lastName}`,
+      true
     );
     return newPerson;
   }, [activeTree, updateTreeWithHistory]);
@@ -547,7 +584,8 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     );
     updateTreeWithHistory(
       { ...activeTree, persons },
-      `Modification de ${target ? getDisplayName(target) : 'la personne'}`
+      `Modification de ${target ? getDisplayName(target) : 'la personne'}`,
+      true
     );
   }, [activeTree, updateTreeWithHistory]);
 
@@ -560,7 +598,8 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     );
     updateTreeWithHistory(
       { ...activeTree, persons, relationships },
-      `Suppression de ${target ? getDisplayName(target) : 'la personne'}`
+      `Suppression de ${target ? getDisplayName(target) : 'la personne'}`,
+      true
     );
   }, [activeTree, updateTreeWithHistory]);
 
@@ -570,7 +609,8 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     const newRel: Relationship = { ...rel, id: generateId() };
     updateTreeWithHistory(
       { ...activeTree, relationships: [...activeTree.relationships, newRel] },
-      `Ajout d'une relation`
+      `Ajout d'une relation`,
+      true
     );
     return newRel;
   }, [activeTree, updateTreeWithHistory]);
@@ -580,7 +620,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     const relationships = activeTree.relationships.map(r =>
       r.id === relId ? { ...r, ...updates } : r
     );
-    updateTreeWithHistory({ ...activeTree, relationships }, `Modification d'une relation`);
+    updateTreeWithHistory({ ...activeTree, relationships }, `Modification d'une relation`, true);
   }, [activeTree, updateTreeWithHistory]);
 
   const deleteRelationship = useCallback((relId: string) => {
@@ -588,7 +628,8 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     const relationships = activeTree.relationships.filter(r => r.id !== relId);
     updateTreeWithHistory(
       { ...activeTree, relationships },
-      `Suppression d'une relation`
+      `Suppression d'une relation`,
+      true
     );
   }, [activeTree, updateTreeWithHistory]);
 
@@ -599,7 +640,8 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     const newEntry: JournalEntry = { ...entry, id: generateId(), createdAt: now, updatedAt: now };
     updateTreeWithHistory(
       { ...activeTree, journal: [...(activeTree.journal || []), newEntry] },
-      `Ajout d'une entrée de journal`
+      `Ajout d'une entrée de journal`,
+      true
     );
     return newEntry;
   }, [activeTree, updateTreeWithHistory]);
@@ -609,14 +651,15 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     const journal = (activeTree.journal || []).map(e =>
       e.id === id ? { ...e, ...updates, updatedAt: new Date().toISOString() } : e
     );
-    updateTreeWithHistory({ ...activeTree, journal }, `Modification d'une entrée de journal`);
+    updateTreeWithHistory({ ...activeTree, journal }, `Modification d'une entrée de journal`, true);
   }, [activeTree, updateTreeWithHistory]);
 
   const deleteJournalEntry = useCallback((id: string) => {
     if (!activeTree) return;
     updateTreeWithHistory(
       { ...activeTree, journal: (activeTree.journal || []).filter(e => e.id !== id) },
-      `Suppression d'une entrée de journal`
+      `Suppression d'une entrée de journal`,
+      true
     );
   }, [activeTree, updateTreeWithHistory]);
 
