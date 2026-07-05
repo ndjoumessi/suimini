@@ -29,7 +29,13 @@ function personToRow(p: Person, treeId: string): any {
 }
 
 function rowToPerson(r: any): Person {
+  // `extra` (catch-all des champs non normalisés) est étalé EN PREMIER : les colonnes
+  // canoniques ci-dessous priment donc TOUJOURS. Étalé en dernier, un `extra` pollué par
+  // une clé canonique (ex. un `updatedAt` résiduel) écrasait la vraie valeur de la colonne
+  // → tri "Dernières modifications" faussé (personne éditée qui disparaît après un reload).
+  // Bonus : la prochaine sauvegarde nettoie l'`extra` (personToRow retire ces clés).
   return {
+    ...(r.extra || {}),
     id: r.id, firstName: r.first_name || '', lastName: r.last_name || '',
     gender: r.gender || 'unknown',
     birthDate: r.birth_date || undefined, birthPlace: r.birth_place || undefined,
@@ -39,7 +45,6 @@ function rowToPerson(r: any): Person {
     citations: r.citations || undefined, customFields: r.custom_fields || undefined,
     tags: r.tags || undefined, privacy: r.privacy || undefined,
     createdAt: r.created_at, updatedAt: r.updated_at,
-    ...(r.extra || {}),
   };
 }
 
@@ -54,11 +59,12 @@ function relToRow(r: Relationship, treeId: string): any {
 }
 
 function rowToRel(r: any): Relationship {
+  // `extra` en premier → les colonnes canoniques priment toujours (cf. rowToPerson).
   return {
+    ...(r.extra || {}),
     id: r.id, type: r.type, person1Id: r.person1_id, person2Id: r.person2_id,
     startDate: r.start_date || undefined, endDate: r.end_date || undefined,
     isActive: r.is_active ?? undefined, notes: r.notes || undefined,
-    ...(r.extra || {}),
   };
 }
 
