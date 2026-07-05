@@ -46,6 +46,70 @@ function importPromptSuppressed(): boolean {
   }
 }
 
+// ── Commit-latency guard (reload race) ─────────────────────────────────────────
+// A F5 right after an edit can beat the Supabase server-side commit of our just-
+// pushed upsert: the reload's SELECT then returns the PRE-edit rows and the hard-
+// replace would drop the local edit. So for a tree edited within this window we
+// prefer the local cache and merge in remote-only entities (see mergeTreeFavoringLocal).
+const FAVOR_LOCAL_MS = 30_000;
+// Ids deleted locally are remembered (a bit longer than the favour window) so the
+// merge NEVER resurrects a delete from a not-yet-committed remote row — and the
+// subsequent re-push can't turn a resurrection into a permanent re-insert.
+const RECENT_DELETE_KEY = 'suimini_recent_deletes';
+const RECENT_DELETE_MS = 60_000;
+
+/** Remember ids just deleted locally (persons/relations/journal), pruning stale ones. */
+function recordDeletedIds(ids: string[]): void {
+  if (typeof window === 'undefined' || ids.length === 0) return;
+  try {
+    const now = Date.now();
+    const map: Record<string, number> = JSON.parse(localStorage.getItem(RECENT_DELETE_KEY) || '{}');
+    for (const id of ids) map[id] = now;
+    for (const k of Object.keys(map)) if (now - map[k] > RECENT_DELETE_MS) delete map[k];
+    localStorage.setItem(RECENT_DELETE_KEY, JSON.stringify(map));
+  } catch { /* ignore */ }
+}
+
+/** Ids deleted locally within RECENT_DELETE_MS — never re-added by the favour-local merge. */
+function getRecentDeletedIds(): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const now = Date.now();
+    const map: Record<string, number> = JSON.parse(localStorage.getItem(RECENT_DELETE_KEY) || '{}');
+    return new Set(Object.keys(map).filter(id => now - map[id] <= RECENT_DELETE_MS));
+  } catch { return new Set(); }
+}
+
+/**
+ * Merge favouring the recently-edited LOCAL tree over a possibly-stale remote read.
+ * Keeps ALL local persons/relations/journal (freshest field values, incl. renames),
+ * and ADDS only remote entities absent locally AND not recently deleted here (so a
+ * collaborator's addition still appears, but a local delete is never resurrected).
+ * Relations are added only when both endpoints exist in the merged person set.
+ */
+function mergeTreeFavoringLocal(local: FamilyTree, remote: FamilyTree, deleted: Set<string>): FamilyTree {
+  const localPersonIds = new Set(local.persons.map(p => p.id));
+  const persons = [
+    ...local.persons,
+    ...remote.persons.filter(p => !localPersonIds.has(p.id) && !deleted.has(p.id)),
+  ];
+  const personIds = new Set(persons.map(p => p.id));
+  const localRelIds = new Set(local.relationships.map(r => r.id));
+  const relationships = [
+    ...local.relationships,
+    ...remote.relationships.filter(r =>
+      !localRelIds.has(r.id) && !deleted.has(r.id)
+      && personIds.has(r.person1Id) && personIds.has(r.person2Id)),
+  ];
+  const localJournal = local.journal || [];
+  const localJournalIds = new Set(localJournal.map(j => j.id));
+  const journal = [
+    ...localJournal,
+    ...(remote.journal || []).filter(j => !localJournalIds.has(j.id) && !deleted.has(j.id)),
+  ];
+  return { ...local, persons, relationships, journal };
+}
+
 export type SyncStatus = 'idle' | 'saved' | 'syncing' | 'offline' | 'error';
 export interface StoreUser { id: string; email?: string }
 
@@ -157,19 +221,32 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
           setShared(sharedMeta);
           if (remote.length > 0) {
             setMigrationPending(false);
-            setTrees(remote);
-            setActiveTreeId(prev => (remote.find(t => t.id === prev) ? prev : remote[0]?.id || null));
+            // COMMIT-LATENCY GUARD: a fresh remote SELECT can still return the pre-edit
+            // rows if our just-pushed upsert hasn't committed server-side yet (F5 right
+            // after an edit). For a tree edited within FAVOR_LOCAL_MS we therefore keep
+            // the LOCAL cache and merge in remote-only entities (a collaborator's add),
+            // never resurrecting a local delete. Trees not edited that recently take the
+            // remote as-is → SQL-side changes still appear on the next (later) login.
+            const nowTs = Date.now();
+            const deleted = getRecentDeletedIds();
+            const effective = remote.map(rt => {
+              const lt = localTrees.find(t => t.id === rt.id);
+              const ltAge = lt ? nowTs - Date.parse(lt.updatedAt || '') : Infinity;
+              return (lt && ltAge < FAVOR_LOCAL_MS) ? mergeTreeFavoringLocal(lt, rt, deleted) : rt;
+            });
+            setTrees(effective);
+            setActiveTreeId(prev => (effective.find(t => t.id === prev) ? prev : effective[0]?.id || null));
             setSyncStatus('saved');
             setLastSyncAt(Date.now());
-            // HARD REFRESH of the local cache: Supabase is the source of truth, so we
-            // REPLACE IndexedDB (clear + rewrite) rather than merge — this is what makes
-            // SQL-side changes appear on next login without manually wiping storage.
-            localCacheRef.current = remote;
+            // Cache mirrors what we actually show (merged), so IndexedDB/localStorage stay
+            // consistent. Trees untouched this recently were replaced by remote above, so
+            // SQL-side edits still land on next login.
+            localCacheRef.current = effective;
             try {
               await offlineStorage.clear();
               if (!active) return;
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(remote));
-              for (const t of remote) await offlineStorage.setTree(t);
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(effective));
+              for (const t of effective) await offlineStorage.setTree(t);
             } catch { /* IndexedDB/localStorage unavailable — non-fatal */ }
             if (active) { settled = true; setLoaded(true); }
             return;
@@ -593,9 +670,15 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     if (!activeTree) return;
     const target = activeTree.persons.find(p => p.id === personId);
     const persons = activeTree.persons.filter(p => p.id !== personId);
+    const removedRelIds = activeTree.relationships
+      .filter(r => r.person1Id === personId || r.person2Id === personId)
+      .map(r => r.id);
     const relationships = activeTree.relationships.filter(
       r => r.person1Id !== personId && r.person2Id !== personId
     );
+    // Remember the deletion so a reload within the favour-local window can't resurrect
+    // this person (or its relations) from a not-yet-committed remote row.
+    recordDeletedIds([personId, ...removedRelIds]);
     updateTreeWithHistory(
       { ...activeTree, persons, relationships },
       `Suppression de ${target ? getDisplayName(target) : 'la personne'}`,
@@ -626,6 +709,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
   const deleteRelationship = useCallback((relId: string) => {
     if (!activeTree) return;
     const relationships = activeTree.relationships.filter(r => r.id !== relId);
+    recordDeletedIds([relId]);
     updateTreeWithHistory(
       { ...activeTree, relationships },
       `Suppression d'une relation`,
@@ -656,6 +740,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
 
   const deleteJournalEntry = useCallback((id: string) => {
     if (!activeTree) return;
+    recordDeletedIds([id]);
     updateTreeWithHistory(
       { ...activeTree, journal: (activeTree.journal || []).filter(e => e.id !== id) },
       `Suppression d'une entrée de journal`,
