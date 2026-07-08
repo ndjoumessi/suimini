@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import { callRpc } from '@/lib/rpcClient';
 import type { UserProfile, AdminNotification, Tenant, UserStatus, UserRole } from '@/types';
 
 export interface NewTenantInput {
@@ -28,14 +29,14 @@ export function useAdminData({ enabled }: { enabled: boolean }) {
   const fetchUsers = useCallback(async () => {
     if (!supabase) return;
     setLoading(true);
-    const { data, error } = await supabase.rpc('list_all_users');
+    const { data, error } = await callRpc('list_all_users');
     setLoading(false);
     if (!error && data) setUsers(data as UserProfile[]);
   }, []);
 
   const fetchNotifications = useCallback(async () => {
     if (!supabase) return;
-    const { data, error } = await supabase.rpc('get_unread_notifications');
+    const { data, error } = await callRpc('get_unread_notifications');
     if (!error && data) {
       const list = data as AdminNotification[];
       setNotifications(list);
@@ -51,28 +52,28 @@ export function useAdminData({ enabled }: { enabled: boolean }) {
 
   const approveUser = useCallback(async (id: string) => {
     if (!supabase) return { error: 'Supabase non configuré.' };
-    const { error } = await supabase.rpc('approve_user', { target_user_id: id });
+    const { error } = await callRpc('approve_user', { target_user_id: id });
     if (!error) await Promise.all([fetchUsers(), fetchNotifications()]);
     return { error: error?.message };
   }, [fetchUsers, fetchNotifications]);
 
   const rejectUser = useCallback(async (id: string, reason?: string) => {
     if (!supabase) return { error: 'Supabase non configuré.' };
-    const { error } = await supabase.rpc('reject_user', { target_user_id: id, reason: reason || null });
+    const { error } = await callRpc('reject_user', { target_user_id: id, reason: reason || null });
     if (!error) await Promise.all([fetchUsers(), fetchNotifications()]);
     return { error: error?.message };
   }, [fetchUsers, fetchNotifications]);
 
   const setStatus = useCallback(async (id: string, newStatus: UserStatus) => {
     if (!supabase) return { error: 'Supabase non configuré.' };
-    const { error } = await supabase.rpc('set_user_status', { target_user_id: id, new_status: newStatus });
+    const { error } = await callRpc('set_user_status', { target_user_id: id, new_status: newStatus });
     if (!error) await fetchUsers();
     return { error: error?.message };
   }, [fetchUsers]);
 
   const setRole = useCallback(async (id: string, newRole: UserRole) => {
     if (!supabase) return { error: 'Supabase non configuré.' };
-    const { error } = await supabase.rpc('set_user_role', { target_user_id: id, new_role: newRole });
+    const { error } = await callRpc('set_user_role', { target_user_id: id, new_role: newRole });
     if (!error) await fetchUsers();
     return { error: error?.message };
   }, [fetchUsers]);
@@ -86,7 +87,7 @@ export function useAdminData({ enabled }: { enabled: boolean }) {
 
   const markAllNotificationsRead = useCallback(async () => {
     if (!supabase) return { error: 'Supabase non configuré.' };
-    const { error } = await supabase.rpc('mark_all_notifications_read');
+    const { error } = await callRpc('mark_all_notifications_read');
     if (!error) await fetchNotifications();
     return { error: error?.message };
   }, [fetchNotifications]);

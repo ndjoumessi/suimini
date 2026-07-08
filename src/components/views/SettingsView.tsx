@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { ColorThemeId, FamilyTree } from '@/types';
 import { COLOR_THEMES } from '@/lib/themes';
 import { supabase } from '@/lib/supabase';
+import { callRpc } from '@/lib/rpcClient';
 import { markSigningOut } from '@/hooks/useAuth';
 import { relativeSyncParts } from '@/lib/relativeTime';
 import { LOCALES, type Locale } from '@/i18n/config';
@@ -145,7 +146,7 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
     if (confirmText.trim() !== deleteWord.trim()) return;
     markSigningOut();
     setBusy(true);
-    try { await supabase?.rpc('delete_account'); } catch { /* server fn may not exist; proceed best-effort */ }
+    try { await callRpc('delete_account'); } catch { /* server fn may not exist; proceed best-effort */ }
     try { await supabase?.auth.signOut({ scope: 'global' }); } catch { /* ignore */ }
     clearLocalSuimini();
     window.location.replace('/');

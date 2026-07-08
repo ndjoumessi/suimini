@@ -2,6 +2,7 @@
 // no-ops when Supabase isn't configured OR the table hasn't been applied yet
 // (errors are swallowed so the single-owner app keeps working).
 import { supabase } from './supabase';
+import { callRpc } from '@/lib/rpcClient';
 
 export type MemberRole = 'viewer' | 'editor' | 'admin';
 export type MemberStatus = 'pending' | 'accepted' | 'declined';
@@ -116,7 +117,7 @@ export async function inviteMember(
 /** Members of a tree, manager view (owner OR accepted admin). Via SECURITY DEFINER RPC. */
 export async function getTreeMembers(treeId: string): Promise<ManagedMember[]> {
   if (!supabase) return [];
-  const { data, error } = await supabase.rpc('get_tree_members', { p_tree_id: treeId });
+  const { data, error } = await callRpc('get_tree_members', { p_tree_id: treeId });
   if (error || !data) return [];
   return (data as Array<{ email: string; role: MemberRole; status: MemberStatus; invited_at: string; accepted_at: string | null }>)
     .map(r => ({ email: r.email, role: r.role, status: r.status, invitedAt: r.invited_at, acceptedAt: r.accepted_at }));
@@ -125,21 +126,21 @@ export async function getTreeMembers(treeId: string): Promise<ManagedMember[]> {
 /** Change a member's role (owner/admin only — enforced server-side). */
 export async function updateMemberRole(treeId: string, email: string, role: MemberRole): Promise<boolean> {
   if (!supabase) return false;
-  const { error } = await supabase.rpc('update_member_role', { p_tree_id: treeId, p_email: email, p_role: role });
+  const { error } = await callRpc('update_member_role', { p_tree_id: treeId, p_email: email, p_role: role });
   return !error;
 }
 
 /** Remove a member (owner/admin only — enforced server-side). */
 export async function removeMember(treeId: string, email: string): Promise<boolean> {
   if (!supabase) return false;
-  const { error } = await supabase.rpc('remove_member', { p_tree_id: treeId, p_email: email });
+  const { error } = await callRpc('remove_member', { p_tree_id: treeId, p_email: email });
   return !error;
 }
 
 /** Effective role of the current user on a tree, or null if no access. Via RPC. */
 export async function fetchMyRole(treeId: string): Promise<TreeRole | null> {
   if (!supabase) return null;
-  const { data, error } = await supabase.rpc('my_tree_role', { p_tree_id: treeId });
+  const { data, error } = await callRpc('my_tree_role', { p_tree_id: treeId });
   if (error) return null;
   return (data as TreeRole | null) ?? null;
 }
@@ -156,7 +157,7 @@ export interface InvitationInfo {
 /** Read an invitation by token (works logged-out). Via SECURITY DEFINER RPC. */
 export async function getInvitation(token: string): Promise<InvitationInfo | null> {
   if (!supabase) return null;
-  const { data, error } = await supabase.rpc('get_invitation', { p_token: token });
+  const { data, error } = await callRpc('get_invitation', { p_token: token });
   if (error || !data || !(data as unknown[])[0]) return null;
   const r = (data as Array<{ tree_name: string; role: MemberRole; status: MemberStatus; invited_email: string; inviter_name: string | null; expires_at: string | null }>)[0];
   return { treeName: r.tree_name, role: r.role, status: r.status, invitedEmail: r.invited_email, inviterName: r.inviter_name, expiresAt: r.expires_at };
@@ -168,7 +169,7 @@ export const PENDING_INVITE_KEY = 'suimini_pending_invite';
 /** Accept an invitation by token. Returns the joined tree (or null). Via SECURITY DEFINER RPC. */
 export async function acceptInvitation(token: string): Promise<{ treeId: string; treeName: string; role: MemberRole } | null> {
   if (!supabase) return null;
-  const { data, error } = await supabase.rpc('accept_invitation', { p_token: token });
+  const { data, error } = await callRpc('accept_invitation', { p_token: token });
   if (error || !data || !(data as unknown[])[0]) return null;
   const row = (data as Array<{ tree_id: string; tree_name: string; role: MemberRole }>)[0];
 
