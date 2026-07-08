@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { FamilyTree, Person, Relationship, JournalEntry } from '@/types';
+import { recordSelfWrites, rowSignature, softDeleteSignature, hardDeleteSignature } from '@/lib/realtimeEcho';
 
 export interface SharedMeta { sharedByName?: string; permission?: string; }
 export interface LoadResult { trees: FamilyTree[]; shared: Record<string, SharedMeta>; }
@@ -212,6 +213,11 @@ export async function pushChildTable(table: ChildTable, rows: any[], client: any
   // deleted_at: null — une ligne présente localement est vivante ; l'upsert ranime
   // une éventuelle tombstone (undo d'une suppression, restauration d'un import).
   const payload = softDeleteSupported ? rows.map(r => ({ ...r, deleted_at: null })) : rows;
+  // Enregistre la signature de chaque ligne AVANT l'upsert : le listener Realtime
+  // ignorera ces échos (sinon « un collaborateur a modifié » sur nos propres écritures).
+  // `rowSignature` normalise deleted_at (null/absent → identique), donc valable pour
+  // les deux formes de payload (avec ou sans la colonne pré-migration).
+  recordSelfWrites(rows.map(r => rowSignature(table, r)));
   let { error } = await client.from(table).upsert(payload);
   if (error && softDeleteSupported && isMissingDeletedAt(error)) {
     softDeleteSupported = false; // migration soft-delete pas encore exécutée
@@ -236,7 +242,12 @@ export async function pushChildTable(table: ChildTable, rows: any[], client: any
 export async function deleteChildRows(table: ChildTable, ids: string[], client: any = supabase): Promise<boolean> {
   if (!client || ids.length === 0) return true;
   if (softDeleteSupported) {
-    const { error } = await client.from(table).update({ deleted_at: new Date().toISOString() }).in('id', ids);
+    // ts calculé UNE fois : sert à la fois à l'écriture ET à la signature d'écho
+    // (l'écho d'un soft-delete garde l'ancien updated_at ; seul (id, deleted_at)
+    // l'identifie comme le nôtre).
+    const ts = new Date().toISOString();
+    recordSelfWrites(ids.map(id => softDeleteSignature(table, id, ts)));
+    const { error } = await client.from(table).update({ deleted_at: ts }).in('id', ids);
     if (!error) return true;
     if (!isMissingDeletedAt(error)) {
       console.error(`[sync] soft-delete ${table} échoué:`, error.message, error.code ?? '');
@@ -244,6 +255,7 @@ export async function deleteChildRows(table: ChildTable, ids: string[], client: 
     }
     softDeleteSupported = false; // colonne absente → repli DELETE dur
   }
+  recordSelfWrites(ids.map(id => hardDeleteSignature(table, id))); // repli pré-migration
   const { error } = await client.from(table).delete().in('id', ids);
   if (error) { console.error(`[sync] suppression ${table} échouée:`, error.message, error.code ?? ''); return false; }
   return true;

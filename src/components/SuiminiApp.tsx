@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { ViewMode, Person, FamilyTree, PhotoTag } from '@/types';
 import { generateId, getDisplayName } from '@/lib/treeUtils';
 import { useConflicts, removeConflict, Conflict } from '@/lib/conflictQueue';
+import { isSelfEcho } from '@/lib/realtimeEcho';
 import Sidebar from './layout/Sidebar';
 import ContentHeader from './layout/ContentHeader';
 import BottomNav from './BottomNav';
@@ -295,12 +296,18 @@ export default function SuiminiApp() {
   useEffect(() => {
     if (!store.cloud || !supabase || !activeTreeId || !user) return;
     const sb = supabase;
-    // Realtime echoes our OWN writes back. Skip events that land within the
-    // self-write window after this client's last cloud push, otherwise every
-    // local edit would trigger "un collaborateur a modifié" in a loop.
+    // Realtime renvoie NOS PROPRES écritures à l'émetteur. On les ignore de façon
+    // DÉTERMINISTE via la signature de chaque ligne écrite (isSelfEcho) : insensible
+    // à la latence, contrairement à l'ancienne fenêtre de 6 s qu'une rafale d'échos
+    // (un édit ré-upserte tout l'arbre) débordait → faux « un collaborateur a modifié ».
+    // La fenêtre temporelle est CONSERVÉE en filet de sécurité secondaire (couvre un
+    // éventuel chemin d'écriture non instrumenté). Un VRAI collaborateur porte un
+    // updated_at/deleted_at issu de SON horloge → signature inconnue → l'écho passe.
     const SELF_WRITE_WINDOW_MS = 6000;
-    const reload = () => {
-      if (Date.now() - store.lastLocalWriteRef.current < SELF_WRITE_WINDOW_MS) return;
+    const reload = (payload: { table?: string; new?: Record<string, unknown>; old?: Record<string, unknown> }) => {
+      const row = (payload?.new && Object.keys(payload.new).length ? payload.new : payload?.old) ?? {};
+      if (isSelfEcho(payload?.table ?? 'persons', row)) return;               // notre propre écho (déterministe)
+      if (Date.now() - store.lastLocalWriteRef.current < SELF_WRITE_WINDOW_MS) return; // filet de sécurité
       store.reloadTreeFromCloud(activeTreeId);
       showToast(tToastRef.current('collaboratorEdited'), 'info');
     };
