@@ -66,6 +66,13 @@ const GalleryView = dynamic(() => import('./views/GalleryView'), {
   loading: () => <LazyFallback labelKey="loadingGallery" />,
 });
 
+// Vues dont le h1 vit dans ContentHeader (masqué < 768px) → clé `nav.*` du titre
+// sr-only rendu dans le header mobile. Les autres vues portent leur propre h1.
+const MOBILE_H1_KEY: Partial<Record<ViewMode, string>> = {
+  tree: 'tree', list: 'persons', map: 'map', timeline: 'timeline',
+  journal: 'journal', birthdays: 'birthdays', gallery: 'gallery', statistics: 'statistics',
+};
+
 export default function SuiminiApp() {
   const { user, signOut, isDemo, exitDemo, isAdmin, role, isLoading } = useAuth();
   const admin = useAdminData({ enabled: isAdmin });
@@ -415,7 +422,7 @@ export default function SuiminiApp() {
   if (isLoading || !store.loaded) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
-        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
+        <div role="status" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
           <BrandLockup size={36} color="var(--ink)" accent="var(--accent)" surface="var(--bg-card)" fontSize={28} />
           <div className="label" style={{ color: 'var(--text-muted)' }}>{tc('loading')}</div>
         </div>
@@ -479,9 +486,9 @@ export default function SuiminiApp() {
         onExportPdf={store.activeTree ? () => setShowExportPdf(true) : undefined}
       />
 
-      <main className="app-main" style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', minWidth: 0 }}>
+      <main id="main-content" className="app-main" style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', minWidth: 0 }}>
         {!isOnline && (
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 16px', background: 'color-mix(in srgb, var(--accent) 12%, var(--bg-card))', borderBottom: 'var(--bw) solid var(--accent)', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--ink)', letterSpacing: '0.02em' }}>
+          <div role="status" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 16px', background: 'color-mix(in srgb, var(--accent) 12%, var(--bg-card))', borderBottom: 'var(--bw) solid var(--accent)', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--ink)', letterSpacing: '0.02em' }}>
             <WifiOff size={14} aria-hidden="true" style={{ flexShrink: 0, color: 'var(--accent)' }} />
             <span><strong>{tOffline('banner')}</strong> — {tOffline('saved')}</span>
           </div>
@@ -499,12 +506,16 @@ export default function SuiminiApp() {
         )}
         {isDemo && <DemoBanner onCreateAccount={() => openAuth('signup')} onExit={exitDemo} />}
         {/* Mobile header */}
-        <div style={{ display: 'none', padding: '10px 16px', borderBottom: 'var(--bw) solid var(--border-strong)', background: 'var(--bg-card)', alignItems: 'center', gap: '12px' }} className="mobile-header">
+        <header style={{ display: 'none', padding: '10px 16px', borderBottom: 'var(--bw) solid var(--border-strong)', background: 'var(--bg-card)', alignItems: 'center', gap: '12px' }} className="mobile-header">
+          {/* Sur mobile, le ContentHeader (et son h1) est masqué : ce h1 sr-only
+              garantit un titre de page pour les vues qui en dépendent (2.4.6).
+              Le header mobile est display:none sur desktop → jamais de double h1. */}
+          {MOBILE_H1_KEY[view] && <h1 className="sr-only">{tnav(MOBILE_H1_KEY[view])}</h1>}
           <button onClick={() => setSidebarOpen(true)} className="btn btn-ghost btn-icon btn-sm" aria-label={tnav('openMenu')}><Menu size={18} aria-hidden="true" /></button>
           <BrandLockup size={24} color="var(--ink)" accent="var(--accent)" surface="var(--bg-card)" fontSize={18} />
           <button onClick={() => setShowPalette(true)} className="btn btn-ghost btn-icon btn-sm" style={{ marginLeft: 'auto' }} aria-label={tc('search')}><Search size={18} aria-hidden="true" /></button>
           <span className="label" style={{ color: 'var(--text-muted)', textTransform: 'none' }}>{store.activeTree?.name}</span>
-        </div>
+        </header>
 
         {view === 'admin' ? (
           <AdminDashboard admin={admin} role={role} onToast={showToast} />
@@ -699,7 +710,7 @@ export default function SuiminiApp() {
 
       {/* Migration prompt on first login with local data */}
       {store.migrationPending && (
-        <div style={{ position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 1500, background: 'var(--bg-card)', border: '1px solid var(--accent)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', padding: '14px 18px', maxWidth: '440px', width: '92%' }}>
+        <div role="region" aria-live="polite" aria-label={tApp('migrateTitle')} style={{ position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 1500, background: 'var(--bg-card)', border: '1px solid var(--accent)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', padding: '14px 18px', maxWidth: '440px', width: '92%' }}>
           <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '7px' }}><Cloud size={16} style={{ color: 'var(--accent)', flexShrink: 0 }} aria-hidden="true" /> {tApp('migrateTitle')}</div>
           <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px' }}>
             {tApp('migrateDesc')}

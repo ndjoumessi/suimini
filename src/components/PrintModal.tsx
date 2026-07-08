@@ -23,7 +23,7 @@ const PRINT_MODE_META = {
 const P = {
   paper: '#FFFFFF',
   ink: '#1A1714',     // primary text
-  gold: '#A36B1E',    // accent that stays legible on white (≥4.5:1)
+  gold: '#96621C',    // accent legible on white — #A36B1E plafonnait à 4.49:1, celui-ci fait 5.17:1
   goldFill: '#C9A84C',// avatar fill
   border: '#E6DECF',  // cream-grey card outlines
   muted: '#4A4742',   // secondary text (≥4.5:1 on white)
@@ -289,20 +289,20 @@ export default function PrintModal({ tree, onClose }: Props) {
   const overlayRef = useOverlay(onClose);
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div ref={overlayRef} tabIndex={-1} className="modal" style={{ maxWidth: '760px', maxHeight: '90vh' }}>
+      <div ref={overlayRef} tabIndex={-1} className="modal" role="dialog" aria-modal="true" aria-labelledby="print-modal-title" style={{ maxWidth: '760px', maxHeight: '90vh' }}>
         {/* Modal chrome — dark, app-themed. Excluded from the printed output. */}
         <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 className="serif" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}><Printer size={20} aria-hidden="true" /> {t('title')}</h2>
-          <button onClick={onClose} aria-label={t('close')} className="btn btn-ghost btn-sm btn-icon"><X size={16} /></button>
+          <h2 id="print-modal-title" className="serif" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}><Printer size={20} aria-hidden="true" /> {t('title')}</h2>
+          <button onClick={onClose} aria-label={t('close')} className="btn btn-ghost btn-sm btn-icon"><X size={16} aria-hidden="true" /></button>
         </div>
 
         {/* Options */}
         <div style={{ padding: '14px 24px', borderBottom: '1px solid var(--border)', display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center', background: 'var(--bg-muted)' }}>
-          <div style={{ display: 'flex', gap: '6px' }}>
+          <div role="group" aria-label={t('title')} style={{ display: 'flex', gap: '6px' }}>
             {(['livret','list','cards','summary','tree'] as PrintMode[]).map(m => {
               const { Icon, labelKey } = PRINT_MODE_META[m];
               return (
-              <button key={m} onClick={() => setMode(m)} className="btn btn-sm" style={{
+              <button key={m} onClick={() => setMode(m)} aria-pressed={mode === m} className="btn btn-sm" style={{
                 background: mode === m ? 'var(--accent)' : 'var(--bg-card)',
                 color: mode === m ? '#0d0d0d' : 'var(--text-muted)',
                 borderColor: mode === m ? 'var(--accent)' : 'var(--border-strong)',
@@ -333,8 +333,8 @@ export default function PrintModal({ tree, onClose }: Props) {
             <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{t('treeRoot', { root: treeLayout.rootName || '—' })}</span>
           )}
           {mode === 'tree' ? (
-            <button onClick={exportTreePdf} disabled={exporting || treeLayout.nodes.length === 0} className="btn btn-primary btn-sm" style={{ marginLeft: 'auto' }}>
-              {exporting ? <><span className="spinner" /> {t('generating')}</> : <><Printer size={14} /> {t('exportPdf')}</>}
+            <button onClick={exportTreePdf} disabled={exporting || treeLayout.nodes.length === 0} aria-busy={exporting} className="btn btn-primary btn-sm" style={{ marginLeft: 'auto' }}>
+              {exporting ? <><span className="spinner" aria-hidden="true" /> {t('generating')}</> : <><Printer size={14} aria-hidden="true" /> {t('exportPdf')}</>}
             </button>
           ) : (
             <button onClick={doPrint} className="btn btn-primary btn-sm" style={{ marginLeft: 'auto' }}>
@@ -343,8 +343,10 @@ export default function PrintModal({ tree, onClose }: Props) {
           )}
         </div>
 
-        {/* Print preview — paper-coloured well around the white document. */}
-        <div style={{ padding: '20px 24px', maxHeight: 'calc(90vh - 160px)', overflowY: 'auto', background: '#3a3a44' }}>
+        {/* Print preview — paper-coloured well around the white document.
+            tabIndex : une région défilante doit être atteignable au clavier (axe
+            scrollable-region-focusable). */}
+        <div tabIndex={0} role="region" aria-label={t('title')} style={{ padding: '20px 24px', maxHeight: 'calc(90vh - 160px)', overflowY: 'auto', background: '#3a3a44' }}>
           <div ref={printRef} className="print-doc" style={{ background: P.paper, color: P.ink, padding: '28px', boxShadow: '0 2px 16px rgba(0,0,0,0.35)', display: mode === 'tree' ? 'none' : 'block' }}>
             {/* Livret de famille : couverture + une section par génération.
                 Styles INLINE + hex littéraux → rendu identique en aperçu ET dans la
@@ -520,7 +522,8 @@ export default function PrintModal({ tree, onClose }: Props) {
             <div className="mono" style={{ textAlign: 'center', marginTop: '24px', color: P.faint, fontSize: '10px', letterSpacing: '0.5px' }}>
               {t('docFooter', { date: printedDate })}
             </div>
-            <div className="mono" style={{ textAlign: 'center', marginTop: '4px', color: '#555', fontSize: '9px', fontStyle: 'italic', opacity: 0.65 }}>
+            {/* #555 opaque = 7.46:1 sur blanc — l'opacité 0.65 diluait à 3.15:1 (AA exige 4.5). */}
+            <div className="mono" style={{ textAlign: 'center', marginTop: '4px', color: '#555', fontSize: '9px', fontStyle: 'italic' }}>
               {t('docFooterConfidential')}
             </div>
           </div>

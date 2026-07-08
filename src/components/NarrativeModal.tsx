@@ -5,6 +5,7 @@ import { FamilyTree } from '@/types';
 import { ScrollText, Copy, Download, RefreshCw, X, Check } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
+import { useOverlay } from '@/hooks/useOverlay';
 
 type State = 'idle' | 'loading' | 'result' | 'error';
 
@@ -14,7 +15,9 @@ export default function NarrativeModal({ tree, onClose }: { tree: FamilyTree; on
   const [narrative, setNarrative] = useState('');
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
-  const dialogRef = useRef<HTMLDivElement>(null);
+  // useOverlay = trap Tab + Esc + scroll-lock + restauration du focus. L'ancienne
+  // gestion manuelle omettait le piège du Tab (le focus sortait de la modale).
+  const dialogRef = useOverlay<HTMLDivElement>(onClose);
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const generate = useCallback(async () => {
@@ -41,21 +44,9 @@ export default function NarrativeModal({ tree, onClose }: { tree: FamilyTree; on
     }
   }, [tree, t]);
 
-  // Auto-generate on open; Esc closes; lock body scroll (matches the app's modal pattern).
+  // Auto-generate on open (Esc/focus/scroll-lock : gérés par useOverlay).
   useEffect(() => { generate(); }, [generate]);
-  useEffect(() => {
-    const previouslyFocused = document.activeElement as HTMLElement | null;
-    document.body.classList.add('modal-open');
-    dialogRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
-    return () => {
-      document.body.classList.remove('modal-open');
-      window.removeEventListener('keydown', onKey);
-      if (copyTimer.current) clearTimeout(copyTimer.current);
-      previouslyFocused?.focus?.();   // restore focus to the trigger on close
-    };
-  }, [onClose]);
+  useEffect(() => () => { if (copyTimer.current) clearTimeout(copyTimer.current); }, []);
 
   const copy = useCallback(async () => {
     try {

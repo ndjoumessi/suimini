@@ -75,7 +75,8 @@
       "how": "Comment ça marche",
       "pricing": "Tarifs",
       "enter": "Entrer",
-      "signin": "Se connecter"
+      "signin": "Se connecter",
+      "mainAria": "Navigation principale"
     },
     "hero": {
       "title1": "Votre famille",
@@ -212,6 +213,10 @@
     "union": "Union",
     "bornM": "né",
     "bornF": "née",
+    "genderM": "homme",
+    "genderF": "femme",
+    "canvasAria": "Arbre généalogique",
+    "fanAria": "Éventail des ancêtres",
     "inYear": "en",
     "emptyTreeTitle": "Cet arbre est vide",
     "emptyTreeSubtitle": "Ajoutez la première personne pour commencer",
@@ -581,7 +586,11 @@
     "noResults": "Aucun résultat",
     "clickToClose": "Cliquez pour fermer",
     "anonymous": "Anonyme",
-    "retry": "Réessayer"
+    "retry": "Réessayer",
+    "skipToContent": "Aller au contenu",
+    "notifications": "Notifications",
+    "sortBy": "Trier par",
+    "deceasedMark": "décédé(e)"
   },
   "demo": {
     "banner": "Mode démo · données non sauvegardées",
@@ -654,6 +663,9 @@
   "journal": {
     "title": "Journal familial",
     "allPersons": "Toutes les personnes",
+    "filterAria": "Filtrer par personne",
+    "dateAria": "Date de l'entrée",
+    "photoAlt": "Photo {index} de l'entrée « {title} »",
     "newEntry": "Nouvelle entrée",
     "editEntry": "Modifier l'entrée",
     "emptyTitle": "Le journal est vide",
@@ -763,6 +775,7 @@
     "deceased": "Décédé",
     "ageYears": "{age} ans",
     "profilePhotoAlt": "Photo de profil de {name}",
+    "tabsAria": "Sections de la fiche",
     "tab_profile": "Profil",
     "tab_life": "Ligne de vie",
     "tab_family": "Famille",
@@ -1290,6 +1303,7 @@
     "roleUpdated": "Rôle mis à jour",
     "noMembers": "Aucun membre pour l'instant. Invitez vos proches.",
     "emailPlaceholder": "proche@exemple.com",
+    "permissionAria": "Permission accordée",
     "you": "Vous",
     "errEmailInvalid": "E-mail invalide",
     "errInviteFailed": "Échec de l'invitation",

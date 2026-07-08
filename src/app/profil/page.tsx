@@ -2,16 +2,19 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import { useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { BrandLockup } from '@/components/Brand';
 
 const ProfilPage = dynamic(() => import('@/components/ProfilPage'), { ssr: false });
 
 function Loader() {
+  const tc = useTranslations('common');
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '18px', background: 'var(--bg, #f4f1ea)' }}>
+    <div role="status" style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '18px', background: 'var(--bg, #f4f1ea)' }}>
       <BrandLockup size={34} color="var(--ink, #1b1b1b)" accent="var(--accent, #bf4b2c)" surface="var(--bg-card, #ffffff)" fontSize={26} />
-      <span className="spinner" style={{ color: 'var(--accent, #bf4b2c)' }} />
+      <span className="spinner" aria-hidden="true" style={{ color: 'var(--accent, #bf4b2c)' }} />
+      <span className="sr-only">{tc('loading')}</span>
     </div>
   );
 }

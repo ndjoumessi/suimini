@@ -22,7 +22,8 @@ export default function PublicTreeView({ tree }: { tree: FamilyTree }) {
           <BrandLockup size={24} color="var(--ink)" accent="var(--accent)" surface="var(--bg-card)" fontSize={18} />
           <span style={{ borderLeft: '1px solid var(--border)', paddingLeft: '12px', minWidth: 0 }}>
             <span className="label" style={{ fontSize: '9px', color: 'var(--text-light)' }}>{t('sharedLabel')}</span>
-            <span style={{ display: 'block', fontWeight: 700, fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '50vw' }}>{tree.name}</span>
+            {/* h1 de la page publique (2.4.6) — mêmes styles inline qu'avant, sémantique en plus. */}
+            <h1 style={{ display: 'block', fontWeight: 700, fontSize: '14px', fontFamily: 'inherit', letterSpacing: 'normal', lineHeight: 'inherit', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '50vw' }}>{tree.name}</h1>
           </span>
         </Link>
         <Link href="/" className="btn btn-primary btn-sm" style={{ gap: '7px', textDecoration: 'none', flexShrink: 0 }}>
@@ -30,7 +31,7 @@ export default function PublicTreeView({ tree }: { tree: FamilyTree }) {
         </Link>
       </header>
 
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      <main id="main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         <TreeView
           tree={tree}
           selectedPersonId={null}

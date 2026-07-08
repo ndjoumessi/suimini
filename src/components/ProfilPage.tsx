@@ -263,7 +263,7 @@ export default function ProfilPage() {
                 <Save size={14} aria-hidden="true" /> {savingName ? t('saving') : t('save')}
               </button>
             </div>
-            {nameNote && <div style={noteStyle(nameNote.type)}>{nameNote.msg}</div>}
+            {nameNote && <div role={nameNote.type === 'error' ? 'alert' : 'status'} style={noteStyle(nameNote.type)}>{nameNote.msg}</div>}
           </div>
 
           {/* Change password */}
@@ -272,7 +272,7 @@ export default function ProfilPage() {
             <button className="btn btn-secondary btn-sm" style={{ gap: '6px' }} onClick={changePassword}>
               <KeyRound size={14} aria-hidden="true" /> {t('changePassword')}
             </button>
-            {pwdNote && <div style={noteStyle(pwdNote.type)}>{pwdNote.msg}</div>}
+            {pwdNote && <div role={pwdNote.type === 'error' ? 'alert' : 'status'} style={noteStyle(pwdNote.type)}>{pwdNote.msg}</div>}
           </div>
 
           {/* Sign out */}

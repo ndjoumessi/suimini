@@ -392,6 +392,13 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
             onChange={e => { setQuery(e.target.value); setActive(0); }}
             placeholder={t('searchPlaceholder')}
             aria-label={t('searchAriaLabel')}
+            // Pattern ARIA combobox : aria-activedescendant vit sur l'INPUT (l'élément
+            // focalisé) — posé sur la listbox jamais focalisée, il était inopérant.
+            role="combobox"
+            aria-expanded={flat.length > 0}
+            aria-controls="cp-listbox"
+            aria-autocomplete="list"
+            aria-activedescendant={flat.length > 0 ? `cp-opt-${active}` : undefined}
             style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: '16px', color: 'var(--text)', fontFamily: 'var(--font-body)' }}
           />
           <kbd style={{ fontSize: '10px', color: 'var(--text-light)', border: '1px solid var(--border)', borderRadius: 0, padding: '2px 6px' }}>Esc</kbd>
@@ -433,7 +440,7 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
             </span>
           )}
           {aiState === 'error' && (
-            <span style={{ fontSize: '11px', color: 'var(--accent)', marginLeft: aiResults ? 0 : 'auto' }}>{ts('aiError')}</span>
+            <span role="alert" style={{ fontSize: '11px', color: 'var(--accent)', marginLeft: aiResults ? 0 : 'auto' }}>{ts('aiError')}</span>
           )}
         </div>
 
@@ -523,7 +530,7 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
         )}
 
         {/* Results */}
-        <div ref={listRef} role="listbox" aria-label={t('dialogLabel')} aria-activedescendant={flat.length > 0 ? `cp-opt-${active}` : undefined} style={{ overflowY: 'auto', padding: '8px' }}>
+        <div ref={listRef} id="cp-listbox" role="listbox" aria-label={t('dialogLabel')} style={{ overflowY: 'auto', padding: '8px' }}>
           {aiState === 'loading' && (
             <div role="status" aria-live="polite" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '36px 28px', color: 'var(--text-muted)', fontSize: '14px' }}>
               <LoadingSpinner size={18} /> {ts('aiSearching')}

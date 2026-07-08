@@ -40,7 +40,9 @@ export default function LanguageSwitcher({ tone = 'app' }: { tone?: 'app' | 'lan
               border: 'none', borderLeft: i > 0 ? `1.5px solid ${ink}` : 'none',
               padding: '4px 9px', fontFamily: 'var(--font-mono, monospace)', fontSize: '11px', fontWeight: 700, letterSpacing: '0.5px',
               background: active ? accent : 'transparent',
-              color: active ? '#fff' : (tone === 'landing' ? '#6e6a62' : 'var(--text-muted)'),
+              // Sur l'or du thème app, le blanc plafonnait à 2.28:1 (axe FAIL) —
+              // encre sombre = 8.5:1. Sur le terracotta landing, le blanc passe (4.93:1).
+              color: active ? (tone === 'landing' ? '#fff' : '#0d0d0d') : (tone === 'landing' ? '#6e6a62' : 'var(--text-muted)'),
               transition: 'background 0.15s ease, color 0.15s ease',
             }}
           >

@@ -30,7 +30,7 @@ export default function ContentHeader({ activeView, activeTreeName, onPresent, o
   const title = t(titleKey[activeView] || 'home');
 
   return (
-    <div className="content-header">
+    <header className="content-header">
       <div className="ch-title">
         <span className="ch-eyebrow label">{activeTreeName || ''}</span>
         <h1 className="ch-view">{title}</h1>
@@ -56,6 +56,6 @@ export default function ContentHeader({ activeView, activeTreeName, onPresent, o
         .ch-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
         @media (max-width: 768px) { .content-header { display: none; } }
       `}</style>
-    </div>
+    </header>
   );
 }

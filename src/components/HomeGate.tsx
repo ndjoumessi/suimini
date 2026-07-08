@@ -14,10 +14,12 @@ import { AlertTriangle } from 'lucide-react';
 const Landing = dynamic(() => import('@/components/landing/Landing'), { ssr: false });
 
 function Splash() {
+  const tc = useTranslations('common');
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '18px', background: 'var(--bg)' }}>
+    <div role="status" style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '18px', background: 'var(--bg)' }}>
       <BrandLockup size={36} color="var(--ink)" accent="var(--accent)" surface="var(--bg-card)" fontSize={28} />
-      <span className="spinner" style={{ color: 'var(--accent)' }} />
+      <span className="spinner" aria-hidden="true" style={{ color: 'var(--accent)' }} />
+      <span className="sr-only">{tc('loading')}</span>
     </div>
   );
 }

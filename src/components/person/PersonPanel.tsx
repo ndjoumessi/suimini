@@ -9,6 +9,7 @@ import PersonAvatar from './PersonAvatar';
 import { fetchComments, addComment, subscribeComments, collaborationEnabled, type PersonComment, fetchPendingSuggestions, addSuggestion, resolveSuggestion, type PersonSuggestion } from '@/lib/collaboration';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/useMediaQuery';
+import { useOverlay } from '@/hooks/useOverlay';
 import ReactMarkdown from 'react-markdown';
 import PersonForm from './PersonForm';
 import { X, Pencil, Trash2, User, Clock, Users, Calendar, StickyNote, BookOpen, Lightbulb, Link2, AlertCircle, Dna, FileText, Images, ScanFace, ScanLine, Landmark, MessageSquare, MapPin, Briefcase, Globe, GraduationCap, Church, Baby, Skull, Heart, Swords, Plane, GripVertical, CalendarDays, ArrowLeft } from 'lucide-react';
@@ -103,6 +104,10 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
   // On phones the panel becomes a full-screen sheet (over the tree) with a
   // "back" header; on desktop it stays the docked side-panel below.
   const isMobile = useIsMobile();
+  // Sur mobile le panneau est PLEIN ÉCRAN (modal de fait) : trap de focus + Esc +
+  // restauration via useOverlay. Sur desktop il reste un panneau latéral non modal
+  // (on n'y piège pas le focus) — useOverlay est désactivé.
+  const panelRef = useOverlay<HTMLElement>(onClose, { enabled: isMobile });
   const relLabel = (type: RelationType) => t(REL_LABEL_KEYS[type]);
   const eventTypeLabel = (type: string) =>
     KNOWN_EVENT_TYPES.has(type) ? t(`event_${type}`) : (type.charAt(0).toUpperCase() + type.slice(1));
@@ -450,7 +455,9 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
   }
 
   return (
-    <aside className="person-panel" data-testid="person-panel" style={
+    <aside ref={panelRef} tabIndex={-1} className="person-panel" data-testid="person-panel"
+      role={isMobile ? 'dialog' : undefined} aria-modal={isMobile || undefined} aria-label={getDisplayName(person)}
+      style={
       isMobile
         ? {
             // Full-screen sheet on phones: covers the tree AND the bottom nav
@@ -506,7 +513,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
       </div>
 
       {/* Tabs */}
-      <div className="tabs" style={{ margin:'0 14px', paddingTop:'4px', overflowX:'auto', flexShrink:0 }}>
+      <div className="tabs" role="tablist" aria-label={t('tabsAria')} style={{ margin:'0 14px', paddingTop:'4px', overflowX:'auto', flexShrink:0 }}>
         {([
           { id:'profile', Icon:User },
           { id:'life', Icon:Clock },
@@ -521,7 +528,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
         ] as { id: typeof tab; Icon: typeof User; count?: number }[]).map(({ id, Icon, count }) => {
           const tabLabel = id==='narrative' ? tn('tab') : id==='discussion' ? tc('tab') : t(`tab_${id}`);
           return (
-          <button key={id} onClick={() => setTab(id as typeof tab)} className={`tab ${tab===id?'active':''}`} style={{ display:'inline-flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'3px', padding:'7px 11px', minHeight:'44px', whiteSpace:'nowrap' }} aria-label={tabLabel} title={tabLabel}>
+          <button key={id} role="tab" aria-selected={tab===id} onClick={() => setTab(id as typeof tab)} className={`tab ${tab===id?'active':''}`} style={{ display:'inline-flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'3px', padding:'7px 11px', minHeight:'44px', whiteSpace:'nowrap' }} aria-label={tabLabel} title={tabLabel}>
             <span style={{ display:'inline-flex', alignItems:'center', gap:'4px' }}>
               <Icon size={15} aria-hidden="true" />{count?<span className="mono" style={{ fontSize:'10px' }}>{count}</span>:null}
             </span>
@@ -698,8 +705,8 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                               {dates && <div style={{ fontSize:'11px', color:'var(--text-light)' }}>{dates}</div>}
                               {rel.notes && <div style={{ fontSize:'12px', color:'var(--text-muted)', marginTop:'2px', display:'flex', alignItems:'center', gap:'5px' }}><FileText size={11} aria-hidden="true" /> {rel.notes}</div>}
                             </div>
-                            <button onClick={()=>setEditRelId(rel.id)} className="btn btn-ghost btn-sm" style={{ fontSize:'12px' }}><Pencil size={13} /></button>
-                            <button onClick={()=>onDeleteRelationship(rel.id)} className="btn btn-ghost btn-sm" style={{ fontSize:'12px', color:'var(--danger)' }}><Trash2 size={13} /></button>
+                            <button onClick={()=>setEditRelId(rel.id)} className="btn btn-ghost btn-sm" aria-label={t('edit')} style={{ fontSize:'12px' }}><Pencil size={13} aria-hidden="true" /></button>
+                            <button onClick={()=>onDeleteRelationship(rel.id)} className="btn btn-ghost btn-sm" aria-label={t('delete')} style={{ fontSize:'12px', color:'var(--danger)' }}><Trash2 size={13} aria-hidden="true" /></button>
                           </div>
                         )}
                       </div>
@@ -790,8 +797,8 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                             </div>
                           </div>
                           <div style={{ display:'flex', gap:'4px', flexShrink:0 }}>
-                            <button onClick={()=>setEditEventId(event.id)} className="btn btn-ghost btn-sm" style={{ fontSize:'12px' }}><Pencil size={13} /></button>
-                            <button onClick={()=>removeEvent(event.id)} className="btn btn-ghost btn-sm" style={{ color:'var(--danger)', fontSize:'12px' }}><Trash2 size={13} /></button>
+                            <button onClick={()=>setEditEventId(event.id)} className="btn btn-ghost btn-sm" aria-label={t('edit')} style={{ fontSize:'12px' }}><Pencil size={13} aria-hidden="true" /></button>
+                            <button onClick={()=>removeEvent(event.id)} className="btn btn-ghost btn-sm" aria-label={t('delete')} style={{ color:'var(--danger)', fontSize:'12px' }}><Trash2 size={13} aria-hidden="true" /></button>
                           </div>
                         </div>
                       )}

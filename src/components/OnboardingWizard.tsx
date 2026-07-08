@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { Gender } from '@/types';
 import { ArrowRight, Users, UserPlus, Gamepad2, Sparkles, ImageUp, X } from 'lucide-react';
 import { uploadAvatar } from '@/lib/uploadImage';
+import { useOverlay } from '@/hooks/useOverlay';
 
 export interface OnboardingData {
   treeName: string;
@@ -52,6 +53,9 @@ export default function OnboardingWizard({ onComplete, onSkip }: Props) {
   const [profilePhoto, setProfilePhoto] = useState('');
   const [photoLoading, setPhotoLoading] = useState(false);
   const photoRef = useRef<HTMLInputElement>(null);
+  // Focus-trap + Esc (= passer l'assistant) + restauration du focus. Le wizard
+  // n'avait aucune gestion du focus : le clavier restait derrière la modale.
+  const overlayRef = useOverlay<HTMLDivElement>(onSkip);
 
   const nameOk = treeName.trim().length > 0;
   const personOk = firstName.trim().length > 0 && lastName.trim().length > 0;
@@ -81,7 +85,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: Props) {
 
   return (
     <div role="dialog" aria-modal="true" aria-label={t('ariaTitle')} style={overlay}>
-      <div style={card} className="animate-scale-in">
+      <div ref={overlayRef} tabIndex={-1} style={card} className="animate-scale-in">
         {/* Progress */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px' }}>
           <span className="label" style={{ color: 'var(--accent)' }}>{t('step', { step })}</span>

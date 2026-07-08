@@ -351,10 +351,12 @@ export default function TimelineView({ tree, onSelectPerson }: Props) {
       ) : view === 'list' ? (
         /* ─── LIST VIEW — central gold line, alternating event cards ──────── */
         <div className="tl-scroll">
-          <div className="tl">
+          {/* Chronologie = liste ordonnée sémantique (1.3.1) ; le rendu visuel
+              (classes .tl*) est inchangé, les <ol>/<li> sont neutralisés en CSS inline. */}
+          <ol className="tl" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
             {decades.map(decade => (
-              <div key={decade}>
-                <div className="tl-decade"><span>{decade}<span className="tl-decade-s">s</span></span></div>
+              <li key={decade}>
+                <h2 className="tl-decade"><span>{decade}<span className="tl-decade-s">s</span></span></h2>
                 {byDecade[decade].map((entry, i) => {
                   const { Icon, color } = eventVisual(entry.type);
                   const typeName = t(`type_${entry.type}`);
@@ -378,9 +380,9 @@ export default function TimelineView({ tree, onSelectPerson }: Props) {
                     </TLRow>
                   );
                 })}
-              </div>
+              </li>
             ))}
-          </div>
+          </ol>
         </div>
       ) : (
         /* ─── CENTURY VIEW (life bars) ───────────────────────────────────── */

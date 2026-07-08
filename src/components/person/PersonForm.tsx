@@ -128,13 +128,15 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel, rel
         <div className="pf-sec-title">{t('sectionIdentity')}</div>
         <div className="pf-grid2">
           <label style={labelStyle}>{t('firstName')}
-            <input value={form.firstName || ''} onChange={e => set('firstName', e.target.value)} className="input" placeholder={t('firstNamePlaceholder')} aria-required={nameMissing} />
+            <input value={form.firstName || ''} onChange={e => set('firstName', e.target.value)} className="input" placeholder={t('firstNamePlaceholder')} aria-required={nameMissing} aria-invalid={nameMissing || undefined} aria-describedby="pf-name-help" />
           </label>
           <label style={labelStyle}>{t('lastName')}
-            <input value={form.lastName || ''} onChange={e => set('lastName', e.target.value)} className="input" placeholder={t('lastNamePlaceholder')} aria-required={nameMissing} />
+            <input value={form.lastName || ''} onChange={e => set('lastName', e.target.value)} className="input" placeholder={t('lastNamePlaceholder')} aria-required={nameMissing} aria-invalid={nameMissing || undefined} aria-describedby="pf-name-help" />
           </label>
         </div>
-        <span className="field-help" style={{ color: nameMissing ? 'var(--danger)' : undefined }}>{t('atLeastOneName')}</span>
+        {/* Relié aux deux champs (aria-describedby) ; en erreur, le poids graisse
+            s'ajoute à la couleur (jamais la couleur seule — 1.4.1). */}
+        <span id="pf-name-help" className="field-help" role={nameMissing ? 'alert' : undefined} style={{ color: nameMissing ? 'var(--danger)' : undefined, fontWeight: nameMissing ? 600 : undefined }}>{t('atLeastOneName')}</span>
         <div className="pf-grid2">
           <label style={labelStyle}>{t('maidenName')}
             <input value={form.maidenName || ''} onChange={e => set('maidenName', e.target.value)} className="input" placeholder={t('maidenNamePlaceholder')} />
@@ -143,8 +145,9 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel, rel
             <input value={form.nickName || ''} onChange={e => set('nickName', e.target.value)} className="input" placeholder={t('nickNamePlaceholder')} />
           </label>
         </div>
-        <div style={labelStyle}>{t('gender')}
-          <div className="pf-gender">
+        <div style={labelStyle}>
+          <span id="pf-gender-label">{t('gender')}</span>
+          <div className="pf-gender" role="group" aria-labelledby="pf-gender-label">
             {GENDERS.map(([g, lbl]) => (
               <button key={g} type="button" onClick={() => set('gender', g)} aria-pressed={form.gender === g}
                 className={`pf-gender-btn ${form.gender === g ? `on on-${g}` : ''}`}>{lbl}</button>
@@ -153,7 +156,7 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel, rel
         </div>
         <div className="pf-grid2">
           <label style={labelStyle}>{t('birthDate')}
-            <input type="date" lang={dateLang} value={form.birthDate || ''} onChange={e => set('birthDate', e.target.value || undefined)} className="input" />
+            <input type="date" lang={dateLang} value={form.birthDate || ''} onChange={e => set('birthDate', e.target.value || undefined)} className="input" aria-invalid={dateInvalid || undefined} aria-describedby={dateInvalid ? 'pf-date-error' : undefined} />
             <span className="field-help">{dateExample}</span>
           </label>
           <label style={labelStyle}>{t('birthPlace')}
@@ -167,7 +170,7 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel, rel
         {!form.isAlive && (
           <div className="pf-grid2">
             <label style={labelStyle}>{t('deathDate')}
-              <input type="date" lang={dateLang} value={form.deathDate || ''} onChange={e => set('deathDate', e.target.value || undefined)} className="input" />
+              <input type="date" lang={dateLang} value={form.deathDate || ''} onChange={e => set('deathDate', e.target.value || undefined)} className="input" aria-invalid={dateInvalid || undefined} aria-describedby={dateInvalid ? 'pf-date-error' : undefined} />
               <span className="field-help">{dateExample}</span>
             </label>
             <label style={labelStyle}>{t('deathPlace')}
@@ -176,7 +179,7 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel, rel
           </div>
         )}
         {dateInvalid && (
-          <div style={{ fontSize: '12px', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <div id="pf-date-error" role="alert" style={{ fontSize: '12px', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '5px' }}>
             <AlertCircle size={13} aria-hidden="true" /> {t('dateError')}
           </div>
         )}
@@ -224,7 +227,7 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel, rel
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={form.profilePhoto} alt="" style={{ width: '44px', height: '44px', objectFit: 'cover', border: '1.5px solid var(--border-strong)', flexShrink: 0 }} />
                 )}
-                <input value={form.profilePhoto?.startsWith('data:') ? '' : (form.profilePhoto || '')} onChange={e => set('profilePhoto', e.target.value || undefined)} className="input" placeholder={form.profilePhoto?.startsWith('data:') ? t('photoImported') : t('photoUrlPlaceholder')} disabled={form.profilePhoto?.startsWith('data:')} />
+                <input value={form.profilePhoto?.startsWith('data:') ? '' : (form.profilePhoto || '')} onChange={e => set('profilePhoto', e.target.value || undefined)} className="input" aria-label={t('profilePhoto')} placeholder={form.profilePhoto?.startsWith('data:') ? t('photoImported') : t('photoUrlPlaceholder')} disabled={form.profilePhoto?.startsWith('data:')} />
                 <input ref={fileRef} type="file" accept="image/*" onChange={handlePhotoFile} style={{ display: 'none' }} />
                 <button type="button" onClick={() => fileRef.current?.click()} disabled={photoLoading} className="btn btn-secondary btn-sm" style={{ flexShrink: 0, opacity: photoLoading ? 0.7 : undefined }}>
                   {photoLoading ? <LoadingSpinner size={14} /> : <ImageUp size={14} />} {t('import')}
@@ -285,7 +288,7 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel, rel
                   ))}
                 </div>
               )}
-              {dnaInvalid && <div style={{ fontSize: '12px', color: 'var(--danger)', marginBottom: '8px' }}>{t('dnaSumError')}</div>}
+              {dnaInvalid && <div role="alert" style={{ fontSize: '12px', color: 'var(--danger)', marginBottom: '8px' }}>{t('dnaSumError')}</div>}
               <button type="button" onClick={addDna} disabled={dna.length >= 8} className="btn btn-secondary btn-sm" style={{ opacity: dna.length >= 8 ? 0.5 : 1 }}>
                 {t('dnaAdd')} {dna.length >= 8 && t('dnaMax')}
               </button>
@@ -298,8 +301,8 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel, rel
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
                   {cfEntries.map((c, i) => (
                     <div key={i} style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                      <input value={c.key} onChange={e => updateCf(i, 'key', e.target.value)} className="input" placeholder={t('customKeyPlaceholder')} style={{ flex: 1 }} />
-                      <input value={c.value} onChange={e => updateCf(i, 'value', e.target.value)} className="input" placeholder={t('customValuePlaceholder')} style={{ flex: 1 }} />
+                      <input value={c.key} onChange={e => updateCf(i, 'key', e.target.value)} className="input" aria-label={t('customKeyPlaceholder')} placeholder={t('customKeyPlaceholder')} style={{ flex: 1 }} />
+                      <input value={c.value} onChange={e => updateCf(i, 'value', e.target.value)} className="input" aria-label={t('customValuePlaceholder')} placeholder={t('customValuePlaceholder')} style={{ flex: 1 }} />
                       <button type="button" onClick={() => removeCf(i)} aria-label={t('removeField')} className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--danger)' }}><X size={14} /></button>
                     </div>
                   ))}
@@ -325,7 +328,7 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel, rel
         {onCancel && (
           <button type="button" onClick={onCancel} disabled={saving} className="btn btn-ghost">{t('cancel')}</button>
         )}
-        <button type="submit" className="btn btn-primary" disabled={blocked || saving} style={{ opacity: (blocked || saving) ? (saving ? 0.7 : 0.5) : 1 }}>
+        <button type="submit" className="btn btn-primary" disabled={blocked || saving} aria-busy={saving} style={{ opacity: (blocked || saving) ? (saving ? 0.7 : 0.5) : 1 }}>
           {saving ? <LoadingSpinner size={15} /> : <Check size={15} aria-hidden="true" />} {submitLabel ?? t('save')}
         </button>
       </div>

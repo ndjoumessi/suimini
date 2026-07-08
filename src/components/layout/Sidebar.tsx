@@ -143,7 +143,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
       <button key={item.view}
         onClick={() => { onViewChange(item.view); onClose(); }}
         aria-current={active ? 'page' : undefined}
-        aria-label={t(item.navKey)}
+        aria-label={badge > 0 ? `${t(item.navKey)} (${badge})` : t(item.navKey)}
         className={`sb-item ${active ? 'sb-item-active' : ''}`}
       >
         {active && <span aria-hidden="true" className="sb-active-bar" />}
@@ -164,7 +164,9 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
   const showActions = canAdd || canImport || onShare || onPrint || onExportPdf;
 
   return (
-    <aside className={`sidebar ${isOpen ? 'sidebar-open' : ''}`} aria-label={ts('navAria')}>
+    // Pas d'aria-label sur l'aside : le <nav> interne porte déjà « navAria » —
+    // deux landmarks au même nom sont ambigus pour un lecteur d'écran.
+    <aside className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}>
       <div className="sidebar-panel">
         <div className="sb-top">
         {/* Header — logo + wordmark + tagline */}
@@ -227,7 +229,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
               <button
                 onClick={() => { onViewChange('admin'); onClose(); }}
                 aria-current={activeView === 'admin' ? 'page' : undefined}
-                aria-label={t('admin')}
+                aria-label={unreadCount > 0 ? `${t('admin')} (${unreadCount})` : t('admin')}
                 className={`sb-item ${activeView === 'admin' ? 'sb-item-active' : ''}`}
               >
                 {activeView === 'admin' && <span aria-hidden="true" className="sb-active-bar" />}
@@ -269,7 +271,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
                   <span className="sb-acct-name">{truncate(displayName || userEmail.split('@')[0], 16)}</span>
                   <span className="sb-acct-email">{truncate(userEmail, 22)}</span>
                 </button>
-                <button onClick={onSignOut} aria-label={ts('signOut')} title={ts('signOut')} className="sb-logout"><LogOut size={14} /></button>
+                <button onClick={onSignOut} aria-label={ts('signOut')} title={ts('signOut')} className="sb-logout"><LogOut size={14} aria-hidden="true" /></button>
               </div>
 
               {/* sync: status · last-sync · presence — one line (clickable to resync) */}
@@ -299,7 +301,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
             </>
           ) : (
             <button onClick={onSignIn} className="sb-item" aria-label={ts('signIn')} title={ts('signIn')}>
-              <span className="sb-icon"><LogIn size={16} /></span>
+              <span className="sb-icon"><LogIn size={16} aria-hidden="true" /></span>
               <span className="sb-label">{ts('signIn')}</span>
             </button>
           )}

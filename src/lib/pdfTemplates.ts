@@ -388,7 +388,8 @@ export function generateFamilyBookHTML(
     .cover-meta { font-family: ${pal.display}; font-size: 11pt; color: ${pal.ink}; display: flex; gap: 8pt; justify-content: center; align-items: center; margin-bottom: 26pt; }
     .cover-meta .dot { color: ${pal.accent}; }
     .cover-foot { font-size: 9pt; letter-spacing: 1px; color: ${pal.inkSoft}; text-transform: uppercase; }
-    .footer-confidential { font-size: 8pt; font-style: italic; opacity: 0.65; text-align: center; color: #555; margin: 4pt 0 0 0; }
+    /* #555 opaque = 7.46:1 sur blanc — l'opacité 0.65 diluait à 3.15:1 (WCAG 1.4.3). */
+    .footer-confidential { font-size: 8pt; font-style: italic; text-align: center; color: #555; margin: 4pt 0 0 0; }
 
     /* ---- Section titles ---- */
     .sect-title { font-family: ${pal.display}; font-weight: 700; font-size: 22pt; color: ${pal.ink}; border-bottom: 2px solid ${pal.separator}; padding-bottom: 8pt; margin-bottom: 18pt; }

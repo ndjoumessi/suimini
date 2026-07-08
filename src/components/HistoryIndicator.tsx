@@ -52,7 +52,9 @@ export default function HistoryIndicator({ canUndo, canRedo, lastAction, nextAct
   if ((!canUndo && !canRedo) || !visible) return null;
 
   return (
-    <div ref={boxRef} style={{
+    // role="status" : l'apparition de la barre (« Annuler : … ») est annoncée aux
+    // lecteurs d'écran — elle s'auto-efface après 4 s, sinon ils la manquaient.
+    <div ref={boxRef} role="status" style={{
       position: 'absolute', bottom: '16px', left: '50%', transform: 'translateX(-50%)',
       zIndex: 30, display: 'flex', alignItems: 'center', gap: '8px',
       background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 0,

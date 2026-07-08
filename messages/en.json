@@ -75,7 +75,8 @@
       "how": "How it works",
       "pricing": "Pricing",
       "enter": "Enter",
-      "signin": "Sign in"
+      "signin": "Sign in",
+      "mainAria": "Main navigation"
     },
     "hero": {
       "title1": "Your family",
@@ -212,6 +213,10 @@
     "union": "Union",
     "bornM": "b.",
     "bornF": "b.",
+    "genderM": "male",
+    "genderF": "female",
+    "canvasAria": "Family tree",
+    "fanAria": "Ancestor fan chart",
     "inYear": "in",
     "emptyTreeTitle": "This tree is empty",
     "emptyTreeSubtitle": "Add the first person to get started",
@@ -581,7 +586,11 @@
     "noResults": "No results",
     "clickToClose": "Click to dismiss",
     "anonymous": "Anonymous",
-    "retry": "Retry"
+    "retry": "Retry",
+    "skipToContent": "Skip to content",
+    "notifications": "Notifications",
+    "sortBy": "Sort by",
+    "deceasedMark": "deceased"
   },
   "demo": {
     "banner": "Demo mode · data not saved",
@@ -654,6 +663,9 @@
   "journal": {
     "title": "Family journal",
     "allPersons": "All people",
+    "filterAria": "Filter by person",
+    "dateAria": "Entry date",
+    "photoAlt": "Photo {index} of entry “{title}”",
     "newEntry": "New entry",
     "editEntry": "Edit entry",
     "emptyTitle": "The journal is empty",
@@ -763,6 +775,7 @@
     "deceased": "Deceased",
     "ageYears": "{age} yrs",
     "profilePhotoAlt": "Profile photo of {name}",
+    "tabsAria": "Profile sections",
     "tab_profile": "Profile",
     "tab_life": "Lifeline",
     "tab_family": "Family",
@@ -1290,6 +1303,7 @@
     "roleUpdated": "Role updated",
     "noMembers": "No members yet. Invite your relatives.",
     "emailPlaceholder": "relative@example.com",
+    "permissionAria": "Granted permission",
     "you": "You",
     "errEmailInvalid": "Invalid email",
     "errInviteFailed": "Invitation failed",

@@ -42,10 +42,10 @@ export default function TreeSelectorModal({ trees, activeTreeId, shared = {}, on
   const overlayRef = useOverlay(onClose);
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div ref={overlayRef} tabIndex={-1} className="modal" style={{ maxWidth: '520px' }}>
+      <div ref={overlayRef} tabIndex={-1} className="modal" role="dialog" aria-modal="true" aria-labelledby="treesel-title" style={{ maxWidth: '520px' }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 className="serif" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}><TreePine size={20} aria-hidden="true" /> {t('title')}</h2>
-          <button onClick={onClose} aria-label={t('close')} className="btn btn-ghost btn-sm btn-icon"><X size={16} /></button>
+          <h2 id="treesel-title" className="serif" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}><TreePine size={20} aria-hidden="true" /> {t('title')}</h2>
+          <button onClick={onClose} aria-label={t('close')} className="btn btn-ghost btn-sm btn-icon"><X size={16} aria-hidden="true" /></button>
         </div>
 
         <div style={{ padding: '16px 24px', maxHeight: '60vh', overflowY: 'auto' }}>

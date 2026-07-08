@@ -59,7 +59,7 @@ export default function ResetPasswordPage() {
           <h1 className="serif" style={{ fontSize: '1.3rem', margin: '8px 0 0' }}>Nouveau mot de passe</h1>
         </div>
 
-        {ready === 'checking' && <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}><span className="spinner" /> Vérification du lien…</p>}
+        {ready === 'checking' && <p role="status" style={{ textAlign: 'center', color: 'var(--text-muted)' }}><span className="spinner" aria-hidden="true" /> Vérification du lien…</p>}
 
         {ready === 'invalid' && (
           <div style={{ textAlign: 'center' }}>
@@ -76,17 +76,17 @@ export default function ResetPasswordPage() {
           </div>
         ) : (
           <form onSubmit={submit}>
-            <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '5px' }}>Nouveau mot de passe</label>
+            <label htmlFor="rp-password" style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '5px' }}>Nouveau mot de passe</label>
             <div style={{ position: 'relative', marginBottom: '4px' }}>
-              <Lock size={16} style={{ position: 'absolute', left: '12px', top: '14px', color: 'var(--text-light)' }} />
-              <input type={show ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} autoFocus aria-label="Nouveau mot de passe"
+              <Lock size={16} aria-hidden="true" style={{ position: 'absolute', left: '12px', top: '14px', color: 'var(--text-light)' }} />
+              <input id="rp-password" type={show ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} autoFocus autoComplete="new-password"
                 placeholder="Min. 8 caractères" className="input" style={{ paddingLeft: '38px', paddingRight: '40px', minHeight: '44px' }} />
-              <button type="button" onClick={() => setShow(s => !s)} aria-label={show ? 'Masquer' : 'Afficher'} className="icon-btn" style={{ position: 'absolute', right: '4px', top: '4px' }}>
-                {show ? <EyeOff size={15} /> : <Eye size={15} />}
+              <button type="button" onClick={() => setShow(s => !s)} aria-label={show ? 'Masquer le mot de passe' : 'Afficher le mot de passe'} aria-pressed={show} className="icon-btn" style={{ position: 'absolute', right: '4px', top: '4px' }}>
+                {show ? <EyeOff size={15} aria-hidden="true" /> : <Eye size={15} aria-hidden="true" />}
               </button>
             </div>
             {password.length > 0 && (
-              <div style={{ marginBottom: '12px' }}>
+              <div aria-live="polite" style={{ marginBottom: '12px' }}>
                 <div style={{ display: 'flex', gap: '4px', marginBottom: '4px' }}>
                   {[0, 1, 2].map(i => <div key={i} style={{ flex: 1, height: '4px', borderRadius: '99px', background: i <= level ? colors[level] : 'var(--bg-muted)' }} />)}
                 </div>
@@ -98,16 +98,16 @@ export default function ResetPasswordPage() {
                 </div>
               </div>
             )}
-            <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '5px' }}>Confirmer</label>
+            <label htmlFor="rp-confirm" style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '5px' }}>Confirmer</label>
             <div style={{ position: 'relative', marginBottom: '12px' }}>
-              <Lock size={16} style={{ position: 'absolute', left: '12px', top: '14px', color: 'var(--text-light)' }} />
-              <input type={show ? 'text' : 'password'} value={confirm} onChange={e => setConfirm(e.target.value)} aria-label="Confirmer le mot de passe"
+              <Lock size={16} aria-hidden="true" style={{ position: 'absolute', left: '12px', top: '14px', color: 'var(--text-light)' }} />
+              <input id="rp-confirm" type={show ? 'text' : 'password'} value={confirm} onChange={e => setConfirm(e.target.value)} autoComplete="new-password" aria-invalid={confirm.length > 0 && !confirmValid ? true : undefined}
                 placeholder="••••••••" className="input" style={{ paddingLeft: '38px', paddingRight: '38px', minHeight: '44px', borderColor: confirm.length > 0 ? (confirmValid ? 'var(--success)' : 'var(--danger)') : 'var(--border)' }} />
-              {confirm.length > 0 && <span style={{ position: 'absolute', right: '12px', top: '14px', color: confirmValid ? 'var(--success)' : 'var(--danger)' }}>{confirmValid ? <Check size={16} /> : <X size={16} />}</span>}
+              {confirm.length > 0 && <span aria-hidden="true" style={{ position: 'absolute', right: '12px', top: '14px', color: confirmValid ? 'var(--success)' : 'var(--danger)' }}>{confirmValid ? <Check size={16} /> : <X size={16} />}</span>}
             </div>
             {error && <div role="alert" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--danger)', fontSize: '13px', marginBottom: '12px' }}><AlertCircle size={15} /> {error}</div>}
-            <button type="submit" disabled={!canSubmit || loading} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', minHeight: '44px' }}>
-              {loading ? <><span className="spinner" /> Mise à jour…</> : <>Mettre à jour le mot de passe <ArrowRight size={16} /></>}
+            <button type="submit" disabled={!canSubmit || loading} aria-busy={loading} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', minHeight: '44px' }}>
+              {loading ? <><span className="spinner" aria-hidden="true" /> Mise à jour…</> : <>Mettre à jour le mot de passe <ArrowRight size={16} aria-hidden="true" /></>}
             </button>
           </form>
         ))}

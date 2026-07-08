@@ -19,15 +19,17 @@ export default function LegalDoc({ ns, sections }: { ns: string; sections: Secti
   // Rich-text tag handlers shared by every paragraph/list item.
   const rich = {
     b: (c: ReactNode) => <strong>{c}</strong>,
-    mail: (c: ReactNode) => <a href="mailto:contact@suimini.app" style={{ color: 'var(--accent)' }}>{c}</a>,
+    // Souligné : un lien dans un bloc de texte ne peut pas se distinguer par la
+    // seule couleur (WCAG 1.4.1 / axe link-in-text-block).
+    mail: (c: ReactNode) => <a href="mailto:contact@suimini.app" style={{ color: 'var(--accent)', textDecoration: 'underline', textUnderlineOffset: '2px' }}>{c}</a>,
     mut: (c: ReactNode) => <span style={{ color: 'var(--text-muted)' }}>{c}</span>,
   };
 
   return (
-    <main style={{ maxWidth: 720, margin: '0 auto', padding: '48px 24px', fontFamily: 'var(--font-body)', color: 'var(--text)' }}>
+    <main id="main-content" style={{ maxWidth: 720, margin: '0 auto', padding: '48px 24px', fontFamily: 'var(--font-body)', color: 'var(--text)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 48 }}>
         <a href="/" style={{ color: 'var(--text-muted)', fontSize: 13, fontFamily: 'var(--font-mono)', display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}>
-          ← {t('back')}
+          <span aria-hidden="true">←</span> {t('back')}
         </a>
         <LanguageSwitcher />
       </div>

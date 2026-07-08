@@ -96,15 +96,15 @@ export default function ExportPDFModal({ tree, onClose }: Props) {
 
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div ref={overlayRef} tabIndex={-1} className="modal" style={{ maxWidth: '560px', maxHeight: '90vh' }}>
+      <div ref={overlayRef} tabIndex={-1} className="modal" role="dialog" aria-modal="true" aria-labelledby="exportpdf-title" style={{ maxWidth: '560px', maxHeight: '90vh' }}>
         <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 className="serif" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h2 id="exportpdf-title" className="serif" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
             <FileDown size={20} aria-hidden="true" /> {t('title')}
           </h2>
-          <button onClick={onClose} aria-label={t('cancel')} className="btn btn-ghost btn-sm btn-icon"><X size={16} /></button>
+          <button onClick={onClose} aria-label={t('cancel')} className="btn btn-ghost btn-sm btn-icon"><X size={16} aria-hidden="true" /></button>
         </div>
 
-        <div style={{ padding: '20px 24px', overflowY: 'auto', maxHeight: 'calc(90vh - 150px)' }}>
+        <div tabIndex={0} role="region" aria-label={t('title')} style={{ padding: '20px 24px', overflowY: 'auto', maxHeight: 'calc(90vh - 150px)' }}>
           {/* Content toggles */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '18px' }}>
             <label style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '14px', cursor: 'pointer' }}>
@@ -123,18 +123,20 @@ export default function ExportPDFModal({ tree, onClose }: Props) {
 
           {/* Paper size */}
           <div style={{ marginBottom: '18px' }}>
-            <div className="label" style={{ fontSize: '10px', marginBottom: '6px' }}>{t('paperSize')}</div>
-            <div style={{ display: 'flex', gap: '6px' }}>
+            <div className="label" id="exportpdf-paper-label" style={{ fontSize: '10px', marginBottom: '6px' }}>{t('paperSize')}</div>
+            <div role="group" aria-labelledby="exportpdf-paper-label" style={{ display: 'flex', gap: '6px' }}>
               {PAPER_SIZES.map((size) => (
                 <button
                   key={size}
                   onClick={() => setPaperSize(size)}
                   disabled={generating}
+                  aria-pressed={paperSize === size}
                   className="btn btn-sm"
                   style={{
                     flex: 1,
                     background: paperSize === size ? 'var(--accent)' : 'var(--bg-card)',
-                    color: paperSize === size ? 'white' : 'var(--text-muted)',
+                    // Encre sombre sur or : le blanc plafonnait à 2.28:1 (AA exige 4.5).
+                    color: paperSize === size ? '#0d0d0d' : 'var(--text-muted)',
                   }}
                 >
                   {size}
@@ -145,18 +147,19 @@ export default function ExportPDFModal({ tree, onClose }: Props) {
 
           {/* Theme */}
           <div style={{ marginBottom: '18px' }}>
-            <div className="label" style={{ fontSize: '10px', marginBottom: '6px' }}>{t('theme')}</div>
-            <div style={{ display: 'flex', gap: '6px' }}>
+            <div className="label" id="exportpdf-theme-label" style={{ fontSize: '10px', marginBottom: '6px' }}>{t('theme')}</div>
+            <div role="group" aria-labelledby="exportpdf-theme-label" style={{ display: 'flex', gap: '6px' }}>
               {THEMES.map((th) => (
                 <button
                   key={th}
                   onClick={() => setTheme(th)}
                   disabled={generating}
+                  aria-pressed={theme === th}
                   className="btn btn-sm"
                   style={{
                     flex: 1,
                     background: theme === th ? 'var(--accent)' : 'var(--bg-card)',
-                    color: theme === th ? 'white' : 'var(--text-muted)',
+                    color: theme === th ? '#0d0d0d' : 'var(--text-muted)',
                   }}
                 >
                   {themeLabel[th]}
@@ -180,7 +183,7 @@ export default function ExportPDFModal({ tree, onClose }: Props) {
         {/* Footer */}
         <div style={{ padding: '14px 24px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
           {generating ? (
-            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-muted)' }}>
+            <span role="status" aria-live="polite" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-muted)' }}>
               <LoadingSpinner size={16} /> {stepLabel[step]}
             </span>
           ) : (
@@ -188,8 +191,8 @@ export default function ExportPDFModal({ tree, onClose }: Props) {
           )}
           <div style={{ display: 'flex', gap: '8px' }}>
             <button onClick={onClose} disabled={generating} className="btn btn-secondary btn-sm">{t('cancel')}</button>
-            <button onClick={handleGenerate} disabled={generating} className="btn btn-primary btn-sm">
-              <FileDown size={14} /> {t('generate')}
+            <button onClick={handleGenerate} disabled={generating} aria-busy={generating} className="btn btn-primary btn-sm">
+              <FileDown size={14} aria-hidden="true" /> {t('generate')}
             </button>
           </div>
         </div>

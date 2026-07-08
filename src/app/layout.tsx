@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Spectral, Plus_Jakarta_Sans, IBM_Plex_Mono } from "next/font/google";
 import IntlProvider from "@/components/IntlProvider";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { isLocale, DEFAULT_LOCALE } from "@/i18n/config";
 import "./globals.css";
 
@@ -59,7 +59,7 @@ export const viewport: Viewport = {
   themeColor: "#111118",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  // Pas de maximumScale : bloquer le zoom viole WCAG 1.4.4 (resize text).
   viewportFit: "cover",
 };
 
@@ -74,6 +74,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // client IntlProvider then switches it in real time without a reload.
   const cookieLocale = await getLocale();
   const locale = isLocale(cookieLocale) ? cookieLocale : DEFAULT_LOCALE;
+  const tc = await getTranslations('common');
   return (
     <html lang={locale} data-theme="dark" style={{ colorScheme: "dark" }} className={`${display.variable} ${body.variable} ${mono.variable}`}>
       <head>
@@ -93,6 +94,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="apple-touch-startup-image" href="/splash-640x1136.png"  media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" />
       </head>
       <body>
+        {/* Skip-link (WCAG 2.4.1) — premier élément focusable ; cible le <main id="main-content"> de chaque surface. */}
+        <a href="#main-content" className="skip-link">{tc('skipToContent')}</a>
         <IntlProvider initialLocale={locale}>
           {children}
         </IntlProvider>

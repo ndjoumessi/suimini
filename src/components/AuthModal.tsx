@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { useTranslations } from 'next-intl';
 import { Mail, Lock, User, Eye, EyeOff, ArrowRight, Gamepad2, Check, X as XIcon, ArrowLeft, Building2, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -168,9 +168,9 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
                   <Lock size={16} className="auth-input-icon" />
                   <input id="pw" type={showPw ? 'text' : 'password'} value={password} onChange={e => { setPassword(e.target.value); setError(''); }}
                     placeholder={tab === 'signup' ? tr('passwordPlaceholderSignup') : '••••••••'} autoComplete={tab === 'signup' ? 'new-password' : 'current-password'}
-                    aria-label={tr('passwordAria')} className="auth-input" style={{ paddingRight: '44px' }} />
-                  <button type="button" onClick={() => setShowPw(s => !s)} aria-label={showPw ? tr('hidePassword') : tr('showPassword')} className="auth-eye">
-                    {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                    className="auth-input" style={{ paddingRight: '44px' }} />
+                  <button type="button" onClick={() => setShowPw(s => !s)} aria-label={showPw ? tr('hidePassword') : tr('showPassword')} aria-pressed={showPw} className="auth-eye">
+                    {showPw ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
                   </button>
                 </div>
 
@@ -246,19 +246,22 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
 }
 
 /* ---------- field ---------- */
-function Field({ label, Icon, value, onChange, placeholder, type = 'text', autoComplete, valid, autoFocus, ariaLabel }: {
-  label: string; Icon: typeof Mail; value: string; onChange: (v: string) => void; placeholder: string; type?: string; autoComplete?: string; valid?: boolean; autoFocus?: boolean; ariaLabel: string;
+function Field({ label, Icon, value, onChange, placeholder, type = 'text', autoComplete, valid, autoFocus }: {
+  label: string; Icon: typeof Mail; value: string; onChange: (v: string) => void; placeholder: string; type?: string; autoComplete?: string; valid?: boolean; autoFocus?: boolean; ariaLabel?: string;
 }) {
+  // Association programmatique label ↔ input (1.3.1) : le nom accessible EST le
+  // libellé visible (2.5.3) — l'ancien aria-label parallèle est retiré.
+  const id = useId();
   return (
     <div className="auth-field">
-      <label className="auth-label">{label}</label>
+      <label className="auth-label" htmlFor={id}>{label}</label>
       <div className="auth-input-wrap">
-        <Icon size={16} className="auth-input-icon" />
-        <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} autoComplete={autoComplete}
-          autoFocus={autoFocus} aria-label={ariaLabel} aria-invalid={valid === false} className="auth-input"
+        <Icon size={16} className="auth-input-icon" aria-hidden="true" />
+        <input id={id} type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} autoComplete={autoComplete}
+          autoFocus={autoFocus} aria-invalid={valid === false} className="auth-input"
           style={{ paddingRight: '40px', borderColor: valid === false ? 'var(--danger)' : valid === true ? 'var(--success)' : undefined }} />
         {valid !== undefined && value.length > 0 && (
-          <span style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: valid ? 'var(--success)' : 'var(--danger)' }}>
+          <span aria-hidden="true" style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: valid ? 'var(--success)' : 'var(--danger)' }}>
             {valid ? <Check size={16} /> : <XIcon size={16} />}
           </span>
         )}
@@ -279,10 +282,15 @@ function AuthSuccess({ message }: { message: string }) {
 }
 
 function SubmitBtn({ loading, disabled, label, loadingLabel, style }: { loading: boolean; disabled: boolean; label: string; loadingLabel?: string; style?: React.CSSProperties }) {
+  // En chargement, le bouton garde TOUJOURS un nom accessible (loadingLabel
+  // visible, sinon le label en sr-only) + aria-busy — un spinner seul (aria-hidden)
+  // laissait un bouton sans nom pendant la soumission.
   return (
-    <button type="submit" disabled={disabled || loading} className="auth-submit" style={style}>
-      {loading ? <LoadingSpinner size={18} className="auth-submit-spinner" /> : <>{label} <ArrowRight size={18} /></>}
-      {loading && loadingLabel ? <span style={{ marginLeft: 8 }}>{loadingLabel}</span> : null}
+    <button type="submit" disabled={disabled || loading} aria-busy={loading} className="auth-submit" style={style}>
+      {loading ? <LoadingSpinner size={18} className="auth-submit-spinner" /> : <>{label} <ArrowRight size={18} aria-hidden="true" /></>}
+      {loading && (loadingLabel
+        ? <span style={{ marginLeft: 8 }}>{loadingLabel}</span>
+        : <span className="sr-only">{label}</span>)}
     </button>
   );
 }

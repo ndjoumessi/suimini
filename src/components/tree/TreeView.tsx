@@ -313,8 +313,10 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
   // (genOf) ne sert plus que de repli si une personne isolée n'est pas dans la map.
   const genMap = buildGenerationMap(tree);
   const genAbs = (node: { person: Person; y: number }): number => genMap.get(node.person.id) ?? genOf(node.y);
+  // Teintes éclaircies pour AA (≥4.5:1 sur le fond de nœud le plus clair #251828) —
+  // mêmes familles de teintes que les anciennes (#5b7fa6/#5b8a6e/#8a5b6e, 3.1–4.2:1).
   const genColorTV = (g: number) =>
-    g <= 1 ? 'var(--accent)' : g <= 3 ? '#5b7fa6' : g <= 5 ? '#5b8a6e' : '#8a5b6e';
+    g <= 1 ? 'var(--accent)' : g <= 3 ? '#7fa0c6' : g <= 5 ? '#7fae94' : '#c490a6';
 
   // ---- Fan chart (ancestor pedigree) layout ----
   const MAX_FAN_GEN = 4;
@@ -779,7 +781,7 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
         )}
 
         {layoutMode === 'vertical' && (
-        <svg className="tree-svg" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible', willChange: 'transform' }}>
+        <svg className="tree-svg" role="group" aria-label={`${t('canvasAria')} — ${tree.name}`} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible', willChange: 'transform' }}>
           <g transform={`translate(${offset.x}, ${offset.y}) scale(${scale})`}>
             {/* Root-change fade: re-keying on rootId restarts the opacity-only entrance.
                 Opacity only (no transform) so it never fights the pan/zoom transform above. */}
@@ -824,7 +826,10 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
               // so gender reads across the whole tree. Robust name lines (Bug 3).
               const st = nodeStyle(p, isRoot, false);
               const { primary, secondary } = nameLines(p, t('unknownNode'));
-              const ariaLabel = `${getDisplayName(p).trim() || t('unknownNode')}${p.birthDate ? `, ${p.gender === 'female' ? t('bornF') : t('bornM')} ${t('inYear')} ${formatYear(p.birthDate)}` : ''}`;
+              // Le genre est aussi DIT (pas seulement la couleur de la barre — 1.4.1),
+              // et il l'est même sans date de naissance.
+              const genderWord = p.gender === 'female' ? t('genderF') : p.gender === 'male' ? t('genderM') : '';
+              const ariaLabel = `${getDisplayName(p).trim() || t('unknownNode')}${genderWord ? `, ${genderWord}` : ''}${p.birthDate ? `, ${p.gender === 'female' ? t('bornF') : t('bornM')} ${t('inYear')} ${formatYear(p.birthDate)}` : ''}`;
               // Cap the stagger delay so big trees don't crawl in.
               const delay = Math.min(index * 50, 600);
 
@@ -843,6 +848,9 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
                     if (r) setHover({ id: p.id, x: e.clientX - r.left, y: e.clientY - r.top });
                   }}
                   onMouseLeave={() => setHover(h => (h?.id === p.id ? null : h))}
+                  // Focus clavier : amène le nœud dans le viewport (2.4.7/2.4.3) —
+                  // sans ça, tabuler atterrissait sur un nœud hors écran, invisible.
+                  onFocus={() => centerOn(p.id)}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleNodeClick(p.id); } }}
                   opacity={dimmed ? 0.15 : (p.isAlive ? 1 : 0.72)}
                   style={{
@@ -1226,6 +1234,7 @@ function FanChart({ fan, fanGenColor, r0, ring, selectedPersonId, onSelectPerson
 
   return (
     <svg ref={fanSvgRef} onMouseMove={handleFanMouseMove}
+      role="group" aria-label={t('fanAria')}
       style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
       viewBox={`${-view} ${-view} ${view * 2} ${view * 2}`} preserveAspectRatio="xMidYMid meet">
       {fan.slots.filter(s => s.gen >= 1).map(s => {
@@ -1243,7 +1252,7 @@ function FanChart({ fan, fanGenColor, r0, ring, selectedPersonId, onSelectPerson
         const fontSize = s.gen <= 1 ? 12 : s.gen === 2 ? 10 : 8.5;
         const label = s.person.firstName.length > maxChars ? s.person.firstName.slice(0, maxChars - 1) + '…' : s.person.firstName;
         return (
-          <g key={s.person.id} role="button" tabIndex={0}
+          <g key={s.person.id} role="button" tabIndex={0} className="fan-slot"
             aria-label={`${s.person.firstName} ${s.person.lastName}`}
             style={{ cursor: 'pointer' }}
             onClick={() => onSelectPerson(s.person.id)}
@@ -1261,7 +1270,7 @@ function FanChart({ fan, fanGenColor, r0, ring, selectedPersonId, onSelectPerson
       })}
 
       {root && (
-        <g role="button" tabIndex={0}
+        <g role="button" tabIndex={0} className="fan-slot"
           aria-label={`${root.person.firstName} ${root.person.lastName}`}
           style={{ cursor: 'pointer' }}
           onClick={() => onSelectPerson(root.person.id)}

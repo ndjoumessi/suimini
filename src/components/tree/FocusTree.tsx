@@ -269,6 +269,7 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         dateStr={dateLine(p)}
         displayName={getDisplayName(p).trim() || t('unknownNode')}
         unknownLabel={t('unknownNode')}
+        genderLabel={p.gender === 'female' ? t('genderF') : p.gender === 'male' ? t('genderM') : undefined}
         onClick={() => { if (p.id !== focusId) onFocus(p.id); else onSelectPerson(p.id); }}
         onDoubleClick={() => onSelectPerson(p.id)}
       />

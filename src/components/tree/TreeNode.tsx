@@ -13,6 +13,8 @@ interface Props {
   dateStr: string;
   displayName: string;
   unknownLabel: string;
+  /** Genre en toutes lettres — la barre colorée seule ne suffit pas (WCAG 1.4.1). */
+  genderLabel?: string;
   onClick: () => void;
   onDoubleClick: () => void;
 }
@@ -22,7 +24,7 @@ interface Props {
  *  classes live in FocusTree's <style> block. */
 export default function TreeNode({
   person: p, role, x, y, w, h, isPivot, isSpouse, isSelected, isFocus,
-  genColor, dateStr, displayName, unknownLabel, onClick, onDoubleClick,
+  genColor, dateStr, displayName, unknownLabel, genderLabel, onClick, onDoubleClick,
 }: Props) {
   const st = nodeStyle(p, isPivot, isSpouse);
   const { primary, secondary } = nameLines(p, unknownLabel);
@@ -36,7 +38,7 @@ export default function TreeNode({
       style={{ left: x, top: y, width: w, height: h, opacity, background: st.bg }}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
-      aria-label={displayName}
+      aria-label={`${displayName}${genderLabel ? `, ${genderLabel}` : ''}${dateStr ? `, ${dateStr}` : ''}`}
       title={`${displayName}${dateStr ? ` · ${dateStr}` : ''}`}
       data-role={role}
     >

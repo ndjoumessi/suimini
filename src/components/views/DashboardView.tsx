@@ -442,7 +442,9 @@ function Head({ Icon, eyebrow, title, action }: { Icon?: typeof Cake; eyebrow?: 
     <header className="dash-head">
       <div>
         {eyebrow && <div className="dash-eyebrow">{Icon && <Icon size={13} aria-hidden="true" />}{eyebrow}</div>}
-        <h3 className="dash-h">{title}</h3>
+        {/* h2 (pas h3) : sous le h1 du dashboard, un h3 sautait un niveau (1.3.1).
+            Le style vient de .dash-h, identique visuellement. */}
+        <h2 className="dash-h">{title}</h2>
       </div>
       {action && (
         <button className="dash-head-link" onClick={action.onClick}>{action.label}</button>

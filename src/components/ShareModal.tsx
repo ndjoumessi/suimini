@@ -443,13 +443,13 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
             ) : (
               <>
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  <input value={shareEmail} onChange={e => setShareEmail(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') doShare(); }} placeholder={t('emailPlaceholder')} className="input field-recessed" type="email" style={{ flex: '1 1 160px', minWidth: 0, background: RECESS }} />
-                  <select value={sharePerm} onChange={e => setSharePerm(e.target.value as 'read' | 'write')} className="input field-recessed" style={{ width: 'auto', background: RECESS }}>
+                  <input value={shareEmail} onChange={e => setShareEmail(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') doShare(); }} placeholder={t('emailPlaceholder')} aria-label={t('emailPlaceholder')} autoComplete="email" className="input field-recessed" type="email" style={{ flex: '1 1 160px', minWidth: 0, background: RECESS }} />
+                  <select value={sharePerm} onChange={e => setSharePerm(e.target.value as 'read' | 'write')} aria-label={t('permissionAria')} className="input field-recessed" style={{ width: 'auto', background: RECESS }}>
                     <option value="read">{t('read')}</option>
                     <option value="write">{t('write')}</option>
                   </select>
-                  <button onClick={doShare} disabled={sharing} className="btn btn-primary btn-sm" style={{ opacity: sharing ? 0.7 : undefined }}>
-                    {sharing ? <LoadingSpinner size={14} /> : <>{t('invite')} <ArrowRight size={14} aria-hidden="true" /></>}
+                  <button onClick={doShare} disabled={sharing} aria-busy={sharing} className="btn btn-primary btn-sm" style={{ opacity: sharing ? 0.7 : undefined }}>
+                    {sharing ? <><LoadingSpinner size={14} /><span className="sr-only">{t('invite')}</span></> : <>{t('invite')} <ArrowRight size={14} aria-hidden="true" /></>}
                   </button>
                 </div>
                 {shareError && <div style={{ marginTop: '8px' }}><ErrorMessage message={shareError} onRetry={doShare} /></div>}

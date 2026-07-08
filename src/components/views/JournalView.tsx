@@ -97,7 +97,7 @@ export default function JournalView({ tree, onSelectPerson, onAdd, onUpdate, onD
       {/* Header */}
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: '120px' }} />{/* title lives in ContentHeader (no double header) */}
-        <select value={filterPersonId} onChange={e => setFilterPersonId(e.target.value)} className="input" style={{ width: 'auto' }}>
+        <select value={filterPersonId} onChange={e => setFilterPersonId(e.target.value)} aria-label={t('filterAria')} className="input" style={{ width: 'auto' }}>
           <option value="">{t('allPersons')}</option>
           {tree.persons.map(p => <option key={p.id} value={p.id}>{getDisplayName(p)}</option>)}
         </select>
@@ -120,9 +120,9 @@ export default function JournalView({ tree, onSelectPerson, onAdd, onUpdate, onD
             action={!filterPersonId ? { label: t('firstEntry'), onClick: startAdd } : undefined}
           />
         ) : (
-          <div style={{ position: 'relative' }}>
+          <ul style={{ position: 'relative', listStyle: 'none', margin: 0, padding: 0 }}>
             {entries.map(entry => (
-              <div key={entry.id} style={{ position: 'relative', marginBottom: '14px' }}>
+              <li key={entry.id} style={{ position: 'relative', marginBottom: '14px' }}>
                 {editingId === entry.id ? (
                   <EntryEditor tree={tree} draft={draft} setDraft={setDraft} toggleMention={toggleMention} onSave={save} onCancel={cancel} title={t('editEntry')} />
                 ) : (
@@ -147,7 +147,7 @@ export default function JournalView({ tree, onSelectPerson, onAdd, onUpdate, onD
                     {entry.photos && entry.photos.length > 0 && (
                       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}>
                         {entry.photos.map((url, i) => (
-                          <img key={i} src={url} alt="" style={{ width: '90px', height: '90px', objectFit: 'cover', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} />
+                          <img key={i} src={url} alt={t('photoAlt', { title: entry.title, index: i + 1 })} style={{ width: '90px', height: '90px', objectFit: 'cover', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} />
                         ))}
                       </div>
                     )}
@@ -157,7 +157,9 @@ export default function JournalView({ tree, onSelectPerson, onAdd, onUpdate, onD
                         {entry.mentionedPersonIds.map(id => (
                           <button key={id} onClick={() => onSelectPerson(id)} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer', background: 'var(--bg-card)', color: 'var(--accent-text)', border: '1px solid var(--border)', padding: '3px 9px', fontFamily: 'var(--font-mono)', fontSize: '11px', transition: 'border-color var(--t-fast), background var(--t-fast)' }}
                             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = 'var(--accent-light)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg-card)'; }}>
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg-card)'; }}
+                            onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = 'var(--accent-light)'; }}
+                            onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg-card)'; }}>
                             @{personName(id)}
                           </button>
                         ))}
@@ -175,9 +177,9 @@ export default function JournalView({ tree, onSelectPerson, onAdd, onUpdate, onD
                     )}
                   </div>
                 )}
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
 
         {total > 0 && (
@@ -206,18 +208,18 @@ function EntryEditor({ tree, draft, setDraft, toggleMention, onSave, onCancel, t
     <div className="card animate-fade-in" style={{ padding: '16px' }}>
       <h3 className="serif" style={{ margin: '0 0 12px', fontSize: '1.1rem' }}>{title}</h3>
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '8px', marginBottom: '8px' }}>
-        <input autoFocus value={draft.title} onChange={e => setDraft(d => ({ ...d, title: e.target.value }))} className="input" placeholder={t('titlePlaceholder')} />
-        <input type="date" value={draft.date} onChange={e => setDraft(d => ({ ...d, date: e.target.value }))} className="input" />
+        <input autoFocus value={draft.title} onChange={e => setDraft(d => ({ ...d, title: e.target.value }))} className="input" aria-label={t('titlePlaceholder')} placeholder={t('titlePlaceholder')} />
+        <input type="date" value={draft.date} onChange={e => setDraft(d => ({ ...d, date: e.target.value }))} className="input" aria-label={t('dateAria')} />
       </div>
-      <textarea value={draft.content} onChange={e => setDraft(d => ({ ...d, content: e.target.value }))} className="input" rows={5} placeholder={t('contentPlaceholder')} style={{ resize: 'vertical', marginBottom: '8px', width: '100%' }} />
+      <textarea value={draft.content} onChange={e => setDraft(d => ({ ...d, content: e.target.value }))} className="input" rows={5} aria-label={t('contentPlaceholder')} placeholder={t('contentPlaceholder')} style={{ resize: 'vertical', marginBottom: '8px', width: '100%' }} />
 
       <div style={{ marginBottom: '8px' }}>
-        <div className="label" style={{ marginBottom: '6px' }}>{t('mentionedPersons')}</div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', maxHeight: '110px', overflowY: 'auto' }}>
+        <div className="label" id="journal-mentions-label" style={{ marginBottom: '6px' }}>{t('mentionedPersons')}</div>
+        <div role="group" aria-labelledby="journal-mentions-label" style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', maxHeight: '110px', overflowY: 'auto' }}>
           {tree.persons.map(p => {
             const on = draft.mentionedPersonIds.includes(p.id);
             return (
-              <button key={p.id} type="button" onClick={() => toggleMention(p.id)}
+              <button key={p.id} type="button" onClick={() => toggleMention(p.id)} aria-pressed={on}
                 className={`badge ${on ? 'badge-accent' : ''}`}
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', border: `1px solid ${on ? 'var(--accent)' : 'var(--border)'}`, cursor: 'pointer', background: on ? 'var(--accent-light)' : 'transparent', color: on ? 'var(--accent)' : 'var(--text-muted)' }}>
                 {on && <Check size={12} aria-hidden="true" />}{getDisplayName(p)}
@@ -227,7 +229,7 @@ function EntryEditor({ tree, draft, setDraft, toggleMention, onSave, onCancel, t
         </div>
       </div>
 
-      <textarea value={draft.photosText} onChange={e => setDraft(d => ({ ...d, photosText: e.target.value }))} className="input" rows={2} placeholder={t('photosPlaceholder')} style={{ resize: 'vertical', marginBottom: '10px', width: '100%' }} />
+      <textarea value={draft.photosText} onChange={e => setDraft(d => ({ ...d, photosText: e.target.value }))} className="input" rows={2} aria-label={t('photosPlaceholder')} placeholder={t('photosPlaceholder')} style={{ resize: 'vertical', marginBottom: '10px', width: '100%' }} />
 
       <div style={{ display: 'flex', gap: '6px' }}>
         <button onClick={onSave} className="btn btn-primary btn-sm" style={{ gap: '6px' }} disabled={!draft.title.trim()}><Check size={14} aria-hidden="true" /> {t('save')}</button>

@@ -295,7 +295,7 @@ export default function Landing() {
   return (
     <div className={`lp-root ${serif.variable}`}>
       {/* ===== NAV ===== */}
-      <nav className={`lp-nav ${scrolled ? 'lp-nav-on' : ''}`}>
+      <nav className={`lp-nav ${scrolled ? 'lp-nav-on' : ''}`} aria-label={t('nav.mainAria')}>
         <LpLogo tagline />
         <div className="lp-nav-right">
           <a href="#features" className="lp-nav-link">{t('nav.how')}</a>
@@ -307,6 +307,8 @@ export default function Landing() {
         </div>
       </nav>
 
+      {/* Landmark principal (1.3.1 / 2.4.1) + cible du skip-link global. */}
+      <main id="main-content">
       {/* ===== HERO ===== */}
       <header id="top" className="lp-hero" onPointerMove={onPointer}>
         <div className="lp-sky" ref={skyRef}><Constellation /></div>
@@ -450,6 +452,7 @@ export default function Landing() {
           <p className="lp-final-fine">{t('cta.fine')}</p>
         </Reveal>
       </section>
+      </main>
 
       {/* ===== FOOTER ===== */}
       <footer className="lp-footer">

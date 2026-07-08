@@ -68,7 +68,8 @@ export default function PersonCard({ person: p, onSelect, variant = 'row' }: Pro
       <span className="lv-rname">{fullName}</span>
       {dates && <span className="lv-rdates">{dates}</span>}
       <span className="lv-rtags">
-        {!p.isAlive && <span className="lv-dagger" title={t('deceased')}>†</span>}
+        {/* Le glyphe † est décoratif ; l'état « décédé » est porté par le texte sr-only (1.3.1). */}
+        {!p.isAlive && <span className="lv-dagger" title={t('deceased')}><span aria-hidden="true">†</span><span className="sr-only">{t('deceased')}</span></span>}
         {city && <span className="lv-place"><MapPin size={11} aria-hidden="true" /> {city}</span>}
       </span>
     </button>

@@ -19,6 +19,7 @@ type SortKey = 'name' | 'first' | 'birth' | 'generation';
 
 export default function ListView({ tree, onSelectPerson, onAddPerson, canEdit = true }: Props) {
   const t = useTranslations('list');
+  const tc = useTranslations('common');
   const [filters, setFilters] = useState<SearchFilters>({});
   const [sortBy, setSortBy] = useState<SortKey>('name');
   const [layout, setLayout] = useState<'list' | 'grid'>('list');
@@ -153,9 +154,10 @@ export default function ListView({ tree, onSelectPerson, onAddPerson, canEdit = 
             ))}
           </div>
 
-          <span className="lv-count">{t('peopleCount', { count: sorted.length })}</span>
+          {/* aria-live : le compteur change au filtrage → annoncé aux lecteurs d'écran. */}
+          <span className="lv-count" aria-live="polite">{t('peopleCount', { count: sorted.length })}</span>
 
-          <select className="lv-sort" value={sortBy} onChange={e => setSortBy(e.target.value as SortKey)} aria-label={t('sortName')}>
+          <select className="lv-sort" value={sortBy} onChange={e => setSortBy(e.target.value as SortKey)} aria-label={tc('sortBy')}>
             <option value="name">{t('sortName')}</option>
             <option value="first">{t('sortFirst')}</option>
             <option value="birth">{t('sortBirth')}</option>
@@ -191,17 +193,17 @@ export default function ListView({ tree, onSelectPerson, onAddPerson, canEdit = 
             }
           />
         ) : layout === 'list' ? (
-          <div className="lv-list">
+          <ul className="lv-list" style={{ listStyle: 'none', padding: 0 }}>
             {visible.map(person => (
-              <PersonCard key={person.id} person={person} onSelect={onSelectPerson} variant="row" />
+              <li key={person.id}><PersonCard person={person} onSelect={onSelectPerson} variant="row" /></li>
             ))}
-          </div>
+          </ul>
         ) : (
-          <div className="lv-grid">
+          <ul className="lv-grid" style={{ listStyle: 'none', padding: 0 }}>
             {visible.map(person => (
-              <PersonCard key={person.id} person={person} onSelect={onSelectPerson} variant="grid" />
+              <li key={person.id} style={{ display: 'contents' }}><PersonCard person={person} onSelect={onSelectPerson} variant="grid" /></li>
             ))}
-          </div>
+          </ul>
         )}
 
         {visibleCount < sorted.length && (

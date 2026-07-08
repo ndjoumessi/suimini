@@ -156,7 +156,7 @@ export default function ImportExportModal({ tree, onImport, onMerge, onClose, in
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div ref={overlayRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Import / Export" className="modal" style={{ maxWidth: '500px' }}>
+      <div ref={overlayRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={tg('title')} className="modal" style={{ maxWidth: '500px' }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 className="serif" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}><FolderOpen size={20} aria-hidden="true" /> {tg('title')}</h2>
           <button onClick={onClose} aria-label={tg('close')} className="btn btn-ghost btn-sm btn-icon"><X size={16} /></button>
@@ -249,7 +249,7 @@ export default function ImportExportModal({ tree, onImport, onMerge, onClose, in
                   </fieldset>
 
                   {progress !== null && (
-                    <div aria-live="polite" style={{ height: '8px', background: 'var(--bg-muted)', borderRadius: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
+                    <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} aria-label={tg('tabImport')} style={{ height: '8px', background: 'var(--bg-muted)', borderRadius: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
                       <div style={{ height: '100%', width: `${progress}%`, background: 'var(--accent)', transition: 'width 200ms ease' }} />
                     </div>
                   )}
