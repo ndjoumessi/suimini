@@ -191,8 +191,9 @@ test.describe('exportGEDCOM (5.5.1)', () => {
     expect(father!.bio).toContain('Première ligne de la biographie.');
     expect(father!.bio!.split('\n').length).toBeGreaterThanOrEqual(2);
 
-    // NICK is a documented lossy field: parseGEDCOM does not read NICK back,
-    // so nickName is NOT expected to survive the round-trip.
-    expect(father!.nickName).toBeUndefined();
+    // NICK round-trip is closed: gedcomParser reads `2 NICK` back into nickName
+    // (cf. gedcomParser.ts + CLAUDE.md « GEDCOM round-trip NICK »), so the
+    // surname/nickname survives the export → re-import cycle.
+    expect(father!.nickName).toBe('Jeannot');
   });
 });

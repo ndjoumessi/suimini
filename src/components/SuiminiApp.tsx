@@ -146,6 +146,16 @@ export default function SuiminiApp() {
   const [presenceCount, setPresenceCount] = useState(1);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const toastCounter = useRef(0);
+  // Anti-rafale « un collaborateur a modifié cet arbre » :
+  //  • loginGraceRef : au login frais, le hard-replace charge tout l'arbre et
+  //    peut déclencher une rafale d'événements Realtime (y compris des lignes
+  //    non écrites par NOTRE client JS → isSelfEcho ne les reconnaît pas). On
+  //    ignore donc TOUT événement pendant COLLAB_LOGIN_GRACE_MS après le login.
+  //  • collabToastAtRef : throttle « leading » du toast — un UPDATE SQL direct
+  //    (SQL Editor) touche N lignes ⇒ N événements Realtime ; on n'affiche
+  //    qu'UN toast par rafale (fenêtre COLLAB_TOAST_WINDOW_MS).
+  const loginGraceRef = useRef(true);
+  const collabToastAtRef = useRef(0);
   const [isOnline, setIsOnline] = useState(true);
 
   // Detect network connectivity changes.
@@ -291,6 +301,17 @@ export default function SuiminiApp() {
     } catch { /* ignore */ }
   }, [showToast]);
 
+  // Fenêtre de grâce au login : ignore tous les événements Realtime pendant les
+  // premières secondes (le hard-replace initial génère une rafale d'échos). Reset
+  // à chaque changement d'utilisateur (login/logout → nouvelle session).
+  const COLLAB_LOGIN_GRACE_MS = 5000;
+  const COLLAB_TOAST_WINDOW_MS = 2000;
+  useEffect(() => {
+    loginGraceRef.current = true;
+    const timer = setTimeout(() => { loginGraceRef.current = false; }, COLLAB_LOGIN_GRACE_MS);
+    return () => clearTimeout(timer);
+  }, [user?.id]);
+
   // Realtime: subscribe to the active tree's persons/relationships + presence of collaborators.
   const activeTreeId = store.activeTree?.id;
   useEffect(() => {
@@ -305,11 +326,18 @@ export default function SuiminiApp() {
     // updated_at/deleted_at issu de SON horloge → signature inconnue → l'écho passe.
     const SELF_WRITE_WINDOW_MS = 6000;
     const reload = (payload: { table?: string; new?: Record<string, unknown>; old?: Record<string, unknown> }) => {
+      if (loginGraceRef.current) return;                                      // rafale d'échos du hard-replace au login
       const row = (payload?.new && Object.keys(payload.new).length ? payload.new : payload?.old) ?? {};
       if (isSelfEcho(payload?.table ?? 'persons', row)) return;               // notre propre écho (déterministe)
       if (Date.now() - store.lastLocalWriteRef.current < SELF_WRITE_WINDOW_MS) return; // filet de sécurité
       store.reloadTreeFromCloud(activeTreeId);
-      showToast(tToastRef.current('collaboratorEdited'), 'info');
+      // Throttle « leading » : un UPDATE SQL direct touche N lignes → N échos ;
+      // on n'affiche qu'un seul toast par rafale (le Toast s'auto-efface ensuite).
+      const now = Date.now();
+      if (now - collabToastAtRef.current >= COLLAB_TOAST_WINDOW_MS) {
+        collabToastAtRef.current = now;
+        showToast(tToastRef.current('collaboratorEdited'), 'info');
+      }
     };
     const channel = sb
       .channel(`tree:${activeTreeId}`)

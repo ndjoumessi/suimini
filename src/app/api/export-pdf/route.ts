@@ -11,7 +11,11 @@ import { generateFamilyBookHTML, type ExportOptions } from '@/lib/pdfTemplates';
 // client below and map the fields the booklet needs (extra JSON carries the rest,
 // e.g. birthDateApprox / events).
 function rowToPerson(r: any): Person {
+  // `extra` étalé EN PREMIER → les colonnes canoniques priment toujours (miroir de
+  // src/lib/supabaseSync.ts). Étalé en dernier, un `extra` pollué par une clé
+  // canonique résiduelle (updatedAt/birthPlace…) écrasait la vraie valeur de colonne.
   return {
+    ...(r.extra || {}),
     id: r.id, firstName: r.first_name || '', lastName: r.last_name || '',
     gender: r.gender || 'unknown',
     birthDate: r.birth_date || undefined, birthPlace: r.birth_place || undefined,
@@ -19,15 +23,15 @@ function rowToPerson(r: any): Person {
     isAlive: r.is_alive ?? true, occupation: r.occupation || undefined, bio: r.bio || undefined,
     profilePhoto: r.profile_photo || undefined,
     createdAt: r.created_at, updatedAt: r.updated_at,
-    ...(r.extra || {}),
   };
 }
 function rowToRel(r: any): Relationship {
+  // `extra` en premier → colonnes canoniques prioritaires (cf. rowToPerson).
   return {
+    ...(r.extra || {}),
     id: r.id, type: r.type, person1Id: r.person1_id, person2Id: r.person2_id,
     startDate: r.start_date || undefined, endDate: r.end_date || undefined,
     isActive: r.is_active ?? undefined, notes: r.notes || undefined,
-    ...(r.extra || {}),
   };
 }
 
