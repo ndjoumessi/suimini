@@ -413,14 +413,55 @@ function buildGedFamilies(tree: FamilyTree): GedFamily[] {
   return families;
 }
 
+/**
+ * Strip CR/LF (and collapse surrounding whitespace) from a single-line GEDCOM
+ * value (NAME/PLAC/OCCU/NICK…) so an embedded newline can never break the
+ * level/tag line structure. Multi-line text (bio) goes through gedNoteLines instead.
+ */
+function gedSanitize(value: string): string {
+  return value.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/** Max length of a GEDCOM 5.5.1 line value before it must be split with CONC. */
+const GED_MAX_VALUE = 248;
+
+/**
+ * Emit a `1 NOTE` block for multi-line text using GEDCOM 5.5.1 continuations:
+ * every logical line (split on \n) becomes a CONT sub-line; a logical line longer
+ * than GED_MAX_VALUE chars is wrapped across CONC sub-lines. The first logical
+ * line's first chunk rides on the `1 NOTE` tag itself (per the 5.5.1 spec).
+ */
+function gedNoteLines(text: string): string[] {
+  const out: string[] = [];
+  const logicalLines = text.replace(/\r\n?/g, '\n').split('\n');
+  logicalLines.forEach((logical, li) => {
+    // Split one logical line into <=GED_MAX_VALUE chunks (first chunk keeps the tag).
+    const chunks: string[] = [];
+    let rest = logical;
+    do {
+      chunks.push(rest.slice(0, GED_MAX_VALUE));
+      rest = rest.slice(GED_MAX_VALUE);
+    } while (rest.length > 0);
+    chunks.forEach((chunk, ci) => {
+      if (li === 0 && ci === 0) out.push(`1 NOTE ${chunk}`);
+      else if (ci === 0) out.push(`2 CONT ${chunk}`);   // new logical line
+      else out.push(`2 CONC ${chunk}`);                 // continuation of a long line
+    });
+  });
+  return out;
+}
+
 export function exportGEDCOM(tree: FamilyTree): string {
   const lines: string[] = [];
   lines.push('0 HEAD');
   lines.push('1 SOUR Suimini');
+  lines.push('2 NAME Suimini Family Memory');
+  lines.push('2 VERS 1.0');
+  lines.push('1 DEST ANY');
   lines.push('1 GEDC');
   lines.push('2 VERS 5.5.1');
   lines.push('2 FORM LINEAGE-LINKED');
-  lines.push(`1 FILE ${tree.name}`);
+  lines.push(`1 FILE ${gedSanitize(tree.name)}`);
   lines.push(`1 DATE ${formatGEDDate(new Date().toISOString())}`);
   lines.push('1 CHAR UTF-8');
 
@@ -439,24 +480,29 @@ export function exportGEDCOM(tree: FamilyTree): string {
 
   tree.persons.forEach(person => {
     lines.push(`0 @${person.id}@ INDI`);
-    lines.push(`1 NAME ${person.firstName} /${person.lastName}/`);
-    lines.push(`2 GIVN ${person.firstName}`);
-    lines.push(`2 SURN ${person.lastName}`);
-    if (person.maidenName) lines.push(`2 NPFX ${person.maidenName}`);
+    // NOTE: keep the "firstName /lastName/" order verbatim. The TEDA convention of
+    // storing the surname in firstName is a per-tree DATA-ENTRY choice, not a global
+    // export rule — inverting here would corrupt every non-TEDA tree.
+    lines.push(`1 NAME ${gedSanitize(person.firstName || '')} /${gedSanitize(person.lastName || '')}/`);
+    if (person.firstName) lines.push(`2 GIVN ${gedSanitize(person.firstName)}`);
+    if (person.lastName) lines.push(`2 SURN ${gedSanitize(person.lastName)}`);
+    if (person.nickName) lines.push(`2 NICK ${gedSanitize(person.nickName)}`);
+    if (person.maidenName) lines.push(`2 NPFX ${gedSanitize(person.maidenName)}`);
     if (person.gender === 'male') lines.push('1 SEX M');
     else if (person.gender === 'female') lines.push('1 SEX F');
 
     if (person.birthDate) {
       lines.push('1 BIRT');
       lines.push(`2 DATE ${formatGEDDate(person.birthDate)}`);
-      if (person.birthPlace?.city) lines.push(`2 PLAC ${person.birthPlace.city}`);
+      if (person.birthPlace?.city) lines.push(`2 PLAC ${gedSanitize(person.birthPlace.city)}`);
     }
     if (person.deathDate) {
       lines.push('1 DEAT');
       lines.push(`2 DATE ${formatGEDDate(person.deathDate)}`);
-      if (person.deathPlace?.city) lines.push(`2 PLAC ${person.deathPlace.city}`);
+      if (person.deathPlace?.city) lines.push(`2 PLAC ${gedSanitize(person.deathPlace.city)}`);
     }
-    if (person.occupation) lines.push(`1 OCCU ${person.occupation}`);
+    if (person.occupation) lines.push(`1 OCCU ${gedSanitize(person.occupation)}`);
+    if (person.bio && person.bio.trim()) lines.push(...gedNoteLines(person.bio));
     (fams.get(person.id) || []).forEach(fid => lines.push(`1 FAMS @${fid}@`));
     (famc.get(person.id) || []).forEach(fid => lines.push(`1 FAMC @${fid}@`));
   });
@@ -470,12 +516,13 @@ export function exportGEDCOM(tree: FamilyTree): string {
     if (f.marriage) {
       lines.push('1 MARR');
       if (f.marriage.date) lines.push(`2 DATE ${formatGEDDate(f.marriage.date)}`);
-      if (f.marriage.place) lines.push(`2 PLAC ${f.marriage.place}`);
+      if (f.marriage.place) lines.push(`2 PLAC ${gedSanitize(f.marriage.place)}`);
     }
   });
 
   lines.push('0 TRLR');
-  return lines.join('\n');
+  // GEDCOM 5.5.1 mandates CRLF line terminators.
+  return lines.join('\r\n');
 }
 
 function formatGEDDate(dateStr: string): string {

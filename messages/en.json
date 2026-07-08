@@ -431,7 +431,8 @@
     "aboutTagline": "Your family memory, preserved forever.",
     "linkTerms": "Terms of use",
     "linkPrivacy": "Privacy policy",
-    "linkContact": "Contact"
+    "linkContact": "Contact",
+    "linkStatus": "Service status"
   },
   "admin": {
     "title": "Administration",
@@ -1226,7 +1227,20 @@
     "composing": "Composing the family story…",
     "composingHint": "This usually takes a few seconds.",
     "downloadTxt": "Download (.txt)",
-    "errStatus": "Error ({status})."
+    "errStatus": "Error ({status}).",
+    "modeLabel": "Narrative type",
+    "modeFull": "Full narrative",
+    "modeGeneration": "By generation",
+    "modeBranch": "By branch",
+    "generationLabel": "Generation",
+    "generationOption": "Generation {n} ({count})",
+    "headingGeneration": "Generation {n}",
+    "branchLabel": "Branch of",
+    "headingBranch": "The {name} branch",
+    "branchSearch": "Search a person…",
+    "branchNoMatch": "No person found.",
+    "noName": "Unnamed",
+    "emptyGeneration": "This generation has no people."
   },
   "search": {
     "filters": "Filters",
@@ -1788,5 +1802,31 @@
     "reasonSameLastName": "Same last name",
     "reasonCloseBirthYear": "Close birth year",
     "reasonSameGender": "Same gender"
+  },
+  "status": {
+    "bannerTitle": "Supabase incident in progress",
+    "viewStatus": "View status",
+    "dismiss": "Dismiss",
+    "eyebrow": "Supabase · real-time status",
+    "title": "Service status",
+    "back": "Back",
+    "lastChecked": "Last checked: {time}",
+    "allOperational": "All systems operational",
+    "incidentGeneric": "Ongoing incident on Supabase services",
+    "currentIncidents": "Ongoing incidents",
+    "pastIncidents": "Resolved incidents (last 30 days)",
+    "noPastIncidents": "No incidents resolved in the last 30 days.",
+    "components": "Component status",
+    "componentsUnavailable": "Component status is unavailable right now.",
+    "resolved": "Resolved",
+    "source": "Source: ",
+    "comp": {
+      "operational": "Operational",
+      "degraded": "Degraded performance",
+      "partialOutage": "Partial outage",
+      "majorOutage": "Major outage",
+      "maintenance": "Maintenance",
+      "unknown": "Unknown"
+    }
   }
 }

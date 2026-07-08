@@ -223,4 +223,9 @@ export const en: Resources = {
     reasonCloseBirthYear: 'close birth year',
     reasonSameGender: 'same gender',
   },
+  status: {
+    bannerTitle: 'Supabase incident in progress',
+    viewStatus: 'View status',
+    dismiss: 'Dismiss',
+  },
 };

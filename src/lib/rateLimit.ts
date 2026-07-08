@@ -15,7 +15,7 @@ import { createServerClient } from '@supabase/ssr';
  */
 
 export const RATE_LIMITS = {
-  '/api/narrative':        { max: 3,  windowSeconds: 3600 },
+  '/api/narrative':        { max: 10, windowSeconds: 3600 },
   '/api/narrative-person': { max: 10, windowSeconds: 3600 },
   '/api/analyze-photo':    { max: 5,  windowSeconds: 3600 },
   '/api/ocr-document':     { max: 5,  windowSeconds: 3600 },

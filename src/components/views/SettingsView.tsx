@@ -269,6 +269,8 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
               <span aria-hidden="true">·</span>
               <a href="/confidentialite">{t('linkPrivacy')}</a>
               <span aria-hidden="true">·</span>
+              <a href="/status">{t('linkStatus')}</a>
+              <span aria-hidden="true">·</span>
               <a href="mailto:contact@suimini.app">{t('linkContact')}</a>
             </div>
           </div>

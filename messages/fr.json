@@ -431,7 +431,8 @@
     "aboutTagline": "Votre mémoire familiale, préservée pour toujours.",
     "linkTerms": "Conditions d'utilisation",
     "linkPrivacy": "Politique de confidentialité",
-    "linkContact": "Contact"
+    "linkContact": "Contact",
+    "linkStatus": "État des services"
   },
   "admin": {
     "title": "Administration",
@@ -1226,7 +1227,20 @@
     "composing": "Composition du récit familial…",
     "composingHint": "Cela prend généralement quelques secondes.",
     "downloadTxt": "Télécharger (.txt)",
-    "errStatus": "Erreur ({status})."
+    "errStatus": "Erreur ({status}).",
+    "modeLabel": "Type de récit",
+    "modeFull": "Récit complet",
+    "modeGeneration": "Par génération",
+    "modeBranch": "Par branche",
+    "generationLabel": "Génération",
+    "generationOption": "Génération {n} ({count})",
+    "headingGeneration": "Génération {n}",
+    "branchLabel": "Branche de",
+    "headingBranch": "La branche {name}",
+    "branchSearch": "Rechercher une personne…",
+    "branchNoMatch": "Aucune personne trouvée.",
+    "noName": "Sans nom",
+    "emptyGeneration": "Cette génération ne contient aucune personne."
   },
   "search": {
     "filters": "Filtres",
@@ -1788,5 +1802,31 @@
     "reasonSameLastName": "Même nom",
     "reasonCloseBirthYear": "Année de naissance proche",
     "reasonSameGender": "Même genre"
+  },
+  "status": {
+    "bannerTitle": "Incident Supabase en cours",
+    "viewStatus": "Voir le statut",
+    "dismiss": "Fermer",
+    "eyebrow": "Supabase · statut en temps réel",
+    "title": "État des services",
+    "back": "Retour",
+    "lastChecked": "Dernière vérification : {time}",
+    "allOperational": "Tous les systèmes sont opérationnels",
+    "incidentGeneric": "Incident en cours sur les services Supabase",
+    "currentIncidents": "Incidents en cours",
+    "pastIncidents": "Incidents résolus (30 derniers jours)",
+    "noPastIncidents": "Aucun incident résolu sur les 30 derniers jours.",
+    "components": "État des composants",
+    "componentsUnavailable": "État des composants indisponible pour le moment.",
+    "resolved": "Résolu",
+    "source": "Source : ",
+    "comp": {
+      "operational": "Opérationnel",
+      "degraded": "Performances dégradées",
+      "partialOutage": "Panne partielle",
+      "majorOutage": "Panne majeure",
+      "maintenance": "Maintenance",
+      "unknown": "Inconnu"
+    }
   }
 }

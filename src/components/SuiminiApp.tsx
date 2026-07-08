@@ -42,6 +42,7 @@ import ExportPDFModal from './ExportPDFModal';
 import ShareModal from './ShareModal';
 import ConflictModal from './ConflictModal';
 import ToastStack, { ToastType, ToastItem } from './Toast';
+import StatusBanner from './StatusBanner';
 import { BrandLockup } from './Brand';
 import OnboardingWizard, { OnboardingData } from './OnboardingWizard';
 import { Menu, Search, TreePine, Sprout, Cloud, WifiOff, AlertTriangle, RefreshCw } from 'lucide-react';
@@ -541,6 +542,10 @@ export default function SuiminiApp() {
           <button onClick={() => setShowPalette(true)} className="btn btn-ghost btn-icon btn-sm" style={{ marginLeft: 'auto' }} aria-label={tc('search')}><Search size={18} aria-hidden="true" /></button>
           <span className="label" style={{ color: 'var(--text-muted)', textTransform: 'none' }}>{store.activeTree?.name}</span>
         </header>
+
+        {/* Supabase incident banner — renders only during an active incident,
+            under the header and above the main content (fail-open otherwise). */}
+        <StatusBanner />
 
         {view === 'admin' ? (
           <AdminDashboard admin={admin} role={role} onToast={showToast} />

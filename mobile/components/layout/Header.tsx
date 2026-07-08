@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { fonts, fontSize, spacing } from '@/lib/theme';
 import { useTheme } from '@/hooks/useTheme';
+import { StatusBanner } from '@/components/StatusBanner';
 
 interface HeaderProps {
   /** Small mono uppercase eyebrow above the title. */
@@ -15,32 +16,36 @@ interface HeaderProps {
 export function Header({ eyebrow, title, subtitle, right, onRightPress }: HeaderProps) {
   const { colors } = useTheme();
   return (
-    <View style={styles.wrap}>
-      <View style={styles.textCol}>
-        {eyebrow ? (
-          <Text style={[styles.eyebrow, { color: colors.accent }]}>
-            {eyebrow.toUpperCase()}
+    <>
+      <View style={styles.wrap}>
+        <View style={styles.textCol}>
+          {eyebrow ? (
+            <Text style={[styles.eyebrow, { color: colors.accent }]}>
+              {eyebrow.toUpperCase()}
+            </Text>
+          ) : null}
+          <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
+            {title}
           </Text>
-        ) : null}
-        <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
-          {title}
-        </Text>
-        {subtitle ? (
-          <Text style={[styles.subtitle, { color: colors.textMuted }]} numberOfLines={1}>
-            {subtitle}
-          </Text>
+          {subtitle ? (
+            <Text style={[styles.subtitle, { color: colors.textMuted }]} numberOfLines={1}>
+              {subtitle}
+            </Text>
+          ) : null}
+        </View>
+        {right ? (
+          onRightPress ? (
+            <TouchableOpacity onPress={onRightPress} activeOpacity={0.8}>
+              {right}
+            </TouchableOpacity>
+          ) : (
+            <View>{right}</View>
+          )
         ) : null}
       </View>
-      {right ? (
-        onRightPress ? (
-          <TouchableOpacity onPress={onRightPress} activeOpacity={0.8}>
-            {right}
-          </TouchableOpacity>
-        ) : (
-          <View>{right}</View>
-        )
-      ) : null}
-    </View>
+      {/* Supabase incident banner — renders only during an active incident. */}
+      <StatusBanner />
+    </>
   );
 }
 

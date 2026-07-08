@@ -222,6 +222,11 @@ export const fr = {
     reasonCloseBirthYear: 'année de naissance proche',
     reasonSameGender: 'même genre',
   },
+  status: {
+    bannerTitle: 'Incident Supabase en cours',
+    viewStatus: 'Voir le statut',
+    dismiss: 'Fermer',
+  },
 };
 
 export type Resources = typeof fr;
