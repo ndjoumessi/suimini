@@ -90,8 +90,9 @@ export async function POST(req: Request) {
     id: t.id, name: t.name, description: t.description || undefined,
     settings: t.settings || undefined, createdAt: t.created_at, updatedAt: t.updated_at,
     rootPersonId: t.settings?.rootPersonId,
-    persons: (personsRes.data || []).map(rowToPerson),
-    relationships: (relsRes.data || []).map(rowToRel),
+    // Filtre les tombstones soft-delete (voir supabase/soft-delete.sql).
+    persons: (personsRes.data || []).filter((r: { deleted_at?: string | null }) => !r.deleted_at).map(rowToPerson),
+    relationships: (relsRes.data || []).filter((r: { deleted_at?: string | null }) => !r.deleted_at).map(rowToRel),
   };
 
   const html = generateFamilyBookHTML(tree, options);

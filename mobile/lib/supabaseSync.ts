@@ -30,28 +30,56 @@ function personToRow(p: Person, treeId: string): any {
 
 export interface WriteResult { error?: string }
 
-/** Upsert a person (insert or update). RLS: caller must own/write the tree. */
+// Soft-delete (tombstones) — même architecture UPSERT-only que le web (voir
+// src/lib/supabaseSync.ts + supabase/soft-delete.sql) : jamais de DELETE, une
+// suppression pose deleted_at = now() et les lectures filtrent la colonne.
+// Repli pré-migration : PostgREST rejette toute mention de deleted_at
+// (PGRST204/42703) → on retombe sur le comportement historique (DELETE dur).
+let softDeleteSupported = true;
+
+function isMissingDeletedAt(error: { code?: string; message?: string } | null): boolean {
+  return !!error && (error.code === 'PGRST204' || error.code === '42703')
+    && String(error.message ?? '').includes('deleted_at');
+}
+
+/** Upsert a person (insert or update). RLS: caller must own/write the tree.
+ * deleted_at: null — présent localement = vivant (ranime une tombstone). */
 export async function upsertPersonRemote(treeId: string, person: Person): Promise<WriteResult> {
   if (!supabase) return { error: 'Supabase non configuré' };
-  const { error } = await supabase
+  const row = personToRow(person, treeId);
+  let { error } = await supabase
     .from('persons')
-    .upsert(personToRow(person, treeId), { onConflict: 'id' });
+    .upsert({ ...row, deleted_at: null }, { onConflict: 'id' });
+  if (error && softDeleteSupported && isMissingDeletedAt(error)) {
+    softDeleteSupported = false;
+    ({ error } = await supabase.from('persons').upsert(row, { onConflict: 'id' }));
+  }
   return error ? { error: error.message } : {};
 }
 
-/** Delete a person and any relationship touching it (FK safety). */
+/** Soft-delete a person and any relationship touching it (tombstones). */
 export async function deletePersonRemote(personId: string): Promise<WriteResult> {
   if (!supabase) return { error: 'Supabase non configuré' };
-  await supabase
-    .from('relationships')
-    .delete()
-    .or(`person1_id.eq.${personId},person2_id.eq.${personId}`);
+  const orFilter = `person1_id.eq.${personId},person2_id.eq.${personId}`;
+  if (softDeleteSupported) {
+    const now = new Date().toISOString();
+    const relRes = await supabase.from('relationships').update({ deleted_at: now }).or(orFilter);
+    if (!isMissingDeletedAt(relRes.error)) {
+      const { error } = await supabase.from('persons').update({ deleted_at: now }).eq('id', personId);
+      return error ? { error: error.message } : {};
+    }
+    softDeleteSupported = false; // migration pas encore passée → DELETE dur
+  }
+  await supabase.from('relationships').delete().or(orFilter);
   const { error } = await supabase.from('persons').delete().eq('id', personId);
   return error ? { error: error.message } : {};
 }
 
 function rowToPerson(r: any): Person {
+  // `extra` étalé EN PREMIER : les colonnes canoniques priment toujours sur un
+  // `extra` pollué par une clé canonique résiduelle (même correctif que le web).
   return {
+    ...(r.extra || {}),
     id: r.id,
     firstName: r.first_name || '',
     lastName: r.last_name || '',
@@ -71,12 +99,13 @@ function rowToPerson(r: any): Person {
     privacy: r.privacy || undefined,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
-    ...(r.extra || {}),
   };
 }
 
 function rowToRel(r: any): Relationship {
+  // `extra` en premier → les colonnes canoniques priment toujours (cf. rowToPerson).
   return {
+    ...(r.extra || {}),
     id: r.id,
     type: r.type,
     person1Id: r.person1_id,
@@ -85,7 +114,6 @@ function rowToRel(r: any): Relationship {
     endDate: r.end_date || undefined,
     isActive: r.is_active ?? undefined,
     notes: r.notes || undefined,
-    ...(r.extra || {}),
   };
 }
 
@@ -126,6 +154,10 @@ export async function loadTreesFromSupabase(): Promise<FamilyTree[]> {
       : empty,
   ]);
 
+  // Filtre les tombstones soft-delete côté client (fonctionne avant ET après la
+  // migration : colonne absente → rien n'est filtré).
+  const live = (rows: any[] | null) => (rows || []).filter((r: any) => !r.deleted_at);
+
   return treeRows.map((t: any) => ({
     id: t.id,
     name: t.name,
@@ -134,13 +166,13 @@ export async function loadTreesFromSupabase(): Promise<FamilyTree[]> {
     createdAt: t.created_at,
     updatedAt: t.updated_at,
     rootPersonId: t.settings?.rootPersonId,
-    persons: (persons.data || [])
+    persons: live(persons.data)
       .filter((r: any) => r.tree_id === t.id)
       .map(rowToPerson),
-    relationships: (rels.data || [])
+    relationships: live(rels.data)
       .filter((r: any) => r.tree_id === t.id)
       .map(rowToRel),
-    journal: (journal.data || [])
+    journal: live(journal.data)
       .filter((r: any) => r.tree_id === t.id)
       .map(rowToJournal),
   }));

@@ -52,6 +52,9 @@ create table if not exists public.persons (
   -- nationality, religion, education, photos, events, notes, sources, media…)
   -- afin de ne perdre AUCUNE donnée lors de la synchronisation.
   extra         jsonb,
+  -- Soft-delete (tombstone) : la sync est UPSERT-only et n'émet jamais de DELETE
+  -- (voir supabase/soft-delete.sql). NULL = vivant.
+  deleted_at    timestamptz,
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now()
 );
@@ -67,7 +70,8 @@ create table if not exists public.relationships (
   end_date    text,
   is_active   boolean,
   notes       text,
-  extra       jsonb -- marriageEvent / divorceEvent éventuels
+  extra       jsonb, -- marriageEvent / divorceEvent éventuels
+  deleted_at  timestamptz -- tombstone (voir supabase/soft-delete.sql)
 );
 
 -- Entrées de journal
@@ -79,6 +83,7 @@ create table if not exists public.journal_entries (
   content              text,
   mentioned_person_ids jsonb,
   photos               jsonb,
+  deleted_at           timestamptz, -- tombstone (voir supabase/soft-delete.sql)
   created_at           timestamptz not null default now(),
   updated_at           timestamptz not null default now()
 );
@@ -102,6 +107,10 @@ create index if not exists idx_relationships_tree     on public.relationships(tr
 create index if not exists idx_journal_tree           on public.journal_entries(tree_id);
 create index if not exists idx_tree_shares_tree       on public.tree_shares(tree_id);
 create index if not exists idx_tree_shares_email      on public.tree_shares(shared_with_email);
+-- Index partiels sur les lignes vivantes (sync UPSERT-only + soft-delete).
+create index if not exists idx_persons_live       on public.persons(tree_id)         where deleted_at is null;
+create index if not exists idx_relationships_live on public.relationships(tree_id)   where deleted_at is null;
+create index if not exists idx_journal_live       on public.journal_entries(tree_id) where deleted_at is null;
 
 -- ----------------------------------------------------------------------------
 -- Helpers d'accès (utilisés par les policies)

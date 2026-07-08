@@ -4,7 +4,8 @@ import { FamilyTree, Person, Relationship, JournalEntry } from '@/types';
 import { sampleFamilyTree } from '@/lib/sampleData';
 import { generateId, getDisplayName } from '@/lib/treeUtils';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
-import { loadTreesFromSupabase, saveTreeToSupabase, deleteTreeFromSupabase, deleteChildRows, loadOneTree, SharedMeta } from '@/lib/supabaseSync';
+import { loadTreesFromSupabase, saveTreeToSupabase, deleteTreeFromSupabase, deleteChildRows, loadOneTree, SharedMeta, ChildTable } from '@/lib/supabaseSync';
+import { mergeTreeFavoringLocal, treeIdSets, removedIds, TreeIdSets } from '@/lib/syncMerge';
 import { offlineStorage } from '@/lib/offlineStorage';
 
 const STORAGE_KEY = 'suimini_trees';
@@ -88,34 +89,45 @@ function getRecentDeletedIds(): Set<string> {
   } catch { return new Set(); }
 }
 
-/**
- * Merge favouring the recently-edited LOCAL tree over a possibly-stale remote read.
- * Keeps ALL local persons/relations/journal (freshest field values, incl. renames),
- * and ADDS only remote entities absent locally AND not recently deleted here (so a
- * collaborator's addition still appears, but a local delete is never resurrected).
- * Relations are added only when both endpoints exist in the merged person set.
- */
-function mergeTreeFavoringLocal(local: FamilyTree, remote: FamilyTree, deleted: Set<string>): FamilyTree {
-  const localPersonIds = new Set(local.persons.map(p => p.id));
-  const persons = [
-    ...local.persons,
-    ...remote.persons.filter(p => !localPersonIds.has(p.id) && !deleted.has(p.id)),
-  ];
-  const personIds = new Set(persons.map(p => p.id));
-  const localRelIds = new Set(local.relationships.map(r => r.id));
-  const relationships = [
-    ...local.relationships,
-    ...remote.relationships.filter(r =>
-      !localRelIds.has(r.id) && !deleted.has(r.id)
-      && personIds.has(r.person1Id) && personIds.has(r.person2Id)),
-  ];
-  const localJournal = local.journal || [];
-  const localJournalIds = new Set(localJournal.map(j => j.id));
-  const journal = [
-    ...localJournal,
-    ...(remote.journal || []).filter(j => !localJournalIds.has(j.id) && !deleted.has(j.id)),
-  ];
-  return { ...local, persons, relationships, journal };
+// ── Suppressions durables (at-least-once) ──────────────────────────────────────
+// Suppressions EN ATTENTE de confirmation serveur, par table (localStorage). Posées
+// dès qu'un retrait est détecté, rejouées à CHAQUE push (il y en a un à chaque
+// chargement de l'app), effacées seulement une fois le soft-delete persisté. Un F5
+// qui coupe le push ne perd donc jamais une suppression — l'ancienne architecture
+// comptait sur le diff distant du push suivant pour rattraper ça, précisément le
+// mécanisme dangereux qu'on supprime.
+const PENDING_DELETE_KEY = 'suimini_pending_deletes';
+const PENDING_DELETE_TTL_MS = 7 * 24 * 3600_000;
+type PendingDeleteMap = Record<string, Record<string, number>>; // table → id → ts
+
+function readPendingDeletes(): PendingDeleteMap {
+  if (typeof window === 'undefined') return {};
+  try {
+    const map: PendingDeleteMap = JSON.parse(localStorage.getItem(PENDING_DELETE_KEY) || '{}');
+    const now = Date.now();
+    for (const t of Object.keys(map))
+      for (const id of Object.keys(map[t]))
+        if (now - map[t][id] > PENDING_DELETE_TTL_MS) delete map[t][id];
+    return map;
+  } catch { return {}; }
+}
+function writePendingDeletes(map: PendingDeleteMap): void {
+  try { localStorage.setItem(PENDING_DELETE_KEY, JSON.stringify(map)); } catch { /* ignore */ }
+}
+function addPendingDeletes(byTable: Partial<Record<ChildTable, string[]>>): void {
+  if (typeof window === 'undefined') return;
+  const map = readPendingDeletes();
+  const now = Date.now();
+  for (const [table, ids] of Object.entries(byTable))
+    for (const id of ids ?? []) (map[table] ??= {})[id] = now;
+  writePendingDeletes(map);
+}
+function clearPendingDeletes(table: ChildTable, ids: string[]): void {
+  if (typeof window === 'undefined') return;
+  const map = readPendingDeletes();
+  if (!map[table]) return;
+  for (const id of ids) delete map[table][id];
+  writePendingDeletes(map);
 }
 
 export type SyncStatus = 'idle' | 'saved' | 'syncing' | 'offline' | 'error';
@@ -162,6 +174,16 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
   // NEVER pull (a pull would replace the local edit that hasn't reached the server →
   // data loss). null when there is no error.
   const syncErrorKindRef = useRef<'load' | 'save' | null>(null);
+  // Ids que CE client a réellement AFFICHÉS (chargés du cloud ou poussés), par
+  // arbre. Le push les diffe contre l'état courant pour propager en soft-delete
+  // les retraits implicites (undo d'un ajout, fusion/import qui retire des
+  // entités…). On ne compare JAMAIS à l'état distant : seuls des ids déjà vus
+  // puis retirés ICI sont supprimés — un cache partiel/vide ne peut donc jamais
+  // purger un arbre (contrairement à l'ancien DELETE-par-diff).
+  const knownIdsRef = useRef<Record<string, TreeIdSets>>({});
+  const rememberKnownIds = useCallback((ts: FamilyTree[]) => {
+    knownIdsRef.current = Object.fromEntries(ts.map(t => [t.id, treeIdSets(t)]));
+  }, []);
 
   // SINGLE load effect. Gated on authReady so it never runs against a half-init
   // client. It branches by mode — and the two branches are mutually exclusive:
@@ -210,6 +232,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
         if (!active || settled) return;
         if (localTrees.length > 0) {
           setTrees(localTrees);
+          rememberKnownIds(localTrees);
           setActiveTreeId(prev => prev ?? localTrees[0]?.id ?? null);
         }
         syncErrorKindRef.current = 'load';
@@ -249,6 +272,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
               return (lt && ltAge < FAVOR_LOCAL_MS) ? mergeTreeFavoringLocal(lt, rt, deleted) : rt;
             });
             setTrees(effective);
+            rememberKnownIds(effective);
             setActiveTreeId(prev => (effective.find(t => t.id === prev) ? prev : effective[0]?.id || null));
             setSyncStatus('saved');
             setLastSyncAt(Date.now());
@@ -270,6 +294,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
             // sample), UNLESS already imported/dismissed on this browser.
             setMigrationPending(!importPromptSuppressed());
             setTrees(localTrees);
+            rememberKnownIds(localTrees);
             setActiveTreeId(localTrees[0]?.id || null);
             setSyncStatus('saved');
             if (active) { settled = true; setLoaded(true); }
@@ -293,7 +318,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
           }
           console.error('[store] Chargement cloud échoué après retries:', err);
           // Fall back to real local data if any, otherwise empty — never the sample.
-          if (hasRealLocal) { setTrees(localTrees); setActiveTreeId(localTrees[0]?.id || null); }
+          if (hasRealLocal) { setTrees(localTrees); rememberKnownIds(localTrees); setActiveTreeId(localTrees[0]?.id || null); }
           else { setTrees([]); setActiveTreeId(null); }
           syncErrorKindRef.current = 'load';
           setSyncStatus('error');
@@ -351,7 +376,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
       }
     })();
     return () => { active = false; };
-  }, [authReady, cloud, user]);
+  }, [authReady, cloud, user, rememberKnownIds]);
 
   // Debounced push of the active tree to the cloud after any change.
   // (declared after activeTree below)
@@ -377,6 +402,44 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
 
   const activeTree = trees.find(t => t.id === activeTreeId) || null;
 
+  // Pousse un arbre au cloud MAINTENANT, dans l'ordre :
+  //   1. détecte les retraits implicites (ids affichés — knownIds — disparus du
+  //      state sans passer par delete{Person,…} : undo d'un ajout, fusion…) et les
+  //      enregistre en suppressions durables (localStorage) ;
+  //   2. rejoue TOUTES les suppressions en attente en soft-delete (celles d'un
+  //      push précédent coupé par un F5 incluses), en écartant les ids re-présents
+  //      localement (undo d'une suppression : l'upsert les ranimera) ;
+  //   3. upserte l'arbre entier (UPSERT-only, jamais de DELETE) ;
+  //   4. mémorise les ids poussés comme nouveaux « affichés ».
+  const pushTreeNow = useCallback(async (tree: FamilyTree): Promise<void> => {
+    if (!user) return;
+    const isOwner = !shared[tree.id];
+    const current = treeIdSets(tree);
+    const gone = removedIds(knownIdsRef.current[tree.id], current);
+    const allGone = [...gone.persons, ...gone.relationships, ...gone.journal];
+    if (allGone.length) {
+      recordDeletedIds(allGone); // le merge favor-local ne doit pas les ressusciter
+      addPendingDeletes({ persons: gone.persons, relationships: gone.relationships, journal_entries: gone.journal });
+    }
+    const pending = readPendingDeletes();
+    const currentByTable: Record<ChildTable, Set<string>> = {
+      persons: current.persons, relationships: current.relationships, journal_entries: current.journal,
+    };
+    for (const table of Object.keys(pending) as ChildTable[]) {
+      const ids = Object.keys(pending[table] ?? {});
+      if (!ids.length) continue;
+      const restored = ids.filter(id => currentByTable[table]?.has(id));
+      if (restored.length) clearPendingDeletes(table, restored);
+      const toDelete = ids.filter(id => !currentByTable[table]?.has(id));
+      // Best-effort : en échec, l'id RESTE en attente et sera rejoué au prochain
+      // push (au plus tard au prochain chargement de l'app).
+      if (toDelete.length && await deleteChildRows(table, toDelete)) clearPendingDeletes(table, toDelete);
+    }
+    await saveTreeToSupabase(tree, user.id, isOwner);
+    knownIdsRef.current = { ...knownIdsRef.current, [tree.id]: current };
+  }, [user, shared]);
+  const pushTreeNowRef = useRef(pushTreeNow); pushTreeNowRef.current = pushTreeNow;
+
   // Debounced cloud push of the active tree after any local change.
   //  • Changement implicite (settings, updateTree en bloc) → debounce 700 ms.
   //  • CRUD explicite (add/update/delete personne, relation, journal) → flush ~0 ms
@@ -387,7 +450,6 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
   useEffect(() => {
     if (!cloud || !user || !activeTree || migrationPending) { pendingPushRef.current = null; return; }
     const treeSnapshot = activeTree;         // fresh capture each run (latest edit)
-    const isOwner = !shared[activeTree.id];
     const doPush = () => {
       if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null; }
       pendingPushRef.current = null;         // nothing left pending once we fire
@@ -395,7 +457,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
       // Mark before AND after the write: the realtime echo of our own push can
       // arrive either side of the REST response, so we bracket the whole window.
       lastLocalWriteRef.current = Date.now();
-      return saveTreeToSupabase(treeSnapshot, user.id, isOwner)
+      return pushTreeNowRef.current(treeSnapshot)
         .then(() => { lastLocalWriteRef.current = Date.now(); syncErrorKindRef.current = null; setSyncStatus('saved'); setLastSyncAt(Date.now()); })
         .catch((err) => { console.error('[store] Sauvegarde cloud échouée:', err?.message ?? err); syncErrorKindRef.current = 'save'; setSyncStatus('error'); });
     };
@@ -428,6 +490,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     if (fresh) {
       setTrees(prev => prev.map(t => t.id === treeId ? fresh : t));
       localCacheRef.current = localCacheRef.current.map(t => t.id === treeId ? fresh : t);
+      knownIdsRef.current = { ...knownIdsRef.current, [treeId]: treeIdSets(fresh) };
     }
   }, [cloud]);
 
@@ -470,6 +533,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
       localCacheRef.current = remote;
       setShared(sharedMeta);
       setTrees(remote);
+      rememberKnownIds(remote);
       setActiveTreeId(prev => (remote.find(t => t.id === prev) ? prev : remote[0]?.id || null));
       setMigrationPending(false);
       setLastSyncAt(Date.now());
@@ -482,7 +546,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
       setSyncStatus('error');
       return false;
     }
-  }, [cloud, user]);
+  }, [cloud, user, rememberKnownIds]);
 
   // Re-push the active tree (used to recover from a failed debounced SAVE without a
   // destructive pull). Returns true on success.
@@ -492,7 +556,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     if (!tree) return false;
     setSyncStatus('syncing');
     try {
-      await saveTreeToSupabase(tree, user.id, !shared[tree.id]);
+      await pushTreeNow(tree);
       lastLocalWriteRef.current = Date.now();
       syncErrorKindRef.current = null;
       setSyncStatus('saved');
@@ -504,7 +568,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
       setSyncStatus('error');
       return false;
     }
-  }, [cloud, user, trees, activeTreeId, shared]);
+  }, [cloud, user, trees, activeTreeId, pushTreeNow]);
 
   // Context-aware retry for the in-app error banner: a failed SAVE re-pushes (keeps
   // the local edit), a failed LOAD re-pulls. Never pull-replaces over a pending edit.
@@ -543,13 +607,14 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     setSyncStatus('syncing');
     try {
       for (const t of localCacheRef.current) await saveTreeToSupabase(t, user.id, true);
+      rememberKnownIds(localCacheRef.current);
       setMigrationPending(false);
       try { localStorage.setItem(IMPORT_DONE_KEY, 'true'); } catch { /* ignore */ }
       setSyncStatus('saved');
     } catch {
       setSyncStatus('offline');
     }
-  }, [user]);
+  }, [user, rememberKnownIds]);
 
   const dismissMigration = useCallback(() => {
     setMigrationPending(false);
@@ -603,6 +668,10 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     // effect (which reads IDB first) resurrects it on the next visit — the root cause
     // of "impossible de supprimer un arbre".
     offlineStorage.deleteTree(treeId).catch(() => {});
+    // L'arbre n'existe plus : oublier ses ids connus (sinon un futur push d'un
+    // arbre recréé avec le même id diffuserait des suppressions fantômes).
+    const { [treeId]: _gone, ...rest } = knownIdsRef.current; void _gone;
+    knownIdsRef.current = rest;
     if (cloud && user) {
       deleteTreeFromSupabase(treeId, user.id)
         .then(({ error }) => { if (error) console.error('[store] Suppression cloud échouée:', error); })
@@ -691,20 +760,16 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
       r => r.person1Id !== personId && r.person2Id !== personId
     );
     // Remember the deletion so a reload within the favour-local window can't resurrect
-    // this person (or its relations) from a not-yet-committed remote row.
+    // this person (or its relations) from a not-yet-committed remote row. La
+    // propagation serveur (soft-delete durable) est faite par le push immédiat
+    // (0 ms) déclenché juste dessous — voir pushTreeNow.
     recordDeletedIds([personId, ...removedRelIds]);
-    // Suppression DIRECTE en base (immédiate) — ne pas dépendre uniquement de l'étape
-    // DELETE en fin de diff-push débouncé, qu'un F5 rapide peut couper.
-    if (cloud && user) {
-      if (removedRelIds.length) void deleteChildRows('relationships', removedRelIds);
-      void deleteChildRows('persons', [personId]);
-    }
     updateTreeWithHistory(
       { ...activeTree, persons, relationships },
       `Suppression de ${target ? getDisplayName(target) : 'la personne'}`,
       true
     );
-  }, [activeTree, updateTreeWithHistory, cloud, user]);
+  }, [activeTree, updateTreeWithHistory]);
 
   // Relationship CRUD
   const addRelationship = useCallback((rel: Omit<Relationship, 'id'>) => {
@@ -729,14 +794,13 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
   const deleteRelationship = useCallback((relId: string) => {
     if (!activeTree) return;
     const relationships = activeTree.relationships.filter(r => r.id !== relId);
-    recordDeletedIds([relId]);
-    if (cloud && user) void deleteChildRows('relationships', [relId]);
+    recordDeletedIds([relId]); // propagation serveur via le push immédiat (pushTreeNow)
     updateTreeWithHistory(
       { ...activeTree, relationships },
       `Suppression d'une relation`,
       true
     );
-  }, [activeTree, updateTreeWithHistory, cloud, user]);
+  }, [activeTree, updateTreeWithHistory]);
 
   // Journal CRUD
   const addJournalEntry = useCallback((entry: Omit<JournalEntry, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -761,14 +825,13 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
 
   const deleteJournalEntry = useCallback((id: string) => {
     if (!activeTree) return;
-    recordDeletedIds([id]);
-    if (cloud && user) void deleteChildRows('journal_entries', [id]);
+    recordDeletedIds([id]); // propagation serveur via le push immédiat (pushTreeNow)
     updateTreeWithHistory(
       { ...activeTree, journal: (activeTree.journal || []).filter(e => e.id !== id) },
       `Suppression d'une entrée de journal`,
       true
     );
-  }, [activeTree, updateTreeWithHistory, cloud, user]);
+  }, [activeTree, updateTreeWithHistory]);
 
   const importTree = useCallback((tree: FamilyTree) => {
     const imported = { ...tree, id: generateId(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };

@@ -86,6 +86,13 @@ function rowToJournal(r: any): JournalEntry {
 
 // ---------- Loading ----------
 
+/** Filtre les tombstones (soft-delete). Côté client, pour que le même SELECT *
+ * fonctionne avant ET après la migration soft-delete (colonne absente → rien
+ * n'est filtré, comportement historique). */
+function liveRows(rows: any[] | null | undefined): any[] {
+  return (rows || []).filter((r: any) => !r.deleted_at);
+}
+
 export async function loadTreesFromSupabase(userId: string): Promise<LoadResult> {
   if (!supabase) return { trees: [], shared: {} };
   const { data: treeRows, error } = await supabase.from('trees').select('*');
@@ -133,98 +140,117 @@ export async function loadTreesFromSupabase(userId: string): Promise<LoadResult>
       id: t.id, name: t.name, description: t.description || undefined,
       settings: t.settings || undefined, createdAt: t.created_at, updatedAt: t.updated_at,
       rootPersonId: t.settings?.rootPersonId,
-      persons: (persons.data || []).filter((r: any) => r.tree_id === t.id).map(rowToPerson),
-      relationships: (rels.data || []).filter((r: any) => r.tree_id === t.id).map(rowToRel),
-      journal: (journal.data || []).filter((r: any) => r.tree_id === t.id).map(rowToJournal),
+      persons: liveRows(persons.data).filter((r: any) => r.tree_id === t.id).map(rowToPerson),
+      relationships: liveRows(rels.data).filter((r: any) => r.tree_id === t.id).map(rowToRel),
+      journal: liveRows(journal.data).filter((r: any) => r.tree_id === t.id).map(rowToJournal),
     };
   });
 
   return { trees, shared };
 }
 
-export async function loadOneTree(treeId: string): Promise<FamilyTree | null> {
-  if (!supabase) return null;
-  const { data: t } = await supabase.from('trees').select('*').eq('id', treeId).single();
+export async function loadOneTree(treeId: string, client: any = supabase): Promise<FamilyTree | null> {
+  if (!client) return null;
+  const { data: t } = await client.from('trees').select('*').eq('id', treeId).single();
   if (!t) return null;
   const [persons, rels, journal] = await Promise.all([
-    supabase.from('persons').select('*').eq('tree_id', treeId),
-    supabase.from('relationships').select('*').eq('tree_id', treeId),
-    supabase.from('journal_entries').select('*').eq('tree_id', treeId),
+    client.from('persons').select('*').eq('tree_id', treeId),
+    client.from('relationships').select('*').eq('tree_id', treeId),
+    client.from('journal_entries').select('*').eq('tree_id', treeId),
   ]);
   return {
     id: t.id, name: t.name, description: t.description || undefined,
     settings: t.settings || undefined, createdAt: t.created_at, updatedAt: t.updated_at,
     rootPersonId: t.settings?.rootPersonId,
-    persons: (persons.data || []).map(rowToPerson),
-    relationships: (rels.data || []).map(rowToRel),
-    journal: (journal.data || []).map(rowToJournal),
+    persons: liveRows(persons.data).map(rowToPerson),
+    relationships: liveRows(rels.data).map(rowToRel),
+    journal: liveRows(journal.data).map(rowToJournal),
   };
 }
 
-// ---------- Saving (upsert all rows + delete removed) ----------
+// ---------- Saving (UPSERT-only + soft-delete tombstones) ----------
+//
+// ARCHITECTURE : plus AUCUN DELETE piloté par un diff « distant − cache local ».
+// L'ancienne syncChildTable inférait les suppressions par ABSENCE (toute ligne
+// distante absente du cache local était purgée) : un cache partiel — course
+// RLS/token, chargement interrompu, storage vidé — était indistinguable d'une
+// suppression volontaire et pouvait effacer l'arbre entier (incident TEDA, 57
+// personnes). Les gardes « cache vide » et « <50 % » n'étaient que des heuristiques.
+// Désormais :
+//   • push        = UPSERT pur des lignes locales, avec deleted_at: null
+//                   (présent localement = vivant → un undo de suppression ranime
+//                   la tombstone). Un cache vide ne pousse rien — et ne supprime
+//                   rien, par construction.
+//   • suppression = UPDATE deleted_at = now() (tombstone), jamais de DELETE. Les
+//                   lectures filtrent deleted_at côté client. Une sur-suppression
+//                   est donc TOUJOURS récupérable (SET deleted_at = NULL).
+//   • retraits implicites (undo d'un ajout, fusion…) : le store diffe contre les
+//                   ids qu'il a réellement AFFICHÉS (voir useFamilyStore), jamais
+//                   contre l'état distant.
+// Migration : supabase/soft-delete.sql. Tant qu'elle n'est pas exécutée, PostgREST
+// rejette toute mention de deleted_at (PGRST204/42703) → repli automatique et
+// durable : upsert sans la colonne, suppression dure (comportement historique).
 
-async function syncChildTable(table: string, treeId: string, rows: any[]) {
-  if (!supabase) return;
-  // GARDE 1 — anti-effacement total : ne JAMAIS synchroniser un cache local VIDE.
-  // Incident TEDA : un arbre chargé sans ses enfants (race RLS/token) puis une
-  // sauvegarde déclenchée → la purge « lignes absentes en local » supprimait TOUTES
-  // les lignes distantes de l'arbre (57 personnes effacées). Sur cache vide on
-  // abandonne la sync de cette table : mieux vaut ne pas propager une suppression
-  // (une vraie suppression de la dernière ligne se resynchronisera plus tard) que
-  // détruire les données à cause d'un cache partiel.
-  if (rows.length === 0) {
-    console.warn(`[sync] ${table}: cache local vide pour ${treeId} — sync ignorée (garde anti-effacement).`);
-    return;
+let softDeleteSupported = true;
+/** Couture de test — réinitialise le repli pré-migration. */
+export function _setSoftDeleteSupported(v: boolean): void { softDeleteSupported = v; }
+
+function isMissingDeletedAt(error: any): boolean {
+  return (error?.code === 'PGRST204' || error?.code === '42703')
+    && String(error?.message ?? '').includes('deleted_at');
+}
+
+export type ChildTable = 'persons' | 'relationships' | 'journal_entries';
+
+/**
+ * Push UPSERT-only d'une table enfant. N'émet JAMAIS de DELETE ni de SELECT de
+ * diff : un état local vide/partiel ne peut rien purger. `client` injectable
+ * pour les tests (défaut : le singleton).
+ */
+export async function pushChildTable(table: ChildTable, rows: any[], client: any = supabase): Promise<void> {
+  if (!client || rows.length === 0) return;
+  // deleted_at: null — une ligne présente localement est vivante ; l'upsert ranime
+  // une éventuelle tombstone (undo d'une suppression, restauration d'un import).
+  const payload = softDeleteSupported ? rows.map(r => ({ ...r, deleted_at: null })) : rows;
+  let { error } = await client.from(table).upsert(payload);
+  if (error && softDeleteSupported && isMissingDeletedAt(error)) {
+    softDeleteSupported = false; // migration soft-delete pas encore exécutée
+    ({ error } = await client.from(table).upsert(rows));
   }
-  // NOTE: every Supabase result is error-checked and THROWN on failure. Previously
-  // these errors were swallowed, so a blocked write (RLS / ownership / constraint)
-  // left syncStatus on "saved" while nothing persisted — the data then vanished on
-  // reload. Surfacing the error makes the cause visible and flips syncStatus to 'error'.
-  const { error } = await supabase.from(table).upsert(rows);
+  // Toute erreur est REMONTÉE (jamais avalée) : le store passe syncStatus à
+  // 'error' et propose Réessayer, au lieu d'un « saved » mensonger.
   if (error) {
     console.error(`[sync] upsert ${table} échoué (${rows.length} lignes):`, error.message, error.code ?? '', error.details ?? '');
     throw error;
   }
-  // Remove rows that no longer exist locally.
-  const { data: existing, error: selError } = await supabase.from(table).select('id').eq('tree_id', treeId);
-  if (selError) { console.error(`[sync] lecture ${table} échouée:`, selError.message); throw selError; }
-  const remoteCount = (existing || []).length;
-  const keep = new Set(rows.map(r => r.id));
-  const remove = (existing || []).map((r: any) => r.id).filter((id: string) => !keep.has(id));
-  // GARDE 2 — anti-suppression massive : si l'état local vaut moins de la moitié des
-  // lignes distantes, on refuse la purge (probable cache partiel/corrompu, pas une
-  // vraie suppression de masse par l'utilisateur). L'upsert ci-dessus a déjà persisté
-  // les modifications ; seule la purge dangereuse est sautée. (remoteCount = lignes
-  // déjà lues ci-dessus, donc pas de requête count supplémentaire.)
-  if (remove.length && remoteCount > 0 && rows.length < remoteCount * 0.5) {
-    console.error(`[sync] ${table}: suppression massive refusée pour ${treeId} — local=${rows.length}, distant=${remoteCount} (garde anti-suppression).`);
-    return;
-  }
-  if (remove.length) {
-    const { error } = await supabase.from(table).delete().in('id', remove);
-    if (error) { console.error(`[sync] suppression ${table} échouée:`, error.message); throw error; }
-  }
 }
 
 /**
- * Suppression DIRECTE et immédiate de lignes enfants précises (persons /
- * relationships / journal). Appelée par les actions de suppression du store pour
- * qu'un retrait atteigne le serveur TOUT DE SUITE, indépendamment du diff-push
- * débouncé dont l'étape DELETE se trouve à la fin d'une longue séquence async : un
- * F5 rapide pouvait la couper et laisser la ligne en base (« je supprime, je F5, la
- * personne réapparaît »). Best-effort : les erreurs sont loguées, le diff-push reste
- * un filet de sécurité, et la RLS continue de gouverner l'écriture.
+ * Suppression immédiate de lignes enfants précises — SOFT DELETE : pose une
+ * tombstone (deleted_at = now()), la ligne reste en base et les lectures la
+ * filtrent. Appelée par le push du store (diff « ids affichés puis retirés »).
+ * Retourne true si la suppression a été persistée ; false → l'appelant doit
+ * retenter (le store garde le retrait en attente et le rejouera au prochain
+ * push). Repli : DELETE dur tant que la migration soft-delete n'est pas passée.
  */
-export async function deleteChildRows(
-  table: 'persons' | 'relationships' | 'journal_entries', ids: string[],
-): Promise<void> {
-  if (!supabase || ids.length === 0) return;
-  const { error } = await supabase.from(table).delete().in('id', ids);
-  if (error) console.error(`[sync] suppression directe ${table} échouée:`, error.message, error.code ?? '');
+export async function deleteChildRows(table: ChildTable, ids: string[], client: any = supabase): Promise<boolean> {
+  if (!client || ids.length === 0) return true;
+  if (softDeleteSupported) {
+    const { error } = await client.from(table).update({ deleted_at: new Date().toISOString() }).in('id', ids);
+    if (!error) return true;
+    if (!isMissingDeletedAt(error)) {
+      console.error(`[sync] soft-delete ${table} échoué:`, error.message, error.code ?? '');
+      return false;
+    }
+    softDeleteSupported = false; // colonne absente → repli DELETE dur
+  }
+  const { error } = await client.from(table).delete().in('id', ids);
+  if (error) { console.error(`[sync] suppression ${table} échouée:`, error.message, error.code ?? ''); return false; }
+  return true;
 }
 
-export async function saveTreeToSupabase(tree: FamilyTree, ownerId: string, isOwner = true): Promise<void> {
-  if (!supabase) return;
+export async function saveTreeToSupabase(tree: FamilyTree, ownerId: string, isOwner = true, client: any = supabase): Promise<void> {
+  if (!client) return;
   // For shared trees the recipient may only write children, never the owning `trees` row.
   if (isOwner) {
     // owner_id must be set EXACTLY ONCE, at creation. A plain upsert re-sent
@@ -232,7 +258,7 @@ export async function saveTreeToSupabase(tree: FamilyTree, ownerId: string, isOw
     // account was connected could rewrite the rightful owner — the tree then
     // disappeared for its real owner after a refresh. We therefore split the write:
     // INSERT sets owner_id (first save only); UPDATE never touches it.
-    const { data: existing, error: selErr } = await supabase
+    const { data: existing, error: selErr } = await client
       .from('trees').select('id').eq('id', tree.id).maybeSingle();
     if (selErr) { console.error('[sync] lecture tree échouée:', selErr.message, selErr.code ?? ''); throw selErr; }
 
@@ -246,19 +272,19 @@ export async function saveTreeToSupabase(tree: FamilyTree, ownerId: string, isOw
 
     if (existing) {
       // UPDATE — owner_id and created_at are left exactly as they are in the row.
-      const { error } = await supabase.from('trees').update(fields).eq('id', tree.id);
+      const { error } = await client.from('trees').update(fields).eq('id', tree.id);
       if (error) { console.error('[sync] update tree échoué:', error.message, error.code ?? ''); throw error; }
     } else {
       // INSERT — the only place owner_id is ever written.
-      const { error } = await supabase.from('trees').insert({
+      const { error } = await client.from('trees').insert({
         id: tree.id, owner_id: ownerId, created_at: tree.createdAt, ...fields,
       });
       if (error) { console.error('[sync] insert tree échoué:', error.message, error.code ?? ''); throw error; }
     }
   }
-  await syncChildTable('persons', tree.id, tree.persons.map(p => personToRow(p, tree.id)));
-  await syncChildTable('relationships', tree.id, tree.relationships.map(r => relToRow(r, tree.id)));
-  await syncChildTable('journal_entries', tree.id, (tree.journal || []).map(e => journalToRow(e, tree.id)));
+  await pushChildTable('persons', tree.persons.map(p => personToRow(p, tree.id)), client);
+  await pushChildTable('relationships', tree.relationships.map(r => relToRow(r, tree.id)), client);
+  await pushChildTable('journal_entries', (tree.journal || []).map(e => journalToRow(e, tree.id)), client);
 }
 
 export async function deleteTreeFromSupabase(treeId: string, ownerId?: string): Promise<{ error?: string }> {
@@ -335,9 +361,9 @@ export async function loadPublicTree(slug: string): Promise<FamilyTree | null> {
   // Defence in depth: even though RLS already hides private fiches, drop any
   // private person here and any relationship that touches one. The journal is
   // never exposed publicly.
-  const allPersons = (persons.data || []).map(rowToPerson).filter(p => p.privacy !== 'private');
+  const allPersons = liveRows(persons.data).map(rowToPerson).filter(p => p.privacy !== 'private');
   const visibleIds = new Set(allPersons.map(p => p.id));
-  const allRels = (rels.data || []).map(rowToRel)
+  const allRels = liveRows(rels.data).map(rowToRel)
     .filter(r => visibleIds.has(r.person1Id) && visibleIds.has(r.person2Id));
   return {
     id: t.id, name: t.name, description: t.description || undefined,
