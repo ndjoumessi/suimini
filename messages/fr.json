@@ -17,6 +17,24 @@
     "done": "Terminé",
     "close": "Fermer"
   },
+  "health": {
+    "title": "État de la configuration",
+    "subtitle": "Présence des secrets et migrations attendues. Aucune valeur de secret n'est affichée.",
+    "forbiddenTitle": "Accès réservé",
+    "forbiddenBody": "Cette page de diagnostic est réservée aux administrateurs.",
+    "backToApp": "Retour à l'app",
+    "allGood": "Toute la configuration requise est présente.",
+    "missing": "{count} secret(s) requis manquant(s).",
+    "group_supabase": "Supabase",
+    "group_ia": "Intelligence artificielle",
+    "group_email": "Emails",
+    "optional": "optionnel",
+    "present": "présent",
+    "absent": "absent",
+    "migrationsTitle": "Migrations attendues",
+    "migrationsHint": "Fichiers du repo. L'état « appliqué » vit dans suimini_migrations (non lisible au runtime — vérifiable via la CI).",
+    "migrationsNone": "Aucune migration détectée dans le bundle."
+  },
   "nav": {
     "home": "Accueil",
     "tree": "Arbre",

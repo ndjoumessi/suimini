@@ -1,0 +1,111 @@
+'use client';
+import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
+import Link from 'next/link';
+import { CheckCircle2, XCircle, MinusCircle, ShieldAlert, ArrowLeft } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+
+interface Check { key: string; label: string; group: string; scope: 'app' | 'server'; optional?: boolean; present: boolean }
+interface Health { ok: boolean; checks: Check[]; missingRequired: string[]; migrations: string[] }
+
+/**
+ * /admin/health — diagnostic de configuration (présence des secrets + migrations
+ * attendues). Réservé aux admins : la route /api/health impose l'AuthZ (403 sinon) ;
+ * cette page ajoute une garde client. Aucune VALEUR de secret n'est exposée.
+ */
+export default function HealthPage() {
+  const t = useTranslations('health');
+  const { isAdmin, isLoading } = useAuth();
+  const [data, setData] = useState<Health | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isLoading || !isAdmin) return;
+    fetch('/api/health')
+      .then(async r => { if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || `HTTP ${r.status}`); return r.json(); })
+      .then(setData)
+      .catch(e => setError(e.message));
+  }, [isAdmin, isLoading]);
+
+  if (isLoading) return null;
+
+  if (!isAdmin) {
+    return (
+      <main id="main-content" style={{ maxWidth: '560px', margin: '0 auto', padding: '48px 20px', textAlign: 'center' }}>
+        <ShieldAlert size={32} aria-hidden="true" style={{ color: 'var(--text-muted)' }} />
+        <h1 className="serif" style={{ fontSize: '22px', marginTop: '12px' }}>{t('forbiddenTitle')}</h1>
+        <p style={{ color: 'var(--text-muted)', marginTop: '8px' }}>{t('forbiddenBody')}</p>
+        <Link href="/app" className="btn btn-secondary btn-sm" style={{ marginTop: '20px', gap: '6px' }}>
+          <ArrowLeft size={14} aria-hidden="true" /> {t('backToApp')}
+        </Link>
+      </main>
+    );
+  }
+
+  const groups = data ? [...new Set(data.checks.map(c => c.group))] : [];
+
+  return (
+    <main id="main-content" style={{ maxWidth: '680px', margin: '0 auto', padding: '40px 20px' }}>
+      <Link href="/app" className="btn btn-ghost btn-sm" style={{ gap: '6px', marginBottom: '16px' }}>
+        <ArrowLeft size={14} aria-hidden="true" /> {t('backToApp')}
+      </Link>
+      <h1 className="serif" style={{ fontSize: '26px', margin: 0 }}>{t('title')}</h1>
+      <p style={{ color: 'var(--text-muted)', margin: '6px 0 24px' }}>{t('subtitle')}</p>
+
+      {error && <p role="alert" className="card" style={{ padding: '14px', color: 'var(--danger)' }}>{error}</p>}
+
+      {data && (
+        <>
+          {/* Bandeau global */}
+          <div className="card" style={{ padding: '14px 16px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', borderColor: data.ok ? 'var(--success)' : 'var(--warning)' }}>
+            {data.ok
+              ? <CheckCircle2 size={20} aria-hidden="true" style={{ color: 'var(--success)' }} />
+              : <ShieldAlert size={20} aria-hidden="true" style={{ color: 'var(--warning)' }} />}
+            <span style={{ fontWeight: 600 }}>{data.ok ? t('allGood') : t('missing', { count: data.missingRequired.length })}</span>
+          </div>
+
+          {/* Secrets par groupe */}
+          {groups.map(g => (
+            <section key={g} className="card" style={{ padding: '16px', marginBottom: '14px' }}>
+              <h2 className="mono" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--accent-text)', margin: '0 0 10px' }}>{t(`group_${g}`)}</h2>
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {data.checks.filter(c => c.group === g).map(c => (
+                  <li key={c.key} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {c.present
+                      ? <CheckCircle2 size={16} aria-hidden="true" style={{ color: 'var(--success)', flexShrink: 0 }} />
+                      : c.optional
+                        ? <MinusCircle size={16} aria-hidden="true" style={{ color: 'var(--text-light)', flexShrink: 0 }} />
+                        : <XCircle size={16} aria-hidden="true" style={{ color: 'var(--danger)', flexShrink: 0 }} />}
+                    <span>{c.label}</span>
+                    <code className="mono" style={{ fontSize: '11px', color: 'var(--text-light)' }}>{c.key}</code>
+                    {c.optional && <span className="mono" style={{ fontSize: '10px', color: 'var(--text-light)' }}>{t('optional')}</span>}
+                    <span style={{ marginLeft: 'auto', fontSize: '12px', color: c.present ? 'var(--success)' : c.optional ? 'var(--text-light)' : 'var(--danger)' }}>
+                      {c.present ? t('present') : t('absent')}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+
+          {/* Migrations */}
+          <section className="card" style={{ padding: '16px' }}>
+            <h2 className="mono" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--accent-text)', margin: '0 0 6px' }}>{t('migrationsTitle')}</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: '0 0 10px' }}>{t('migrationsHint')}</p>
+            {data.migrations.length === 0
+              ? <p style={{ color: 'var(--text-light)' }}>{t('migrationsNone')}</p>
+              : (
+                <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {data.migrations.map(m => (
+                    <li key={m} className="mono" style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <CheckCircle2 size={13} aria-hidden="true" style={{ color: 'var(--text-light)' }} /> {m}
+                    </li>
+                  ))}
+                </ul>
+              )}
+          </section>
+        </>
+      )}
+    </main>
+  );
+}
