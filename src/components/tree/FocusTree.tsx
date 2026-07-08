@@ -111,6 +111,15 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusId, tree]);
 
+  // Validation dev : l'ordre des enfants affichés doit être croissant par birth_date
+  // (getChildren les trie, toutes mères confondues — cf. treeUtils.compareByBirthDate).
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development' && focus && children.length) {
+      console.log(`[FocusTree] children of ${focus.id}:`, children.map(c => c.birthDate));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusId]);
+
   let y = PADY;
   const parentsY = hasParents ? y : -1;
   if (hasParents) y += NODE_H + ROW_V;

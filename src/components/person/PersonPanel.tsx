@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useMemo, useId } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Person, FamilyTree, Relationship, RelationType, FamilyEvent, EventType, Note, Citation, DnaOrigin, AiNarrative } from '@/types';
-import { getParents, getChildren, getSpouses, getSiblings, getAge, formatDate, formatYear, getDisplayName, generateId, safeHttpUrl } from '@/lib/treeUtils';
+import { getParents, getChildren, getSpouses, getSiblings, getAge, formatDate, formatYear, getDisplayName, generateId, safeHttpUrl, compareByBirthDate } from '@/lib/treeUtils';
 import { deleteAvatarByUrl } from '@/lib/uploadImage';
 import { personEras, type HistoricalEvent } from '@/lib/history';
 import PersonAvatar from './PersonAvatar';
@@ -1167,7 +1167,8 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                 const find = (id: string) => tree.persons.find(p => p.id === id);
                 type Row = { rel: Relationship; other: Person };
                 const parentRows = rels.filter(r => r.type === 'parent' && r.person2Id === person.id).map(r => ({ rel: r, other: find(r.person1Id) })).filter(x => x.other) as Row[];
-                const childRows = rels.filter(r => r.type === 'parent' && r.person1Id === person.id).map(r => ({ rel: r, other: find(r.person2Id) })).filter(x => x.other) as Row[];
+                const childRows = (rels.filter(r => r.type === 'parent' && r.person1Id === person.id).map(r => ({ rel: r, other: find(r.person2Id) })).filter(x => x.other) as Row[])
+                  .sort((x, y) => compareByBirthDate(x.other, y.other)); // ordre d'âge, toutes mères confondues
                 const spouseRows = rels.filter(r => (r.type === 'spouse' || r.type === 'partner') && (r.person1Id === person.id || r.person2Id === person.id)).map(r => ({ rel: r, other: find(r.person1Id === person.id ? r.person2Id : r.person1Id) })).filter(x => x.other) as Row[];
 
                 const relatedIds = new Set<string>([person.id]);

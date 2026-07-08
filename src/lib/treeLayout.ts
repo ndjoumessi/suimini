@@ -1,5 +1,5 @@
 import { FamilyTree, Person } from '@/types';
-import { getParents, getChildren, getSpouses, getGeneration, getDisplayName } from '@/lib/treeUtils';
+import { getParents, getChildren, getSpouses, getGeneration, getDisplayName, birthTime } from '@/lib/treeUtils';
 
 export const NODE_W = 140;
 export const NODE_H = 64;
@@ -109,6 +109,13 @@ export function buildTreeLayout(tree: FamilyTree, rootId: string | null): TreeLa
     const arr = childrenMap.get(r.person1Id) ?? [];
     arr.push(r.person2Id);
     childrenMap.set(r.person1Id, arr);
+  }
+  // Ordonne les enfants de chaque parent par âge (birth_date), toutes mères
+  // confondues — sinon le layout les place dans l'ordre des relations (groupés
+  // par mère), à rebours de getChildren (cf. treeUtils). Enfants introuvables/
+  // sans date → en fin (Infinity).
+  for (const arr of childrenMap.values()) {
+    arr.sort((a, b) => birthTime(byId.get(a) ?? ({} as Person)) - birthTime(byId.get(b) ?? ({} as Person)));
   }
 
   // 3) Resolve pivot/root generically.

@@ -175,13 +175,30 @@ export function getParents(personId: string, relationships: Relationship[], pers
     .filter(Boolean) as Person[];
 }
 
+/** Instant de naissance en ms pour le tri ; date absente/invalide → +Infinity
+ * (l'enfant sans date passe en dernier). */
+export function birthTime(p: Person): number {
+  const t = p.birthDate ? new Date(p.birthDate).getTime() : NaN;
+  return Number.isNaN(t) ? Infinity : t;
+}
+
+/** Comparateur « ordre d'âge » (birth_date croissant), réutilisé partout où l'on
+ * ordonne des frères/sœurs (getChildren, layout PDF…) → un seul point de vérité. */
+export function compareByBirthDate(a: Person, b: Person): number {
+  return birthTime(a) - birthTime(b);
+}
+
 export function getChildren(personId: string, relationships: Relationship[], persons: Person[]): Person[] {
   const childRels = relationships.filter(
     r => r.type === 'parent' && r.person1Id === personId
   );
-  return childRels
+  const children = childRels
     .map(r => persons.find(p => p.id === r.person2Id))
     .filter(Boolean) as Person[];
+  // Ordre d'affichage = ordre d'âge, TOUTES MÈRES CONFONDUES : sans ce tri, les
+  // enfants ressortent dans l'ordre des relations `parent` (donc groupés par mère),
+  // pas intercalés par naissance. Tri stable → à date égale, l'ordre des relations tient.
+  return children.sort(compareByBirthDate);
 }
 
 export function getSpouses(personId: string, relationships: Relationship[], persons: Person[]): Person[] {
