@@ -68,6 +68,50 @@ Postgres **n'a pas de rollback automatique** de DDL déjà commit. Stratégie :
    persons/relationships/journal — une sur-suppression reste récupérable
    (`set deleted_at = null`).
 
+## Portage des anciens `supabase/*.sql` (fait)
+
+Les **14 scripts de SCHÉMA** ont été portés en migrations versionnées, ordonnées
+par dépendance (source d'origine conservée sous `supabase/` pour l'historique) :
+
+| # | Migration | Rôle |
+|---|-----------|------|
+| 0003 | `schema` | base (profiles, trees, persons, relationships, journal, RLS, triggers) |
+| 0004 | `soft_delete` | colonnes `deleted_at` + `purge_tombstones()` |
+| 0005 | `rate_limits` | `api_rate_limits` + `consume_rate_limit` |
+| 0006 | `storage` | bucket `avatars` + RLS |
+| 0007 | `push_tokens` | tokens Expo |
+| 0008 | `push_subscriptions` | web push |
+| 0009 | `share_public` | partage public (colonnes/policies sur `trees`) |
+| 0010 | `sharing` | `tree_members` (⚠️ avant 0011–0013 qui le référencent) |
+| 0011 | `sharing_token` | jetons d'invitation |
+| 0012 | `collaboration` | `person_comments`, `person_suggestions` |
+| 0013 | `collaboration_rpc` | RPC membres/invitations |
+| 0014 | `documents` | `scanned_documents` |
+| 0015 | `photo_tags` | `photo_tags` |
+| 0016 | `birthday_cron` | pg_cron + pg_net (planif. anniversaires) |
+
+Tous **idempotents à l'application** (DDL `drop-if-exists`/`create-or-replace`/
+`if-not-exists` ; la DML éventuelle est dans des **corps de fonction**, exécutée à
+l'appel, pas à l'application) et sans `BEGIN/COMMIT` (le runner enveloppe).
+
+### ⚠️ Adoption : `baseline` d'abord
+
+Ces 14 sont **déjà en prod**. Après leur ajout, lancer **UNE fois** le workflow
+*Apply DB Migrations* en `workflow_dispatch` avec **`command = baseline`** → les
+marque appliquées **sans les rejouer**. (Un `up` les ré-appliquerait ; c'est
+non destructif car idempotent, mais inutile et ça peut faire échouer 0016 si
+pg_cron/secret diffèrent. Préférer `baseline`.)
+
+### Scripts NON portés (volontaire) — données, pas schéma
+
+`seed-admin.sql` (seed d'un admin), `cleanup-demo-tree.sql` (purge démo) et
+`cleanup-extra-duplicates.sql` (hygiène `extra`) contiennent de la **DML
+top-niveau qui MUTE des données** et sont **spécifiques à un environnement /
+one-off**. Les versionner comme migrations laisserait la CI (`up`) les rejouer et
+**corrompre/re-seeder** la prod. Ils restent des scripts manuels documentés sous
+`supabase/` (déjà appliqués). Les corrections de données courantes passent par
+l'app (**Réglages › Données › Éditer surnoms**, `BulkDataModal`).
+
 ## Validation locale avant livraison
 
 Le runner a été validé sur un Postgres jetable (`initdb`/`pg_ctl`) : `status`

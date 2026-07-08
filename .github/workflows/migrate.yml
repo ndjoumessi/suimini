@@ -17,7 +17,13 @@ on:
       - 'supabase/migrations/**'
       - 'scripts/migrate.mjs'
       - '.github/workflows/migrate.yml'
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      command:
+        description: "Commande (up = applique | baseline = marque appliqué sans exécuter | status)"
+        default: up
+        type: choice
+        options: [up, baseline, status]
 
 permissions:
   contents: read
@@ -28,7 +34,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Guard — secrets présents ?
         id: guard
@@ -46,16 +52,19 @@ jobs:
 
       - name: Setup Node 22
         if: steps.guard.outputs.ready == 'true'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
 
-      - name: Apply migrations (status → up)
+      - name: Apply migrations (status → command)
         if: steps.guard.outputs.ready == 'true'
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+          # push → 'up' ; workflow_dispatch → choix (up|baseline|status). Valeur de
+          # liste déroulante (sûre), passée par env par prudence.
+          COMMAND: ${{ github.event.inputs.command || 'up' }}
         run: |
           set -euo pipefail
           node scripts/migrate.mjs status
-          node scripts/migrate.mjs up
+          node scripts/migrate.mjs "$COMMAND"
