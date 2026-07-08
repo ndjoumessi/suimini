@@ -4,7 +4,8 @@ import { FamilyTree, Person, Relationship, JournalEntry } from '@/types';
 import { sampleFamilyTree } from '@/lib/sampleData';
 import { generateId, getDisplayName } from '@/lib/treeUtils';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
-import { loadTreesFromSupabase, saveTreeToSupabase, deleteTreeFromSupabase, deleteChildRows, loadOneTree, detectDeleteConflicts, restoreEntityAlive, SharedMeta, ChildTable } from '@/lib/supabaseSync';
+import type { SharedMeta, ChildTable } from '@/lib/supabaseSync';
+import { getDataClient } from '@/lib/dataClient';
 import { mergeTreeFavoringLocal, treeIdSets, removedIds, TreeIdSets } from '@/lib/syncMerge';
 import { addConflicts, Conflict } from '@/lib/conflictQueue';
 import { offlineStorage } from '@/lib/offlineStorage';
@@ -258,7 +259,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
       const MAX_ATTEMPTS = 3;
       const run = async (attempt: number) => {
         try {
-          const { trees: remote, shared: sharedMeta } = await loadTreesFromSupabase(user.id);
+          const { trees: remote, shared: sharedMeta } = await getDataClient().loadTrees(user.id);
           if (!active) return;
           setShared(sharedMeta);
           if (remote.length > 0) {
@@ -444,7 +445,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
       const toDelete = ids.filter(id => !currentByTable[table]?.has(id));
       // Best-effort : en échec, l'id RESTE en attente et sera rejoué au prochain
       // push (au plus tard au prochain chargement de l'app).
-      if (toDelete.length && await deleteChildRows(table, toDelete)) clearPendingDeletes(table, toDelete);
+      if (toDelete.length && await getDataClient().deleteChildRows(table, toDelete)) clearPendingDeletes(table, toDelete);
     }
     // ── Résolution de conflits multi-appareils (delete-vs-edit) ──────────────────
     // Un AUTRE appareil a pu soft-deleter une personne/relation APRÈS notre dernière
@@ -456,8 +457,8 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     let treeToPush = tree;
     try {
       const [personConflicts, relConflicts] = await Promise.all([
-        detectDeleteConflicts('persons', tree.persons.map(p => ({ id: p.id, updatedAt: p.updatedAt }))),
-        detectDeleteConflicts('relationships', tree.relationships.map(r => ({ id: r.id, updatedAt: (r as { updatedAt?: string }).updatedAt }))),
+        getDataClient().detectDeleteConflicts('persons', tree.persons.map(p => ({ id: p.id, updatedAt: p.updatedAt }))),
+        getDataClient().detectDeleteConflicts('relationships', tree.relationships.map(r => ({ id: r.id, updatedAt: (r as { updatedAt?: string }).updatedAt }))),
       ]);
       if (personConflicts.length || relConflicts.length) {
         const queued: Conflict[] = [];
@@ -480,7 +481,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
         }
       }
     } catch { /* fail-open : on pousse l'arbre entier comme avant */ }
-    await saveTreeToSupabase(treeToPush, user.id, isOwner);
+    await getDataClient().saveTree(treeToPush, user.id, isOwner);
     knownIdsRef.current = { ...knownIdsRef.current, [tree.id]: current };
   }, [user, shared]);
   const pushTreeNowRef = useRef(pushTreeNow); pushTreeNowRef.current = pushTreeNow;
@@ -531,7 +532,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
   // Reload one tree from the cloud (used by realtime collaborator updates).
   const reloadTreeFromCloud = useCallback(async (treeId: string) => {
     if (!cloud) return;
-    const fresh = await loadOneTree(treeId);
+    const fresh = await getDataClient().loadOneTree(treeId);
     if (fresh) {
       setTrees(prev => prev.map(t => t.id === treeId ? fresh : t));
       localCacheRef.current = localCacheRef.current.map(t => t.id === treeId ? fresh : t);
@@ -558,7 +559,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
       if (!session) { setSyncStatus('error'); return false; }
     }
     try {
-      const { trees: remote, shared: sharedMeta } = await loadTreesFromSupabase(user.id);
+      const { trees: remote, shared: sharedMeta } = await getDataClient().loadTrees(user.id);
       // EMPTY-RESULT GUARD: an empty result is almost always the RLS token-not-ready
       // race (the initial loader retries 3× for exactly this), not a genuinely empty
       // account. NEVER destroy the local cache / blank the screen on []. Keep what we
@@ -675,7 +676,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
       entity = trees.find(t => t.id === conflict.treeId)?.relationships.find(r => r.id === conflict.id) ?? conflict.local;
     }
     try {
-      await restoreEntityAlive(conflict.treeId, conflict.entityType, entity);
+      await getDataClient().restoreEntity(conflict.treeId, conflict.entityType, entity);
       return true;
     } catch (err) {
       console.error('[store] Restauration du conflit échouée:', err);
@@ -713,7 +714,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     if (!user) return;
     setSyncStatus('syncing');
     try {
-      for (const t of localCacheRef.current) await saveTreeToSupabase(t, user.id, true);
+      for (const t of localCacheRef.current) await getDataClient().saveTree(t, user.id, true);
       rememberKnownIds(localCacheRef.current);
       setMigrationPending(false);
       try { localStorage.setItem(IMPORT_DONE_KEY, 'true'); } catch { /* ignore */ }
@@ -780,7 +781,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     const { [treeId]: _gone, ...rest } = knownIdsRef.current; void _gone;
     knownIdsRef.current = rest;
     if (cloud && user) {
-      deleteTreeFromSupabase(treeId, user.id)
+      getDataClient().deleteTree(treeId, user.id)
         .then(({ error }) => { if (error) console.error('[store] Suppression cloud échouée:', error); })
         .catch((err) => console.error('[store] Suppression cloud échouée:', err?.message ?? err));
     }
