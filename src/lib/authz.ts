@@ -59,12 +59,17 @@ async function hasShare(p: AuthzDataProvider, treeId: string, c: MaybeCaller, mi
 
 // ── Prédicats publics (utilisés par les endpoints) ───────────────────────────
 
-/** persons/relationships READ : owner OU share(read) OU membre accepté OU public. */
-export async function canReadTreeContent(p: AuthzDataProvider, treeId: string, c: MaybeCaller): Promise<boolean> {
+/**
+ * Lecture AUTHENTIFIÉE et NON MASQUÉE d'un arbre (endpoint /api/data/trees/[id]) :
+ * owner OU tree_shares(read|write) OU membre accepté. **PAS le public** — un
+ * lecteur public passe par l'endpoint dédié avec masquage par-fiche
+ * (isTreePublic + isPersonPubliclyVisible), jamais par ce chemin non masqué
+ * (sinon une fiche privée d'un arbre public fuiterait une fois RLS retiré).
+ */
+export async function canReadTreeAsMember(p: AuthzDataProvider, treeId: string, c: MaybeCaller): Promise<boolean> {
   if (await isOwner(p, treeId, c)) return true;
   if (await hasShare(p, treeId, c, 'read')) return true;
-  if (await isAcceptedMember(p, treeId, c)) return true;
-  return p.isTreePublic(treeId); // lecture publique (masquage par-fiche appliqué à part)
+  return isAcceptedMember(p, treeId, c);
 }
 
 /** content WRITE : owner OU share=write. PAS les membres (lecture seule). */

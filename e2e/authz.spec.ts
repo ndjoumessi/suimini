@@ -6,7 +6,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { test, expect } from '@playwright/test';
 import {
-  canReadTreeContent, canWriteTreeContent, canReadJournal, isTreeOwner,
+  canReadTreeAsMember, canWriteTreeContent, canReadJournal, isTreeOwner,
   canReadOwnProfile, isAdmin, isSuperAdmin,
   isPersonPubliclyVisible, isRelationshipPubliclyVisible,
   createSupabaseAuthzProvider,
@@ -53,14 +53,16 @@ const PRIV: Row[] = [
   { caller: 'anon',       readContent: false, writeContent: false, readJournal: false, owner: false },
 ];
 
-// Arbre PUBLIC : seule la lecture de contenu s'ouvre à tous ; write/journal/owner inchangés.
-const PUB: Row[] = PRIV.map(r => ({ ...r, readContent: true }));
+// Arbre PUBLIC : le chemin AUTHENTIFIÉ non masqué (canReadTreeAsMember) ne s'ouvre
+// PAS au public (celui-ci passe par l'endpoint masqué). Donc attentes = privé.
+// C'est justement ce qu'on veut prouver : le flag public ne fuite pas ici.
+const PUB: Row[] = PRIV.map(r => ({ ...r }));
 
 for (const [treeId, table] of [['Tpriv', PRIV], ['Tpub', PUB]] as const) {
   for (const row of table) {
     test(`[${treeId}] ${row.caller}`, async () => {
       const caller = C[row.caller];
-      expect(await canReadTreeContent(provider, treeId, caller)).toBe(row.readContent);
+      expect(await canReadTreeAsMember(provider, treeId, caller)).toBe(row.readContent);
       expect(await canWriteTreeContent(provider, treeId, caller)).toBe(row.writeContent);
       expect(await canReadJournal(provider, treeId, caller)).toBe(row.readJournal);
       expect(await isTreeOwner(provider, treeId, caller)).toBe(row.owner);

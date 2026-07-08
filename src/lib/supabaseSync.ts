@@ -94,12 +94,12 @@ function liveRows(rows: any[] | null | undefined): any[] {
   return (rows || []).filter((r: any) => !r.deleted_at);
 }
 
-export async function loadTreesFromSupabase(userId: string): Promise<LoadResult> {
-  if (!supabase) return { trees: [], shared: {} };
-  const { data: treeRows, error } = await supabase.from('trees').select('*');
+export async function loadTreesFromSupabase(userId: string, client: any = supabase): Promise<LoadResult> {
+  if (!client) return { trees: [], shared: {} };
+  const { data: treeRows, error } = await client.from('trees').select('*');
   if (error || !treeRows) return { trees: [], shared: {} };
 
-  const treeIds = treeRows.map(t => t.id);
+  const treeIds = treeRows.map((t: any) => t.id);
   const shared: Record<string, SharedMeta> = {};
 
   // Bulk-load children for all accessible trees. NOTE: `treeIds` only contains the
@@ -107,9 +107,9 @@ export async function loadTreesFromSupabase(userId: string): Promise<LoadResult>
   // owner_id ≠ the connected account is excluded HERE, so none of its persons are
   // fetched — that, not a row limit, is why a mis-owned tree shows ~0 of its people.
   const [persons, rels, journal] = await Promise.all([
-    treeIds.length ? supabase.from('persons').select('*').in('tree_id', treeIds) : Promise.resolve({ data: [] as any[] }),
-    treeIds.length ? supabase.from('relationships').select('*').in('tree_id', treeIds) : Promise.resolve({ data: [] as any[] }),
-    treeIds.length ? supabase.from('journal_entries').select('*').in('tree_id', treeIds) : Promise.resolve({ data: [] as any[] }),
+    treeIds.length ? client.from('persons').select('*').in('tree_id', treeIds) : Promise.resolve({ data: [] as any[] }),
+    treeIds.length ? client.from('relationships').select('*').in('tree_id', treeIds) : Promise.resolve({ data: [] as any[] }),
+    treeIds.length ? client.from('journal_entries').select('*').in('tree_id', treeIds) : Promise.resolve({ data: [] as any[] }),
   ]);
   // Surface child-load errors instead of silently returning partial data.
   if ((persons as any).error) console.error('[sync] load persons échoué:', (persons as any).error.message);
@@ -117,25 +117,25 @@ export async function loadTreesFromSupabase(userId: string): Promise<LoadResult>
   if ((journal as any).error) console.error('[sync] load journal échoué:', (journal as any).error.message);
 
   // Owner display names for shared trees.
-  const otherOwners = Array.from(new Set(treeRows.filter(t => t.owner_id !== userId).map(t => t.owner_id)));
+  const otherOwners = Array.from(new Set(treeRows.filter((t: any) => t.owner_id !== userId).map((t: any) => t.owner_id)));
   const ownerNames: Record<string, string> = {};
   if (otherOwners.length) {
     // Peer profiles are no longer directly selectable (RLS now restricts profiles
     // to self/admin); fetch only the safe display fields via the RPC. Falls back to
     // a direct select if the RPC isn't deployed yet (pre-migration).
     type PubProfile = { id: string; display_name?: string | null; email?: string | null };
-    const rpc = await supabase.rpc('get_public_profiles', { ids: otherOwners });
+    const rpc = await client.rpc('get_public_profiles', { ids: otherOwners });
     let profs: PubProfile[] = [];
     if (!rpc.error && rpc.data) {
       profs = rpc.data as PubProfile[];
     } else {
-      const direct = await supabase.from('profiles').select('id, display_name, email').in('id', otherOwners);
+      const direct = await client.from('profiles').select('id, display_name, email').in('id', otherOwners);
       profs = (direct.data ?? []) as PubProfile[];
     }
     profs.forEach(p => { ownerNames[p.id] = p.display_name || p.email || 'un collaborateur'; });
   }
 
-  const trees: FamilyTree[] = treeRows.map(t => {
+  const trees: FamilyTree[] = treeRows.map((t: any) => {
     if (t.owner_id !== userId) shared[t.id] = { sharedByName: ownerNames[t.owner_id] || 'un collaborateur' };
     return {
       id: t.id, name: t.name, description: t.description || undefined,

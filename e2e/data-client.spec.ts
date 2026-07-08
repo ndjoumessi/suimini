@@ -23,3 +23,39 @@ test('DATA_LAYER par défaut = direct (rollback par défaut, aucun flag posé)',
 test('getDataClient() est un singleton stable (même instance à chaque appel)', () => {
   expect(getDataClient()).toBe(getDataClient());
 });
+
+// ── ApiDataClient (PR3) : lecture via /api/data/* (fetch mocké) ──────────────
+import { apiDataClient } from '../src/lib/dataClient';
+
+test('ApiDataClient.loadTrees → GET /api/data/trees, renvoie le LoadResult', async () => {
+  const calls: string[] = [];
+  const orig = globalThis.fetch;
+  globalThis.fetch = (async (url: any) => {
+    calls.push(String(url));
+    return { ok: true, status: 200, json: async () => ({ trees: [{ id: 't1' }], shared: {} }) } as any;
+  }) as any;
+  try {
+    const res = await apiDataClient.loadTrees('user1');
+    expect(calls[0]).toBe('/api/data/trees');
+    expect(res.trees[0].id).toBe('t1');
+  } finally { globalThis.fetch = orig; }
+});
+
+test('ApiDataClient.loadOneTree → GET /api/data/trees/[id] ; 404 → null', async () => {
+  const orig = globalThis.fetch;
+  // cas OK
+  globalThis.fetch = (async (url: any) => {
+    expect(String(url)).toBe('/api/data/trees/t%20A'); // encodeURIComponent
+    return { ok: true, status: 200, json: async () => ({ id: 't A', name: 'X', persons: [], relationships: [] }) } as any;
+  }) as any;
+  try {
+    const t = await apiDataClient.loadOneTree('t A');
+    expect(t?.id).toBe('t A');
+  } finally { globalThis.fetch = orig; }
+  // cas 404
+  const orig2 = globalThis.fetch;
+  globalThis.fetch = (async () => ({ ok: false, status: 404, json: async () => ({}) }) as any) as any;
+  try {
+    expect(await apiDataClient.loadOneTree('missing')).toBe(null);
+  } finally { globalThis.fetch = orig2; }
+});
