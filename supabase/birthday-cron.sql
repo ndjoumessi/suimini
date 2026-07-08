@@ -27,7 +27,7 @@ select cron.schedule(
   '0 8 * * *',
   $$
   select net.http_post(
-    url     := 'https://<PROJECT_REF>.supabase.co/functions/v1/send-birthday-notifications',
+    url     := 'https://bhthavcnlxflhhevdneo.supabase.co/functions/v1/send-birthday-notifications',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
       'Authorization', 'Bearer <CRON_SECRET>'

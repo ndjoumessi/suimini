@@ -18,3 +18,8 @@ out/
 .impeccable/
 .agents/
 skills-lock.json
+
+# Local Android build artifact (84MB) — never commit
+*.apk
+# Supabase CLI temp
+supabase/.temp/
