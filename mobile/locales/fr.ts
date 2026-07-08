@@ -210,6 +210,18 @@ export const fr = {
     errDelete: 'Suppression impossible.',
     swipeHint: 'Glissez une ligne pour supprimer · appui long pour les options',
   },
+  duplicates: {
+    warnTitle: 'Doublon possible',
+    warnBody: '« {{name}} » ressemble à cette fiche ({{reasons}}). Ajouter quand même ?',
+    blockingTitle: 'Doublon quasi certain',
+    blockingBody: "« {{name}} » existe déjà ({{reasons}}). Ouvrez la fiche existante plutôt que d'en créer une seconde.",
+    addAnyway: 'Ajouter quand même',
+    openExisting: 'Ouvrir la fiche existante',
+    reasonSameFirstName: 'même prénom',
+    reasonSameLastName: 'même nom',
+    reasonCloseBirthYear: 'année de naissance proche',
+    reasonSameGender: 'même genre',
+  },
 };
 
 export type Resources = typeof fr;

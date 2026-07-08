@@ -39,19 +39,40 @@ export function removedIds(known: TreeIdSets | undefined, current: TreeIdSets): 
   };
 }
 
+/** Last-write-wins entre deux versions d'une même entité horodatée : garde la plus
+ * récente (`updatedAt`). Départage conservateur : à horodatage égal ou distant
+ * illisible → on garde le LOCAL (compatible avec l'intention FAVOR_LOCAL : une édition
+ * qu'on vient de faire est plus récente → gagne ; une vraie édition distante
+ * postérieure d'un collaborateur gagne). */
+function newerOf<T extends { updatedAt?: string }>(localE: T, remoteE: T): T {
+  const lms = Date.parse(localE.updatedAt || '');
+  const rms = Date.parse(remoteE.updatedAt || '');
+  if (isNaN(rms)) return localE;
+  if (isNaN(lms)) return remoteE;
+  return rms > lms ? remoteE : localE;
+}
+
 /**
  * Merge favouring the recently-edited LOCAL tree over a possibly-stale remote read.
- * Keeps ALL local persons/relations/journal (freshest field values, incl. renames),
- * and ADDS only remote entities absent locally AND not recently deleted here (so a
- * collaborator's addition still appears, but a local delete is never resurrected).
- * Relations are added only when both endpoints exist in the merged person set.
- * NB : les tombstones distantes (soft-delete) sont déjà filtrées au chargement,
- * donc jamais ré-ajoutées ici.
+ * Pour une entité présente des DEUX côtés → LAST-WRITE-WINS par `updatedAt` (une
+ * édition locale toute fraîche gagne ; une édition distante réellement plus récente
+ * d'un collaborateur gagne). ADDS only remote entities absent locally AND not recently
+ * deleted here (so a collaborator's addition still appears, but a local delete is
+ * NEVER resurrected). Relations are added only when both endpoints exist in the merged
+ * person set. NB : les tombstones distantes (soft-delete) sont déjà filtrées au
+ * chargement, donc jamais ré-ajoutées ici. Les relations n'ont pas d'`updatedAt` →
+ * on garde le local (comportement historique) et on ajoute seulement les distantes
+ * absentes.
  */
 export function mergeTreeFavoringLocal(local: FamilyTree, remote: FamilyTree, deleted: Set<string>): FamilyTree {
+  const remotePersonById = new Map(remote.persons.map(p => [p.id, p]));
   const localPersonIds = new Set(local.persons.map(p => p.id));
   const persons = [
-    ...local.persons,
+    // LWW pour les personnes présentes des deux côtés.
+    ...local.persons.map(lp => {
+      const rp = remotePersonById.get(lp.id);
+      return rp ? newerOf(lp, rp) : lp;
+    }),
     ...remote.persons.filter(p => !localPersonIds.has(p.id) && !deleted.has(p.id)),
   ];
   const personIds = new Set(persons.map(p => p.id));
@@ -63,9 +84,14 @@ export function mergeTreeFavoringLocal(local: FamilyTree, remote: FamilyTree, de
       && personIds.has(r.person1Id) && personIds.has(r.person2Id)),
   ];
   const localJournal = local.journal || [];
+  const remoteJournalById = new Map((remote.journal || []).map(j => [j.id, j]));
   const localJournalIds = new Set(localJournal.map(j => j.id));
   const journal = [
-    ...localJournal,
+    // LWW pour les entrées de journal présentes des deux côtés.
+    ...localJournal.map(lj => {
+      const rj = remoteJournalById.get(lj.id);
+      return rj ? newerOf(lj, rj) : lj;
+    }),
     ...(remote.journal || []).filter(j => !localJournalIds.has(j.id) && !deleted.has(j.id)),
   ];
   return { ...local, persons, relationships, journal };

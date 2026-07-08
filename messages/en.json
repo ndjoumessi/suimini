@@ -1164,7 +1164,8 @@
     "deleteConfirmText": "This can’t be undone.",
     "deleteConfirm": "Delete",
     "photoDeleted": "Photo deleted",
-    "photoAdded": "Photo added"
+    "photoAdded": "Photo added",
+    "photoCompressed": "Photo compressed: {before} → {after}"
   },
   "photoAnalyzer": {
     "title": "Face recognition",
@@ -1244,7 +1245,9 @@
     "aiError": "AI search failed",
     "kinship": "Relationship",
     "clearFilters": "Reset",
-    "noMatch": "No match"
+    "noMatch": "No match",
+    "approxMatch": "Approx.",
+    "approxGroup": "Approximate matches"
   },
   "collaboration": {
     "tab": "Discussion",
@@ -1463,7 +1466,22 @@
     "back": "Back",
     "cancel": "Cancel",
     "rawText": "Raw text",
-    "scanButton": "Scan a document"
+    "scanButton": "Scan a document",
+    "role": "Role",
+    "gender": "Sex",
+    "genderMale": "Male",
+    "genderFemale": "Female",
+    "genderUnknown": "Unknown",
+    "husband": "Husband",
+    "wife": "Wife",
+    "acteNumber": "Record no.",
+    "commune": "Municipality",
+    "documentInfo": "Record details",
+    "variantNote": "Variant detected: {original} → {canonical}",
+    "confidence_high": "High confidence",
+    "confidence_medium": "Medium confidence",
+    "confidence_low": "Low confidence",
+    "lowConfidenceHint": "Check and correct the fields before importing."
   },
   "offline": {
     "banner": "Offline mode",
@@ -1744,5 +1762,31 @@
     "homeAria": "Suimini home",
     "sharedLabel": "Shared tree",
     "cta": "Discover Suimini"
+  },
+  "conflicts": {
+    "title": "Deleted on another device",
+    "body": "{name} was deleted on another device while you were editing it. What would you like to do?",
+    "keepDeletion": "Keep the deletion",
+    "restorePerson": "Restore the person",
+    "restoreRelationship": "Restore the relationship",
+    "relationName": "This relationship",
+    "keptToast": "Deletion kept",
+    "restoredToast": "{name} restored",
+    "restoreFailedToast": "Restore failed — try again"
+  },
+  "duplicates": {
+    "warnTitle": "Possible duplicate",
+    "warnDesc": "A similar person already exists in this tree. Please check before adding.",
+    "blockingTitle": "Almost certainly a duplicate",
+    "blockingDesc": "This person almost certainly already exists. Open the existing profile instead of creating a second one.",
+    "cancel": "Cancel",
+    "addAnyway": "Add anyway",
+    "openExisting": "Open existing profile",
+    "matchScore": "{score}% match",
+    "unnamed": "Unnamed",
+    "reasonSameFirstName": "Same first name",
+    "reasonSameLastName": "Same last name",
+    "reasonCloseBirthYear": "Close birth year",
+    "reasonSameGender": "Same gender"
   }
 }

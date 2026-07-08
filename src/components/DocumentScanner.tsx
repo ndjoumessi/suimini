@@ -13,6 +13,7 @@ import { ErrorMessage } from '@/components/ui/ErrorMessage';
 export interface ImportItem {
   firstName?: string;
   lastName?: string;
+  gender?: string;
   birthDate?: string;
   birthPlace?: string;
   occupation?: string;
@@ -37,19 +38,27 @@ interface OcrPerson {
   role: string;
   firstName: string | null;
   lastName: string | null;
+  gender: 'male' | 'female' | 'unknown' | null;
   birthDate: string | null;
   birthPlace: string | null;
   occupation: string | null;
   notes: string | null;
+  /** Set by the server's Bamiléké-name normalization. */
+  lastNameOriginal: string | null;
+  lastNameIsVariant: boolean;
 }
 
 /** Shape returned by POST /api/ocr-document. */
 interface OcrResponse {
+  type: string;
   documentType: string;
   persons: OcrPerson[];
+  acteNumber: string | null;
+  commune: string | null;
   date: string | null;
   place: string | null;
   confidence: number | null;
+  notes: string | null;
   rawText: string | null;
 }
 
@@ -58,11 +67,24 @@ interface EditPerson {
   role: string;
   firstName: string;
   lastName: string;
+  /** 'male' | 'female' | 'unknown' — stored loosely so the generic editor stays simple. */
+  gender: string;
   birthDate: string;
   birthPlace: string;
   occupation: string;
+  /** Written form of the surname when it was normalized to a canonical variant (else null). */
+  variantOriginal: string | null;
   /** 'new' | 'ignore' | a personId */
   assignment: string;
+}
+
+/** Role options offered in the per-person editor (French civil-registry tokens). */
+const ROLE_OPTIONS = ['sujet', 'pere', 'mere', 'epoux', 'epouse', 'temoin'] as const;
+const GENDER_OPTIONS = ['male', 'female', 'unknown'] as const;
+
+type ConfidenceLevel = 'high' | 'medium' | 'low';
+function confidenceLevel(c: number): ConfidenceLevel {
+  return c >= 0.8 ? 'high' : c >= 0.5 ? 'medium' : 'low';
 }
 
 const MAX_BYTES = 8 * 1024 * 1024;
@@ -108,6 +130,9 @@ export default function DocumentScanner({ tree, preselectPersonId, onClose, onIm
   const [error, setError] = useState('');
   const [people, setPeople] = useState<EditPerson[]>([]);
   const [confidence, setConfidence] = useState<number | null>(null);
+  const [acteNumber, setActeNumber] = useState('');
+  const [commune, setCommune] = useState('');
+  const [docNotes, setDocNotes] = useState('');
   const [rawText, setRawText] = useState('');
   const [showRaw, setShowRaw] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -149,17 +174,22 @@ export default function DocumentScanner({ tree, preselectPersonId, onClose, onIm
       const data = await res.json() as OcrResponse;
       const detected = data.persons || [];
       const edits: EditPerson[] = detected.map((p, i) => ({
-        role: p.role,
+        role: p.role || 'sujet',
         firstName: p.firstName ?? '',
         lastName: p.lastName ?? '',
+        gender: p.gender ?? 'unknown',
         birthDate: p.birthDate ?? '',
         birthPlace: p.birthPlace ?? '',
         occupation: p.occupation ?? '',
+        variantOriginal: p.lastNameIsVariant ? (p.lastNameOriginal ?? null) : null,
         // First person defaults to the preselected member when opened from a profile.
         assignment: i === 0 && preselectPersonId ? preselectPersonId : 'new',
       }));
       setPeople(edits);
       setConfidence(data.confidence ?? null);
+      setActeNumber(data.acteNumber ?? '');
+      setCommune(data.commune ?? '');
+      setDocNotes(data.notes ?? '');
       setRawText(data.rawText ?? '');
       setStep('extracted');
     } catch (e) {
@@ -182,6 +212,7 @@ export default function DocumentScanner({ tree, preselectPersonId, onClose, onIm
       const items: ImportItem[] = people.map(p => ({
         firstName: p.firstName || undefined,
         lastName: p.lastName || undefined,
+        gender: p.gender || undefined,
         birthDate: p.birthDate || undefined,
         birthPlace: p.birthPlace || undefined,
         occupation: p.occupation || undefined,
@@ -198,13 +229,23 @@ export default function DocumentScanner({ tree, preselectPersonId, onClose, onIm
 
   const roleLabel = useCallback((role: string): string => {
     switch (role) {
-      case 'subject': return t('subject');
-      case 'father': return t('father');
-      case 'mother': return t('mother');
+      case 'subject': case 'sujet': return t('subject');
+      case 'father': case 'pere': return t('father');
+      case 'mother': case 'mere': return t('mother');
       case 'parent': return t('parent');
       case 'spouse': return t('spouse');
-      case 'witness': return t('witness');
+      case 'epoux': return t('husband');
+      case 'epouse': return t('wife');
+      case 'witness': case 'temoin': return t('witness');
       default: return t('person');
+    }
+  }, [t]);
+
+  const genderLabel = useCallback((g: string): string => {
+    switch (g) {
+      case 'male': return t('genderMale');
+      case 'female': return t('genderFemale');
+      default: return t('genderUnknown');
     }
   }, [t]);
 
@@ -300,8 +341,36 @@ export default function DocumentScanner({ tree, preselectPersonId, onClose, onIm
               <div className="ds-result-head">
                 <span className="label" style={{ color: ACCENT }}>{t('extracted', { count: people.length })}</span>
                 {confidence != null && (
-                  <span className="label" style={{ color: 'var(--text-muted)' }}>{t('confidence', { value: Math.round(confidence * 100) })}</span>
+                  <span
+                    className={`ds-conf ds-conf-${confidenceLevel(confidence)}`}
+                    role="status"
+                    aria-label={t('confidence', { value: Math.round(confidence * 100) })}
+                  >
+                    <span className="ds-conf-dot" aria-hidden="true" />
+                    {t(`confidence_${confidenceLevel(confidence)}`)}
+                    <span className="mono ds-conf-pct">{Math.round(confidence * 100)}%</span>
+                  </span>
                 )}
+              </div>
+
+              {confidence != null && confidenceLevel(confidence) !== 'high' && (
+                <p className="ds-conf-hint">{t('lowConfidenceHint')}</p>
+              )}
+
+              {/* Document-level metadata — editable before import. */}
+              <div className="ds-doc card">
+                <h3 className="serif ds-doc-title">{t('documentInfo')}</h3>
+                <div className="ds-grid">
+                  <div className="ds-field">
+                    <label htmlFor="ds-acte" className="label ds-field-label">{t('acteNumber')}</label>
+                    <input id="ds-acte" className="input" value={acteNumber} onChange={e => setActeNumber(e.target.value)} />
+                  </div>
+                  <div className="ds-field">
+                    <label htmlFor="ds-commune" className="label ds-field-label">{t('commune')}</label>
+                    <input id="ds-commune" className="input" value={commune} onChange={e => setCommune(e.target.value)} />
+                  </div>
+                </div>
+                {docNotes && <p className="ds-doc-notes">{docNotes}</p>}
               </div>
 
               {people.length === 0 ? (
@@ -310,9 +379,33 @@ export default function DocumentScanner({ tree, preselectPersonId, onClose, onIm
                 <ul className="ds-list">
                   {people.map((p, i) => (
                     <li key={i} className="card ds-person">
-                      <h3 className="serif ds-person-role">{roleLabel(p.role)}</h3>
+                      <div className="ds-person-head">
+                        <span className="serif ds-person-role">{roleLabel(p.role)}</span>
+                      </div>
 
                       <div className="ds-grid">
+                        <div className="ds-field">
+                          <label htmlFor={`ds-role-${i}`} className="label ds-field-label">{t('role')}</label>
+                          <select
+                            id={`ds-role-${i}`}
+                            className="input ds-select"
+                            value={ROLE_OPTIONS.includes(p.role as typeof ROLE_OPTIONS[number]) ? p.role : 'sujet'}
+                            onChange={e => updateField(i, 'role', e.target.value)}
+                          >
+                            {ROLE_OPTIONS.map(r => <option key={r} value={r}>{roleLabel(r)}</option>)}
+                          </select>
+                        </div>
+                        <div className="ds-field">
+                          <label htmlFor={`ds-gender-${i}`} className="label ds-field-label">{t('gender')}</label>
+                          <select
+                            id={`ds-gender-${i}`}
+                            className="input ds-select"
+                            value={GENDER_OPTIONS.includes(p.gender as typeof GENDER_OPTIONS[number]) ? p.gender : 'unknown'}
+                            onChange={e => updateField(i, 'gender', e.target.value)}
+                          >
+                            {GENDER_OPTIONS.map(g => <option key={g} value={g}>{genderLabel(g)}</option>)}
+                          </select>
+                        </div>
                         <div className="ds-field">
                           <label htmlFor={`ds-fn-${i}`} className="label ds-field-label">{t('firstName')}</label>
                           <input
@@ -329,7 +422,13 @@ export default function DocumentScanner({ tree, preselectPersonId, onClose, onIm
                             className="input"
                             value={p.lastName}
                             onChange={e => updateField(i, 'lastName', e.target.value)}
+                            aria-describedby={p.variantOriginal ? `ds-ln-hint-${i}` : undefined}
                           />
+                          {p.variantOriginal && p.variantOriginal.toUpperCase() !== p.lastName.trim().toUpperCase() && (
+                            <p id={`ds-ln-hint-${i}`} className="ds-variant-hint">
+                              {t('variantNote', { original: p.variantOriginal, canonical: p.lastName })}
+                            </p>
+                          )}
                         </div>
                         <div className="ds-field">
                           <label htmlFor={`ds-bd-${i}`} className="label ds-field-label">{t('birthDate')}</label>
@@ -401,7 +500,7 @@ export default function DocumentScanner({ tree, preselectPersonId, onClose, onIm
               )}
 
               <div className="ds-actions ds-actions-end">
-                <button onClick={() => { setStep('upload'); setPeople([]); setRawText(''); setShowRaw(false); }} className="btn btn-ghost btn-sm">{t('back')}</button>
+                <button onClick={() => { setStep('upload'); setPeople([]); setRawText(''); setShowRaw(false); setActeNumber(''); setCommune(''); setDocNotes(''); }} className="btn btn-ghost btn-sm">{t('back')}</button>
                 <button onClick={runImport} disabled={importing || people.length === 0} className="btn btn-primary" style={{ opacity: importing ? 0.7 : undefined }}>
                   {importing ? <LoadingSpinner size={16} /> : <ArrowRight size={16} aria-hidden="true" />} {t('import')}
                 </button>
@@ -458,11 +557,31 @@ const DS_CSS = `
 .ds-scanning-sub { margin: 3px 0 0; color: var(--text-muted); }
 
 /* Extracted */
-.ds-result-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.ds-result-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
 .ds-empty { margin: 16px 0; font-size: 14px; color: var(--text-muted); text-align: center; }
+
+/* Confidence badge */
+.ds-conf { display: inline-flex; align-items: center; gap: 7px; padding: 4px 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; border: var(--bw) solid; }
+.ds-conf-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.ds-conf-pct { font-weight: 600; letter-spacing: 0; text-transform: none; opacity: 0.85; }
+.ds-conf-high { color: #4a9d6e; border-color: #4a9d6e; background: rgba(74,157,110,0.10); }
+.ds-conf-high .ds-conf-dot { background: #4a9d6e; }
+.ds-conf-medium { color: var(--accent); border-color: var(--accent); background: var(--accent-light, rgba(201,168,76,0.10)); }
+.ds-conf-medium .ds-conf-dot { background: var(--accent); }
+.ds-conf-low { color: #c96a4a; border-color: #c96a4a; background: rgba(201,106,74,0.10); }
+.ds-conf-low .ds-conf-dot { background: #c96a4a; }
+.ds-conf-hint { margin: 0 0 14px; font-size: 12.5px; color: var(--text-muted); }
+
+/* Document-level metadata */
+.ds-doc { padding: 14px 16px; margin-bottom: 14px; }
+.ds-doc-title { margin: 0 0 12px; font-size: 0.98rem; color: var(--text-muted); }
+.ds-doc-notes { margin: 12px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--text-muted); font-style: italic; }
+
 .ds-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
 .ds-person { padding: 16px; }
-.ds-person-role { margin: 0 0 12px; font-size: 1.05rem; color: var(--accent); }
+.ds-person-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 12px; }
+.ds-person-role { font-size: 1.05rem; color: var(--accent); }
+.ds-variant-hint { margin: 5px 0 0; font-size: 11.5px; line-height: 1.4; color: var(--accent); }
 .ds-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .ds-field { min-width: 0; }
 .ds-field-wide { grid-column: 1 / -1; }

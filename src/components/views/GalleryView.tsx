@@ -7,6 +7,7 @@ import 'react-image-crop/dist/ReactCrop.css';
 import { FamilyTree, Person } from '@/types';
 import { getDisplayName, formatYear } from '@/lib/treeUtils';
 import { uploadAvatar, deleteAvatarByUrl } from '@/lib/uploadImage';
+import { formatBytes } from '@/lib/imageCompression';
 import { GENDER_BAR } from '../tree/nodeStyle';
 import { useOverlay } from '@/hooks/useOverlay';
 
@@ -171,7 +172,12 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
       const res = await uploadAvatar(fileToUpload, addPersonId);
       const person = tree.persons.find(p => p.id === addPersonId);
       onUpdatePerson(addPersonId, { photos: [...(person?.photos || []), res.url] });
-      onToast?.(t('photoAdded'));
+      const compressed = res.beforeBytes != null && res.afterBytes != null && res.afterBytes < res.beforeBytes;
+      onToast?.(
+        compressed
+          ? t('photoCompressed', { before: formatBytes(res.beforeBytes!), after: formatBytes(res.afterBytes!) })
+          : t('photoAdded'),
+      );
       closeModal();
       setFilterPersonId('');
     } catch { /* uploadAvatar already falls back to a data URL; only a hard failure lands here */ }

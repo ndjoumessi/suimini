@@ -7,11 +7,16 @@ import { getDisplayName } from '@/lib/treeUtils';
 import { Check, Plus, Link2, User, X, ArrowLeft, Heart, Baby, Users, UsersRound } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import PersonForm from './PersonForm';
+import DuplicateWarningModal from './DuplicateWarningModal';
+import { findPotentialDuplicates, type DuplicateMatch } from '@/lib/duplicateDetection';
 
 interface Props {
   onClose: () => void;
   tree: FamilyTree;
   onAdd: (person: Omit<Person, 'id' | 'createdAt' | 'updatedAt'>, relation?: { type: RelationType; personId: string }) => void;
+  /** Ouvre la fiche d'une personne existante (bouton « Ouvrir la fiche existante »
+   *  du garde-fou doublon en mode bloquant). */
+  onOpenPerson?: (personId: string) => void;
 }
 
 const REL_OPTIONS: { value: RelationType; labelKey: string; Icon: LucideIcon; descKey: string }[] = [
@@ -30,14 +35,18 @@ const stepChip = (active: boolean): React.CSSProperties => ({
   border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
 });
 
-export default function AddPersonModal({ onClose, tree, onAdd }: Props) {
+export default function AddPersonModal({ onClose, tree, onAdd, onOpenPerson }: Props) {
   const [step, setStep] = useState<'form' | 'relation'>('form');
   const [newPerson, setNewPerson] = useState<Omit<Person, 'id' | 'createdAt' | 'updatedAt'> | null>(null);
   const [relType, setRelType] = useState<RelationType | ''>('');
   const [relPersonId, setRelPersonId] = useState('');
+  // Doublons potentiels détectés à la soumission du formulaire (ajout seulement).
+  const [dupMatches, setDupMatches] = useState<DuplicateMatch[] | null>(null);
+  const [pendingData, setPendingData] = useState<Partial<Person> | null>(null);
   const t = useTranslations('addPerson');
 
-  function handleFormSave(data: Partial<Person>) {
+  /** Poursuit l'ajout : passe à l'étape relation, ou crée directement. */
+  function proceed(data: Partial<Person>) {
     const person = {
       firstName: '', lastName: '', gender: 'unknown' as const, isAlive: true,
       ...data,
@@ -49,6 +58,17 @@ export default function AddPersonModal({ onClose, tree, onAdd }: Props) {
     } else {
       onAdd(person);
     }
+  }
+
+  function handleFormSave(data: Partial<Person>) {
+    // Garde anti-doublon : on interpose une modale avant de poursuivre l'ajout.
+    const matches = findPotentialDuplicates(data, tree.persons);
+    if (matches.length > 0) {
+      setPendingData(data);
+      setDupMatches(matches);
+      return;
+    }
+    proceed(data);
   }
 
   function handleFinish() {
@@ -187,6 +207,22 @@ export default function AddPersonModal({ onClose, tree, onAdd }: Props) {
           )}
         </div>
       </div>
+
+      {dupMatches && (
+        <DuplicateWarningModal
+          candidates={dupMatches}
+          onCancel={() => { setDupMatches(null); setPendingData(null); }}
+          onAddAnyway={() => {
+            const data = pendingData;
+            setDupMatches(null);
+            setPendingData(null);
+            if (data) proceed(data);
+          }}
+          // AddPersonModal ne navigue pas : fermer l'ajout ramène à l'arbre où
+          // la fiche existante est accessible.
+          onOpenExisting={(personId) => { setDupMatches(null); setPendingData(null); onClose(); onOpenPerson?.(personId); }}
+        />
+      )}
     </div>
   );
 }

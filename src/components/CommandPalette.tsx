@@ -2,7 +2,8 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { FamilyTree, ViewMode, Person } from '@/types';
-import { getDisplayName, formatYear, fuzzyMatch, findRelationPath, describeRelation } from '@/lib/treeUtils';
+import { getDisplayName, formatYear, findRelationPath, describeRelation } from '@/lib/treeUtils';
+import { searchPersons } from '@/lib/fuzzySearch';
 import type { Locale } from '@/i18n/config';
 import { useOverlay } from '@/hooks/useOverlay';
 import {
@@ -44,6 +45,8 @@ interface CommandItem {
   person?: Person; // for enriched person rendering
   kinship?: string; // pre-computed relation caption
   reason?: string; // AI match reason caption
+  approx?: boolean; // fuzzy (Bamiléké-tolerant) match, not exact/prefix
+  score?: number; // 0..1 fuzzy relevance, for the score meter
 }
 
 type GenderFilter = 'all' | 'male' | 'female';
@@ -304,8 +307,33 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
       const activePersons = filteredPersons.filter(i => i.treeName === activeTreeName).slice(0, 6);
       if (activePersons.length) groups.push({ title: activeTreeName || t('group.members'), items: activePersons });
     } else {
-      const persons = filteredPersons.filter(i => i.searchText.includes(q) || fuzzyMatch(i.searchText, query)).slice(0, 30);
-      groups.push(...groupByTree(persons));
+      // Ranking noms bamiléké/TEDA : exact/préfixe (littéral + synonyme)
+      // puis approché (Fuse, tolérant aux fautes). searchPersons est pur.
+      const personsBehind = filteredPersons.map(i => i.person).filter((p): p is Person => !!p);
+      const ranked = searchPersons(query, personsBehind);
+      const exactNameIds = new Set(ranked.filter(r => r.kind === 'exact').map(r => r.person.id));
+      const fuzzyScore = new Map(ranked.filter(r => r.kind === 'fuzzy').map(r => [r.person.id, r.score] as const));
+
+      // EXACT : nom exact/synonyme (via searchPersons) OU substring littérale sur
+      // le searchText (préserve la recherche par métier, lieu, tags, arbre, nom de
+      // jeune fille). La tolérance aux FAUTES de nom passe désormais entièrement par
+      // searchPersons → les vrais rapprochements flous tombent dans le groupe
+      // « approché » (badge), au lieu d'être noyés en exact par l'ancien fuzzyMatch.
+      const exactItems = filteredPersons.filter(i =>
+        i.person && (exactNameIds.has(i.person.id) || i.searchText.includes(q)),
+      );
+      const exactItemIds = new Set(exactItems.map(i => i.id));
+
+      // APPROCHÉ : matches flous par nom non déjà classés en exact.
+      const approxItems = filteredPersons
+        .filter(i => i.person && fuzzyScore.has(i.person.id) && !exactItemIds.has(i.id))
+        .map(i => ({ ...i, approx: true, score: fuzzyScore.get(i.person!.id) }))
+        .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+        .slice(0, 20);
+
+      groups.push(...groupByTree(exactItems.slice(0, 30)));
+      if (approxItems.length) groups.push({ title: ts('approxGroup'), items: approxItems });
+
       const navs = views.filter(i => normalize(i.searchText).includes(q));
       const acts = actions.filter(i => normalize(i.searchText).includes(q));
       if (navs.length) groups.push({ title: t('group.navigation'), items: navs });
@@ -596,6 +624,19 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
                               </span>
                             )}
                           </div>
+                          {item.approx && typeof item.score === 'number' && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginTop: '3px' }}>
+                              <span className="label" style={{ fontSize: '9px', color: 'var(--accent)', border: '1px solid var(--accent)', padding: '1px 5px', letterSpacing: '0.03em', flexShrink: 0 }}>
+                                {ts('approxMatch')}
+                              </span>
+                              <span aria-hidden="true" style={{ position: 'relative', width: '48px', height: '4px', background: 'var(--border-strong)', flexShrink: 0 }}>
+                                <span style={{ position: 'absolute', inset: 0, width: `${Math.round(item.score * 100)}%`, background: 'var(--accent)' }} />
+                              </span>
+                              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--text-muted)', flexShrink: 0 }}>
+                                {Math.round(item.score * 100)}%
+                              </span>
+                            </div>
+                          )}
                           {item.person.birthPlace?.city && (
                             <div style={{ fontSize: '12px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {item.person.birthPlace.city}

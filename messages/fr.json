@@ -1164,7 +1164,8 @@
     "deleteConfirmText": "Cette action est définitive.",
     "deleteConfirm": "Supprimer",
     "photoDeleted": "Photo supprimée",
-    "photoAdded": "Photo ajoutée"
+    "photoAdded": "Photo ajoutée",
+    "photoCompressed": "Photo compressée : {before} → {after}"
   },
   "photoAnalyzer": {
     "title": "Reconnaissance de visages",
@@ -1244,7 +1245,9 @@
     "aiError": "Recherche IA impossible",
     "kinship": "Lien de parenté",
     "clearFilters": "Réinitialiser",
-    "noMatch": "Aucune correspondance"
+    "noMatch": "Aucune correspondance",
+    "approxMatch": "Approché",
+    "approxGroup": "Résultats approchés"
   },
   "collaboration": {
     "tab": "Discussion",
@@ -1463,7 +1466,22 @@
     "back": "Retour",
     "cancel": "Annuler",
     "rawText": "Texte brut",
-    "scanButton": "Scanner un document"
+    "scanButton": "Scanner un document",
+    "role": "Rôle",
+    "gender": "Sexe",
+    "genderMale": "Homme",
+    "genderFemale": "Femme",
+    "genderUnknown": "Inconnu",
+    "husband": "Époux",
+    "wife": "Épouse",
+    "acteNumber": "N° d'acte",
+    "commune": "Commune",
+    "documentInfo": "Informations de l'acte",
+    "variantNote": "Variante détectée : {original} → {canonical}",
+    "confidence_high": "Fiabilité élevée",
+    "confidence_medium": "Fiabilité moyenne",
+    "confidence_low": "Fiabilité faible",
+    "lowConfidenceHint": "Vérifiez et corrigez les champs avant l'import."
   },
   "offline": {
     "banner": "Mode hors-ligne",
@@ -1744,5 +1762,31 @@
     "homeAria": "Accueil Suimini",
     "sharedLabel": "Arbre partagé",
     "cta": "Découvrir Suimini"
+  },
+  "conflicts": {
+    "title": "Suppression sur un autre appareil",
+    "body": "{name} a été supprimé sur un autre appareil pendant que vous le modifiiez. Que souhaitez-vous faire ?",
+    "keepDeletion": "Garder la suppression",
+    "restorePerson": "Restaurer la personne",
+    "restoreRelationship": "Restaurer la relation",
+    "relationName": "Cette relation",
+    "keptToast": "Suppression conservée",
+    "restoredToast": "{name} restauré",
+    "restoreFailedToast": "Échec de la restauration — réessayez"
+  },
+  "duplicates": {
+    "warnTitle": "Doublon possible",
+    "warnDesc": "Une personne semblable existe déjà dans cet arbre. Vérifiez avant d'ajouter.",
+    "blockingTitle": "Doublon quasi certain",
+    "blockingDesc": "Cette personne existe presque certainement déjà. Ouvrez la fiche existante plutôt que d'en créer une seconde.",
+    "cancel": "Annuler",
+    "addAnyway": "Ajouter quand même",
+    "openExisting": "Ouvrir la fiche existante",
+    "matchScore": "Correspondance {score} %",
+    "unnamed": "Sans nom",
+    "reasonSameFirstName": "Même prénom",
+    "reasonSameLastName": "Même nom",
+    "reasonCloseBirthYear": "Année de naissance proche",
+    "reasonSameGender": "Même genre"
   }
 }

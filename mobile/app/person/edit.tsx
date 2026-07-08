@@ -23,7 +23,16 @@ import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
 import { useFamilyStore } from '@/hooks/useFamilyStore';
 import { generateId } from '@/lib/treeUtils';
+import { findPotentialDuplicates, isBlocking } from '@/lib/duplicateDetection';
 import type { Gender, Person } from '@/lib/types';
+
+/** id de raison stable → clé i18n `duplicates.reason.*`. */
+const REASON_KEY: Record<string, string> = {
+  sameFirstName: 'duplicates.reasonSameFirstName',
+  sameLastName: 'duplicates.reasonSameLastName',
+  closeBirthYear: 'duplicates.reasonCloseBirthYear',
+  sameGender: 'duplicates.reasonSameGender',
+};
 
 const pad = (n: number) => String(n).padStart(2, '0');
 /** Date → ISO `AAAA-MM-JJ` (stored shape, Supabase-friendly). */
@@ -100,6 +109,43 @@ export default function PersonEditScreen() {
       updatedAt: now,
     };
 
+    // Garde anti-doublon (ajout seulement, jamais en édition).
+    if (!isEdit) {
+      const matches = findPotentialDuplicates(person, activeTree?.persons ?? []);
+      if (matches.length > 0) {
+        const top = matches[0];
+        const name = `${top.person.firstName} ${top.person.lastName}`.trim();
+        const reasons = top.reasons.map((r) => t(REASON_KEY[r] ?? r)).join(', ');
+        if (isBlocking(top.score)) {
+          Alert.alert(
+            t('duplicates.blockingTitle'),
+            t('duplicates.blockingBody', { name, reasons }),
+            [
+              { text: t('common.cancel'), style: 'cancel' },
+              {
+                text: t('duplicates.openExisting'),
+                onPress: () => router.replace({ pathname: '/person/[id]', params: { id: top.person.id } }),
+              },
+            ],
+          );
+          return;
+        }
+        Alert.alert(
+          t('duplicates.warnTitle'),
+          t('duplicates.warnBody', { name, reasons }),
+          [
+            { text: t('common.cancel'), style: 'cancel' },
+            { text: t('duplicates.addAnyway'), onPress: () => void commit(treeId, person) },
+          ],
+        );
+        return;
+      }
+    }
+
+    await commit(treeId, person);
+  };
+
+  const commit = async (treeId: string, person: Person) => {
     setSaving(true);
     const res = await upsertPerson(treeId, person);
     setSaving(false);

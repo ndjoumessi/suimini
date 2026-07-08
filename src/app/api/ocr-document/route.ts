@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { enforceRateLimit } from '@/lib/rateLimit';
+import { normalizeOcrResult, type NormalizedPersonExtra } from '@/lib/ocrNormalization';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -10,14 +11,49 @@ const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const SUPPORTED_MEDIA = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'] as const;
 type MediaType = (typeof SUPPORTED_MEDIA)[number];
 
+/** Types d'acte reconnus (registres d'état civil du Cameroun / région Ouest). */
+export type ActeType =
+  | 'acte_naissance' | 'acte_mariage' | 'acte_deces' | 'jugement_suppletif' | 'autre';
+
+/** Rôle d'une personne dans l'acte (tokens français, alignés sur l'UI). */
+export type OcrRole = 'sujet' | 'pere' | 'mere' | 'epoux' | 'epouse' | 'temoin' | string;
+
+/** Une personne extraite de l'acte (tous les champs sont nullables). */
 export interface OcrPerson {
-  role: 'subject' | 'parent' | 'father' | 'mother' | 'spouse' | 'witness' | string;
+  role: OcrRole;
   firstName: string | null;
   lastName: string | null;
-  birthDate: string | null;
-  birthPlace: string | null;
+  gender: 'male' | 'female' | 'unknown';
+  birthDate: string | null;   // YYYY-MM-DD | YYYY | null
+  birthPlace: string | null;  // "Village, Commune"
   occupation: string | null;
   notes: string | null;
+}
+
+/** Personne extraite + trace de normalisation du NOM (ajoutée côté serveur). */
+export type OcrPersonNormalized = OcrPerson & NormalizedPersonExtra;
+
+/** Lien de parenté / d'union entre deux personnes (index dans `persons`). */
+export interface OcrRelation {
+  from: number;
+  to: number;
+  type: 'parent' | 'spouse';
+}
+
+/** Forme renvoyée par POST /api/ocr-document. */
+export interface OcrResult {
+  type: ActeType | string;
+  /** Alias rétro-compatible de `type` (l'UI historique lisait `documentType`). */
+  documentType: string;
+  persons: OcrPersonNormalized[];
+  relations: OcrRelation[];
+  acteNumber: string | null;
+  commune: string | null;
+  date: string | null;
+  place: string | null;
+  confidence: number | null;
+  notes: string | null;
+  rawText: string;
 }
 
 interface AnthropicTextBlock { type: string; text?: string }
@@ -44,24 +80,86 @@ function extractJson(text: string): unknown {
 
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null);
 
+const GENDERS = new Set(['male', 'female', 'unknown']);
+const gender = (v: unknown): 'male' | 'female' | 'unknown' =>
+  (typeof v === 'string' && GENDERS.has(v) ? v : 'unknown') as 'male' | 'female' | 'unknown';
+
+const num = (v: unknown): number | null =>
+  (typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : null);
+
+const int = (v: unknown): number | null => (typeof v === 'number' && Number.isInteger(v) ? v : null);
+
+/** Libellé FR du type d'acte attendu, transmis en indice au modèle. */
+function expectedActe(documentType: string): string {
+  switch (documentType) {
+    case 'birth': case 'acte_naissance': return 'un acte de naissance';
+    case 'marriage': case 'acte_mariage': return 'un acte de mariage';
+    case 'death': case 'acte_deces': return 'un acte de décès';
+    case 'census': return 'un recensement / registre de population';
+    case 'jugement_suppletif': return "un jugement supplétif d'acte de naissance";
+    default: return '';
+  }
+}
+
+const SYSTEM_PROMPT = [
+  "Tu es un expert en généalogie camerounaise, spécialisé dans les registres d'état civil de",
+  "l'Ouest-Cameroun (pays bamiléké : Bafoussam, Dschang, Mbouda, Bandjoun et environs).",
+  "Tu déchiffres des actes manuscrits ou dactylographiés (souvent anciens, parfois abîmés) et",
+  "tu en extrais les personnes, dates, lieux et liens de parenté avec la plus grande rigueur.",
+  '',
+  'CONNAISSANCES CLÉS :',
+  '• NOMS DE FAMILLE bamiléké : souvent en MAJUSCULES, avec de nombreuses variantes',
+  "  d'orthographe d'un scribe à l'autre — un « C » prothétique (CFOTIE = FOTIE), une",
+  "  apostrophe de coup de glotte (TEDA'A = TEDA), des accents flottants. Exemples de familles",
+  '  et de leurs variantes : TEDA / TEDA\'A ; FOTIE / CFOTIE / CHOTIE ; DONGMO / DONMO ;',
+  '  TSANA / SANA ; DJOUMESSI. Restitue le NOM tel qu\'il est ÉCRIT dans le document (la',
+  '  normalisation vers la forme canonique est faite après toi) et signale les doutes dans "notes".',
+  '• PRÉNOMS : français (Marie, Jean, Sébastien…) ou traditionnels bamiléké.',
+  '• DATES : au format JJ/MM/AAAA ou écrites en toutes lettres en français → normalise en',
+  '  "YYYY-MM-DD". Si la date est approximative ou seule l\'année est lisible → "YYYY". Sinon null.',
+  '• LIEUX (naissance/décès) : villages de l\'Ouest (Bouleng, Bansoa, Zem, Kemtio, Dschang,',
+  '  Bafoussam et alentours). Restitue au format "Village, Commune" quand c\'est possible.',
+  '• LIENS DE PARENTÉ : repère les formulations « fils/fille de », « né de », « père »,',
+  '  « mère », « époux/épouse de », « enfant de… » et rends-les dans "relations".',
+  "• N° d'acte et commune de l'acte : à extraire dans \"acteNumber\" et \"commune\".",
+  '',
+  "N'invente JAMAIS une information absente : dans le doute, mets null et explique dans \"notes\".",
+].join('\n');
+
 function prompt(documentType: string): string {
-  const hint = documentType && documentType !== 'auto'
-    ? `Le type attendu est : ${documentType}.`
+  const acte = expectedActe(documentType);
+  const hint = acte
+    ? `Le document attendu est ${acte}.`
     : 'Détecte automatiquement le type de document.';
   return [
-    "Analyse ce document d'état civil. " + hint,
-    'Extrait les informations en JSON :',
+    `Analyse ce document d'état civil camerounais (région Ouest / pays bamiléké). ${hint}`,
+    'Réponds STRICTEMENT avec ce JSON (rien d\'autre) :',
     '{',
-    '  "documentType": "birth|marriage|death|census",',
+    '  "type": "acte_naissance|acte_mariage|acte_deces|jugement_suppletif|autre",',
     '  "persons": [',
-    '    { "role": "subject|parent|father|mother|spouse|witness", "firstName": "...", "lastName": "...", "birthDate": "YYYY-MM-DD ou null", "birthPlace": "...", "occupation": "...", "notes": "..." }',
+    '    {',
+    '      "role": "sujet|pere|mere|epoux|epouse|temoin",',
+    '      "lastName": "NOM tel qu\'écrit",',
+    '      "firstName": "Prénom(s)",',
+    '      "gender": "male|female|unknown",',
+    '      "birthDate": "YYYY-MM-DD | YYYY | null",',
+    '      "birthPlace": "Village, Commune | null",',
+    '      "occupation": "profession | null",',
+    '      "notes": "doutes de lecture, variante d\'orthographe | null"',
+    '    }',
     '  ],',
-    '  "date": "YYYY-MM-DD",',
-    '  "place": "...",',
-    '  "confidence": 0.85,',
-    '  "rawText": "transcription brute lisible"',
+    '  "relations": [ { "from": 0, "to": 1, "type": "parent|spouse" } ],',
+    '  "acteNumber": "numéro de l\'acte | null",',
+    '  "commune": "commune de l\'acte | null",',
+    '  "date": "date de l\'acte YYYY-MM-DD | YYYY | null",',
+    '  "place": "lieu de l\'acte | null",',
+    '  "confidence": 0.0,',
+    '  "notes": "variantes détectées, doutes globaux | null",',
+    '  "rawText": "transcription brute lisible de l\'acte"',
     '}',
-    "Si un champ est illisible, mets null. Pour les dates incomplètes, utilise le format disponible (ex: \"1875\" ou \"1875-03\"). N'invente jamais d'information absente.",
+    'Dans "relations", "from" et "to" sont des INDEX (0-based) dans le tableau "persons" :',
+    '"parent" = la personne "from" est le parent de "to" ; "spouse" = "from" et "to" sont mariés.',
+    "Si un champ est illisible, mets null. N'invente jamais d'information absente.",
     'Réponds UNIQUEMENT en JSON valide, sans texte autour ni bloc de code.',
   ].join('\n');
 }
@@ -87,6 +185,7 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         model: ANTHROPIC_MODEL,
         max_tokens: 2000,
+        system: SYSTEM_PROMPT,
         messages: [{
           role: 'user',
           content: [
@@ -103,29 +202,55 @@ export async function POST(req: Request) {
     const data = (await res.json()) as AnthropicResponse;
     const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text || '').join('').trim();
 
-    let parsed: { documentType?: unknown; persons?: unknown[]; date?: unknown; place?: unknown; confidence?: unknown; rawText?: unknown };
+    let parsed: {
+      type?: unknown; documentType?: unknown; persons?: unknown[]; relations?: unknown[];
+      acteNumber?: unknown; commune?: unknown; date?: unknown; place?: unknown;
+      confidence?: unknown; notes?: unknown; rawText?: unknown;
+    };
     try { parsed = extractJson(text) as typeof parsed; } catch { return NextResponse.json({ error: "Réponse de l'IA illisible." }, { status: 502 }); }
 
     const persons: OcrPerson[] = Array.isArray(parsed.persons)
       ? parsed.persons.map((p) => {
           const o = (p || {}) as Record<string, unknown>;
           return {
-            role: typeof o.role === 'string' ? o.role : 'subject',
+            role: typeof o.role === 'string' ? o.role : 'sujet',
             firstName: str(o.firstName), lastName: str(o.lastName),
+            gender: gender(o.gender),
             birthDate: str(o.birthDate), birthPlace: str(o.birthPlace),
             occupation: str(o.occupation), notes: str(o.notes),
           };
         })
       : [];
 
-    return NextResponse.json({
-      documentType: str(parsed.documentType) || 'auto',
+    const relations: OcrRelation[] = Array.isArray(parsed.relations)
+      ? parsed.relations.flatMap((r) => {
+          const o = (r || {}) as Record<string, unknown>;
+          const from = int(o.from), to = int(o.to);
+          const type = o.type === 'parent' || o.type === 'spouse' ? o.type : null;
+          if (from == null || to == null || from === to || from < 0 || to < 0 || from >= persons.length || to >= persons.length || !type) return [];
+          return [{ from, to, type }];
+        })
+      : [];
+
+    const type = str(parsed.type) || str(parsed.documentType) || 'autre';
+
+    // Normalise les NOMS bamiléké (CFOTIE→FOTIE, SANA→TSANA, TEDA'A→TEDA) et
+    // annote les variantes détectées — déterministe, sans réseau.
+    const result: OcrResult = normalizeOcrResult({
+      type,
+      documentType: type, // alias rétro-compatible
       persons,
+      relations,
+      acteNumber: str(parsed.acteNumber),
+      commune: str(parsed.commune),
       date: str(parsed.date),
       place: str(parsed.place),
-      confidence: typeof parsed.confidence === 'number' ? parsed.confidence : null,
+      confidence: num(parsed.confidence),
+      notes: str(parsed.notes),
       rawText: str(parsed.rawText) || '',
     });
+
+    return NextResponse.json(result);
   } catch {
     return NextResponse.json({ error: "Impossible d'analyser ce document." }, { status: 502 });
   }

@@ -211,4 +211,16 @@ export const en: Resources = {
     errDelete: 'Could not delete.',
     swipeHint: 'Swipe a row to delete · long-press for options',
   },
+  duplicates: {
+    warnTitle: 'Possible duplicate',
+    warnBody: '"{{name}}" looks like this entry ({{reasons}}). Add anyway?',
+    blockingTitle: 'Almost certainly a duplicate',
+    blockingBody: '"{{name}}" already exists ({{reasons}}). Open the existing profile instead of creating a second one.',
+    addAnyway: 'Add anyway',
+    openExisting: 'Open existing profile',
+    reasonSameFirstName: 'same first name',
+    reasonSameLastName: 'same last name',
+    reasonCloseBirthYear: 'close birth year',
+    reasonSameGender: 'same gender',
+  },
 };

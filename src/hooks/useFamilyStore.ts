@@ -4,8 +4,9 @@ import { FamilyTree, Person, Relationship, JournalEntry } from '@/types';
 import { sampleFamilyTree } from '@/lib/sampleData';
 import { generateId, getDisplayName } from '@/lib/treeUtils';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
-import { loadTreesFromSupabase, saveTreeToSupabase, deleteTreeFromSupabase, deleteChildRows, loadOneTree, SharedMeta, ChildTable } from '@/lib/supabaseSync';
+import { loadTreesFromSupabase, saveTreeToSupabase, deleteTreeFromSupabase, deleteChildRows, loadOneTree, detectDeleteConflicts, restoreEntityAlive, SharedMeta, ChildTable } from '@/lib/supabaseSync';
 import { mergeTreeFavoringLocal, treeIdSets, removedIds, TreeIdSets } from '@/lib/syncMerge';
+import { addConflicts, Conflict } from '@/lib/conflictQueue';
 import { offlineStorage } from '@/lib/offlineStorage';
 
 const STORAGE_KEY = 'suimini_trees';
@@ -76,6 +77,16 @@ function recordDeletedIds(ids: string[]): void {
     for (const id of ids) map[id] = now;
     for (const k of Object.keys(map)) if (now - map[k] > RECENT_DELETE_MS) delete map[k];
     localStorage.setItem(RECENT_DELETE_KEY, JSON.stringify(map));
+  } catch { /* ignore */ }
+}
+
+/** Oublie un id précis des suppressions récentes (résolution « Restaurer » d'un
+ * conflit : la restauration ne doit pas être ré-annulée par le merge favor-local). */
+function clearRecentDeletedId(id: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const map: Record<string, number> = JSON.parse(localStorage.getItem(RECENT_DELETE_KEY) || '{}');
+    if (id in map) { delete map[id]; localStorage.setItem(RECENT_DELETE_KEY, JSON.stringify(map)); }
   } catch { /* ignore */ }
 }
 
@@ -435,7 +446,41 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
       // push (au plus tard au prochain chargement de l'app).
       if (toDelete.length && await deleteChildRows(table, toDelete)) clearPendingDeletes(table, toDelete);
     }
-    await saveTreeToSupabase(tree, user.id, isOwner);
+    // ── Résolution de conflits multi-appareils (delete-vs-edit) ──────────────────
+    // Un AUTRE appareil a pu soft-deleter une personne/relation APRÈS notre dernière
+    // édition. Un UPSERT aveugle (deleted_at:null) la RESSUSCITERAIT. On détecte ces
+    // cas, on les EXCLUT de ce push (pas de résurrection) et on les enfile pour que
+    // l'utilisateur tranche (ConflictModal). Best-effort / fail-open : la moindre
+    // erreur → aucun conflit → le push se déroule comme avant. Ne tourne jamais en
+    // mode démo (pushTreeNow sort déjà tôt si `!user`).
+    let treeToPush = tree;
+    try {
+      const [personConflicts, relConflicts] = await Promise.all([
+        detectDeleteConflicts('persons', tree.persons.map(p => ({ id: p.id, updatedAt: p.updatedAt }))),
+        detectDeleteConflicts('relationships', tree.relationships.map(r => ({ id: r.id, updatedAt: (r as { updatedAt?: string }).updatedAt }))),
+      ]);
+      if (personConflicts.length || relConflicts.length) {
+        const queued: Conflict[] = [];
+        for (const c of personConflicts) {
+          const local = tree.persons.find(p => p.id === c.id);
+          if (local) queued.push({ id: c.id, entityType: 'person', treeId: tree.id, local, remoteDeletedAt: c.remoteDeletedAt, type: 'delete-vs-edit' });
+        }
+        for (const c of relConflicts) {
+          const local = tree.relationships.find(r => r.id === c.id);
+          if (local) queued.push({ id: c.id, entityType: 'relationship', treeId: tree.id, local, remoteDeletedAt: c.remoteDeletedAt, type: 'delete-vs-edit' });
+        }
+        if (queued.length) {
+          addConflicts(queued);
+          const conflictIds = new Set(queued.map(c => c.id));
+          treeToPush = {
+            ...tree,
+            persons: tree.persons.filter(p => !conflictIds.has(p.id)),
+            relationships: tree.relationships.filter(r => !conflictIds.has(r.id)),
+          };
+        }
+      }
+    } catch { /* fail-open : on pousse l'arbre entier comme avant */ }
+    await saveTreeToSupabase(treeToPush, user.id, isOwner);
     knownIdsRef.current = { ...knownIdsRef.current, [tree.id]: current };
   }, [user, shared]);
   const pushTreeNowRef = useRef(pushTreeNow); pushTreeNowRef.current = pushTreeNow;
@@ -575,6 +620,68 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
   const retrySync = useCallback(async (): Promise<boolean> => {
     return syncErrorKindRef.current === 'save' ? pushActiveTree() : resync();
   }, [pushActiveTree, resync]);
+
+  // ── Résolution des conflits multi-appareils (delete-vs-edit) ─────────────────
+  // « Garder la suppression » : on accepte la suppression distante. L'entité est
+  // encore locale (elle a été exclue du push, pas retirée du state) → on la retire
+  // du cache local du bon arbre (ciblé par conflict.treeId, pas seulement l'actif) et
+  // on l'inscrit en suppression durable pour re-confirmer la tombstone au prochain
+  // push et empêcher toute résurrection par le merge.
+  const resolveConflictKeepDeletion = useCallback((conflict: Conflict): void => {
+    recordDeletedIds([conflict.id]);
+    addPendingDeletes(conflict.entityType === 'person'
+      ? { persons: [conflict.id] } : { relationships: [conflict.id] });
+    const nowIso = new Date().toISOString();
+    const updated = trees.map(t => {
+      if (t.id !== conflict.treeId) return t;
+      if (conflict.entityType === 'person') {
+        return {
+          ...t, updatedAt: nowIso,
+          persons: t.persons.filter(p => p.id !== conflict.id),
+          relationships: t.relationships.filter(r => r.person1Id !== conflict.id && r.person2Id !== conflict.id),
+        };
+      }
+      return { ...t, updatedAt: nowIso, relationships: t.relationships.filter(r => r.id !== conflict.id) };
+    });
+    persist(updated);
+    // Retire le knownId pour éviter un diff-suppression fantôme ultérieur.
+    const set = knownIdsRef.current[conflict.treeId];
+    if (set) {
+      if (conflict.entityType === 'person') set.persons.delete(conflict.id);
+      else set.relationships.delete(conflict.id);
+    }
+  }, [trees, persist]);
+
+  // « Restaurer » : on ré-upserte l'entité locale VIVANTE (deleted_at:null), ce qui
+  // écrase la tombstone distante. On nettoie recent/pending-deletes pour que la
+  // restauration « colle », et on bump l'updatedAt local (personne) pour qu'une future
+  // détection voie NOTRE édition comme plus récente que la tombstone.
+  const restoreConflictEntity = useCallback(async (conflict: Conflict): Promise<boolean> => {
+    if (!user) return false;
+    clearRecentDeletedId(conflict.id);
+    clearPendingDeletes('persons', [conflict.id]);
+    clearPendingDeletes('relationships', [conflict.id]);
+    const nowIso = new Date().toISOString();
+    let entity: Person | Relationship = conflict.local;
+    if (conflict.entityType === 'person') {
+      const updated = trees.map(t => {
+        if (t.id !== conflict.treeId) return t;
+        return { ...t, persons: t.persons.map(p => (p.id === conflict.id ? { ...p, updatedAt: nowIso } : p)) };
+      });
+      const found = updated.find(t => t.id === conflict.treeId)?.persons.find(p => p.id === conflict.id);
+      if (found) { entity = found; persist(updated); }
+      else entity = { ...(conflict.local as Person), updatedAt: nowIso };
+    } else {
+      entity = trees.find(t => t.id === conflict.treeId)?.relationships.find(r => r.id === conflict.id) ?? conflict.local;
+    }
+    try {
+      await restoreEntityAlive(conflict.treeId, conflict.entityType, entity);
+      return true;
+    } catch (err) {
+      console.error('[store] Restauration du conflit échouée:', err);
+      return false;
+    }
+  }, [user, trees, persist]);
 
   // Refs of the latest sync state so the visibility listener stays subscribed once
   // (no re-bind on every status tick) while still reading fresh values.
@@ -902,5 +1009,8 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     resync,
     retrySync,
     lastSyncAt,
+    // multi-device conflict resolution
+    resolveConflictKeepDeletion,
+    restoreConflictEntity,
   };
 }

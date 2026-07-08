@@ -1,22 +1,18 @@
 import { supabase } from './supabase';
+import { compressImage } from './imageCompression';
 
 export interface UploadResult {
   url: string;
   /** true when the image is stored inline (data URL) rather than in Supabase Storage */
   base64: boolean;
   warning?: string;
+  /** Original file size in bytes, before client-side compression. */
+  beforeBytes?: number;
+  /** Compressed file size in bytes. Equals beforeBytes when nothing was compressed. */
+  afterBytes?: number;
 }
 
 const AVATAR_BUCKET = 'avatars';
-
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = src;
-  });
-}
 
 function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -27,51 +23,40 @@ function blobToDataUrl(blob: Blob): Promise<string> {
   });
 }
 
-/** Downscale to maxDim and re-encode as JPEG to keep avatars small (~tens of KB). */
-async function compress(file: File, maxDim = 512, quality = 0.82): Promise<Blob> {
-  const objUrl = URL.createObjectURL(file);
-  try {
-    const img = await loadImage(objUrl);
-    const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-    const w = Math.max(1, Math.round(img.width * scale));
-    const h = Math.max(1, Math.round(img.height * scale));
-    const canvas = document.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return file;
-    ctx.drawImage(img, 0, 0, w, h);
-    const blob = await new Promise<Blob | null>(res => canvas.toBlob(res, 'image/jpeg', quality));
-    return blob ?? file;
-  } catch {
-    return file; // non-decodable (e.g. SVG) → keep original
-  } finally {
-    URL.revokeObjectURL(objUrl);
-  }
+/** File extension for a mime type (used for the storage object name). */
+function extFor(type: string): string {
+  if (type === 'image/webp') return 'webp';
+  if (type === 'image/png') return 'png';
+  return 'jpg';
 }
 
 /**
  * Upload an avatar image. Strategy:
- *  1. Compress client-side.
+ *  1. Compress client-side (shared `compressImage` choke point → WebP, ≤800px).
  *  2. If Supabase + a signed-in user → upload to the `avatars` bucket at
- *     `{userId}/{personId}-{ts}.jpg` and return the public URL.
+ *     `{userId}/{personId}-{ts}.{ext}` and return the public URL.
  *  3. Otherwise (demo/guest, or upload failure) → return a compressed data URL.
+ *
+ * The returned `beforeBytes`/`afterBytes` report the compression outcome so the
+ * UI can surface "compressed X → Y". They are equal when compression was
+ * skipped (tiny/webp/undecodable). Callers that ignore them keep working.
  */
 export async function uploadAvatar(file: File, personId: string): Promise<UploadResult> {
-  const blob = await compress(file);
+  const { file: blob, beforeBytes, afterBytes } = await compressImage(file);
+  const contentType = blob.type || 'image/jpeg';
 
   if (supabase) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const safeId = (personId || 'new').replace(/[^a-zA-Z0-9_-]/g, '');
-        const path = `${user.id}/${safeId}-${Date.now()}.jpg`;
+        const path = `${user.id}/${safeId}-${Date.now()}.${extFor(contentType)}`;
         const { error } = await supabase.storage
           .from(AVATAR_BUCKET)
-          .upload(path, blob, { upsert: true, contentType: 'image/jpeg', cacheControl: '3600' });
+          .upload(path, blob, { upsert: true, contentType, cacheControl: '3600' });
         if (!error) {
           const { data } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(path);
-          if (data?.publicUrl) return { url: data.publicUrl, base64: false };
+          if (data?.publicUrl) return { url: data.publicUrl, base64: false, beforeBytes, afterBytes };
         }
         // error (e.g. bucket missing / policy) → fall through to base64
       }
@@ -86,6 +71,8 @@ export async function uploadAvatar(file: File, personId: string): Promise<Upload
     url: dataUrl,
     base64: true,
     warning: `Image compressée (~${approxKB} Ko, stockée localement)`,
+    beforeBytes,
+    afterBytes,
   };
 }
 

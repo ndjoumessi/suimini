@@ -1,0 +1,44 @@
+name: Integration Tests (Supabase real-cloud)
+
+# Tests d'intégration frappant un VRAI projet Supabase de TEST dédié
+# (e2e/integration/*.spec.ts). Sans les 3 secrets SUPABASE_TEST_*, la spec
+# s'auto-skippe (describe.skip) → ce job reste vert sans configuration.
+#
+# ⚠️ Le schéma (supabase/schema.sql puis soft-delete.sql) doit être PRÉ-APPLIQUÉ
+#    au projet de test — ce workflow ne l'applique PAS. Voir supabase/test-project.md.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright (chromium)
+        run: npx playwright install chromium --with-deps
+      - name: Run Supabase integration tests
+        # E2E_BASE_URL désactive le webServer managé de playwright.config.ts : ces
+        # tests parlent directement à Supabase et n'ont pas besoin de l'app Next.
+        # Les secrets ne sont passés QUE via `env:` (jamais interpolés dans le run:).
+        run: npx playwright test e2e/integration
+        env:
+          E2E_BASE_URL: http://localhost:3001
+          SUPABASE_TEST_URL: ${{ secrets.SUPABASE_TEST_URL }}
+          SUPABASE_TEST_ANON_KEY: ${{ secrets.SUPABASE_TEST_ANON_KEY }}
+          SUPABASE_TEST_SERVICE_KEY: ${{ secrets.SUPABASE_TEST_SERVICE_KEY }}
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-playwright-report
+          path: playwright-report/
+          retention-days: 30

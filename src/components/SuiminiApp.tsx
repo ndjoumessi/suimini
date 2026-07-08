@@ -10,7 +10,8 @@ import { useBirthdayNotifications } from '@/hooks/useBirthdayNotifications';
 import { useTreeRole } from '@/hooks/useTreeRole';
 import { supabase } from '@/lib/supabase';
 import { ViewMode, Person, FamilyTree, PhotoTag } from '@/types';
-import { generateId } from '@/lib/treeUtils';
+import { generateId, getDisplayName } from '@/lib/treeUtils';
+import { useConflicts, removeConflict, Conflict } from '@/lib/conflictQueue';
 import Sidebar from './layout/Sidebar';
 import ContentHeader from './layout/ContentHeader';
 import BottomNav from './BottomNav';
@@ -39,6 +40,7 @@ import ImportExportModal from './ImportExportModal';
 import PrintModal from './PrintModal';
 import ExportPDFModal from './ExportPDFModal';
 import ShareModal from './ShareModal';
+import ConflictModal from './ConflictModal';
 import ToastStack, { ToastType, ToastItem } from './Toast';
 import { BrandLockup } from './Brand';
 import OnboardingWizard, { OnboardingData } from './OnboardingWizard';
@@ -161,6 +163,29 @@ export default function SuiminiApp() {
     setToasts(prev => [...prev, { id, msg, type: t }].slice(-3)); // queue, max 3
   }, []);
   const dismissToast = useCallback((id: number) => setToasts(prev => prev.filter(t => t.id !== id)), []);
+
+  // --- Multi-device conflict resolution (delete-vs-edit) ---
+  const tConflicts = useTranslations('conflicts');
+  const conflicts = useConflicts();
+  const activeConflict = conflicts[0] ?? null;
+  // Nom lisible du conflit : personne → nom affiché ; relation → libellé générique.
+  const conflictName = useCallback((c: Conflict): string => {
+    if (c.entityType === 'person') {
+      const dn = getDisplayName(c.local as Person);
+      return dn || tConflicts('relationName');
+    }
+    return tConflicts('relationName');
+  }, [tConflicts]);
+  const handleKeepDeletion = useCallback((c: Conflict) => {
+    store.resolveConflictKeepDeletion(c);
+    removeConflict(c.id);
+    showToast(tConflicts('keptToast'), 'info');
+  }, [store, showToast, tConflicts]);
+  const handleRestoreConflict = useCallback(async (c: Conflict) => {
+    const ok = await store.restoreConflictEntity(c);
+    removeConflict(c.id);
+    showToast(ok ? tConflicts('restoredToast', { name: conflictName(c) }) : tConflicts('restoreFailedToast'), ok ? 'success' : 'error');
+  }, [store, showToast, tConflicts, conflictName]);
 
   // --- AI photo analysis (face recognition) ---
   const tPhoto = useTranslations('photoAnalyzer');
@@ -668,6 +693,7 @@ export default function SuiminiApp() {
         <AddPersonModal
           tree={store.activeTree}
           onClose={() => setShowAddPerson(false)}
+          onOpenPerson={handleSelectPerson}
           onAdd={(person, relation) => {
             const created = store.addPerson(person);
             if (created && relation) {
@@ -749,6 +775,17 @@ export default function SuiminiApp() {
           onRequireAuth={() => { setShowShare(false); openAuth('login'); }}
           onToast={showToast}
           onClose={() => setShowShare(false)}
+        />
+      )}
+
+      {/* Multi-device conflict (delete-vs-edit): forced decision, one at a time. */}
+      {activeConflict && (
+        <ConflictModal
+          key={activeConflict.id}
+          conflict={activeConflict}
+          name={conflictName(activeConflict)}
+          onKeepDeletion={() => handleKeepDeletion(activeConflict)}
+          onRestore={() => handleRestoreConflict(activeConflict)}
         />
       )}
 

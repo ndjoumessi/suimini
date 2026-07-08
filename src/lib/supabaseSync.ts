@@ -249,6 +249,84 @@ export async function deleteChildRows(table: ChildTable, ids: string[], client: 
   return true;
 }
 
+// ---------- Résolution de conflits multi-appareils (delete-vs-edit) ----------
+//
+// Un UPSERT pur (deleted_at:null) RESSUSCITE une entité qu'un AUTRE appareil a
+// soft-deletée pendant qu'on l'éditait. Avant le push, on lit l'état distant et on
+// détecte ce cas ; l'appelant exclut alors l'entité de l'upsert et l'enfile pour
+// résolution (voir conflictQueue + ConflictModal). TOUT est best-effort / fail-open :
+// la moindre erreur de SELECT → aucun conflit détecté → le push se déroule EXACTEMENT
+// comme avant (jamais de blocage de la sync).
+
+export interface DeleteConflict {
+  id: string;
+  /** deleted_at distant (ISO) — l'entité a été tombstonée ailleurs. */
+  remoteDeletedAt: string;
+}
+
+/**
+ * Détection delete-vs-edit (best-effort, fail-open) : UNE seule requête
+ * `select id, deleted_at .in('id', ids)` pour les entités poussées. Une entité est
+ * en conflit quand la ligne distante porte une tombstone POSTÉRIEURE à notre dernière
+ * édition locale (`remote.deleted_at > local.updatedAt`). Une entité sans `updatedAt`
+ * local (ex. une relation, qui n'a pas de colonne dédiée) est signalée dès qu'une
+ * tombstone distante existe : faute de pouvoir prouver que notre édition est plus
+ * récente, on refuse de la ressusciter silencieusement.
+ * `updated_at` distant n'est volontairement PAS lu : la table `relationships` n'a pas
+ * cette colonne, et la comparaison se fait contre l'`updatedAt` LOCAL.
+ * Retourne [] sur toute erreur / client absent / migration soft-delete non passée.
+ */
+export async function detectDeleteConflicts(
+  table: ChildTable,
+  entities: { id: string; updatedAt?: string }[],
+  client: any = supabase,
+): Promise<DeleteConflict[]> {
+  if (!client || entities.length === 0 || !softDeleteSupported) return [];
+  const ids = entities.map(e => e.id);
+  let rows: any[] | null = null;
+  try {
+    const res = await client.from(table).select('id, deleted_at').in('id', ids);
+    if (res.error || !res.data) return []; // fail-open : on pousse comme avant
+    rows = res.data as any[];
+  } catch {
+    return []; // fail-open
+  }
+  const remoteDeleted = new Map<string, string>();
+  for (const r of rows) if (r.deleted_at) remoteDeleted.set(r.id, r.deleted_at);
+  if (remoteDeleted.size === 0) return [];
+  const out: DeleteConflict[] = [];
+  for (const e of entities) {
+    const del = remoteDeleted.get(e.id);
+    if (!del) continue;
+    const delMs = Date.parse(del);
+    if (isNaN(delMs)) continue; // tombstone distante illisible → on ignore
+    const localMs = e.updatedAt ? Date.parse(e.updatedAt) : NaN;
+    // Conflit si supprimée APRÈS notre édition, OU si on n'a pas d'horodatage local.
+    if (isNaN(localMs) || delMs > localMs) out.push({ id: e.id, remoteDeletedAt: del });
+  }
+  return out;
+}
+
+/**
+ * Restaure une entité (résolution « Restaurer ») : ré-upsert de la ligne locale
+ * VIVANTE (deleted_at:null via pushChildTable), ce qui écrase délibérément la
+ * tombstone distante. À appeler après avoir nettoyé recent/pending-deletes côté store
+ * pour que la restauration « colle ».
+ */
+export async function restoreEntityAlive(
+  treeId: string,
+  entityType: 'person' | 'relationship',
+  entity: Person | Relationship,
+  client: any = supabase,
+): Promise<void> {
+  if (!client) return;
+  if (entityType === 'person') {
+    await pushChildTable('persons', [personToRow(entity as Person, treeId)], client);
+  } else {
+    await pushChildTable('relationships', [relToRow(entity as Relationship, treeId)], client);
+  }
+}
+
 export async function saveTreeToSupabase(tree: FamilyTree, ownerId: string, isOwner = true, client: any = supabase): Promise<void> {
   if (!client) return;
   // For shared trees the recipient may only write children, never the owning `trees` row.
