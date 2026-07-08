@@ -1,4 +1,22 @@
 {
+  "bulkData": {
+    "title": "Édition en masse",
+    "subtitle": "{tree} · {count} personnes",
+    "searchPlaceholder": "Rechercher une personne…",
+    "colPerson": "Personne",
+    "colNick": "Surnom",
+    "colMaiden": "Nom de jeune fille",
+    "nickForPerson": "Surnom de {name}",
+    "maidenForPerson": "Nom de jeune fille de {name}",
+    "nickPlaceholder": "Surnom",
+    "maidenPlaceholder": "Nom de jeune fille",
+    "empty": "Aucune personne ne correspond.",
+    "unnamed": "Sans nom",
+    "saved": "{name} enregistré",
+    "hint": "Modifs enregistrées automatiquement. Vider un champ le supprime.",
+    "done": "Terminé",
+    "close": "Fermer"
+  },
   "nav": {
     "home": "Accueil",
     "tree": "Arbre",
@@ -405,6 +423,7 @@
     "data": "Données",
     "dataHint": "Vos arbres restent les vôtres : emportez-les, ou repartez de zéro sur cet appareil.",
     "exportAll": "Exporter toutes mes données",
+    "bulkEdit": "Éditer surnoms / noms de jeune fille",
     "clearCache": "Vider le cache local",
     "dangerZone": "Zone de danger",
     "dangerHint": "La suppression du compte est définitive et efface vos données.",

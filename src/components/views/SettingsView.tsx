@@ -23,6 +23,8 @@ interface Props {
   /** Force a full resync from Supabase (wipes the local cache first). */
   onResync?: () => void | Promise<void>;
   lastSyncAt?: number | null;
+  /** Ouvre l'éditeur en masse (surnoms / noms de jeune fille) — plus de SQL Editor. */
+  onOpenBulkData?: () => void;
 }
 
 function clearLocalSuimini() {
@@ -47,7 +49,7 @@ function Eyebrow({ children, danger }: { children: ReactNode; danger?: boolean }
   );
 }
 
-export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, onCancelPreview, userEmail, displayName, cloud, trees = [], onToast, onResync, lastSyncAt }: Props) {
+export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, onCancelPreview, userEmail, displayName, cloud, trees = [], onToast, onResync, lastSyncAt, onOpenBulkData }: Props) {
   const [name, setName] = useState(displayName || '');
   const [resyncing, setResyncing] = useState(false);
   const [savingName, setSavingName] = useState(false);
@@ -296,6 +298,11 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
               <button className="btn btn-ghost btn-sm" style={{ gap: '6px' }} onClick={exportData} disabled={trees.length === 0}>
                 <Download size={14} aria-hidden="true" /> {t('exportAll')}{trees.length ? ` (${trees.length})` : ''}
               </button>
+              {onOpenBulkData && (
+                <button className="btn btn-ghost btn-sm" style={{ gap: '6px' }} onClick={onOpenBulkData} disabled={trees.length === 0}>
+                  <Pencil size={14} aria-hidden="true" /> {t('bulkEdit')}
+                </button>
+              )}
               <button className="btn btn-ghost btn-sm set-danger-ghost" style={{ gap: '6px' }} onClick={clearCache}>
                 <Trash2 size={14} aria-hidden="true" /> {t('clearCache')}
               </button>

@@ -1,4 +1,22 @@
 {
+  "bulkData": {
+    "title": "Bulk edit",
+    "subtitle": "{tree} · {count} people",
+    "searchPlaceholder": "Search for a person…",
+    "colPerson": "Person",
+    "colNick": "Nickname",
+    "colMaiden": "Maiden name",
+    "nickForPerson": "Nickname of {name}",
+    "maidenForPerson": "Maiden name of {name}",
+    "nickPlaceholder": "Nickname",
+    "maidenPlaceholder": "Maiden name",
+    "empty": "No matching person.",
+    "unnamed": "Unnamed",
+    "saved": "{name} saved",
+    "hint": "Changes are saved automatically. Clearing a field removes it.",
+    "done": "Done",
+    "close": "Close"
+  },
   "nav": {
     "home": "Home",
     "tree": "Tree",
@@ -405,6 +423,7 @@
     "data": "Data",
     "dataHint": "Your trees stay yours: take them with you, or start fresh on this device.",
     "exportAll": "Export all my data",
+    "bulkEdit": "Edit nicknames / maiden names",
     "clearCache": "Clear local cache",
     "dangerZone": "Danger zone",
     "dangerHint": "Deleting your account is permanent and erases your data.",
