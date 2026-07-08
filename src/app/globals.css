@@ -498,3 +498,11 @@ body.modal-open { overflow: hidden; }
 .leaflet-container { font-family: var(--font-body); }
 .leaflet-marker-icon.suimini-marker { background: transparent; border: none; }
 .leaflet-popup-content { margin: 10px 12px; }
+
+/* ===== Print preview well (PrintModal on-screen only) =====
+   Toggles how the printable document is previewed WITHOUT touching the real
+   print output (which goes through window.open/print, unaffected by these).
+   The inner .print-doc is always white with dark ink, so it stays legible in
+   both themes; only the surrounding well changes. */
+.print-preview-dark { background: #3a3a44; }
+.print-preview-light { background: #ffffff; color: #1a1714; }

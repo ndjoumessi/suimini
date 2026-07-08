@@ -432,7 +432,11 @@
     "linkTerms": "Conditions d'utilisation",
     "linkPrivacy": "Politique de confidentialité",
     "linkContact": "Contact",
-    "linkStatus": "État des services"
+    "linkStatus": "État des services",
+    "notifLanguage": "Langue des notifications",
+    "notifLanguageHint": "Langue des notifications push (anniversaires, commémorations), indépendante de la langue de l'application.",
+    "notifLangUpdated": "Langue des notifications mise à jour",
+    "notifLangFailed": "Échec de la mise à jour — réessayez"
   },
   "admin": {
     "title": "Administration",
@@ -1095,7 +1099,10 @@
     "membersEyebrow": "Membres",
     "unattached": "Membres non rattachés",
     "treeSince": "depuis ~{year}",
-    "pageNumber": "Page {n} / {total}"
+    "pageNumber": "Page {n} / {total}",
+    "previewLabel": "Aperçu",
+    "previewLight": "Aperçu clair",
+    "previewDark": "Aperçu sombre"
   },
   "timeline": {
     "heading": "Chronologie | {name}",
@@ -1828,5 +1835,10 @@
       "maintenance": "Maintenance",
       "unknown": "Inconnu"
     }
+  },
+  "pwa": {
+    "updateAvailable": "Une nouvelle version est disponible.",
+    "refresh": "Actualiser",
+    "dismiss": "Ignorer"
   }
 }

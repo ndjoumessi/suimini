@@ -6,7 +6,22 @@ import { FamilyTree, Person } from '@/types';
 import { getDisplayName, formatDate, formatYear, formatAge, getAge, computeTreeStats, getGeneration } from '@/lib/treeUtils';
 import { buildTreeLayout, validateVisualTree, NODE_W, NODE_H } from '@/lib/treeLayout';
 import { GENDER_BAR } from './tree/nodeStyle';
-import { List, LayoutGrid, BarChart3, TreePine, BookOpen, Printer, X } from 'lucide-react';
+import { List, LayoutGrid, BarChart3, TreePine, BookOpen, Printer, X, Moon, Sun } from 'lucide-react';
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * PREVIEW THEME (on-screen only) — the printed output is NEVER affected by
+ * this. These pure helpers are exported for unit testing. */
+export type PreviewMode = 'light' | 'dark';
+const PREVIEW_STORAGE_KEY = 'suimini_print_preview_mode';
+
+/** Flip the preview theme (dark ⇄ light). Pure — no side effects. */
+export function nextPreviewMode(cur: PreviewMode): PreviewMode {
+  return cur === 'dark' ? 'light' : 'dark';
+}
+/** CSS class controlling the preview well's background (see globals.css). */
+export function previewClass(mode: PreviewMode): string {
+  return mode === 'light' ? 'print-preview-light' : 'print-preview-dark';
+}
 
 const PRINT_MODE_META = {
   livret: { Icon: BookOpen, labelKey: 'mode.livret' },
@@ -106,8 +121,22 @@ export default function PrintModal({ tree, onClose }: Props) {
   const [includeDeceased, setIncludeDeceased] = useState(true);
   const [includeEvents, setIncludeEvents] = useState(true);
   const [exporting, setExporting] = useState(false);
+  // On-screen preview theme. Default = current behaviour (dark) until a saved
+  // preference is read on mount. Does NOT alter the printed document.
+  const [previewMode, setPreviewMode] = useState<PreviewMode>('dark');
   const printRef = useRef<HTMLDivElement>(null);
   const treeRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const saved = window.localStorage.getItem(PREVIEW_STORAGE_KEY);
+    if (saved === 'light' || saved === 'dark') setPreviewMode(saved);
+  }, []);
+
+  function applyPreviewMode(next: PreviewMode) {
+    setPreviewMode(next);
+    if (typeof window !== 'undefined') window.localStorage.setItem(PREVIEW_STORAGE_KEY, next);
+  }
 
   const dateLocale = locale === 'en' ? 'en-US' : 'fr-FR';
   const printedDate = new Date().toLocaleDateString(dateLocale, { day: '2-digit', month: 'long', year: 'numeric' });
@@ -311,6 +340,22 @@ export default function PrintModal({ tree, onClose }: Props) {
               </button>
             ); })}
           </div>
+          {/* Preview theme toggle (on-screen only — never changes the printed doc). */}
+          <div role="group" aria-label={t('previewLabel')} style={{ display: 'flex', gap: '6px' }}>
+            {(['dark','light'] as PreviewMode[]).map(pm => {
+              const active = previewMode === pm;
+              const Icon = pm === 'light' ? Sun : Moon;
+              return (
+                <button key={pm} onClick={() => applyPreviewMode(pm)} aria-pressed={active} className="btn btn-sm" style={{
+                  background: active ? 'var(--accent)' : 'var(--bg-card)',
+                  color: active ? '#0d0d0d' : 'var(--text-muted)',
+                  borderColor: active ? 'var(--accent)' : 'var(--border-strong)',
+                }}>
+                  <Icon size={14} aria-hidden="true" /> {t(pm === 'light' ? 'previewLight' : 'previewDark')}
+                </button>
+              );
+            })}
+          </div>
           {mode !== 'tree' && (
             <>
               <label style={{ display: 'flex', gap: '6px', alignItems: 'center', fontSize: '13px', cursor: 'pointer' }}>
@@ -346,7 +391,7 @@ export default function PrintModal({ tree, onClose }: Props) {
         {/* Print preview — paper-coloured well around the white document.
             tabIndex : une région défilante doit être atteignable au clavier (axe
             scrollable-region-focusable). */}
-        <div tabIndex={0} role="region" aria-label={t('title')} style={{ padding: '20px 24px', maxHeight: 'calc(90vh - 160px)', overflowY: 'auto', background: '#3a3a44' }}>
+        <div tabIndex={0} role="region" aria-label={t('title')} className={previewClass(previewMode)} style={{ padding: '20px 24px', maxHeight: 'calc(90vh - 160px)', overflowY: 'auto' }}>
           <div ref={printRef} className="print-doc" style={{ background: P.paper, color: P.ink, padding: '28px', boxShadow: '0 2px 16px rgba(0,0,0,0.35)', display: mode === 'tree' ? 'none' : 'block' }}>
             {/* Livret de famille : couverture + une section par génération.
                 Styles INLINE + hex littéraux → rendu identique en aperçu ET dans la

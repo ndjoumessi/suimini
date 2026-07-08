@@ -57,7 +57,7 @@ const xref = (v: string) => v.replace(/@/g, '').trim();
 
 export function parseGEDCOM(content: string): ParsedGedcom {
   interface IndiRec {
-    firstName: string; lastName: string; maidenName?: string; gender: Gender;
+    firstName: string; lastName: string; maidenName?: string; nickName?: string; gender: Gender;
     birthDate?: string; birthDateApprox?: boolean; birthPlace?: string;
     deathDate?: string; deathDateApprox?: boolean; deathPlace?: string;
     occupation?: string; bio?: string; isAlive: boolean;
@@ -105,6 +105,7 @@ export function parseGEDCOM(content: string): ParsedGedcom {
         case 'GIVN': if (!curIndi.firstName) curIndi.firstName = ln.value.trim(); break;
         case 'SURN': if (!curIndi.lastName) curIndi.lastName = ln.value.trim(); break;
         case 'NPFX': case '_MARNM': if (!curIndi.maidenName) curIndi.maidenName = ln.value.trim(); break;
+        case 'NICK': if (!curIndi.nickName) curIndi.nickName = ln.value.trim(); break;
         case 'SEX': curIndi.gender = ln.value.startsWith('M') ? 'male' : ln.value.startsWith('F') ? 'female' : 'unknown'; break;
         case 'BIRT': event = 'birt'; break;
         case 'DEAT': event = 'deat'; curIndi.isAlive = false; break;
@@ -143,6 +144,7 @@ export function parseGEDCOM(content: string): ParsedGedcom {
       firstName: r.firstName || '?',
       lastName: r.lastName || '',
       maidenName: r.maidenName,
+      nickName: r.nickName,
       gender: r.gender,
       isAlive: r.isAlive,
       birthDate: r.birthDate,

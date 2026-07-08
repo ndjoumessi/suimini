@@ -34,8 +34,23 @@ interface PersonRow {
   is_alive: boolean | null;
 }
 
+type Locale = 'fr' | 'en';
+type NotifEvent = { person: PersonRow; kind: 'birthday' | 'memorial'; years: number };
+
 function displayName(p: PersonRow): string {
   return [p.first_name, p.last_name].filter(Boolean).join(' ').trim() || 'Un proche';
+}
+
+/** Titre + corps localisés pour un événement, selon la locale du DESTINATAIRE. */
+function buildMessage(ev: NotifEvent, name: string, locale: Locale): { title: string; body: string } {
+  if (locale === 'en') {
+    return ev.kind === 'birthday'
+      ? { title: '🎂 Birthday', body: `🎂 ${name} turns ${ev.years} today!` }
+      : { title: '🕯️ In memoriam', body: `🕯️ In memory of ${name}, gone ${ev.years} years ago` };
+  }
+  return ev.kind === 'birthday'
+    ? { title: '🎂 Anniversaire', body: `🎂 ${name} fête ses ${ev.years} ans aujourd'hui !` }
+    : { title: '🕯️ Commémoration', body: `🕯️ En mémoire de ${name}, décédé·e il y a ${ev.years} ans` };
 }
 
 /** 'YYYY-MM-DD…' → 'MM-DD', ou null si la date est partielle/invalide. */
@@ -74,8 +89,7 @@ Deno.serve(async (req) => {
     .or('birth_date.not.is.null,death_date.not.is.null');
   if (pErr) return new Response(JSON.stringify({ error: pErr.message }), { status: 500 });
 
-  type Event = { person: PersonRow; kind: 'birthday' | 'memorial'; years: number };
-  const events: Event[] = [];
+  const events: NotifEvent[] = [];
   for (const p of (persons ?? []) as PersonRow[]) {
     if (p.is_alive !== false && p.birth_date && monthDay(p.birth_date) === todayMD) {
       const y = yearOf(p.birth_date);
@@ -118,17 +132,32 @@ Deno.serve(async (req) => {
     tokensByUser.get(t.user_id)!.push(t.token);
   }
 
-  // --- 4. Messages (FR par défaut — pas de locale par utilisateur en base) ---
+  // --- 3bis. Locale de notification par destinataire (fr par défaut) ---
+  // Fail-safe : si la colonne `profiles.locale` n'existe pas encore (migration
+  // add-locale-to-profiles.sql non exécutée), on n'échoue JAMAIS — tout le
+  // monde retombe en 'fr'.
+  const localeByUser = new Map<string, Locale>();
+  try {
+    const { data: profs, error: lErr } = await supabase
+      .from('profiles').select('id, locale').in('id', userIds);
+    if (!lErr) {
+      for (const pr of profs ?? []) {
+        localeByUser.set(pr.id, pr.locale === 'en' ? 'en' : 'fr');
+      }
+    }
+  } catch { /* colonne absente / table indisponible → fr partout */ }
+  const localeOf = (uid: string): Locale => localeByUser.get(uid) ?? 'fr';
+
+  // --- 4. Messages localisés PAR DESTINATAIRE (titre + corps selon sa locale) ---
   const messages: { to: string; title: string; body: string; sound: string; data: Record<string, string> }[] = [];
   for (const ev of events) {
     const name = displayName(ev.person);
-    const title = ev.kind === 'birthday' ? '🎂 Anniversaire' : '🕯️ Commémoration';
-    const body = ev.kind === 'birthday'
-      ? `${name} fête ses ${ev.years} ans aujourd'hui !`
-      : `En mémoire de ${name}, disparu·e il y a ${ev.years} an${ev.years > 1 ? 's' : ''}.`;
     const users = recipientsByTree.get(ev.person.tree_id) ?? new Set<string>();
     for (const uid of users) {
-      for (const token of tokensByUser.get(uid) ?? []) {
+      const tokensForUser = tokensByUser.get(uid) ?? [];
+      if (tokensForUser.length === 0) continue;
+      const { title, body } = buildMessage(ev, name, localeOf(uid));
+      for (const token of tokensForUser) {
         messages.push({ to: token, title, body, sound: 'default', data: { treeId: ev.person.tree_id, personId: ev.person.id, kind: ev.kind } });
       }
     }

@@ -43,6 +43,8 @@ import ShareModal from './ShareModal';
 import ConflictModal from './ConflictModal';
 import ToastStack, { ToastType, ToastItem } from './Toast';
 import StatusBanner from './StatusBanner';
+import UpdateBanner from './UpdateBanner';
+import { useServiceWorkerUpdate } from '@/hooks/useServiceWorkerUpdate';
 import { BrandLockup } from './Brand';
 import OnboardingWizard, { OnboardingData } from './OnboardingWizard';
 import { Menu, Search, TreePine, Sprout, Cloud, WifiOff, AlertTriangle, RefreshCw } from 'lucide-react';
@@ -112,6 +114,7 @@ export default function SuiminiApp() {
   const tc = useTranslations('common');
   const tnav = useTranslations('nav');
   const tOffline = useTranslations('offline');
+  const swUpdate = useServiceWorkerUpdate();
   const tToast = useTranslations('toasts');
   const tApp = useTranslations('app');
   // Always-current translator for toasts fired from memoized callbacks / long-lived
@@ -531,6 +534,10 @@ export default function SuiminiApp() {
           </div>
         )}
         {isDemo && <DemoBanner onCreateAccount={() => openAuth('signup')} onExit={exitDemo} />}
+        {/* Controlled PWA update prompt — a new SW is waiting; apply on demand. */}
+        {swUpdate.updateAvailable && !swUpdate.dismissed && (
+          <UpdateBanner onRefresh={swUpdate.applyUpdate} onDismiss={swUpdate.dismiss} />
+        )}
         {/* Mobile header */}
         <header style={{ display: 'none', padding: '10px 16px', borderBottom: 'var(--bw) solid var(--border-strong)', background: 'var(--bg-card)', alignItems: 'center', gap: '12px' }} className="mobile-header">
           {/* Sur mobile, le ContentHeader (et son h1) est masqué : ce h1 sr-only

@@ -18,6 +18,8 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { Avatar } from '@/components/ui/Avatar';
+import { PhotoPickerSheet } from '@/components/person/PhotoPickerSheet';
 import { fonts, fontSize, spacing, borderWidth } from '@/lib/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
@@ -67,10 +69,25 @@ export default function PersonEditScreen() {
   const [deathDate, setDeathDate] = useState(existing?.deathDate ?? '');
   const [birthCity, setBirthCity] = useState(existing?.birthPlace?.city ?? '');
   const [bio, setBio] = useState(existing?.bio ?? '');
+  const [profilePhoto, setProfilePhoto] = useState(existing?.profilePhoto ?? '');
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [picker, setPicker] = useState<null | 'birth' | 'death'>(null);
+  const [photoSheet, setPhotoSheet] = useState(false);
+
+  // Lightweight person for the avatar preview (photo, else tinted initials).
+  const previewPerson: Person = {
+    ...(existing ?? {}),
+    id: existing?.id ?? 'new',
+    firstName: firstName.trim(),
+    lastName: lastName.trim(),
+    gender,
+    isAlive: !deathDate.trim(),
+    profilePhoto: profilePhoto || undefined,
+    createdAt: existing?.createdAt ?? '',
+    updatedAt: existing?.updatedAt ?? '',
+  };
 
   const onPickerChange = (event: DateTimePickerEvent, date?: Date) => {
     const field = picker;
@@ -105,6 +122,7 @@ export default function PersonEditScreen() {
       isAlive: !deathDate.trim(),
       birthPlace: city ? { ...(existing?.birthPlace ?? {}), city } : undefined,
       bio: bio.trim() || undefined,
+      profilePhoto: profilePhoto || undefined,
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     };
@@ -217,6 +235,20 @@ export default function PersonEditScreen() {
             </Text>
           </View>
         ) : null}
+
+        {/* Tappable avatar → photo picker */}
+        <TouchableOpacity
+          style={styles.photoRow}
+          onPress={() => setPhotoSheet(true)}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel={profilePhoto ? t('photo.changePhoto') : t('photo.addPhoto')}
+        >
+          <Avatar person={previewPerson} size={88} />
+          <Text style={[styles.photoHint, { color: colors.accent }]}>
+            {profilePhoto ? t('photo.changePhoto') : t('photo.addPhoto')}
+          </Text>
+        </TouchableOpacity>
 
         <Input
           label={t('person.firstName')}
@@ -359,6 +391,15 @@ export default function PersonEditScreen() {
           />
         ) : null}
       </ScrollView>
+
+      {photoSheet ? (
+        <PhotoPickerSheet
+          visible={photoSheet}
+          personId={existing?.id ?? 'new'}
+          onClose={() => setPhotoSheet(false)}
+          onResult={(uri) => setProfilePhoto(uri)}
+        />
+      ) : null}
     </KeyboardAvoidingView>
   );
 }
@@ -375,6 +416,8 @@ const styles = StyleSheet.create({
   iconBtn: { padding: spacing.xs, minWidth: 36 },
   topTitle: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 2 },
   body: { padding: spacing.lg, gap: spacing.md },
+  photoRow: { alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
+  photoHint: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 1 },
   demoBanner: { borderWidth, padding: spacing.sm },
   demoText: { fontFamily: fonts.mono, fontSize: fontSize.xs - 1, letterSpacing: 0.5 },
   field: { gap: spacing.xs },

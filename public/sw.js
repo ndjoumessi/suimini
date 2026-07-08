@@ -1,5 +1,5 @@
-/* Suimini — service worker v3 : cache offline des assets statiques + API Supabase. */
-const CACHE = 'suimini-static-v3';
+/* Suimini — service worker v4 : cache offline des assets statiques + API Supabase. */
+const CACHE = 'suimini-static-v4';
 
 // Assets statiques pré-mis en cache lors de l'installation.
 const PRECACHE_URLS = [
@@ -19,12 +19,16 @@ const PRECACHE_URLS = [
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches
-      .open(CACHE)
-      .then((cache) => cache.addAll(PRECACHE_URLS))
-      .then(() => self.skipWaiting())
-  );
+  // NB : pas de skipWaiting() ici — le nouveau SW ATTEND (état "waiting") au lieu
+  // de prendre le contrôle en silence pendant qu'une page charge encore l'ancien
+  // bundle. La bascule est déclenchée par l'utilisateur via le message SKIP_WAITING.
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(PRECACHE_URLS)));
+});
+
+// Bascule contrôlée : la page poste SKIP_WAITING (bouton « Actualiser ») pour
+// activer le SW en attente, puis se recharge sur 'controllerchange'.
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {

@@ -432,7 +432,11 @@
     "linkTerms": "Terms of use",
     "linkPrivacy": "Privacy policy",
     "linkContact": "Contact",
-    "linkStatus": "Service status"
+    "linkStatus": "Service status",
+    "notifLanguage": "Notification language",
+    "notifLanguageHint": "Language of push notifications (birthdays, memorials), independent of the app language.",
+    "notifLangUpdated": "Notification language updated",
+    "notifLangFailed": "Update failed — please retry"
   },
   "admin": {
     "title": "Administration",
@@ -1095,7 +1099,10 @@
     "membersEyebrow": "Members",
     "unattached": "Unattached members",
     "treeSince": "since ~{year}",
-    "pageNumber": "Page {n} / {total}"
+    "pageNumber": "Page {n} / {total}",
+    "previewLabel": "Preview",
+    "previewLight": "Light preview",
+    "previewDark": "Dark preview"
   },
   "timeline": {
     "heading": "Timeline | {name}",
@@ -1828,5 +1835,10 @@
       "maintenance": "Maintenance",
       "unknown": "Unknown"
     }
+  },
+  "pwa": {
+    "updateAvailable": "A new version is available.",
+    "refresh": "Refresh",
+    "dismiss": "Dismiss"
   }
 }

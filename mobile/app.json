@@ -53,7 +53,14 @@
       ],
       "expo-asset",
       "@react-native-community/datetimepicker",
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Suimini accède à vos photos pour définir la photo d'une personne.",
+          "cameraPermission": "Suimini utilise l'appareil photo pour prendre la photo d'une personne."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, type ReactNode } from 'react';
+import { useState, useRef, useEffect, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { ColorThemeId, FamilyTree } from '@/types';
 import { COLOR_THEMES } from '@/lib/themes';
@@ -55,6 +55,10 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
   const [confirmText, setConfirmText] = useState('');
   const [busy, setBusy] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
+  const userIdRef = useRef<string | null>(null);
+  const [notifLocale, setNotifLocale] = useState<Locale>('fr');
+  const [notifAvailable, setNotifAvailable] = useState(false);
+  const [savingNotifLocale, setSavingNotifLocale] = useState(false);
   const t = useTranslations('settings');
   const tSync = useTranslations('sync');
   const { locale, setLocale } = useLocaleSwitch();
@@ -64,6 +68,39 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
   function chooseLocale(next: Locale) {
     if (next === locale) return;
     setLocale(next);
+  }
+
+  // Read the current notification locale on mount. If the `profiles.locale`
+  // column doesn't exist yet (migration add-locale-to-profiles.sql not run),
+  // the select errors → we hide the selector gracefully (pre-migration case).
+  useEffect(() => {
+    if (!supabase || !userEmail) return;
+    let cancelled = false;
+    (async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth?.user?.id;
+      if (cancelled || !uid) return;
+      userIdRef.current = uid;
+      const { data, error } = await supabase.from('profiles').select('locale').eq('id', uid).single();
+      if (cancelled) return;
+      if (error) { setNotifAvailable(false); return; }
+      setNotifAvailable(true);
+      setNotifLocale((data as { locale?: string } | null)?.locale === 'en' ? 'en' : 'fr');
+    })();
+    return () => { cancelled = true; };
+  }, [userEmail]);
+
+  async function chooseNotifLocale(next: Locale) {
+    if (next === notifLocale || !supabase) return;
+    const uid = userIdRef.current;
+    if (!uid) return;
+    const prev = notifLocale;
+    setNotifLocale(next); // optimistic
+    setSavingNotifLocale(true);
+    const { error } = await supabase.from('profiles').update({ locale: next }).eq('id', uid);
+    setSavingNotifLocale(false);
+    if (error) { setNotifLocale(prev); toast(t('notifLangFailed'), 'error'); }
+    else toast(t('notifLangUpdated'), 'success');
   }
 
   async function saveName() {
@@ -209,6 +246,27 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
             })}
           </div>
         </section>
+
+        {/* SECTION 3bis — Notification language (per-recipient, independent of UI locale) */}
+        {userEmail && notifAvailable && (
+          <section className="set-section">
+            <Eyebrow>{t('notifLanguage')}</Eyebrow>
+            <p className="set-section-sub">{t('notifLanguageHint')}</p>
+            <div className="set-field" style={{ maxWidth: '280px' }}>
+              <label className="set-flabel" htmlFor="settings-notif-locale">{t('notifLanguage')}</label>
+              <select
+                id="settings-notif-locale"
+                className="set-input"
+                value={notifLocale}
+                disabled={savingNotifLocale}
+                onChange={e => chooseNotifLocale(e.target.value as Locale)}
+              >
+                <option value="fr">Français</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+          </section>
+        )}
 
         {/* SECTION 4 — Data & sync */}
         <section className="set-section">

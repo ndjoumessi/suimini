@@ -227,6 +227,23 @@ export const fr = {
     viewStatus: 'Voir le statut',
     dismiss: 'Fermer',
   },
+  photo: {
+    title: 'PHOTO',
+    takePhoto: 'Prendre une photo',
+    chooseFromGallery: 'Choisir dans la galerie',
+    addPhoto: 'Ajouter une photo',
+    changePhoto: 'Changer la photo',
+    uploading: 'Envoi en cours…',
+    done: 'PHOTO MISE À JOUR',
+    compressed: 'Compressée : {{sizes}}',
+    permDeniedTitle: 'Autorisation refusée',
+    permCameraBody: "Autorisez l'accès à l'appareil photo dans les réglages pour prendre une photo.",
+    permLibraryBody: "Autorisez l'accès aux photos dans les réglages pour en choisir une.",
+    pickErrorTitle: 'Sélection impossible',
+    pickErrorBody: "La photo n'a pas pu être ouverte. Réessayez.",
+    uploadErrorTitle: 'Envoi impossible',
+    uploadErrorBody: "La photo a été appliquée localement mais pas sauvegardée en ligne. Réessayez.",
+  },
 };
 
 export type Resources = typeof fr;
