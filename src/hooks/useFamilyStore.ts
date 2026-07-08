@@ -445,7 +445,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
       const toDelete = ids.filter(id => !currentByTable[table]?.has(id));
       // Best-effort : en échec, l'id RESTE en attente et sera rejoué au prochain
       // push (au plus tard au prochain chargement de l'app).
-      if (toDelete.length && await getDataClient().deleteChildRows(table, toDelete)) clearPendingDeletes(table, toDelete);
+      if (toDelete.length && await getDataClient().deleteChildRows(tree.id, table, toDelete)) clearPendingDeletes(table, toDelete);
     }
     // ── Résolution de conflits multi-appareils (delete-vs-edit) ──────────────────
     // Un AUTRE appareil a pu soft-deleter une personne/relation APRÈS notre dernière
@@ -457,8 +457,8 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     let treeToPush = tree;
     try {
       const [personConflicts, relConflicts] = await Promise.all([
-        getDataClient().detectDeleteConflicts('persons', tree.persons.map(p => ({ id: p.id, updatedAt: p.updatedAt }))),
-        getDataClient().detectDeleteConflicts('relationships', tree.relationships.map(r => ({ id: r.id, updatedAt: (r as { updatedAt?: string }).updatedAt }))),
+        getDataClient().detectDeleteConflicts(tree.id, 'persons', tree.persons.map(p => ({ id: p.id, updatedAt: p.updatedAt }))),
+        getDataClient().detectDeleteConflicts(tree.id, 'relationships', tree.relationships.map(r => ({ id: r.id, updatedAt: (r as { updatedAt?: string }).updatedAt }))),
       ]);
       if (personConflicts.length || relConflicts.length) {
         const queued: Conflict[] = [];

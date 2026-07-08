@@ -1,17 +1,14 @@
 /**
  * Phase 0 — frontière RÉSEAU unique de la couche données.
  *
- * Tout le store (`useFamilyStore`) parle désormais à un `DataClient`, plus jamais
- * à Supabase en direct. Deux implémentations coexisteront :
- *   • SupabaseDataClient — délègue aux fonctions `supabaseSync` actuelles (client
- *     Supabase du navigateur). Comportement STRICTEMENT identique à aujourd'hui →
- *     c'est le chemin de ROLLBACK.
- *   • ApiDataClient — `fetch('/api/data/...')` (navigateur → notre API → Supabase).
- *     Livré dans des PR ultérieures ; ABSENT ici.
+ * Tout le store (`useFamilyStore`) parle à un `DataClient`, plus jamais à Supabase
+ * en direct. Deux implémentations :
+ *   • SupabaseDataClient — délègue aux fonctions `supabaseSync` (client navigateur).
+ *     Comportement identique à l'origine → chemin de ROLLBACK.
+ *   • ApiDataClient — navigateur → /api/data/* → Supabase (lecture ET écriture).
  *
  * Sélection par flag `NEXT_PUBLIC_DATA_LAYER` ('api' | 'direct', défaut 'direct').
- * Tant qu'ApiDataClient n'existe pas, on renvoie TOUJOURS le direct (garde-fou :
- * poser le flag 'api' trop tôt ne casse rien). Voir docs/phase0-data-api-design.md.
+ * Voir docs/phase0-data-api-design.md.
  */
 import {
   loadTreesFromSupabase, saveTreeToSupabase, deleteTreeFromSupabase, deleteChildRows,
@@ -25,61 +22,79 @@ export interface DataClient {
   loadOneTree(treeId: string): Promise<FamilyTree | null>;
   saveTree(tree: FamilyTree, ownerId: string, isOwner: boolean): Promise<void>;
   deleteTree(treeId: string, ownerId?: string): Promise<{ error?: string }>;
-  deleteChildRows(table: ChildTable, ids: string[]): Promise<boolean>;
-  detectDeleteConflicts(table: ChildTable, entities: { id: string; updatedAt?: string }[]): Promise<DeleteConflict[]>;
+  // treeId porté explicitement (vs supabaseSync qui ne le prend pas) → l'endpoint
+  // peut faire une AuthZ canWriteTreeContent(treeId), pas seulement s'appuyer sur RLS.
+  deleteChildRows(treeId: string, table: ChildTable, ids: string[]): Promise<boolean>;
+  detectDeleteConflicts(treeId: string, table: ChildTable, entities: { id: string; updatedAt?: string }[]): Promise<DeleteConflict[]>;
   restoreEntity(treeId: string, entityType: 'person' | 'relationship', entity: Person | Relationship): Promise<void>;
 }
 
-/** Implémentation directe (actuelle) : pur passe-plat vers `supabaseSync`. */
+/** Implémentation directe (actuelle) : pur passe-plat vers `supabaseSync`.
+ * `treeId` est reçu pour l'interface mais ignoré (les fonctions supabaseSync ne le
+ * prennent pas ; RLS scope déjà par ligne). */
 class SupabaseDataClient implements DataClient {
   loadTrees(userId: string) { return loadTreesFromSupabase(userId); }
   loadOneTree(treeId: string) { return loadOneTree(treeId); }
   saveTree(tree: FamilyTree, ownerId: string, isOwner: boolean) { return saveTreeToSupabase(tree, ownerId, isOwner); }
   deleteTree(treeId: string, ownerId?: string) { return deleteTreeFromSupabase(treeId, ownerId); }
-  deleteChildRows(table: ChildTable, ids: string[]) { return deleteChildRows(table, ids); }
-  detectDeleteConflicts(table: ChildTable, entities: { id: string; updatedAt?: string }[]) { return detectDeleteConflicts(table, entities); }
+  deleteChildRows(_treeId: string, table: ChildTable, ids: string[]) { return deleteChildRows(table, ids); }
+  detectDeleteConflicts(_treeId: string, table: ChildTable, entities: { id: string; updatedAt?: string }[]) { return detectDeleteConflicts(table, entities); }
   restoreEntity(treeId: string, entityType: 'person' | 'relationship', entity: Person | Relationship) { return restoreEntityAlive(treeId, entityType, entity); }
 }
 
 const supabaseDataClient = new SupabaseDataClient();
 
-/** Implémentation API (PR3+) : la LECTURE passe par /api/data/* ; l'ÉCRITURE
- * délègue encore au direct (endpoints d'écriture = PR4). Ainsi `DATA_LAYER='api'`
- * permet un canary LECTURE seul, sans casser les écritures. */
-async function apiJson<T>(url: string): Promise<T> {
+// ── Helpers HTTP (navigateur → /api/data/*) ──────────────────────────────────
+async function apiGet<T>(url: string): Promise<T> {
   const res = await fetch(url, { credentials: 'same-origin', headers: { accept: 'application/json' } });
   if (!res.ok) throw new Error(`API ${res.status} sur ${url}`);
   return res.json() as Promise<T>;
 }
+async function apiSend<T>(url: string, method: 'POST' | 'DELETE', body?: unknown): Promise<T> {
+  const res = await fetch(url, {
+    method, credentials: 'same-origin',
+    headers: { accept: 'application/json', ...(body !== undefined ? { 'content-type': 'application/json' } : {}) },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) throw new Error(`API ${res.status} sur ${url}`);
+  return res.json() as Promise<T>;
+}
 
+/** Implémentation API : lecture ET écriture via /api/data/* (PR3 lecture, PR4 écriture). */
 class ApiDataClient implements DataClient {
-  private readonly direct = supabaseDataClient; // méthodes pas encore migrées (écriture → PR4)
-
-  loadTrees(_userId: string) { return apiJson<LoadResult>('/api/data/trees'); }
+  loadTrees(_userId: string) { return apiGet<LoadResult>('/api/data/trees'); }
   async loadOneTree(treeId: string) {
     const res = await fetch(`/api/data/trees/${encodeURIComponent(treeId)}`, { credentials: 'same-origin', headers: { accept: 'application/json' } });
     if (res.status === 404) return null;
     if (!res.ok) throw new Error(`API ${res.status} sur /api/data/trees/${treeId}`);
     return res.json() as Promise<FamilyTree>;
   }
-  // ↓ ÉCRITURE : encore en direct (migrée en PR4).
-  saveTree(tree: FamilyTree, ownerId: string, isOwner: boolean) { return this.direct.saveTree(tree, ownerId, isOwner); }
-  deleteTree(treeId: string, ownerId?: string) { return this.direct.deleteTree(treeId, ownerId); }
-  deleteChildRows(table: ChildTable, ids: string[]) { return this.direct.deleteChildRows(table, ids); }
-  detectDeleteConflicts(table: ChildTable, entities: { id: string; updatedAt?: string }[]) { return this.direct.detectDeleteConflicts(table, entities); }
-  restoreEntity(treeId: string, entityType: 'person' | 'relationship', entity: Person | Relationship) { return this.direct.restoreEntity(treeId, entityType, entity); }
+  async saveTree(tree: FamilyTree, _ownerId: string, isOwner: boolean) {
+    await apiSend(`/api/data/trees/${encodeURIComponent(tree.id)}/save`, 'POST', { tree, isOwner });
+  }
+  deleteTree(treeId: string) {
+    return apiSend<{ error?: string }>(`/api/data/trees/${encodeURIComponent(treeId)}`, 'DELETE');
+  }
+  async deleteChildRows(treeId: string, table: ChildTable, ids: string[]) {
+    const r = await apiSend<{ ok: boolean }>(`/api/data/trees/${encodeURIComponent(treeId)}/children/delete`, 'POST', { table, ids });
+    return r.ok;
+  }
+  detectDeleteConflicts(treeId: string, table: ChildTable, entities: { id: string; updatedAt?: string }[]) {
+    return apiSend<DeleteConflict[]>(`/api/data/trees/${encodeURIComponent(treeId)}/conflicts`, 'POST', { table, entities });
+  }
+  async restoreEntity(treeId: string, entityType: 'person' | 'relationship', entity: Person | Relationship) {
+    await apiSend(`/api/data/trees/${encodeURIComponent(treeId)}/restore`, 'POST', { entityType, entity });
+  }
 }
 
 /** 'api' | 'direct' — défaut 'direct' (rollback par défaut). */
 export const DATA_LAYER: 'api' | 'direct' =
   process.env.NEXT_PUBLIC_DATA_LAYER === 'api' ? 'api' : 'direct';
 
-/** Exposé pour les tests (contrat de l'ApiDataClient). Ne pas utiliser en app :
- * passer par getDataClient(). */
+/** Exposé pour les tests. En app, passer par getDataClient(). */
 export const apiDataClient: DataClient = new ApiDataClient();
 
-/** Frontière réseau UNIQUE. Le flag choisit le transport ; défaut 'direct'
- * (rollback). En 'api' : lecture via /api/data/*, écriture encore directe (PR4). */
+/** Frontière réseau UNIQUE. Le flag choisit le transport ; défaut 'direct' (rollback). */
 export function getDataClient(): DataClient {
   return DATA_LAYER === 'api' ? apiDataClient : supabaseDataClient;
 }

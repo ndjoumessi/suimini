@@ -59,3 +59,59 @@ test('ApiDataClient.loadOneTree → GET /api/data/trees/[id] ; 404 → null', as
     expect(await apiDataClient.loadOneTree('missing')).toBe(null);
   } finally { globalThis.fetch = orig2; }
 });
+
+// ── ApiDataClient (PR4) : écriture via /api/data/* (fetch mocké) ─────────────
+function mockFetch(handler: (url: string, init: any) => any) {
+  const calls: { url: string; method: string; body: any }[] = [];
+  const orig = globalThis.fetch;
+  globalThis.fetch = (async (url: any, init: any = {}) => {
+    calls.push({ url: String(url), method: init.method ?? 'GET', body: init.body ? JSON.parse(init.body) : undefined });
+    return handler(String(url), init);
+  }) as any;
+  return { calls, restore: () => { globalThis.fetch = orig; } };
+}
+
+test('ApiDataClient.saveTree → POST /save { tree, isOwner } (isOwner du client, recalculé serveur)', async () => {
+  const m = mockFetch(() => ({ ok: true, status: 200, json: async () => ({ ok: true }) }));
+  try {
+    await apiDataClient.saveTree({ id: 't1', name: 'X', persons: [], relationships: [] } as any, 'owner1', true);
+    expect(m.calls[0]).toMatchObject({ url: '/api/data/trees/t1/save', method: 'POST' });
+    expect(m.calls[0].body.tree.id).toBe('t1');
+  } finally { m.restore(); }
+});
+
+test('ApiDataClient.deleteTree → DELETE /api/data/trees/[id]', async () => {
+  const m = mockFetch(() => ({ ok: true, status: 200, json: async () => ({}) }));
+  try {
+    await apiDataClient.deleteTree('t1');
+    expect(m.calls[0]).toMatchObject({ url: '/api/data/trees/t1', method: 'DELETE' });
+  } finally { m.restore(); }
+});
+
+test('ApiDataClient.deleteChildRows → POST /children/delete { table, ids } → ok', async () => {
+  const m = mockFetch(() => ({ ok: true, status: 200, json: async () => ({ ok: true }) }));
+  try {
+    const ok = await apiDataClient.deleteChildRows('t1', 'persons', ['a', 'b']);
+    expect(ok).toBe(true);
+    expect(m.calls[0]).toMatchObject({ url: '/api/data/trees/t1/children/delete', method: 'POST' });
+    expect(m.calls[0].body).toEqual({ table: 'persons', ids: ['a', 'b'] });
+  } finally { m.restore(); }
+});
+
+test('ApiDataClient.detectDeleteConflicts → POST /conflicts → tableau', async () => {
+  const m = mockFetch(() => ({ ok: true, status: 200, json: async () => [{ id: 'p1', remoteDeletedAt: 'x' }] }));
+  try {
+    const res = await apiDataClient.detectDeleteConflicts('t1', 'persons', [{ id: 'p1' }]);
+    expect(res).toEqual([{ id: 'p1', remoteDeletedAt: 'x' }]);
+    expect(m.calls[0].url).toBe('/api/data/trees/t1/conflicts');
+  } finally { m.restore(); }
+});
+
+test('ApiDataClient.restoreEntity → POST /restore { entityType, entity }', async () => {
+  const m = mockFetch(() => ({ ok: true, status: 200, json: async () => ({ ok: true }) }));
+  try {
+    await apiDataClient.restoreEntity('t1', 'person', { id: 'p1' } as any);
+    expect(m.calls[0]).toMatchObject({ url: '/api/data/trees/t1/restore', method: 'POST' });
+    expect(m.calls[0].body).toEqual({ entityType: 'person', entity: { id: 'p1' } });
+  } finally { m.restore(); }
+});

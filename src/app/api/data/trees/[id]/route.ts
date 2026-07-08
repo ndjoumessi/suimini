@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getServerAuth } from '@/lib/apiAuth';
 import { createSupabaseAuthzProvider, canReadTreeAsMember } from '@/lib/authz';
-import { loadOneTree } from '@/lib/supabaseSync';
+import { guardTreeWrite } from '@/lib/apiData';
+import { loadOneTree, deleteTreeFromSupabase } from '@/lib/supabaseSync';
 
 // Phase 0 — GET /api/data/trees/[id] : un arbre (non masqué) pour un appelant
 // AYANT UNE RELATION avec lui (owner | tree_shares | membre accepté). Le public
@@ -22,4 +23,14 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const tree = await loadOneTree(id, client);
   if (!tree) return NextResponse.json({ error: 'Arbre introuvable.' }, { status: 404 });
   return NextResponse.json(tree);
+}
+
+// DELETE /api/data/trees/[id] : suppression d'un ARBRE entier (seul DELETE dur
+// restant). AuthZ : owner uniquement.
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const guard = await guardTreeWrite(id, 'owner');
+  if (!guard.ok) return guard.res;
+  const result = await deleteTreeFromSupabase(id, guard.caller.userId);
+  return NextResponse.json(result);
 }
