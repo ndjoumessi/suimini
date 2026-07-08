@@ -320,6 +320,44 @@ export async function detectDeleteConflicts(
 }
 
 /**
+ * Préserve les clés `extra` présentes EN BASE mais absentes du push local — cas
+ * typique : un champ non normalisé (nickName, maidenName…) ajouté HORS-APP via le
+ * SQL Editor, alors que le state local (chargé avant l'édition, sans reload) ne le
+ * connaît pas. L'UPSERT réécrit `extra` depuis le state local → sans ce garde-fou
+ * il ÉCRASERAIT ces clés (perte silencieuse du surnom).
+ *
+ * Politique : LOCAL PRIME (`{ ...remote, ...local }`). Une édition locale — ou un
+ * EFFACEMENT (le formulaire envoie `''`, donc la clé est PRÉSENTE côté local et
+ * gagne) — l'emporte ; SEULES les clés que le local n'a pas du tout sont reprises
+ * du distant. Donc aucun risque de « résurrection » d'un champ délibérément vidé.
+ *
+ * Batch : un seul `select id, extra`. Fail-open : toute erreur / pré-migration →
+ * `rows` inchangées (push comme avant). Mute `rows` en place (row.extra).
+ */
+export async function preserveRemoteExtra(table: ChildTable, rows: any[], client: any = supabase): Promise<void> {
+  if (!client || rows.length === 0) return;
+  const ids = rows.map(r => r.id);
+  let remote: any[] | null = null;
+  try {
+    const res = await client.from(table).select('id, extra').in('id', ids);
+    if (res.error || !res.data) return; // fail-open
+    remote = res.data as any[];
+  } catch {
+    return; // fail-open
+  }
+  const remoteExtra = new Map<string, Record<string, unknown>>();
+  for (const r of remote) if (r.extra && typeof r.extra === 'object') remoteExtra.set(r.id, r.extra);
+  if (remoteExtra.size === 0) return;
+  for (const row of rows) {
+    const rem = remoteExtra.get(row.id);
+    if (!rem) continue;
+    const local = (row.extra && typeof row.extra === 'object') ? row.extra : {};
+    const merged = { ...rem, ...local }; // local prime → efface/édite ; clés distantes inconnues préservées
+    row.extra = Object.keys(merged).length ? merged : null;
+  }
+}
+
+/**
  * Restaure une entité (résolution « Restaurer ») : ré-upsert de la ligne locale
  * VIVANTE (deleted_at:null via pushChildTable), ce qui écrase délibérément la
  * tombstone distante. À appeler après avoir nettoyé recent/pending-deletes côté store
@@ -372,7 +410,12 @@ export async function saveTreeToSupabase(tree: FamilyTree, ownerId: string, isOw
       if (error) { console.error('[sync] insert tree échoué:', error.message, error.code ?? ''); throw error; }
     }
   }
-  await pushChildTable('persons', tree.persons.map(p => personToRow(p, tree.id)), client);
+  const personRows = tree.persons.map(p => personToRow(p, tree.id));
+  // Ne pas écraser les clés `extra` ajoutées en base hors-app (ex. nickName via SQL
+  // Editor) que le state local ignore. Fail-open : n'affecte jamais le push si le
+  // SELECT échoue. Cf. preserveRemoteExtra.
+  await preserveRemoteExtra('persons', personRows, client);
+  await pushChildTable('persons', personRows, client);
   await pushChildTable('relationships', tree.relationships.map(r => relToRow(r, tree.id)), client);
   await pushChildTable('journal_entries', (tree.journal || []).map(e => journalToRow(e, tree.id)), client);
 }

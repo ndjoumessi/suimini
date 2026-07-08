@@ -9,7 +9,7 @@
 import { test, expect } from '@playwright/test';
 import {
   pushChildTable, deleteChildRows, saveTreeToSupabase, loadOneTree,
-  _setSoftDeleteSupported,
+  preserveRemoteExtra, _setSoftDeleteSupported,
 } from '../src/lib/supabaseSync';
 import { mergeTreeFavoringLocal, treeIdSets, removedIds } from '../src/lib/syncMerge';
 import type { FamilyTree, Person, Relationship } from '../src/types';
@@ -228,4 +228,69 @@ test('merge : une relation distante vers une personne absente est écartée', ()
   const remote = tree('t1', [person('p1')], [rel('r1', 'p1', 'p-fantôme')]);
   const merged = mergeTreeFavoringLocal(local, remote, new Set());
   expect(merged.relationships).toEqual([]);
+});
+
+// ---------- preserveRemoteExtra : un push ne doit pas écraser un extra distant ----------
+// (ex. nickName ajouté hors-app via le SQL Editor, ignoré du state local chargé avant).
+
+test('preserveRemoteExtra : conserve un nickName distant absent du push local', async () => {
+  const { client } = fakeClient(q =>
+    q.table === 'persons' && q.op === 'select'
+      ? { data: [{ id: 'p1', extra: { nickName: 'Jiedong de Kopte' } }] }
+      : {});
+  const rows: any[] = [{ id: 'p1', first_name: 'MESSE', extra: null }];
+  await preserveRemoteExtra('persons', rows, client);
+  expect(rows[0].extra).toEqual({ nickName: 'Jiedong de Kopte' });
+});
+
+test('preserveRemoteExtra : le local prime (édition + effacement) sur le distant', async () => {
+  const { client } = fakeClient(q =>
+    q.table === 'persons' && q.op === 'select'
+      ? { data: [{ id: 'p1', extra: { nickName: 'Ancien', maidenName: 'X' } }] }
+      : {});
+  // Local a VIDÉ nickName (le formulaire envoie '') et n'a pas maidenName.
+  const rows: any[] = [{ id: 'p1', extra: { nickName: '' } }];
+  await preserveRemoteExtra('persons', rows, client);
+  // nickName vidé ('') gagne (pas de résurrection) ; maidenName distant inconnu → préservé.
+  expect(rows[0].extra).toEqual({ maidenName: 'X', nickName: '' });
+});
+
+test('preserveRemoteExtra : fail-open si le SELECT échoue (rows inchangées)', async () => {
+  const { client } = fakeClient(q =>
+    q.table === 'persons' && q.op === 'select' ? { error: { message: 'boom' } } : {});
+  const rows: any[] = [{ id: 'p1', extra: { a: 1 } }];
+  await preserveRemoteExtra('persons', rows, client);
+  expect(rows[0].extra).toEqual({ a: 1 });
+});
+
+test('saveTreeToSupabase : l’upsert persons porte l’extra distant préservé', async () => {
+  const { client, calls } = fakeClient(q => {
+    if (q.table === 'trees' && q.op === 'select') return { data: null };            // → INSERT trees
+    if (q.table === 'persons' && q.op === 'select') return { data: [{ id: 'p1', extra: { nickName: 'Surnom' } }] };
+    return {};
+  });
+  await saveTreeToSupabase(tree('t1', [person('p1', 'MESSE')]), 'owner-1', true, client);
+  const upsert = calls.find(c => c.table === 'persons' && c.op === 'upsert');
+  expect(upsert).toBeTruthy();
+  expect(upsert!.payload[0].extra).toEqual({ nickName: 'Surnom' }); // surnom non écrasé
+});
+
+// ---------- Round-trip nickName (Option B : mapping symétrique) ----------
+
+test('round-trip : un nickName survit à save (extra) → load (person.nickName)', async () => {
+  // 1) SAVE : capture la ligne persons upsertée pour une personne portant un nickName.
+  const saver = fakeClient(q => (q.table === 'persons' && q.op === 'select' ? { data: [] } : q.table === 'trees' ? { data: null } : {}));
+  const p = { ...person('p1', 'MESSE'), nickName: 'Jiedong de Kopte' } as Person;
+  await saveTreeToSupabase(tree('t1', [p]), 'owner-1', true, saver.client);
+  const savedRow = saver.calls.find(c => c.table === 'persons' && c.op === 'upsert')!.payload[0];
+  expect(savedRow.extra).toEqual({ nickName: 'Jiedong de Kopte' }); // personToRow → extra
+
+  // 2) LOAD : rejoue cette ligne → rowToPerson doit re-exposer person.nickName.
+  const loader = fakeClient(q => {
+    if (q.table === 'trees') return { data: { id: 't1', name: 'T', created_at: 'x', updated_at: 'y', settings: {} } };
+    if (q.table === 'persons') return { data: [savedRow] };
+    return { data: [] };
+  });
+  const loaded = await loadOneTree('t1', loader.client);
+  expect(loaded!.persons[0].nickName).toBe('Jiedong de Kopte');
 });
