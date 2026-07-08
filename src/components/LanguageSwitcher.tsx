@@ -42,7 +42,7 @@ export default function LanguageSwitcher({ tone = 'app' }: { tone?: 'app' | 'lan
               background: active ? accent : 'transparent',
               // Sur l'or du thème app, le blanc plafonnait à 2.28:1 (axe FAIL) —
               // encre sombre = 8.5:1. Sur le terracotta landing, le blanc passe (4.93:1).
-              color: active ? (tone === 'landing' ? '#fff' : '#0d0d0d') : (tone === 'landing' ? '#6e6a62' : 'var(--text-muted)'),
+              color: active ? (tone === 'landing' ? '#fff' : 'var(--ink-on-accent)') : (tone === 'landing' ? '#6e6a62' : 'var(--text-muted)'),
               transition: 'background 0.15s ease, color 0.15s ease',
             }}
           >

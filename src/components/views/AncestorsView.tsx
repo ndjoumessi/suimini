@@ -230,7 +230,7 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
                 const regionsA = new Set((person1.dnaOrigins || []).map(d => d.region.toLowerCase()));
                 const regionsB = new Set((person2.dnaOrigins || []).map(d => d.region.toLowerCase()));
                 const chip = (region: string, percent: number, shared: boolean) => (
-                  <span key={region} className="ex-dna-chip" style={shared ? { background: 'var(--success)', color: '#0d0d0d', borderColor: 'var(--success)' } : undefined}>
+                  <span key={region} className="ex-dna-chip" style={shared ? { background: 'var(--success)', color: 'var(--ink-on-accent)', borderColor: 'var(--success)' } : undefined}>
                     {region} {Math.round(percent)}%
                   </span>
                 );
@@ -307,7 +307,7 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
 
         /* Tabs */
         .ex-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
-        .ex-tab { display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px; min-height: 40px; font-family: var(--font-body); font-size: 13.5px; font-weight: 600; cursor: pointer; background: var(--bg-card); color: var(--text-muted); border: 1px solid #2d2d3a; transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast); }
+        .ex-tab { display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px; min-height: 40px; font-family: var(--font-body); font-size: 13.5px; font-weight: 600; cursor: pointer; background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border); transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast); }
         .ex-tab:hover { background: #252535; color: var(--ink); border-color: var(--accent); }
         .ex-tab.on { background: var(--accent); color: #12131a; font-weight: 700; border-color: var(--accent); }
         .ex-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -316,7 +316,7 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
         .ex-selectors { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 24px; }
         .ex-field { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 6px; }
         .ex-flabel { font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-text); }
-        .ex-select { width: 100%; background: #1a1a24; border: 1px solid #2d2d3a; color: var(--text); padding: 10px 12px; font-family: var(--font-body); font-size: 14px; min-height: 42px; cursor: pointer; }
+        .ex-select { width: 100%; background: #1a1a24; border: 1px solid var(--border); color: var(--text); padding: 10px 12px; font-family: var(--font-body); font-size: 14px; min-height: 42px; cursor: pointer; }
         .ex-select:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; border-color: var(--accent); }
         .ex-swap { display: inline-flex; align-items: center; justify-content: center; color: var(--accent); flex-shrink: 0; height: 42px; }
 
@@ -368,7 +368,7 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
         .ex-table { display: flex; flex-direction: column; gap: 6px; }
         .ex-trow { display: grid; grid-template-columns: 1fr 130px 1fr; align-items: center; gap: 0; }
         .ex-tcell { padding: 7px 10px; font-size: 13px; font-weight: 600; text-align: center; background: var(--bg-muted); color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .ex-tcell.same { background: var(--success); color: #0d0d0d; }
+        .ex-tcell.same { background: var(--success); color: var(--ink-on-accent); }
         .ex-tcell.empty { color: var(--text-light); font-weight: 400; }
         .ex-tlabel { text-align: center; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-light); border-left: 1px solid var(--accent-light); border-right: 1px solid var(--accent-light); padding: 0 8px; }
 

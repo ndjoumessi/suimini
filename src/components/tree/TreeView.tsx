@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { FamilyTree, Person } from '@/types';
 import { getParents, getChildren, getSpouses, getSiblings, getDisplayName, formatYear, getAge, formatAge, personCompleteness, findRelationPath, describeRelation, buildGenerationMap } from '@/lib/treeUtils';
@@ -358,6 +358,65 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
   const svgW = maxX - minX;
   const svgH = maxY - minY;
 
+  // ── Virtualisation par viewport (perf grands arbres) ────────────────────────
+  // Seuls les nœuds/connecteurs intersectant le viewport ±VIRT_BUFFER px sont
+  // MONTÉS dans le DOM — le coût du premier rendu et des pans/zooms devient
+  // proportionnel à ce qui est visible, pas à la taille de l'arbre. Le canvas
+  // est transformé (translate+scale), pas scrollé : aucun placeholder n'est
+  // nécessaire — minimap et fit-to-screen utilisent les bornes complètes
+  // (minX/maxX ci-dessus), calculées sur TOUS les nœuds. Le filtrage (O(n) sur
+  // des rectangles) se recalcule au rythme des rendus du pan (≤ 1/frame).
+  const VIRT_BUFFER = 200;
+  const worldRect = (viewport.w > 0 && viewport.h > 0) ? {
+    x0: (-VIRT_BUFFER - offset.x) / scale,
+    y0: (-VIRT_BUFFER - offset.y) / scale,
+    x1: (viewport.w + VIRT_BUFFER - offset.x) / scale,
+    y1: (viewport.h + VIRT_BUFFER - offset.y) / scale,
+  } : null; // taille encore inconnue → rien n'est monté (mesurée avant le 1er paint ci-dessous)
+  const visibleNodes = !worldRect ? [] : nodes.filter(n =>
+    (n.x + NODE_W >= worldRect.x0 && n.x <= worldRect.x1
+      && n.y + NODE_H >= worldRect.y0 && n.y <= worldRect.y1)
+    // Le nœud sélectionné reste monté même hors champ (son anneau/ombre sert de
+    // repère au retour, et le focus clavier n'est jamais démonté sous l'utilisateur).
+    || n.person.id === selectedPersonId);
+  // Connecteurs : garder ceux dont la bbox coupe le viewport — y compris ceux qui
+  // le TRAVERSENT alors que leurs deux extrémités sont hors champ.
+  const visibleEdges = !worldRect ? [] : edges.filter(e =>
+    Math.max(e.x1, e.x2) >= worldRect.x0 && Math.min(e.x1, e.x2) <= worldRect.x1
+    && Math.max(e.y1, e.y2) >= worldRect.y0 && Math.min(e.y1, e.y2) <= worldRect.y1);
+  const visiblePearls = !worldRect ? [] : pearls.filter(p =>
+    p.x >= worldRect.x0 && p.x <= worldRect.x1 && p.y >= worldRect.y0 && p.y <= worldRect.y1);
+
+  // Mesure le conteneur AVANT le premier paint du canvas : le tout premier rendu
+  // monté est déjà virtualisé (c'est lui le plus coûteux sur un grand arbre).
+  // Dépend de treeMode/layoutMode : le conteneur n'existe qu'en vue « Complète »
+  // (au mount l'app démarre en Focus → ref null). Le ResizeObserver ci-dessous
+  // prend le relais pour les resizes suivants.
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (el && el.clientWidth > 0) setViewport(v => (v.w === el.clientWidth && v.h === el.clientHeight) ? v : { w: el.clientWidth, h: el.clientHeight });
+  }, [treeMode, layoutMode]);
+
+  // L'animation d'entrée ne joue qu'à l'arrivée sur l'arbre / au changement de
+  // racine : un nœud qui (ré)apparaît ensuite au pan/zoom monte SANS animation,
+  // sinon chaque pan provoquait un pop-in différé (delay jusqu'à 600 ms).
+  const [entranceDone, setEntranceDone] = useState(false);
+  useEffect(() => {
+    setEntranceDone(false);
+    const timer = setTimeout(() => setEntranceDone(true), 950);
+    return () => clearTimeout(timer);
+    // treeMode : l'entrée rejoue quand on BASCULE sur la vue Complète (le timer
+    // du mount courait pendant le mode Focus, l'entrée aurait été sautée).
+  }, [rootId, treeMode]);
+
+  // Mesure de perf dev-only : durée du commit quand le nombre de nœuds montés change.
+  const renderT0 = typeof performance !== 'undefined' ? performance.now() : 0;
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'production' || typeof performance === 'undefined') return;
+    console.info(`[tree-render] ${visibleNodes.length}/${nodes.length} nœuds montés · ${(performance.now() - renderT0).toFixed(1)} ms`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleNodes.length, nodes.length]);
+
   // Screen position of a content point is `offset + scale·point` (inner <g> model),
   // so the root (always at content 0,0) is centred by offset = (cw/2, ch/2).
   const centerOn = (id: string | null) => {
@@ -462,7 +521,9 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
     });
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+    // treeMode/layoutMode : le conteneur n'existe qu'en vue « Complète » — au
+    // mount (Focus) le ref est null et l'observer ne s'attachait jamais.
+  }, [treeMode, layoutMode]);
 
   // Real-time presence + live cursors on ONE channel: announce self and track
   // the OTHER connected users (with their latest cursor position). Joins only
@@ -789,8 +850,8 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
             {/* Edge + pearl layer. When focus mode is active, dim it uniformly so the
                 focus-set nodes stand out (edges carry no person ids — see report). */}
             <g style={focusSet ? { opacity: 0.15, transition: 'opacity 280ms ease', pointerEvents: 'none' } : { transition: 'opacity 280ms ease' }}>
-            {/* Edges (elbow filiation + dashed spouse) */}
-            {edges.map((edge, i) => {
+            {/* Edges (elbow filiation + dashed spouse) — virtualisés */}
+            {visibleEdges.map((edge, i) => {
               const isSpouse = edge.type === 'spouse';
               // Union (spouse): thick SOLID terracotta horizontal bar. Filiation
               // (parent): thinner solid ink elbow. Differentiated by weight + colour
@@ -807,7 +868,7 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
             })}
 
             {/* Union marker — a small terracotta losange (◆) centred on each couple's bar */}
-            {pearls.map((p, i) => (
+            {visiblePearls.map((p, i) => (
               <rect key={`pearl-${i}`}
                 x={p.x - 4} y={p.y - 4} width={8} height={8}
                 transform={`rotate(45 ${p.x} ${p.y})`}
@@ -816,8 +877,8 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
             ))}
             </g>{/* /edge+pearl focus layer */}
 
-            {/* Nodes — register-card style */}
-            {nodes.map((node, index) => {
+            {/* Nodes — register-card style (virtualisés : seuls les visibles montent) */}
+            {visibleNodes.map((node, index) => {
               const p = node.person;
               const isSelected = p.id === selectedPersonId;
               const isRoot = p.id === rootId;
@@ -830,8 +891,9 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
               // et il l'est même sans date de naissance.
               const genderWord = p.gender === 'female' ? t('genderF') : p.gender === 'male' ? t('genderM') : '';
               const ariaLabel = `${getDisplayName(p).trim() || t('unknownNode')}${genderWord ? `, ${genderWord}` : ''}${p.birthDate ? `, ${p.gender === 'female' ? t('bornF') : t('bornM')} ${t('inYear')} ${formatYear(p.birthDate)}` : ''}`;
-              // Cap the stagger delay so big trees don't crawl in.
-              const delay = Math.min(index * 50, 600);
+              // Cap the stagger delay so big trees don't crawl in. Après l'entrée
+              // initiale, plus aucun délai (nœuds remontés par la virtualisation).
+              const delay = entranceDone ? 0 : Math.min(index * 50, 600);
 
               return (
                 <g key={p.id}
@@ -862,7 +924,12 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
                   {/* Inner group carries the entrance/hover animation. The OUTER <g>
                       keeps the positioning transform — animating transform there would
                       override placement, so all motion lives on this inner group. */}
-                  <g className="tv-node-inner" style={{ animationDelay: `${delay}ms` }}>
+                  {/* Une fois l'entrée jouée, durée+délai à 0 : l'animation `forwards`
+                      saute directement à son état final (opacity 1) — un nœud remonté
+                      par la virtualisation apparaît instantanément, sans re-fade au pan.
+                      (PAS animation:'none' : l'opacité de base de .tv-node-inner est 0,
+                      c'est l'animation qui révèle — la couper rendrait le nœud invisible.) */}
+                  <g className="tv-node-inner" style={entranceDone ? { animationDuration: '0ms', animationDelay: '0ms' } : { animationDelay: `${delay}ms` }}>
                   <clipPath id={`card-${p.id}`}><rect width={NODE_W} height={NODE_H} rx={0} ry={0} /></clipPath>
 
                   {/* Hard offset shadow (Atelier) — only on the pivot/root and the

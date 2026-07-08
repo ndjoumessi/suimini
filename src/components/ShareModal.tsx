@@ -103,7 +103,7 @@ function SquareToggle({
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         background: checked ? 'var(--accent)' : 'transparent',
         border: `2px solid ${checked ? 'var(--accent)' : 'var(--border-strong)'}`,
-        color: '#0d0d0d', transition: 'background .15s ease, border-color .15s ease',
+        color: 'var(--ink-on-accent)', transition: 'background .15s ease, border-color .15s ease',
       }}>
         {checked && <Check size={14} strokeWidth={3} />}
       </span>
@@ -579,8 +579,8 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
             cursor: pointer; transition: background .15s ease, color .15s ease, border-color .15s ease;
           }
           .share-tab:hover { color: var(--text); border-color: var(--border-strong); }
-          .share-tab.is-active { background: var(--accent); color: #0d0d0d; border-color: var(--accent); }
-          .share-tab.is-active svg { color: #0d0d0d; }
+          .share-tab.is-active { background: var(--accent); color: var(--ink-on-accent); border-color: var(--accent); }
+          .share-tab.is-active svg { color: var(--ink-on-accent); }
 
           .share-info {
             padding: 12px; background: var(--bg-card); border: var(--bw) solid var(--border);

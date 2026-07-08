@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { enforceRateLimit } from '@/lib/rateLimit';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -66,6 +67,10 @@ function prompt(documentType: string): string {
 }
 
 export async function POST(req: Request) {
+  // Rate limiting par utilisateur (coût API Anthropic) — 429 localisé si dépassé.
+  const limited = await enforceRateLimit(req, '/api/ocr-document');
+  if (limited) return limited;
+
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "L'OCR n'est pas configuré." }, { status: 503 });
 

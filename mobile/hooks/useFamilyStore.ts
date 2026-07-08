@@ -17,6 +17,8 @@ export function useFamilyStore() {
   const seedDemo = useStore((s) => s.seedDemo);
   const upsertPerson = useStore((s) => s.upsertPerson);
   const removePerson = useStore((s) => s.removePerson);
+  const addRelationship = useStore((s) => s.addRelationship);
+  const removeRelationship = useStore((s) => s.removeRelationship);
 
   const activeTree: FamilyTree | null = useMemo(
     () => trees.find((t) => t.id === activeTreeId) ?? trees[0] ?? null,
@@ -47,5 +49,7 @@ export function useFamilyStore() {
     seedDemo,
     upsertPerson,
     removePerson,
+    addRelationship,
+    removeRelationship,
   };
 }

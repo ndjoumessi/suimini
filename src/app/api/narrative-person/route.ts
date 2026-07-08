@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { enforceRateLimit } from '@/lib/rateLimit';
 import type { FamilyTree, Person } from '@/types';
 import { getParents, getChildren, getSpouses, getSiblings, getDisplayName } from '@/lib/treeUtils';
 import { eventsOverlapping } from '@/lib/history';
@@ -113,6 +114,10 @@ function parseReply(text: string): { narrative: string; questions: string[] } {
 }
 
 export async function POST(req: Request) {
+  // Rate limiting par utilisateur (coût API Anthropic) — 429 localisé si dépassé.
+  const limited = await enforceRateLimit(req, '/api/narrative-person');
+  if (limited) return limited;
+
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "Le récit IA n'est pas configuré." }, { status: 503 });

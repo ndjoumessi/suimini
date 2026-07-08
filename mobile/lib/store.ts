@@ -11,6 +11,8 @@ import {
   loadTreesFromSupabase,
   upsertPersonRemote,
   deletePersonRemote,
+  upsertRelationshipRemote,
+  deleteRelationshipRemote,
 } from './supabaseSync';
 import { isSupabaseConfigured } from './supabase';
 import { createKVStorage } from './storage';
@@ -50,6 +52,10 @@ interface FamilyState {
   upsertPerson: (treeId: string, person: Person) => Promise<WriteOutcome>;
   /** Delete a person: optimistic local write + Supabase (skipped in demo). */
   removePerson: (treeId: string, personId: string) => Promise<WriteOutcome>;
+  /** Insert/update a relationship: optimistic local write + Supabase (skipped in demo). */
+  addRelationship: (treeId: string, rel: Relationship) => Promise<WriteOutcome>;
+  /** Delete a relationship: optimistic local write + Supabase (skipped in demo). */
+  removeRelationship: (treeId: string, relId: string) => Promise<WriteOutcome>;
 }
 
 export interface WriteOutcome { ok: boolean; error?: string }
@@ -147,6 +153,47 @@ export const useStore = create<FamilyState>()(
         if (get().isDemo) return { ok: true };
         set({ syncStatus: 'syncing' });
         const { error } = await deletePersonRemote(personId);
+        set({ syncStatus: error ? 'error' : 'saved' });
+        return error ? { ok: false, error } : { ok: true };
+      },
+
+      addRelationship: async (treeId, rel) => {
+        // Optimistic local write first (instant UI, works offline / demo).
+        set((s) => ({
+          trees: s.trees.map((t) => {
+            if (t.id !== treeId) return t;
+            const exists = t.relationships.some((r) => r.id === rel.id);
+            return {
+              ...t,
+              relationships: exists
+                ? t.relationships.map((r) => (r.id === rel.id ? rel : r))
+                : [...t.relationships, rel],
+              updatedAt: new Date().toISOString(),
+            };
+          }),
+        }));
+        if (get().isDemo) return { ok: true };
+        set({ syncStatus: 'syncing' });
+        const { error } = await upsertRelationshipRemote(treeId, rel);
+        set({ syncStatus: error ? 'error' : 'saved' });
+        return error ? { ok: false, error } : { ok: true };
+      },
+
+      removeRelationship: async (treeId, relId) => {
+        set((s) => ({
+          trees: s.trees.map((t) =>
+            t.id === treeId
+              ? {
+                  ...t,
+                  relationships: t.relationships.filter((r) => r.id !== relId),
+                  updatedAt: new Date().toISOString(),
+                }
+              : t,
+          ),
+        }));
+        if (get().isDemo) return { ok: true };
+        set({ syncStatus: 'syncing' });
+        const { error } = await deleteRelationshipRemote(relId);
         set({ syncStatus: error ? 'error' : 'saved' });
         return error ? { ok: false, error } : { ok: true };
       },

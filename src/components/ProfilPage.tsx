@@ -131,7 +131,7 @@ export default function ProfilPage() {
                 style={{
                   width: '80px', height: '80px', flexShrink: 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: 'var(--accent)', color: '#0d0d0d',
+                  background: 'var(--accent)', color: 'var(--ink-on-accent)',
                   fontWeight: 700, fontSize: '28px',
                   borderRadius: 'var(--radius)', border: 'var(--bw) solid var(--border-strong)',
                 }}

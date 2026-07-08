@@ -62,12 +62,12 @@ export default function TreeToolbar({
       <div role="group" aria-label={t('displayMode')} style={{ display: 'inline-flex', border: '1px solid var(--border)', flexShrink: 0 }}>
         <button onClick={() => setTreeMode('focus')} aria-pressed={treeMode === 'focus'}
           style={{ appearance: 'none', cursor: 'pointer', border: 'none', padding: '7px 12px', minHeight: '32px', fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600,
-            background: treeMode === 'focus' ? 'var(--accent)' : 'transparent', color: treeMode === 'focus' ? '#0d0d0d' : 'var(--text-muted)' }}>
+            background: treeMode === 'focus' ? 'var(--accent)' : 'transparent', color: treeMode === 'focus' ? 'var(--ink-on-accent)' : 'var(--text-muted)' }}>
           {t('modeFocus')}
         </button>
         <button onClick={() => setTreeMode('full')} aria-pressed={treeMode === 'full'}
           style={{ appearance: 'none', cursor: 'pointer', border: 'none', borderLeft: '1px solid var(--border)', padding: '7px 12px', minHeight: '32px', fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600,
-            background: treeMode === 'full' ? 'var(--accent)' : 'transparent', color: treeMode === 'full' ? '#0d0d0d' : 'var(--text-muted)' }}>
+            background: treeMode === 'full' ? 'var(--accent)' : 'transparent', color: treeMode === 'full' ? 'var(--ink-on-accent)' : 'var(--text-muted)' }}>
           {t('modeFull')}
         </button>
       </div>
@@ -110,7 +110,7 @@ export default function TreeToolbar({
 
       {treeMode === 'full' && <>
         {sep}
-        <button onClick={() => setLayoutMode(m => m === 'fan' ? 'vertical' : 'fan')} className="btn btn-sm" style={{ gap: '6px', background: layoutMode === 'fan' ? 'var(--accent)' : 'var(--bg-muted)', color: layoutMode === 'fan' ? '#0d0d0d' : 'var(--text-muted)', border: '1px solid var(--border)' }} title={t('toggleFan')} aria-label={t('fan')} aria-pressed={layoutMode === 'fan'}>
+        <button onClick={() => setLayoutMode(m => m === 'fan' ? 'vertical' : 'fan')} className="btn btn-sm" style={{ gap: '6px', background: layoutMode === 'fan' ? 'var(--accent)' : 'var(--bg-muted)', color: layoutMode === 'fan' ? 'var(--ink-on-accent)' : 'var(--text-muted)', border: '1px solid var(--border)' }} title={t('toggleFan')} aria-label={t('fan')} aria-pressed={layoutMode === 'fan'}>
           <Aperture size={14} aria-hidden="true" /> {!isMobile && t('fan')}
         </button>
         <button onClick={() => setShowLegend(l => !l)} className="btn btn-secondary btn-sm btn-icon" title={t('legend')} aria-label={t('legend')} aria-pressed={showLegend}>

@@ -26,7 +26,7 @@ export default function TreeAvatar({ tree, name, size = 40, style }: {
       style={{
         width: size, height: size, flexShrink: 0,
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        background: 'var(--accent)', color: '#0d0d0d',
+        background: 'var(--accent)', color: 'var(--ink-on-accent)',
         fontFamily: 'var(--font-display)', fontWeight: 700,
         fontSize: Math.round(size * 0.38), lineHeight: 1, letterSpacing: '-0.01em',
         ...style,

@@ -39,6 +39,7 @@
   --accent-hover: #dcbb5e;
   --accent-text: #d4b257;     /* gold text on dark, ≥4.5:1 */
   --accent-light: rgba(201, 168, 76, 0.14);
+  --ink-on-accent: #0d0d0d;   /* texte SUR le fond or (8.5:1) — jamais de blanc sur or (2.28:1) */
 
   /* Signals (information, not decoration) — tuned for dark. These are the INITIAL
      gender values; applyColorTheme() in lib/themes.ts overrides them at runtime as
@@ -206,7 +207,7 @@ input:-webkit-autofill:focus {
 /* ===== Skip link (WCAG 2.4.1) — invisible jusqu'au focus clavier ===== */
 .skip-link {
   position: fixed; left: 8px; top: -64px; z-index: 10000;
-  background: var(--accent); color: #0d0d0d;
+  background: var(--accent); color: var(--ink-on-accent);
   padding: 10px 16px; font-family: var(--font-body); font-weight: 700; font-size: 14px;
   text-decoration: none; transition: top var(--t-fast) ease;
 }
@@ -284,7 +285,7 @@ input:-webkit-autofill:focus {
 .btn:active { transform: translateY(1px); box-shadow: none; }
 .btn:disabled, .btn[disabled] { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
 
-.btn-primary { background: var(--accent); color: #0d0d0d; border-color: var(--accent); }
+.btn-primary { background: var(--accent); color: var(--ink-on-accent); border-color: var(--accent); }
 .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); box-shadow: var(--shadow-accent); }
 
 .btn-secondary { background: var(--bg-card); color: var(--text); }

@@ -173,7 +173,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         <div className="sb-head">
           <Link href="/" aria-label={ts('backToSiteAria')} title={ts('backToSiteTitle')} className="sb-brand">
             <span className="sb-logo" aria-hidden="true">
-              <BrandMark size={28} color="#0d0d0d" accent="#0d0d0d" surface="var(--accent)" />
+              <BrandMark size={28} color="var(--ink-on-accent)" accent="var(--ink-on-accent)" surface="var(--accent)" />
             </span>
             <span className="sb-brand-text">
               <span className="sb-wordmark serif">Suimini</span>
@@ -402,7 +402,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sb-actions { padding: 9px 12px 8px; border-top: 1px solid var(--border); }
         .sb-add {
           width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-          background: var(--accent); color: #0d0d0d; border: 1px solid var(--accent); cursor: pointer;
+          background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); cursor: pointer;
           font-family: var(--font-body); font-size: 12px; font-weight: 700; padding: 0 12px; min-height: 34px;
           white-space: nowrap; line-height: 1;
           transition: background var(--t-fast), box-shadow var(--t-fast);
@@ -420,11 +420,11 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sb-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
         /* Account footer — compact (≤100px): account 36 · sync 22 · back 24 */
-        .sb-account { padding: 8px 10px 9px; border-top: 1px solid #2D2D3A; }
+        .sb-account { padding: 8px 10px 9px; border-top: 1px solid var(--border); }
         .sb-acct { display: flex; align-items: center; gap: 8px; height: 36px; }
         .sb-acct-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; background: none; border: none; padding: 3px; cursor: pointer; text-align: left; transition: background var(--t-fast); }
         .sb-acct-main:hover { background: var(--bg-card); }
-        .sb-avatar { width: 28px; height: 28px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--accent); color: #0d0d0d; font-family: var(--font-display); font-size: 12px; font-weight: 700; }
+        .sb-avatar { width: 28px; height: 28px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--accent); color: var(--ink-on-accent); font-family: var(--font-display); font-size: 12px; font-weight: 700; }
         .sb-acct-name { flex-shrink: 0; max-width: 80px; font-family: var(--font-body); font-size: 12px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .sb-acct-email { min-width: 0; max-width: 100px; font-family: var(--font-mono); font-size: 10px; color: #a98f4e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .sb-logout { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex-shrink: 0; border: none; background: transparent; color: var(--text-muted); cursor: pointer; transition: background var(--t-fast), color var(--t-fast); }

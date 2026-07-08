@@ -320,7 +320,7 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
         .set-field { display: flex; flex-direction: column; gap: 7px; }
         .set-flabel { font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-text); }
         .set-field-row { display: flex; gap: 8px; flex-wrap: wrap; }
-        .set-input { flex: 1; min-width: 180px; background: #1a1a24; border: 1px solid #2d2d3a; color: var(--text); padding: 9px 12px; font-family: var(--font-body); font-size: 14px; }
+        .set-input { flex: 1; min-width: 180px; background: #1a1a24; border: 1px solid var(--border); color: var(--text); padding: 9px 12px; font-family: var(--font-body); font-size: 14px; }
         .set-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; border-color: var(--accent); }
 
         .set-account-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
@@ -340,7 +340,7 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
 
         /* Language toggle */
         .set-lang { display: inline-flex; gap: 8px; }
-        .set-lang-btn { padding: 9px 22px; font-family: var(--font-body); font-size: 14px; font-weight: 600; cursor: pointer; background: var(--bg-card); color: var(--text-muted); border: 1px solid #2d2d3a; transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast); }
+        .set-lang-btn { padding: 9px 22px; font-family: var(--font-body); font-size: 14px; font-weight: 600; cursor: pointer; background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border); transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast); }
         .set-lang-btn:hover { border-color: var(--accent); color: var(--accent-text); }
         .set-lang-btn.on { background: var(--accent); color: #12131a; font-weight: 700; border-color: var(--accent); cursor: default; }
         .set-lang-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

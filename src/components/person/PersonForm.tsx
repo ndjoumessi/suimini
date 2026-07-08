@@ -344,22 +344,22 @@ const labelStyle: React.CSSProperties = {
 
 const PF_CSS = `
 .pf-form { display: flex; flex-direction: column; gap: 0; }
-.pf-form .input { background: #1A1A24; border: 1px solid #2D2D3A; }
+.pf-form .input { background: #1A1A24; border: 1px solid var(--border); }
 .pf-form .input::placeholder { color: var(--text-light); }
 .pf-form .input:focus { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 .pf-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 @media (max-width: 480px) { .pf-grid2 { grid-template-columns: 1fr; } }
 
 /* sections separated by hairlines, mono gold-muted titles */
-.pf-sec { display: flex; flex-direction: column; gap: 12px; padding: 18px 0; border-top: 1px solid #2D2D3A; }
+.pf-sec { display: flex; flex-direction: column; gap: 12px; padding: 18px 0; border-top: 1px solid var(--border); }
 .pf-sec-first { border-top: none; padding-top: 4px; }
 .pf-sec-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #a98f4e; }
 
 /* gender toggle */
 .pf-gender { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-.pf-gender-btn { height: 40px; border: 1px solid #2D2D3A; background: #1A1A24; color: var(--text-muted); font-family: var(--font-body); font-size: 13px; font-weight: 600; letter-spacing: 0; text-transform: none; cursor: pointer; transition: border-color 150ms ease, color 150ms ease, background 150ms ease; }
+.pf-gender-btn { height: 40px; border: 1px solid var(--border); background: #1A1A24; color: var(--text-muted); font-family: var(--font-body); font-size: 13px; font-weight: 600; letter-spacing: 0; text-transform: none; cursor: pointer; transition: border-color 150ms ease, color 150ms ease, background 150ms ease; }
 .pf-gender-btn:hover { border-color: var(--accent); color: var(--ink); }
-.pf-gender-btn.on { color: #0d0d0d; border-color: transparent; }
+.pf-gender-btn.on { color: var(--ink-on-accent); border-color: transparent; }
 .pf-gender-btn.on-male { background: #4a90d9; }
 .pf-gender-btn.on-female { background: #c47ba0; }
 .pf-gender-btn.on-unknown { background: var(--accent); }
@@ -371,5 +371,5 @@ const PF_CSS = `
 .pf-summary::before { content: '▸'; margin-right: 6px; color: var(--accent-text); display: inline-block; transition: transform 150ms; }
 .pf-advanced[open] > .pf-summary::before { transform: rotate(90deg); }
 
-form .btn-primary svg.animate-spin { color: #0d0d0d !important; }
+form .btn-primary svg.animate-spin { color: var(--ink-on-accent) !important; }
 `;

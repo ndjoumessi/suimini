@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Pencil } from 'lucide-react-native';
 import { PersonDetail } from '@/components/person/PersonDetail';
+import { RelationsSection } from '@/components/person/RelationsSection';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { fonts, fontSize, spacing, borderWidth } from '@/lib/theme';
 import { useTheme } from '@/hooks/useTheme';
@@ -53,6 +54,9 @@ export default function PersonScreen() {
               router.push({ pathname: '/person/[id]', params: { id: rid } })
             }
           />
+          <View style={styles.relations}>
+            <RelationsSection person={person} />
+          </View>
         </ScrollView>
       ) : (
         <EmptyState
@@ -78,4 +82,5 @@ const styles = StyleSheet.create({
   },
   iconBtn: { padding: spacing.xs, minWidth: 36 },
   topTitle: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 2 },
+  relations: { paddingHorizontal: spacing.lg, paddingTop: 0 },
 });

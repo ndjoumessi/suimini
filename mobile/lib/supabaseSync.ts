@@ -28,6 +28,17 @@ function personToRow(p: Person, treeId: string): any {
   };
 }
 
+/** Relationship → DB row (mirror of the web relToRow; unmapped fields go to `extra`). */
+function relToRow(r: Relationship, treeId: string): any {
+  const { id, type, person1Id, person2Id, startDate, endDate, isActive, notes, ...rest } = r;
+  return {
+    id, tree_id: treeId, type, person1_id: person1Id, person2_id: person2Id,
+    start_date: startDate ?? null, end_date: endDate ?? null,
+    is_active: isActive ?? null, notes: notes ?? null,
+    extra: Object.keys(rest).length ? rest : null,
+  };
+}
+
 export interface WriteResult { error?: string }
 
 // Soft-delete (tombstones) — même architecture UPSERT-only que le web (voir
@@ -72,6 +83,39 @@ export async function deletePersonRemote(personId: string): Promise<WriteResult>
   }
   await supabase.from('relationships').delete().or(orFilter);
   const { error } = await supabase.from('persons').delete().eq('id', personId);
+  return error ? { error: error.message } : {};
+}
+
+/** Upsert a relationship (insert or update). RLS: caller must own/write the tree.
+ * deleted_at: null — présent localement = vivant (ranime une tombstone). */
+export async function upsertRelationshipRemote(
+  treeId: string,
+  rel: Relationship,
+): Promise<WriteResult> {
+  if (!supabase) return { error: 'Supabase non configuré' };
+  const row = relToRow(rel, treeId);
+  let { error } = await supabase
+    .from('relationships')
+    .upsert({ ...row, deleted_at: null }, { onConflict: 'id' });
+  if (error && softDeleteSupported && isMissingDeletedAt(error)) {
+    softDeleteSupported = false;
+    ({ error } = await supabase.from('relationships').upsert(row, { onConflict: 'id' }));
+  }
+  return error ? { error: error.message } : {};
+}
+
+/** Soft-delete a relationship (tombstone). Repli pré-migration : DELETE dur. */
+export async function deleteRelationshipRemote(relId: string): Promise<WriteResult> {
+  if (!supabase) return { error: 'Supabase non configuré' };
+  if (softDeleteSupported) {
+    const { error } = await supabase
+      .from('relationships')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', relId);
+    if (!isMissingDeletedAt(error)) return error ? { error: error.message } : {};
+    softDeleteSupported = false; // migration pas encore passée → DELETE dur
+  }
+  const { error } = await supabase.from('relationships').delete().eq('id', relId);
   return error ? { error: error.message } : {};
 }
 

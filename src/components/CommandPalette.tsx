@@ -162,6 +162,8 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [aiResults, setAiResults] = useState<AiResult[] | null>(null);
   const [aiState, setAiState] = useState<AiState>('idle');
+  // Message d'erreur serveur localisé (ex. 429 rate limit) ; null → ts('aiError').
+  const [aiErrorMsg, setAiErrorMsg] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const overlayRef = useOverlay<HTMLDivElement>(onClose);
@@ -336,11 +338,19 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ query: q, persons }),
       });
-      if (!res.ok) throw new Error('ai search failed');
-      const data = (await res.json()) as { results?: AiResult[] };
+      const data = (await res.json().catch(() => ({}))) as { results?: AiResult[]; error?: string };
+      if (!res.ok) {
+        // Message serveur déjà localisé (ex. 429 rate limit « réessayez dans X min »).
+        setAiErrorMsg(data?.error || null);
+        setAiResults(null);
+        setAiState('error');
+        return;
+      }
+      setAiErrorMsg(null);
       setAiResults(Array.isArray(data.results) ? data.results : []);
       setAiState('done');
     } catch {
+      setAiErrorMsg(null);
       setAiResults(null);
       setAiState('error');
     }
@@ -440,7 +450,7 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
             </span>
           )}
           {aiState === 'error' && (
-            <span role="alert" style={{ fontSize: '11px', color: 'var(--accent)', marginLeft: aiResults ? 0 : 'auto' }}>{ts('aiError')}</span>
+            <span role="alert" style={{ fontSize: '11px', color: 'var(--accent)', marginLeft: aiResults ? 0 : 'auto' }}>{aiErrorMsg || ts('aiError')}</span>
           )}
         </div>
 

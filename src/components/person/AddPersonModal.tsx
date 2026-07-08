@@ -26,7 +26,7 @@ const stepChip = (active: boolean): React.CSSProperties => ({
   padding: '3px 9px', fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700,
   letterSpacing: '0.08em', textTransform: 'uppercase',
   background: active ? 'var(--accent)' : 'transparent',
-  color: active ? '#0d0d0d' : 'var(--text-muted)',
+  color: active ? 'var(--ink-on-accent)' : 'var(--text-muted)',
   border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
 });
 

@@ -136,6 +136,9 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
   // --- Narrative tab (#3B/#3C) ---
   const [narrativeLoading, setNarrativeLoading] = useState(false);
   const [narrativeError, setNarrativeError] = useState(false);
+  // Message d'erreur serveur (déjà localisé — ex. 429 « Limite atteinte — réessayez
+  // dans X minutes ») ; null → message générique tn('error').
+  const [narrativeErrorMsg, setNarrativeErrorMsg] = useState<string | null>(null);
   const [comparePersonId, setComparePersonId] = useState('');
   const [compareNarrative, setCompareNarrative] = useState<string | null>(null);
   const [compareLoading, setCompareLoading] = useState(false);
@@ -252,7 +255,12 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ person, tree, type: 'biography' }),
       });
-      if (!res.ok) throw new Error('request failed');
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { error?: string };
+        setNarrativeErrorMsg(err?.error || null);
+        throw new Error('request failed');
+      }
+      setNarrativeErrorMsg(null);
       const data = (await res.json()) as { narrative: string; questions: string[] };
       const narrative: AiNarrative = { text: data.narrative, questions: data.questions || [], generatedAt: new Date().toISOString() };
       onUpdate({ aiNarrative: narrative });
@@ -1002,7 +1010,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
             {/* Error */}
             {narrativeError && !narrativeLoading && (
               <div role="alert" style={{ padding:'10px 12px', background:'var(--bg-muted)', border:'1.5px solid var(--danger)', borderRadius:'var(--radius)', fontSize:'12px', color:'var(--danger)', display:'flex', alignItems:'center', gap:'6px' }}>
-                <AlertCircle size={13} aria-hidden="true" /> {tn('error')}
+                <AlertCircle size={13} aria-hidden="true" /> {narrativeErrorMsg || tn('error')}
               </div>
             )}
 

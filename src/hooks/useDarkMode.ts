@@ -15,6 +15,7 @@ export function useDarkMode() {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', 'dark');
     const meta = document.querySelector('meta[name="theme-color"]');
+    // Littéral obligatoire : <meta name="theme-color"> ne résout pas les CSS vars.
     if (meta) meta.setAttribute('content', '#111118');
     try {
       const storedTheme = (localStorage.getItem(THEME_STORAGE_KEY) as ColorThemeId | null) || 'sepia';

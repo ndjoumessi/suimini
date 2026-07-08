@@ -357,7 +357,7 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         .ft-links { position: absolute; inset: 0; pointer-events: none; }
 
         .ft-node { position: absolute; display: flex; flex-direction: column; justify-content: center; gap: 1px;
-          padding: 4px 14px 4px 20px; text-align: left; cursor: pointer; background: #1e1e28;
+          padding: 4px 14px 4px 20px; text-align: left; cursor: pointer; background: var(--bg-card);
           border: 1px solid var(--border); border-radius: 0;
           transition: border-color 160ms var(--ease-out), box-shadow 200ms var(--ease-out), transform 160ms var(--ease-out), background 160ms var(--ease-out); }
         .ft-node:hover { border-color: var(--accent); box-shadow: var(--shadow-accent); transform: translateY(-2px); z-index: 2; }
@@ -389,7 +389,7 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         .ft-crumb { background: var(--bg-card); border: 1px solid var(--border); cursor: pointer; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.08em;
           text-transform: uppercase; color: var(--text-muted); padding: 7px 10px; white-space: nowrap; transition: color 150ms, background 150ms, border-color 150ms; }
         .ft-crumb:hover { color: var(--ink); border-color: var(--accent); }
-        .ft-crumb-on { background: var(--accent); color: #0d0d0d; border-color: var(--accent); }
+        .ft-crumb-on { background: var(--accent); color: var(--ink-on-accent); border-color: var(--accent); }
         .ft-crumb-wrap { display: inline-flex; align-items: center; gap: 6px; }
         .ft-crumb-sep { color: var(--text-light); flex-shrink: 0; }
 
@@ -415,7 +415,7 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
 
         /* Discreet legend — bottom-left, fades out while hovering the canvas */
         .ft-legend { position: absolute; bottom: 16px; left: 16px; z-index: 4; display: flex; align-items: center; gap: 14px;
-          padding: 8px 12px; background: rgba(17,17,24,0.8); border: 1px solid #2D2D3A; backdrop-filter: blur(2px);
+          padding: 8px 12px; background: rgba(17,17,24,0.8); border: 1px solid var(--border); backdrop-filter: blur(2px);
           transition: opacity 200ms ease; }
         /* Fades out only while the pointer is over the legend itself (so it never
            blocks a node it happens to overlap); visible the rest of the time. */

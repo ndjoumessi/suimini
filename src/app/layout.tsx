@@ -56,6 +56,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  // Littéral obligatoire : <meta name="theme-color"> ne résout pas les CSS vars.
   themeColor: "#111118",
   width: "device-width",
   initialScale: 1,

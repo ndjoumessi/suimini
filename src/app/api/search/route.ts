@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { enforceRateLimit } from '@/lib/rateLimit';
 import type { Person } from '@/types';
 
 export const runtime = 'nodejs';
@@ -36,6 +37,10 @@ function extractJsonArray(text: string): unknown {
 }
 
 export async function POST(req: Request) {
+  // Rate limiting par utilisateur (coût API Anthropic) — 429 localisé si dépassé.
+  const limited = await enforceRateLimit(req, '/api/search');
+  if (limited) return limited;
+
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "La recherche IA n'est pas configurée." }, { status: 503 });

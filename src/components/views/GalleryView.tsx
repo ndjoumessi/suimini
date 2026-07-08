@@ -405,7 +405,7 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
         .gv-viewtoggle { display: inline-flex; border: 1px solid var(--border); flex-shrink: 0; }
         .gv-viewtoggle button { width: 34px; min-height: 36px; display: inline-flex; align-items: center; justify-content: center; background: transparent; border: none; color: var(--text-muted); cursor: pointer; transition: background 150ms, color 150ms; }
         .gv-viewtoggle button + button { border-left: 1px solid var(--border); }
-        .gv-viewtoggle button.on { background: var(--accent); color: #0d0d0d; }
+        .gv-viewtoggle button.on { background: var(--accent); color: var(--ink-on-accent); }
         .gv-viewtoggle button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
         .gv-body { flex: 1; overflow-y: auto; padding: 16px; }
@@ -426,7 +426,7 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
         .gv-profile { position: absolute; top: 8px; left: 8px; font-size: 9px; padding: 2px 7px; pointer-events: none; }
         .gv-overlay { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: 1px; padding: 22px 10px 9px; background: linear-gradient(transparent, rgba(10,10,14,0.92)); opacity: 0; transition: opacity 180ms var(--ease-out); text-align: left; pointer-events: none; }
         .gv-tile:hover .gv-overlay, .gv-tile:focus-within .gv-overlay { opacity: 1; }
-        .gv-ov-name { color: #f5f0e8; font-size: 15px; font-weight: 700; line-height: 1.15; }
+        .gv-ov-name { color: var(--ink); font-size: 15px; font-weight: 700; line-height: 1.15; }
         .gv-ov-dates { color: var(--accent-text); font-family: var(--font-mono); font-size: 11px; }
         /* delete button — appears on hover/focus, top-right (over the gender dot) */
         .gv-del { position: absolute; top: 6px; right: 6px; z-index: 3; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; background: rgba(176,42,42,0.9); color: #fff; border: none; cursor: pointer; opacity: 0; transition: opacity 150ms ease, background 150ms ease; }
@@ -456,18 +456,18 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
         /* Crop UI — interactive 1:1 crop + live preview */
         .gv-cropwrap { display: flex; gap: 16px; align-items: flex-start; }
         .gv-cropmain { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
-        .gv-reactcrop { width: 100%; background: #0D0D0D; border: 1px solid var(--border-strong);
+        .gv-reactcrop { width: 100%; background: var(--ink-on-accent); border: 1px solid var(--border-strong);
           /* theme: gold handles, gold focus (override the library's vars) */
           --rc-drag-handle-size: 14px; --rc-drag-handle-bg-colour: #C9A84C; --rc-border-color: #C9A84C; --rc-focus-color: #C9A84C; }
         .gv-cropimg { display: block; width: 100%; max-height: 46vh; object-fit: contain; }
         /* dark overlay on excluded zones (huge spread shadow leaves the selection clear) */
         .gv-reactcrop .ReactCrop__crop-selection { box-shadow: 0 0 0 9999px rgba(13,13,13,0.64); }
-        .gv-reactcrop .ReactCrop__drag-handle { background-color: #C9A84C; border-color: #0D0D0D; }
+        .gv-reactcrop .ReactCrop__drag-handle { background-color: #C9A84C; border-color: var(--ink-on-accent); }
         .gv-cropinstr { margin: 0; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.04em; color: var(--text-muted); }
         .gv-change { flex-shrink: 0; }
         .gv-cropside { width: 120px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; align-items: center; }
         .gv-cropside .label { align-self: flex-start; }
-        .gv-cropprev { width: 120px; height: 120px; background: #0D0D0D; border: 1px solid var(--border-strong); display: block; }
+        .gv-cropprev { width: 120px; height: 120px; background: var(--ink-on-accent); border: 1px solid var(--border-strong); display: block; }
         @media (max-width: 560px) {
           .gv-cropwrap { flex-direction: column; }
           .gv-cropside { width: 100%; flex-direction: row; align-items: center; }

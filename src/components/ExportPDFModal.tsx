@@ -136,7 +136,7 @@ export default function ExportPDFModal({ tree, onClose }: Props) {
                     flex: 1,
                     background: paperSize === size ? 'var(--accent)' : 'var(--bg-card)',
                     // Encre sombre sur or : le blanc plafonnait à 2.28:1 (AA exige 4.5).
-                    color: paperSize === size ? '#0d0d0d' : 'var(--text-muted)',
+                    color: paperSize === size ? 'var(--ink-on-accent)' : 'var(--text-muted)',
                   }}
                 >
                   {size}
@@ -159,7 +159,7 @@ export default function ExportPDFModal({ tree, onClose }: Props) {
                   style={{
                     flex: 1,
                     background: theme === th ? 'var(--accent)' : 'var(--bg-card)',
-                    color: theme === th ? '#0d0d0d' : 'var(--text-muted)',
+                    color: theme === th ? 'var(--ink-on-accent)' : 'var(--text-muted)',
                   }}
                 >
                   {themeLabel[th]}

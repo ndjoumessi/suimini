@@ -36,8 +36,8 @@ export default function DemoBanner({ onCreateAccount, onExit }: { onCreateAccoun
         .demo-banner-exit:hover { color: var(--ink); }
 
         /* Create account — solid gold */
-        .demo-banner-cta { flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 16px; background: var(--accent); color: #0D0D0D; border: none; font-family: var(--font-body); font-size: 12px; font-weight: 700; cursor: pointer; transition: background var(--t-fast); white-space: nowrap; }
-        .demo-banner-cta:hover { background: var(--accent-hover, #d4b257); }
+        .demo-banner-cta { flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 16px; background: var(--accent); color: var(--ink-on-accent); border: none; font-family: var(--font-body); font-size: 12px; font-weight: 700; cursor: pointer; transition: background var(--t-fast); white-space: nowrap; }
+        .demo-banner-cta:hover { background: var(--accent-hover, var(--accent-text)); }
 
         /* Dismiss */
         .demo-banner-x { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; transition: color var(--t-fast); }
