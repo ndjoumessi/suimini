@@ -113,3 +113,10 @@ export const apiDataClient: DataClient = new ApiDataClient();
 export function getDataClient(): DataClient {
   return getDataLayer() === 'api' ? apiDataClient : supabaseDataClient;
 }
+
+// Sonde d'observabilité (canary) : `window.__suiminiDataLayer()` renvoie le
+// transport RÉELLEMENT actif dans CE bundle. Si la fonction n'existe pas → le
+// navigateur sert encore l'ancien code (vider le SW / hard refresh).
+if (typeof window !== 'undefined') {
+  (window as unknown as { __suiminiDataLayer?: () => string }).__suiminiDataLayer = getDataLayer;
+}
