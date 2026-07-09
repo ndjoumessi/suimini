@@ -8,7 +8,7 @@
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { supabase } from '@/lib/supabase';
-import { DATA_LAYER } from '@/lib/dataClient';
+import { getDataLayer } from '@/lib/dataClient';
 
 export interface RpcResult<T = any> { data: T | null; error: { message: string } | null }
 
@@ -35,5 +35,5 @@ async function rpcViaDirect<T = any>(name: string, args?: Record<string, unknown
 }
 
 export function callRpc<T = any>(name: string, args?: Record<string, unknown>): Promise<RpcResult<T>> {
-  return DATA_LAYER === 'api' ? rpcViaApi<T>(name, args) : rpcViaDirect<T>(name, args);
+  return getDataLayer() === 'api' ? rpcViaApi<T>(name, args) : rpcViaDirect<T>(name, args);
 }

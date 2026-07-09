@@ -5,8 +5,9 @@
  * par sync-logic / conflict-resolution / realtime-echo (fonctions supabaseSync
  * inchangées, toujours exportées et testées directement).
  */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { test, expect } from '@playwright/test';
-import { getDataClient, DATA_LAYER } from '../src/lib/dataClient';
+import { getDataClient, getDataLayer } from '../src/lib/dataClient';
 
 const METHODS = ['loadTrees', 'loadOneTree', 'saveTree', 'deleteTree', 'deleteChildRows', 'detectDeleteConflicts', 'restoreEntity'] as const;
 
@@ -15,13 +16,31 @@ test('getDataClient() expose toute l’interface DataClient', () => {
   for (const m of METHODS) expect(typeof c[m]).toBe('function');
 });
 
-test('DATA_LAYER par défaut = direct (rollback par défaut, aucun flag posé)', () => {
-  // En environnement de test NEXT_PUBLIC_DATA_LAYER n'est pas défini.
-  expect(DATA_LAYER).toBe('direct');
+test('getDataLayer() par défaut = direct (aucun cookie / SSR)', () => {
+  expect(getDataLayer()).toBe('direct'); // typeof document === 'undefined' en test
 });
 
-test('getDataClient() est un singleton stable (même instance à chaque appel)', () => {
-  expect(getDataClient()).toBe(getDataClient());
+test('getDataLayer() : cookie suimini_data_layer=api → api (runtime, par session)', () => {
+  const orig = (globalThis as any).document;
+  (globalThis as any).document = { cookie: 'foo=1; suimini_data_layer=api; bar=2' };
+  try { expect(getDataLayer()).toBe('api'); } finally { (globalThis as any).document = orig; }
+});
+
+test('getDataLayer() : cookie à valeur inconnue → direct (défaut sûr)', () => {
+  const orig = (globalThis as any).document;
+  (globalThis as any).document = { cookie: 'suimini_data_layer=bogus' };
+  try { expect(getDataLayer()).toBe('direct'); } finally { (globalThis as any).document = orig; }
+});
+
+test('getDataClient() reflète le cookie au RUNTIME (bascule sans reload)', () => {
+  const orig = (globalThis as any).document;
+  try {
+    (globalThis as any).document = { cookie: '' };
+    const direct = getDataClient();
+    (globalThis as any).document = { cookie: 'suimini_data_layer=api' };
+    const api = getDataClient();
+    expect(api).not.toBe(direct); // instance différente selon le cookie, lu à chaque appel
+  } finally { (globalThis as any).document = orig; }
 });
 
 // ── ApiDataClient (PR3) : lecture via /api/data/* (fetch mocké) ──────────────

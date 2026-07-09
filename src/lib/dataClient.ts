@@ -87,14 +87,29 @@ class ApiDataClient implements DataClient {
   }
 }
 
-/** 'api' | 'direct' — défaut 'direct' (rollback par défaut). */
-export const DATA_LAYER: 'api' | 'direct' =
-  process.env.NEXT_PUBLIC_DATA_LAYER === 'api' ? 'api' : 'direct';
+/**
+ * Sélecteur RUNTIME du transport (⚠️ PLUS de NEXT_PUBLIC inliné au build — c'était
+ * la cause de l'échec du flip : une var build-time posée après coup ne change pas
+ * un bundle déjà compilé). Priorité : cookie `suimini_data_layer` = 'api'|'direct'
+ * → défaut 'direct'. Lu à CHAQUE appel → poser le cookie bascule la SESSION EN
+ * COURS sans reload ni redeploy (canary par session ; rollback = effacer le cookie).
+ * (Un défaut serveur runtime, exposé server→client, s'ajoutera pour le flip global.)
+ */
+function readCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null; // SSR / Node (tests)
+  const esc = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const m = document.cookie.match(new RegExp('(?:^|; )' + esc + '=([^;]*)'));
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
+export function getDataLayer(): 'api' | 'direct' {
+  return readCookie('suimini_data_layer') === 'api' ? 'api' : 'direct';
+}
 
 /** Exposé pour les tests. En app, passer par getDataClient(). */
 export const apiDataClient: DataClient = new ApiDataClient();
 
-/** Frontière réseau UNIQUE. Le flag choisit le transport ; défaut 'direct' (rollback). */
+/** Frontière réseau UNIQUE. Transport choisi au RUNTIME (getDataLayer), défaut 'direct'. */
 export function getDataClient(): DataClient {
-  return DATA_LAYER === 'api' ? apiDataClient : supabaseDataClient;
+  return getDataLayer() === 'api' ? apiDataClient : supabaseDataClient;
 }
