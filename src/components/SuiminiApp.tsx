@@ -511,6 +511,14 @@ export default function SuiminiApp() {
     showToast(ok ? tOffline('resyncOk') : tOffline('resyncFail'), ok ? 'success' : 'error');
   };
 
+  // Un chargement cloud qui ÉCHOUE et ne laisse AUCUN arbre (ex. incident Supabase
+  // après un vidage du cache) ne doit PAS ressembler à un compte vide : l'écran
+  // « Commencez votre arbre » suggère à tort une perte de données. On distingue
+  // donc « échec de chargement » (Réessayer) de « vraiment aucun arbre » (créer).
+  // Zéro arbre + statut error ⇒ forcément un échec de PULL (un push en erreur
+  // implique qu'il y avait un arbre à sauvegarder) → pas besoin du kind exact.
+  const loadFailedEmpty = isOnline && store.cloud && store.syncStatus === 'error' && store.trees.length === 0;
+
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg)', position: 'relative' }}
       onTouchStart={handleSwipeStart}
@@ -593,6 +601,9 @@ export default function SuiminiApp() {
 
         {view === 'admin' ? (
           <AdminDashboard admin={admin} role={role} onToast={showToast} />
+        ) : loadFailedEmpty ? (
+          // Chargement échoué + aucun arbre → panneau « Réessayer », jamais l'onboarding.
+          <SyncFailedState onRetry={handleRetrySync} />
         ) : view === 'dashboard' ? (
           <DashboardView
             trees={store.trees}
@@ -885,6 +896,25 @@ function EmptyState({ onCreateTree }: { onCreateTree: () => void }) {
         </p>
       </div>
       <button onClick={onCreateTree} className="btn btn-primary btn-lg" style={{ gap: '8px' }}><Sprout size={18} aria-hidden="true" /> {t('createButton')}</button>
+    </div>
+  );
+}
+
+// Distinct de EmptyState : ici les données EXISTENT côté serveur mais le chargement
+// a échoué (incident réseau/Supabase, cache vidé). On rassure (pas de perte) et on
+// propose Réessayer — jamais l'onboarding « créez votre premier arbre ».
+function SyncFailedState({ onRetry }: { onRetry: () => void }) {
+  const t = useTranslations('offline');
+  return (
+    <div role="alert" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '24px', padding: '40px', textAlign: 'center' }}>
+      <AlertTriangle size={64} strokeWidth={1.2} style={{ color: 'var(--danger)' }} aria-hidden="true" />
+      <div>
+        <h2 style={{ marginBottom: '8px' }}>{t('loadFailedTitle')}</h2>
+        <p style={{ color: 'var(--text-muted)', maxWidth: '420px' }}>
+          {t('loadFailedBody')}
+        </p>
+      </div>
+      <button onClick={onRetry} className="btn btn-primary btn-lg" style={{ gap: '8px' }}><RefreshCw size={18} aria-hidden="true" /> {t('retry')}</button>
     </div>
   );
 }

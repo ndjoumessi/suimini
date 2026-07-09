@@ -1549,7 +1549,9 @@
     "syncError": "Synchronisation impossible — vos données locales sont affichées.",
     "retry": "Réessayer",
     "resyncOk": "Synchronisation terminée",
-    "resyncFail": "Échec de la synchronisation"
+    "resyncFail": "Échec de la synchronisation",
+    "loadFailedTitle": "Impossible de charger vos arbres",
+    "loadFailedBody": "Vos données sont intactes côté serveur. Un incident réseau ou Supabase temporaire empêche le chargement. Réessayez dans un instant."
   },
   "pdf": {
     "export": "Exporter le livret",

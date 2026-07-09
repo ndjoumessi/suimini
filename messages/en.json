@@ -1549,7 +1549,9 @@
     "syncError": "Sync failed — showing your local data.",
     "retry": "Retry",
     "resyncOk": "Sync complete",
-    "resyncFail": "Sync failed"
+    "resyncFail": "Sync failed",
+    "loadFailedTitle": "Couldn’t load your trees",
+    "loadFailedBody": "Your data is safe on the server. A temporary network or Supabase incident is blocking the load. Please try again in a moment."
   },
   "pdf": {
     "export": "Export booklet",
