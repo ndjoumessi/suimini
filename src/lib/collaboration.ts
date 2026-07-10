@@ -1,7 +1,37 @@
 // Real-time collaboration helpers: person comments + tree presence.
 // All functions no-op gracefully when Supabase isn't configured (guest/demo),
 // so callers can use them unconditionally.
+//
+// Phase 0 — les fonctions de DONNÉES (comments + suggestions) suivent le même
+// patron que dataClient.ts : un cœur `*Direct(client)` injectable (utilisé par le
+// navigateur en mode 'direct' ET par les routes /api/data/collaboration/* côté
+// serveur) + une variante `*ViaApi()` (navigateur en mode 'api'). Le sélecteur
+// public branche via getDataLayer() — les composants appelants restent inchangés.
+// Les fonctions REALTIME/PRESENCE (WebSocket) restent directes par conception.
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { supabase } from './supabase';
+import { getDataLayer } from './dataClient';
+
+// Helpers HTTP fail-safe : comme les cœurs Direct, ils DÉGRADENT (jamais de throw)
+// pour préserver le contrat « no-op gracefully » de tout le module.
+async function apiGetSafe<T>(url: string, fallback: T): Promise<T> {
+  try {
+    const res = await fetch(url, { credentials: 'same-origin', headers: { accept: 'application/json' } });
+    if (!res.ok) return fallback;
+    return (await res.json()) as T;
+  } catch { return fallback; }
+}
+async function apiPostSafe<T>(url: string, body: unknown, fallback: T): Promise<T> {
+  try {
+    const res = await fetch(url, {
+      method: 'POST', credentials: 'same-origin',
+      headers: { accept: 'application/json', 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) return fallback;
+    return (await res.json()) as T;
+  } catch { return fallback; }
+}
 
 export interface PersonComment {
   id: string;
@@ -46,8 +76,20 @@ function mapRow(r: CommentRow): PersonComment {
 
 /** Comments for a person, oldest first. Returns [] when offline. */
 export async function fetchComments(treeId: string, personId: string): Promise<PersonComment[]> {
-  if (!supabase) return [];
-  const { data, error } = await supabase
+  if (getDataLayer() === 'api') {
+    const r = await apiGetSafe<{ comments: PersonComment[] }>(
+      `/api/data/collaboration/comments?treeId=${encodeURIComponent(treeId)}&personId=${encodeURIComponent(personId)}`,
+      { comments: [] },
+    );
+    return r.comments ?? [];
+  }
+  return fetchCommentsDirect(treeId, personId, supabase);
+}
+
+/** Cœur direct (navigateur mode 'direct' + routes serveur avec client appelant). */
+export async function fetchCommentsDirect(treeId: string, personId: string, client: any = supabase): Promise<PersonComment[]> {
+  if (!client) return [];
+  const { data, error } = await client
     .from('person_comments')
     .select('*')
     .eq('tree_id', treeId)
@@ -64,10 +106,29 @@ export async function addComment(
   content: string,
   author: { id: string; name: string },
 ): Promise<PersonComment | null> {
-  if (!supabase) return null;
   const trimmed = content.trim();
   if (!trimmed) return null;
-  const { data, error } = await supabase
+  if (getDataLayer() === 'api') {
+    // author.id est dérivé côté serveur (session) — on n'envoie que le nom d'affichage.
+    const r = await apiPostSafe<{ comment: PersonComment | null }>(
+      '/api/data/collaboration/comments',
+      { treeId, personId, content: trimmed, authorName: author.name },
+      { comment: null },
+    );
+    return r.comment ?? null;
+  }
+  return addCommentDirect(treeId, personId, trimmed, author, supabase);
+}
+
+/** Cœur direct. `author.id` fait foi (côté serveur, la route le remplace par la session). */
+export async function addCommentDirect(
+  treeId: string, personId: string, content: string,
+  author: { id: string; name: string }, client: any = supabase,
+): Promise<PersonComment | null> {
+  if (!client) return null;
+  const trimmed = content.trim();
+  if (!trimmed) return null;
+  const { data, error } = await client
     .from('person_comments')
     .insert({ tree_id: treeId, person_id: personId, author_id: author.id, author_name: author.name, content: trimmed })
     .select('*')
@@ -176,8 +237,17 @@ function mapSuggestion(r: SuggestionRow): PersonSuggestion {
 
 /** Pending suggestions for a tree (optionally a single person), oldest first. */
 export async function fetchPendingSuggestions(treeId: string, personId?: string): Promise<PersonSuggestion[]> {
-  if (!supabase) return [];
-  let q = supabase.from('person_suggestions').select('*').eq('tree_id', treeId).eq('status', 'pending');
+  if (getDataLayer() === 'api') {
+    const qs = `treeId=${encodeURIComponent(treeId)}${personId ? `&personId=${encodeURIComponent(personId)}` : ''}`;
+    const r = await apiGetSafe<{ suggestions: PersonSuggestion[] }>(`/api/data/collaboration/suggestions?${qs}`, { suggestions: [] });
+    return r.suggestions ?? [];
+  }
+  return fetchPendingSuggestionsDirect(treeId, personId, supabase);
+}
+
+export async function fetchPendingSuggestionsDirect(treeId: string, personId: string | undefined, client: any = supabase): Promise<PersonSuggestion[]> {
+  if (!client) return [];
+  let q = client.from('person_suggestions').select('*').eq('tree_id', treeId).eq('status', 'pending');
   if (personId) q = q.eq('person_id', personId);
   const { data, error } = await q.order('created_at', { ascending: true });
   if (error || !data) return [];
@@ -186,8 +256,16 @@ export async function fetchPendingSuggestions(treeId: string, personId?: string)
 
 /** Count pending suggestions for a tree (for the sidebar badge). */
 export async function countPendingSuggestions(treeId: string): Promise<number> {
-  if (!supabase) return 0;
-  const { count, error } = await supabase
+  if (getDataLayer() === 'api') {
+    const r = await apiGetSafe<{ count: number }>(`/api/data/collaboration/suggestions/count?treeId=${encodeURIComponent(treeId)}`, { count: 0 });
+    return r.count ?? 0;
+  }
+  return countPendingSuggestionsDirect(treeId, supabase);
+}
+
+export async function countPendingSuggestionsDirect(treeId: string, client: any = supabase): Promise<number> {
+  if (!client) return 0;
+  const { count, error } = await client
     .from('person_suggestions')
     .select('id', { count: 'exact', head: true })
     .eq('tree_id', treeId)
@@ -199,8 +277,23 @@ export async function addSuggestion(s: {
   treeId: string; personId: string; field: string; currentValue: string | null; suggestedValue: string;
   author: { id: string; name: string };
 }): Promise<PersonSuggestion | null> {
-  if (!supabase) return null;
-  const { data, error } = await supabase
+  if (getDataLayer() === 'api') {
+    const r = await apiPostSafe<{ suggestion: PersonSuggestion | null }>(
+      '/api/data/collaboration/suggestions',
+      { treeId: s.treeId, personId: s.personId, field: s.field, currentValue: s.currentValue, suggestedValue: s.suggestedValue, authorName: s.author.name },
+      { suggestion: null },
+    );
+    return r.suggestion ?? null;
+  }
+  return addSuggestionDirect(s, supabase);
+}
+
+export async function addSuggestionDirect(s: {
+  treeId: string; personId: string; field: string; currentValue: string | null; suggestedValue: string;
+  author: { id: string; name: string };
+}, client: any = supabase): Promise<PersonSuggestion | null> {
+  if (!client) return null;
+  const { data, error } = await client
     .from('person_suggestions')
     .insert({
       tree_id: s.treeId, person_id: s.personId, author_id: s.author.id, author_name: s.author.name,
@@ -214,8 +307,16 @@ export async function addSuggestion(s: {
 
 /** Accept or reject a suggestion. Returns success. */
 export async function resolveSuggestion(id: string, status: 'accepted' | 'rejected'): Promise<boolean> {
-  if (!supabase) return false;
-  const { error } = await supabase.from('person_suggestions').update({ status }).eq('id', id);
+  if (getDataLayer() === 'api') {
+    const r = await apiPostSafe<{ ok: boolean }>('/api/data/collaboration/suggestions/resolve', { id, status }, { ok: false });
+    return r.ok ?? false;
+  }
+  return resolveSuggestionDirect(id, status, supabase);
+}
+
+export async function resolveSuggestionDirect(id: string, status: 'accepted' | 'rejected', client: any = supabase): Promise<boolean> {
+  if (!client) return false;
+  const { error } = await client.from('person_suggestions').update({ status }).eq('id', id);
   return !error;
 }
 

@@ -42,6 +42,9 @@ src/
                        #   (HTML livret), /api/send-approval + /api/send-invite-email +
                        #   /api/send-approval-email (Resend), /api/push/register
                        #   (enregistre un Expo Push Token, auth Bearer). sitemap.ts, robots.ts.
+                       #   /api/data/* = FRONTIÈRE DONNÉES Phase 0 (trees, rpc,
+                       #   collaboration, whoami) — voir « Couche d'accès données ».
+                       #   /admin/health = statut migrations/env.
     layout.tsx         # <html lang>, polices next/font, NextIntlClientProvider, preconnects
     globals.css        # SYSTÈME DE DESIGN "Atelier" (variables CSS + classes utilitaires)
   proxy.ts             # Garde d'auth Next 16 (PAS middleware.ts) — protège /app
@@ -51,11 +54,15 @@ src/
   hooks/               # useAuth, useFamilyStore, useAdminData, useTheme, useDarkMode, useMediaQuery…
   lib/                 # supabase.ts, supabaseSync.ts, treeUtils.ts, sampleData.ts,
                        #   emails.ts, sharing.ts, pdfTemplates.ts…
+                       #   Phase 0 couche données : dataClient.ts (frontière réseau +
+                       #   flag cookie), authz.ts, apiAuth.ts, apiData.ts, rpcClient.ts,
+                       #   collaboration.ts (commentaires/suggestions).
   i18n/                # config.ts (constantes) + request.ts (locale SSR depuis cookie)
                        #   + messages.ts (bundle fr+en → bascule instantanée via IntlProvider)
 messages/              # fr.json + en.json
-supabase/              # schema.sql + migrations manuelles (share-public.sql, storage.sql,
-                       #   push-tokens.sql, cleanup-demo-tree.sql…)
+supabase/              # schema.sql + scripts *.sql (share-public.sql, storage.sql,
+                       #   push-tokens.sql…) ; migrations/ = framework VERSIONNÉ
+                       #   (0001-0017 + scripts/migrate.mjs) — voir « Migrations ».
   teda/                # scripts SQL de l'arbre famille TEDA (seed, enrichissement,
                        #   update-teda-v2-final.sql…) ; pdf/ = sources du PDF de synthèse
 mobile/                # App React Native / Expo (SDK 54) — voir section « Mobile »
@@ -72,11 +79,22 @@ e2e/                   # tests Playwright
 ### Données (arbres)
 - `useFamilyStore` : source de vérité. Persiste en **localStorage** et synchronise avec **Supabase** quand connecté. Seede toujours l'arbre d'exemple **« Famille Dupont » (`tree1`)** pour les invités/démo.
 - `lib/supabaseSync.ts` : mappage lignes ↔ objets, chargement/sauvegarde, partage (`shareTree`, `setTreePublic`, `loadPublicTree`).
-- Schéma SQL dans `supabase/schema.sql` ; **les migrations s'exécutent manuellement** dans le SQL editor Supabase (ex. `supabase/share-public.sql`).
+- Schéma SQL dans `supabase/schema.sql`. **Deux voies pour les migrations** : (a) framework **versionné** `supabase/migrations/NNNN_*.sql` + `scripts/migrate.mjs` (runner psql local / Management API CI via `SUPABASE_ACCESS_TOKEN`) — voir « Migrations » ; (b) manuel dans le SQL Editor (toujours valable, ex. `supabase/share-public.sql`).
 - Arbre **famille TEDA** (`teda1`) : scripts SQL dans `supabase/teda/`. **État de référence = 57 personnes / 93 relations**, restauré depuis l'export applicatif via **`RESTORE_TEDA_FROM_EXPORT.sql`** (source de vérité ; max `teda-p58` / `teda-r94`). `update-teda-djoumessi-family.sql` ajoute la famille de DJOUMESSI Mathias (→ 71/119). ⚠️ **Convention de noms TEDA** : `first_name` = **NOM de famille**, `last_name` = **prénom** (ex. `('DJOUMESSI','Mathias')`, `('TSANA','Sébastien')`). Le **PDF de synthèse** est généré depuis `supabase/teda/pdf/teda_v2.html` (HTML « Atelier » autonome) via `render.mjs` (rendu Chromium/Playwright, Node 22) — voir `supabase/teda/pdf/README.md`.
 
-### Migrations SQL manuelles (SQL Editor Supabase)
-Toutes les écritures de schéma/prod sont **manuelles** (aucune `service_role` — voir « Variables d'environnement »). Fichiers `supabase/*.sql`, idempotents :
+### Couche d'accès données (Phase 0 — DataClient / frontière API)
+Objectif : router **tout l'accès aux DONNÉES D'ARBRE** du navigateur via `/api/data/*` (backend interchangeable, AuthZ applicative en plus de la RLS), **sans jamais casser le mode direct** (rollback instantané). Voir `docs/phase0-data-api-design.md` + `docs/handoff-2026-07-10.md`.
+- **Frontière unique `getDataClient()`** (`lib/dataClient.ts`) : le store (`useFamilyStore`) et `collaboration.ts` ne parlent PLUS à `supabase.from(...)` en direct — ils passent par un `DataClient`. Deux transports : **`SupabaseDataClient`** (direct, défaut = **rollback**) et **`ApiDataClient`** (navigateur → `/api/data/*` → Supabase, lecture ET écriture). ⚠️ En mode `api`, `loadTrees` fait **un seul** `GET /api/data/trees` → le serveur lit persons/relationships/journal (pas de `/api/data/persons`).
+- **Flag RUNTIME par cookie** `suimini_data_layer` = `api`|`direct` (défaut `direct`), lu à CHAQUE appel (`getDataLayer()`). ⚠️ **PAS un `NEXT_PUBLIC_*`** (inliné au build = cause de l'échec du 1er flip). Poser le cookie bascule la **session en cours** sans reload ni redeploy ; le retirer = rollback. Sonde `window.__suiminiDataLayer()`. ⚠️ Bumper le **SW** (`suimini-static-vN`) sinon l'ancien bundle est servi.
+- **Serveur** (`app/api/data/*`) : `getServerAuth()` (`lib/apiAuth.ts`) résout l'appelant par **cookie de session** OU **`Authorization: Bearer`** (mobile) ; les requêtes tournent **sous l'identité de l'appelant** → RLS en filet. AuthZ applicative miroir des RLS dans **`lib/authz.ts`** (prédicats `canReadTreeAsMember`/`canWriteTreeContent`/`isTreeOwner`…) + helper **`apiData.guardTreeWrite(treeId,'write'|'owner')`**. RPC forwardées via **`callRpc`** (`lib/rpcClient.ts`) → `/api/data/rpc/[name]` (whitelist 16 RPC).
+- **`collaboration.ts`** (commentaires/suggestions) suit le même patron : cœurs **`*Direct(client)`** injectables (navigateur direct + routes serveur) + **`*ViaApi()`** (fetch), endpoints **`/api/data/collaboration/{comments,suggestions,suggestions/count,suggestions/resolve}`**. AuthZ **owner-only** (miroir exact du RLS `0012`). Realtime/presence (WebSocket) restent directs. Les composants appelants (`PersonPanel`, `Sidebar`) sont **inchangés** (signatures rétro-compatibles).
+- **HORS PÉRIMÈTRE (directs Supabase même en mode `api`, par conception)** : GoTrue `/auth/v1/*` (primitive de session), `profiles` (identité self), **`tree_members` via `fetchMyMemberships` (`useAuth`)** = « quels arbres partagés avec moi » (accès, pas contenu ; fail-open `error → []`), et le **WebSocket realtime**. Ne PAS les confondre avec le trou de contenu (collaboration). Canary **lecture+écriture arbre validé** ; flip global en attente (couvrir collaboration + défaut serveur runtime). Tests : `e2e/{data-client,authz,rpc-client,collaboration-client}.spec.ts`.
+- **RLS résiliente (`0017`)** : les policies `*_members_read` ne peuvent plus faire **500-er la lecture du propriétaire** pendant une panne `tree_members` (test propriétaire = disjoint de premier niveau **sans** `tree_members` + fonction **`is_accepted_member()`** `SECURITY DEFINER` avec `EXCEPTION → false` = fail-closed). `supabase/sharing.sql` porte la version résiliente (le restore post-incident la ramène). Côté UI, **`SyncFailedState`** distingue « chargement échoué → Réessayer » de « vraiment aucun arbre » (plus jamais l'onboarding sur une erreur réseau).
+
+### Migrations SQL (framework versionné + SQL Editor)
+- **Framework versionné** (`supabase/migrations/NNNN_*.sql`, table `suimini_migrations`, runner `scripts/migrate.mjs`) : `0001` tracking · `0002` locale · **`0003-0016`** = portage idempotent de tous les anciens scripts `supabase/*.sql` (schema, soft-delete, rate-limits, storage, push, share-public, sharing, collaboration, documents, photo-tags, birthday-cron) · **`0017`** = RLS résiliente (voir « Couche d'accès données »). Commande **`baseline`** (workflow_dispatch) = adopter `0003-0017` en prod **sans rejeu** (elles y sont déjà). En local : psql ; en CI : Management API (secrets `SUPABASE_ACCESS_TOKEN`/`_PROJECT_ID`). Workflows `.github/workflows/migrate.yml` + `deploy-edge-functions.yml` (déploiement Edge Functions en CI). **Ajouter une nouvelle migration = créer `NNNN_*.sql`** (idempotent, pas de `BEGIN/COMMIT`, le runner enveloppe).
+- **Sans `service_role`** (voir « Variables d'environnement ») : l'agent ne peut PAS écrire en prod → livrer la migration + lancer `baseline`/`migrate` (utilisateur) ou coller dans le SQL Editor. `/admin/health` expose l'état des migrations/env.
+- Fichiers `supabase/*.sql` (sources d'origine, idempotents ; miroir des migrations) :
 - **`schema.sql`** (base) · **`soft-delete.sql`** (colonnes `deleted_at` + `purge_tombstones()`) · **`rate-limits.sql`** (RPC `consume_rate_limit`) · **`add-locale-to-profiles.sql`** (`profiles.locale` pour notif bilingues) · **`share-public.sql`** / **`sharing*.sql`** / **`collaboration*.sql`** (partage public + membres + RPC) · **`push-tokens.sql`** (Expo tokens) · **`storage.sql`** (bucket `avatars` + RLS).
 - **Push anniversaires** : Edge Function `functions/send-birthday-notifications/` (déploiement `supabase functions deploy … --no-verify-jwt` + secret `CRON_SECRET`) + **`birthday-cron.sql`** (pg_cron 8h UTC).
 - **TEDA** : `teda/RESTORE_TEDA_FROM_EXPORT.sql` (restauration 57/93, source de vérité) + `teda/update-teda-*.sql` (enrichissements/corrections).
@@ -205,7 +223,7 @@ L'app **mobile** lit les mêmes valeurs Supabase via `EXPO_PUBLIC_SUPABASE_URL` 
 - `playwright.config.ts` : bloque le **service worker** (`serviceWorkers: 'block'`) — sinon un SW périmé casse les `reload()` en test. `E2E_BASE_URL` permet de viser un serveur déjà lancé (sinon un `npm run dev` est démarré).
 - `.github/workflows/ci.yml` : jobs `build` (npm ci → tsc → build) puis `e2e` (build → `next start` → smoke tests). Actions épinglées en `@v6` (Node 24). Les secrets Supabase/Anthropic/Resend doivent exister côté repo GitHub.
 - **Pattern de test dominant = pure-logic** (aucun navigateur) : faux client Supabase / fonctions pures, façon `sync-logic.spec.ts` (aussi `conflict-resolution`, `fuzzy-search`, `duplicate-detection`, `image-compression`, `ocr-normalization`, `gedcom-export`/`-nick-roundtrip`, `narrative-context`, `supabase-status`, `sw-update`, `print-preview`, `realtime-echo`). Lançables sans serveur : `E2E_BASE_URL=http://localhost:9999 npx playwright test <spec>`. En plus : `a11y.spec.ts` (axe-core, garde-fou WCAG) et `e2e/integration/` (vrai cloud, **self-skip** sans `SUPABASE_TEST_*`). ~24 fichiers de specs.
-- **Autres workflows** : `backup-db.yml` (backup quotidien, secrets `SUPABASE_ACCESS_TOKEN`/`_PROJECT_ID`) · `integration-tests.yml` (tests cloud, secrets `SUPABASE_TEST_*`).
+- **Autres workflows** : `backup-db.yml` (backup quotidien, secrets `SUPABASE_ACCESS_TOKEN`/`_PROJECT_ID`) · `integration-tests.yml` (tests cloud, secrets `SUPABASE_TEST_*`) · `migrate.yml` (framework de migrations, `workflow_dispatch` `command=baseline|migrate`) · `deploy-edge-functions.yml` (déploiement Edge Functions en CI).
 
 ## Pièges connus (à respecter)
 
