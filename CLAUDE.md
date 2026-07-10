@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 Guide pour travailler dans **Suimini** — application **web** (Next.js) d'arbre généalogique (FR/EN), collaborative et élégante, **+ une app mobile** React Native/Expo dans `mobile/` (voir la section « Mobile »).
 
 ## Stack
@@ -23,9 +25,18 @@ source ~/.nvm/nvm.sh && nvm use 22
 ```bash
 npm run dev          # serveur de dev
 npm run build        # build prod (lance aussi le type-check Next + ESLint)
+npm run start        # sert le build prod (utilisé par le job e2e en CI)
+npm run lint         # ESLint seul
 npx tsc --noEmit     # type-check seul
-npm run test:e2e     # Playwright (e2e/)
+npm run test:e2e     # Playwright (e2e/, ~29 specs — voir « Tests & CI »)
+npm run test:e2e:ui  # Playwright en mode UI (debug interactif)
 vercel --prod --yes  # déploiement production
+```
+
+Lancer **une seule** spec (pattern pure-logic, sans serveur) :
+
+```bash
+E2E_BASE_URL=http://localhost:9999 npx playwright test e2e/sync-logic.spec.ts
 ```
 
 Qualité attendue avant commit : **`tsc --noEmit` ✅ et `npm run build` ✅** (sous Node 22).
@@ -86,6 +97,7 @@ e2e/                   # tests Playwright
 Objectif : router **tout l'accès aux DONNÉES D'ARBRE** du navigateur via `/api/data/*` (backend interchangeable, AuthZ applicative en plus de la RLS), **sans jamais casser le mode direct** (rollback instantané). Voir `docs/phase0-data-api-design.md` + `docs/handoff-2026-07-10.md`.
 - **Frontière unique `getDataClient()`** (`lib/dataClient.ts`) : le store (`useFamilyStore`) et `collaboration.ts` ne parlent PLUS à `supabase.from(...)` en direct — ils passent par un `DataClient`. Deux transports : **`SupabaseDataClient`** (direct, défaut = **rollback**) et **`ApiDataClient`** (navigateur → `/api/data/*` → Supabase, lecture ET écriture). ⚠️ En mode `api`, `loadTrees` fait **un seul** `GET /api/data/trees` → le serveur lit persons/relationships/journal (pas de `/api/data/persons`).
 - **Flag RUNTIME par cookie** `suimini_data_layer` = `api`|`direct` (défaut `direct`), lu à CHAQUE appel (`getDataLayer()`). ⚠️ **PAS un `NEXT_PUBLIC_*`** (inliné au build = cause de l'échec du 1er flip). Poser le cookie bascule la **session en cours** sans reload ni redeploy ; le retirer = rollback. Sonde `window.__suiminiDataLayer()`. ⚠️ Bumper le **SW** (`suimini-static-vN`) sinon l'ancien bundle est servi.
+- **Endpoints arbre concrets** : `GET /api/data/trees` (liste + contenu), `GET|…/api/data/trees/[id]`, `POST /api/data/trees/[id]/save` (upsert arbre), `/children/delete` (soft-delete), `/restore`, `/conflicts` (détection delete-vs-edit), `/api/data/whoami`. Collaboration + `rpc/[name]` idem.
 - **Serveur** (`app/api/data/*`) : `getServerAuth()` (`lib/apiAuth.ts`) résout l'appelant par **cookie de session** OU **`Authorization: Bearer`** (mobile) ; les requêtes tournent **sous l'identité de l'appelant** → RLS en filet. AuthZ applicative miroir des RLS dans **`lib/authz.ts`** (prédicats `canReadTreeAsMember`/`canWriteTreeContent`/`isTreeOwner`…) + helper **`apiData.guardTreeWrite(treeId,'write'|'owner')`**. RPC forwardées via **`callRpc`** (`lib/rpcClient.ts`) → `/api/data/rpc/[name]` (whitelist 16 RPC).
 - **`collaboration.ts`** (commentaires/suggestions) suit le même patron : cœurs **`*Direct(client)`** injectables (navigateur direct + routes serveur) + **`*ViaApi()`** (fetch), endpoints **`/api/data/collaboration/{comments,suggestions,suggestions/count,suggestions/resolve}`**. AuthZ **owner-only** (miroir exact du RLS `0012`). Realtime/presence (WebSocket) restent directs. Les composants appelants (`PersonPanel`, `Sidebar`) sont **inchangés** (signatures rétro-compatibles).
 - **HORS PÉRIMÈTRE (directs Supabase même en mode `api`, par conception)** : GoTrue `/auth/v1/*` (primitive de session), `profiles` (identité self), **`tree_members` via `fetchMyMemberships` (`useAuth`)** = « quels arbres partagés avec moi » (accès, pas contenu ; fail-open `error → []`), et le **WebSocket realtime**. Ne PAS les confondre avec le trou de contenu (collaboration). Canary **lecture+écriture arbre validé** ; flip global en attente (couvrir collaboration + défaut serveur runtime). Tests : `e2e/{data-client,authz,rpc-client,collaboration-client}.spec.ts`.
@@ -222,7 +234,7 @@ L'app **mobile** lit les mêmes valeurs Supabase via `EXPO_PUBLIC_SUPABASE_URL` 
 - `e2e/` : `smoke.spec.ts`, `demo-flow.spec.ts`, `dashboard-screenshot.spec.ts`, et des specs de **captures** (`feature-screenshots*.spec.ts`) gardées en `test.skip(!!process.env.CI, …)` — interception réseau / popups → flaky en CI ; à lancer en local contre `E2E_BASE_URL`.
 - `playwright.config.ts` : bloque le **service worker** (`serviceWorkers: 'block'`) — sinon un SW périmé casse les `reload()` en test. `E2E_BASE_URL` permet de viser un serveur déjà lancé (sinon un `npm run dev` est démarré).
 - `.github/workflows/ci.yml` : jobs `build` (npm ci → tsc → build) puis `e2e` (build → `next start` → smoke tests). Actions épinglées en `@v6` (Node 24). Les secrets Supabase/Anthropic/Resend doivent exister côté repo GitHub.
-- **Pattern de test dominant = pure-logic** (aucun navigateur) : faux client Supabase / fonctions pures, façon `sync-logic.spec.ts` (aussi `conflict-resolution`, `fuzzy-search`, `duplicate-detection`, `image-compression`, `ocr-normalization`, `gedcom-export`/`-nick-roundtrip`, `narrative-context`, `supabase-status`, `sw-update`, `print-preview`, `realtime-echo`). Lançables sans serveur : `E2E_BASE_URL=http://localhost:9999 npx playwright test <spec>`. En plus : `a11y.spec.ts` (axe-core, garde-fou WCAG) et `e2e/integration/` (vrai cloud, **self-skip** sans `SUPABASE_TEST_*`). ~24 fichiers de specs.
+- **Pattern de test dominant = pure-logic** (aucun navigateur) : faux client Supabase / fonctions pures, façon `sync-logic.spec.ts` (aussi `conflict-resolution`, `fuzzy-search`, `duplicate-detection`, `image-compression`, `ocr-normalization`, `gedcom-export`/`-nick-roundtrip`, `narrative-context`, `supabase-status`, `sw-update`, `print-preview`, `realtime-echo`). Lançables sans serveur : `E2E_BASE_URL=http://localhost:9999 npx playwright test <spec>`. En plus : `a11y.spec.ts` (axe-core, garde-fou WCAG) et `e2e/integration/` (vrai cloud, **self-skip** sans `SUPABASE_TEST_*`). **~29 fichiers de specs.**
 - **Autres workflows** : `backup-db.yml` (backup quotidien, secrets `SUPABASE_ACCESS_TOKEN`/`_PROJECT_ID`) · `integration-tests.yml` (tests cloud, secrets `SUPABASE_TEST_*`) · `migrate.yml` (framework de migrations, `workflow_dispatch` `command=baseline|migrate`) · `deploy-edge-functions.yml` (déploiement Edge Functions en CI).
 
 ## Pièges connus (à respecter)
