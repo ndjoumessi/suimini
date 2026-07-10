@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { getDataLayerRule } from '@/lib/dataLayerConfig';
 
 // Server route (Node) : diagnostic de configuration. Réservé aux admins.
 // ⚠️ Ne renvoie JAMAIS la VALEUR d'un secret — uniquement sa PRÉSENCE (booléen).
@@ -52,10 +53,19 @@ export async function GET() {
 
   const checks = CHECKS.map(c => ({ ...c, present: !!process.env[c.key] }));
   const missingRequired = checks.filter(c => !c.optional && !c.present).map(c => c.key);
+  // Défaut serveur runtime du transport DataClient (flip global Phase 0). Lu depuis
+  // Edge Config ; `edgeConfigured` = false ⇒ FALLBACK 'direct' (pas encore provisionné).
+  const rule = await getDataLayerRule();
   return NextResponse.json({
     ok: missingRequired.length === 0,
     checks,
     missingRequired,
+    dataLayer: {
+      edgeConfigured: !!process.env.EDGE_CONFIG,
+      default: rule.default,
+      apiPercent: rule.apiPercent,
+      apiAllowlistCount: rule.apiAllowlist.length,
+    },
     // Les migrations ATTENDUES (fichiers du repo). L'état « appliqué » vit dans
     // public.suimini_migrations, non lisible au runtime (RLS sans policy, par
     // conception) → vérifiable via la CI (.github/workflows/migrate.yml).

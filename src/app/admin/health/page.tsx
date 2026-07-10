@@ -6,7 +6,8 @@ import { CheckCircle2, XCircle, MinusCircle, ShieldAlert, ArrowLeft } from 'luci
 import { useAuth } from '@/hooks/useAuth';
 
 interface Check { key: string; label: string; group: string; scope: 'app' | 'server'; optional?: boolean; present: boolean }
-interface Health { ok: boolean; checks: Check[]; missingRequired: string[]; migrations: string[] }
+interface DataLayer { edgeConfigured: boolean; default: 'api' | 'direct'; apiPercent: number; apiAllowlistCount: number }
+interface Health { ok: boolean; checks: Check[]; missingRequired: string[]; migrations: string[]; dataLayer?: DataLayer }
 
 /**
  * /admin/health — diagnostic de configuration (présence des secrets + migrations
@@ -63,6 +64,37 @@ export default function HealthPage() {
               : <ShieldAlert size={20} aria-hidden="true" style={{ color: 'var(--warning)' }} />}
             <span style={{ fontWeight: 600 }}>{data.ok ? t('allGood') : t('missing', { count: data.missingRequired.length })}</span>
           </div>
+
+          {/* Défaut serveur runtime du transport (flip global Phase 0) */}
+          {data.dataLayer && (
+            <section className="card" style={{ padding: '16px', marginBottom: '14px' }}>
+              <h2 className="mono" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--accent-text)', margin: '0 0 6px' }}>{t('dataLayerTitle')}</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: '0 0 12px' }}>{t('dataLayerHint')}</p>
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>{t('dataLayerDefault')}</span>
+                  <span className="mono" style={{ marginLeft: 'auto', fontWeight: 700, color: data.dataLayer.default === 'api' ? 'var(--accent-text)' : 'var(--text-muted)' }}>{data.dataLayer.default}</span>
+                </li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>{t('dataLayerPercent')}</span>
+                  <span className="mono" style={{ marginLeft: 'auto', color: 'var(--text-muted)' }}>{data.dataLayer.apiPercent}%</span>
+                </li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>{t('dataLayerAllowlist')}</span>
+                  <span className="mono" style={{ marginLeft: 'auto', color: 'var(--text-muted)' }}>{data.dataLayer.apiAllowlistCount}</span>
+                </li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {data.dataLayer.edgeConfigured
+                    ? <CheckCircle2 size={16} aria-hidden="true" style={{ color: 'var(--success)', flexShrink: 0 }} />
+                    : <MinusCircle size={16} aria-hidden="true" style={{ color: 'var(--text-light)', flexShrink: 0 }} />}
+                  <span>{t('dataLayerEdge')}</span>
+                  <span className="mono" style={{ marginLeft: 'auto', fontSize: '12px', color: data.dataLayer.edgeConfigured ? 'var(--success)' : 'var(--text-light)' }}>
+                    {data.dataLayer.edgeConfigured ? t('present') : t('dataLayerFallback')}
+                  </span>
+                </li>
+              </ul>
+            </section>
+          )}
 
           {/* Secrets par groupe */}
           {groups.map(g => (

@@ -7,7 +7,7 @@
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { test, expect } from '@playwright/test';
-import { getDataClient, getDataLayer } from '../src/lib/dataClient';
+import { getDataClient, getDataLayer, setServerDataLayer } from '../src/lib/dataClient';
 
 const METHODS = ['loadTrees', 'loadOneTree', 'saveTree', 'deleteTree', 'deleteChildRows', 'detectDeleteConflicts', 'restoreEntity'] as const;
 
@@ -30,6 +30,35 @@ test('getDataLayer() : cookie à valeur inconnue → direct (défaut sûr)', () 
   const orig = (globalThis as any).document;
   (globalThis as any).document = { cookie: 'suimini_data_layer=bogus' };
   try { expect(getDataLayer()).toBe('direct'); } finally { (globalThis as any).document = orig; }
+});
+
+test('getDataLayer() : sans cookie → suit le DÉFAUT SERVEUR runtime', () => {
+  const orig = (globalThis as any).document;
+  (globalThis as any).document = { cookie: '' };
+  try {
+    setServerDataLayer('api');
+    expect(getDataLayer()).toBe('api');
+    setServerDataLayer('direct');
+    expect(getDataLayer()).toBe('direct');
+  } finally { setServerDataLayer('direct'); (globalThis as any).document = orig; }
+});
+
+test('getDataLayer() : cookie=direct FORCE direct même si défaut serveur=api (rollback ciblé)', () => {
+  const orig = (globalThis as any).document;
+  (globalThis as any).document = { cookie: 'suimini_data_layer=direct' };
+  try {
+    setServerDataLayer('api');
+    expect(getDataLayer()).toBe('direct'); // l'override cookie prime sur le défaut serveur
+  } finally { setServerDataLayer('direct'); (globalThis as any).document = orig; }
+});
+
+test('getDataLayer() : cookie=api FORCE api même si défaut serveur=direct', () => {
+  const orig = (globalThis as any).document;
+  (globalThis as any).document = { cookie: 'suimini_data_layer=api' };
+  try {
+    setServerDataLayer('direct');
+    expect(getDataLayer()).toBe('api');
+  } finally { setServerDataLayer('direct'); (globalThis as any).document = orig; }
 });
 
 test('getDataClient() reflète le cookie au RUNTIME (bascule sans reload)', () => {

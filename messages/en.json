@@ -33,7 +33,14 @@
     "absent": "absent",
     "migrationsTitle": "Expected migrations",
     "migrationsHint": "Repo files. The 'applied' state lives in suimini_migrations (not readable at runtime — check via CI).",
-    "migrationsNone": "No migration detected in the bundle."
+    "migrationsNone": "No migration detected in the bundle.",
+    "dataLayerTitle": "Data transport (Phase 0 flip)",
+    "dataLayerHint": "Runtime server default (Edge Config). The suimini_data_layer cookie stays a per-session override.",
+    "dataLayerDefault": "Server default",
+    "dataLayerPercent": "api rollout (%)",
+    "dataLayerAllowlist": "api allowlist",
+    "dataLayerEdge": "Edge Config",
+    "dataLayerFallback": "'direct' fallback"
   },
   "nav": {
     "home": "Home",

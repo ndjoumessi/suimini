@@ -90,10 +90,16 @@ class ApiDataClient implements DataClient {
 /**
  * Sélecteur RUNTIME du transport (⚠️ PLUS de NEXT_PUBLIC inliné au build — c'était
  * la cause de l'échec du flip : une var build-time posée après coup ne change pas
- * un bundle déjà compilé). Priorité : cookie `suimini_data_layer` = 'api'|'direct'
- * → défaut 'direct'. Lu à CHAQUE appel → poser le cookie bascule la SESSION EN
- * COURS sans reload ni redeploy (canary par session ; rollback = effacer le cookie).
- * (Un défaut serveur runtime, exposé server→client, s'ajoutera pour le flip global.)
+ * un bundle déjà compilé). Priorité, lue à CHAQUE appel (synchrone) :
+ *   1. cookie `suimini_data_layer` = 'api'   → 'api'    (override explicite)
+ *   2. cookie `suimini_data_layer` = 'direct'→ 'direct' (rollback ciblé par session)
+ *   3. sinon                                 → DÉFAUT SERVEUR RUNTIME (`serverDefaultLayer`)
+ *
+ * Le défaut serveur est résolu UNE fois au boot via GET /api/data-layer (network-only,
+ * jamais caché par le SW → flip/rollback instantanés sans redeploy). Tant qu'il n'est
+ * pas résolu, il vaut 'direct' (fail-safe : comportement identique à l'origine).
+ * Poser le cookie reste un override TOTAL dans les deux sens ; le défaut serveur ne
+ * s'applique QUE sans cookie.
  */
 function readCookie(name: string): string | null {
   if (typeof document === 'undefined') return null; // SSR / Node (tests)
@@ -102,8 +108,47 @@ function readCookie(name: string): string | null {
   return m ? decodeURIComponent(m[1]) : null;
 }
 
+// Défaut serveur runtime (résolu au boot). 'direct' tant que non résolu = fail-safe.
+let serverDefaultLayer: 'api' | 'direct' = 'direct';
+let serverResolved = false;
+let resolvePromise: Promise<'api' | 'direct'> | null = null;
+
+/** Force le défaut serveur (tests / injection). */
+export function setServerDataLayer(v: 'api' | 'direct'): void {
+  serverDefaultLayer = v;
+  serverResolved = true;
+}
+
+/** Résout le défaut serveur via /api/data-layer (network-only). Fail-safe → 'direct'. */
+async function resolveServerDataLayer(): Promise<'api' | 'direct'> {
+  if (typeof window === 'undefined') { setServerDataLayer('direct'); return 'direct'; }
+  try {
+    const res = await fetch('/api/data-layer', { credentials: 'same-origin', headers: { accept: 'application/json' } });
+    if (res.ok) {
+      const j = (await res.json()) as { layer?: string };
+      setServerDataLayer(j.layer === 'api' ? 'api' : 'direct');
+      return serverDefaultLayer;
+    }
+  } catch { /* réseau indisponible → fail-safe direct */ }
+  setServerDataLayer('direct');
+  return 'direct';
+}
+
+/**
+ * Garantit que le défaut serveur est résolu (idempotent, mémoïsé). À `await` par le
+ * store AVANT son premier `getDataClient()` → le transport initial est le bon.
+ */
+export function ensureServerDataLayer(): Promise<'api' | 'direct'> {
+  if (serverResolved) return Promise.resolve(serverDefaultLayer);
+  if (!resolvePromise) resolvePromise = resolveServerDataLayer();
+  return resolvePromise;
+}
+
 export function getDataLayer(): 'api' | 'direct' {
-  return readCookie('suimini_data_layer') === 'api' ? 'api' : 'direct';
+  const c = readCookie('suimini_data_layer');
+  if (c === 'api') return 'api';
+  if (c === 'direct') return 'direct';
+  return serverDefaultLayer;
 }
 
 /** Exposé pour les tests. En app, passer par getDataClient(). */
@@ -119,4 +164,6 @@ export function getDataClient(): DataClient {
 // navigateur sert encore l'ancien code (vider le SW / hard refresh).
 if (typeof window !== 'undefined') {
   (window as unknown as { __suiminiDataLayer?: () => string }).__suiminiDataLayer = getDataLayer;
+  // Démarre la résolution du défaut serveur au plus tôt (idempotent, fail-safe).
+  void ensureServerDataLayer();
 }

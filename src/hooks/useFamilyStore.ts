@@ -5,7 +5,7 @@ import { sampleFamilyTree } from '@/lib/sampleData';
 import { generateId, getDisplayName } from '@/lib/treeUtils';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import type { SharedMeta, ChildTable } from '@/lib/supabaseSync';
-import { getDataClient } from '@/lib/dataClient';
+import { getDataClient, ensureServerDataLayer } from '@/lib/dataClient';
 import { mergeTreeFavoringLocal, treeIdSets, removedIds, TreeIdSets } from '@/lib/syncMerge';
 import { addConflicts, Conflict } from '@/lib/conflictQueue';
 import { offlineStorage } from '@/lib/offlineStorage';
@@ -259,6 +259,10 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
       const MAX_ATTEMPTS = 3;
       const run = async (attempt: number) => {
         try {
+          // Gate : résoudre le défaut serveur (api|direct) AVANT de choisir le
+          // transport → la 1ʳᵉ lecture part sur le bon DataClient. Idempotent
+          // (résolu une fois, instantané ensuite), fail-safe → 'direct'.
+          await ensureServerDataLayer();
           const { trees: remote, shared: sharedMeta } = await getDataClient().loadTrees(user.id);
           if (!active) return;
           setShared(sharedMeta);
