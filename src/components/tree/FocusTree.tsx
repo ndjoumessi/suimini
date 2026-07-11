@@ -121,6 +121,15 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusId, tree]);
 
+  // Compteurs des boutons de nav haut/bas : la rangée parents/enfants ACTUELLE
+  // est déjà visible à l'écran (redondant d'y répéter son propre effectif) — le
+  // nombre utile est celui de la génération sur laquelle on va effectivement
+  // atterrir en cliquant (parents du futur focus « up », enfants du futur focus
+  // « down »), pas celui déjà affiché.
+  const upTarget = parents[0];
+  const prevGenCount = upTarget ? getParents(upTarget.id, tree.relationships, tree.persons).length : 0;
+  const nextGenCount = downTarget ? getChildren(downTarget.id, tree.relationships, tree.persons).length : 0;
+
   // Validation dev : l'ordre des enfants affichés doit être croissant par birth_date
   // (getChildren les trie, toutes mères confondues — cf. treeUtils.compareByBirthDate).
   useEffect(() => {
@@ -337,9 +346,9 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
       {/* Up nav — previous generation (+ compteur = nombre de personnes de cette génération) */}
       {hasParents && (
         <button className="ft-nav ft-nav-up" onClick={() => navigateGeneration('up')}
-          aria-label={`${t('previousGeneration')}, ${t('generationCount', { n: parents.length })}`}>
+          aria-label={`${t('previousGeneration')}, ${t('generationCount', { n: prevGenCount })}`}>
           <ChevronUp size={14} aria-hidden="true" className="ft-nav-arrow" /> {t('previousGeneration')}
-          <span className="ft-nav-count">{parents.length}</span>
+          <span className="ft-nav-count">{prevGenCount}</span>
         </button>
       )}
 
@@ -417,9 +426,9 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
       {/* Down nav — next generation (+ compteur = nombre d'enfants de cette génération) */}
       {hasChildren && (
         <button className="ft-nav ft-nav-down" onClick={() => navigateGeneration('down')}
-          aria-label={`${t('nextGeneration')}, ${t('generationCount', { n: children.length })}`}>
+          aria-label={`${t('nextGeneration')}, ${t('generationCount', { n: nextGenCount })}`}>
           <ChevronDown size={14} aria-hidden="true" className="ft-nav-arrow" /> {t('nextGeneration')}
-          <span className="ft-nav-count">{children.length}</span>
+          <span className="ft-nav-count">{nextGenCount}</span>
         </button>
       )}
 

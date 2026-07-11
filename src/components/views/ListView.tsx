@@ -2,7 +2,7 @@
 import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { FamilyTree, SearchFilters } from '@/types';
-import { searchPersons, getGeneration } from '@/lib/treeUtils';
+import { searchPersons, getGeneration, getFullName, normalizeText } from '@/lib/treeUtils';
 import { UsersRound, Plus, ChevronDown, Search, List, LayoutGrid } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 import PersonCard from '../person/PersonCard';
@@ -34,13 +34,35 @@ export default function ListView({ tree, onSelectPerson, onAddPerson, canEdit = 
 
   const filtered = useMemo(() => searchPersons(tree.persons, filters), [tree.persons, filters]);
 
-  const sorted = useMemo(() => [...filtered].sort((a, b) => {
-    if (sortBy === 'name') return a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName);
-    if (sortBy === 'first') return a.firstName.localeCompare(b.firstName) || a.lastName.localeCompare(b.lastName);
-    if (sortBy === 'birth') return (a.birthDate || '9999').localeCompare(b.birthDate || '9999');
-    if (sortBy === 'generation') return ((genMap.get(a.id) ?? 0) - (genMap.get(b.id) ?? 0)) || a.lastName.localeCompare(b.lastName);
-    return 0;
-  }), [filtered, sortBy, genMap]);
+  // Quand une recherche texte est active, les résultats les plus pertinents
+  // (nom complet exact, puis un mot qui commence par la requête, puis simple
+  // sous-chaîne) remontent en tête — sinon un résultat approché/phonétique se
+  // retrouve noyé au milieu du tri alphabétique et semble « perdu » dans la liste.
+  const relevanceOf = (p: (typeof filtered)[number], q: string): number => {
+    const nq = normalizeText(q);
+    if (!nq) return 0;
+    const full = normalizeText(getFullName(p));
+    const tokens = full.split(/\s+/).filter(Boolean);
+    if (full === nq) return 0;
+    if (tokens.some(tok => tok === nq)) return 1;
+    if (tokens.some(tok => tok.startsWith(nq))) return 2;
+    if (full.includes(nq)) return 3;
+    return 4; // approché / phonétique uniquement
+  };
+
+  const sorted = useMemo(() => {
+    const query = (filters.query || '').trim();
+    const cmp = (a: typeof filtered[number], b: typeof filtered[number]) => {
+      if (sortBy === 'name') return a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName);
+      if (sortBy === 'first') return a.firstName.localeCompare(b.firstName) || a.lastName.localeCompare(b.lastName);
+      if (sortBy === 'birth') return (a.birthDate || '9999').localeCompare(b.birthDate || '9999');
+      if (sortBy === 'generation') return ((genMap.get(a.id) ?? 0) - (genMap.get(b.id) ?? 0)) || a.lastName.localeCompare(b.lastName);
+      return 0;
+    };
+    if (!query) return [...filtered].sort(cmp);
+    return [...filtered].sort((a, b) => (relevanceOf(a, query) - relevanceOf(b, query)) || cmp(a, b));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtered, sortBy, genMap, filters.query]);
 
   const visible = sorted.slice(0, visibleCount);
 
