@@ -1,6 +1,7 @@
 # Migration Railway — plan & prérequis (Phase 1)
 
-> État : **EN COURS** (démarrée 2026-07-11). Staging fonctionnel, canary partiel validé.
+> État : **STAGING COMPLET** (démarrée 2026-07-11 ; canary UI complet CLOS le 2026-07-11,
+> pooler PgBouncer+TLS inclus). Reste avant prod : les prérequis cutover §5.
 > **NE PAS cutover en prod** tant que les prérequis bloquants ci-dessous ne sont pas levés.
 
 ## 1. Objectif & périmètre
@@ -35,12 +36,21 @@ push) sur Supabase. S'appuie sur la frontière Phase 0 `/api/data/*`.
 - Projet Railway `suimini` / env **`staging`** / **Postgres 18.4** (≠ Supabase 17.6,
   écart accepté). TEDA copié depuis le dump : **71 personnes / 122 relations / 1 tree
   (`teda1`, owner `a8d07d13-…`) / membres / share**. Dump == Railway vérifié.
-- Canary preview (Vercel, env preview-scoped, prod intacte) :
-  - ✅ Lecture arbre, écriture (occupation, POST `/api/data/trees/[id]/save` 200),
-    commentaire (person_comments Railway), RPC (get_tree_members, update_member_role,
-    get_invitation) via `/api/data/rpc/*`.
-  - ✅ `inviteMember` migré derrière `/api/data/collaboration/members`.
-- Tests : `e2e/integration/railway-store.spec.ts` (self-skip sans `RAILWAY_TEST_DATABASE_URL`).
+- **✅ CANARY UI COMPLET — CLOS le 2026-07-11.** Validé en conditions réelles (owner
+  connecté, mode `api`) sur les previews Vercel (env preview-scoped, prod intacte),
+  **y compris sur la config finale pooler PgBouncer + TLS, `pool max:10`** :
+  - Lecture arbre + écriture (occupation → `POST /api/data/trees/[id]/save` 200).
+  - Collaboration : commentaire (person_comments Railway), suggestions.
+  - RPC : `get_tree_members` / `update_member_role` / `get_invitation` via `/api/data/rpc/*`.
+  - Invitations : `inviteMember` → `POST /api/data/collaboration/members` 200 ; le membre
+    invité (`invited_by` dérivé de la SESSION) atterrit dans `tree_members` Railway ET
+    réapparaît via `get_tree_members` (cohérence lecture/écriture, même backend).
+  - Épuisement de connexions résolu par PgBouncer (voir §6ter) — plus de « too many clients ».
+- Tests : `e2e/integration/railway-store.spec.ts` (self-skip sans `RAILWAY_TEST_DATABASE_URL`)
+  — couvre arbre, collaboration, RPC, inviteMember. Vert sur staging.
+
+**Surface fonctionnelle staging : COMPLÈTE.** Reste avant cutover prod → les prérequis §5
+(répliquer PgBouncer+TLS sur l'env prod, `fetchMyMemberships`, re-copie données).
 
 ## 4. Incident 2026-07-11 — épuisement de connexions (structurel)
 
