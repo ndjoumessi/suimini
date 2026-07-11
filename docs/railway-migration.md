@@ -111,24 +111,47 @@ sur Internet** (PII non chiffrée). Inacceptable, même en staging.
 - L'URL poolée **privée** (`pgbouncer.railway.internal`) est sûre (VPC) mais
   **injoignable depuis Vercel**.
 
-**Conséquence** : le prérequis #1 (pooler) se dédouble → il faut un pooler
-transaction-mode **ET** chiffré sur le chemin public Vercel→Railway. Options à
-trancher AVANT cutover (aucune ne bloque le canary actuel, qui tourne sur l'endpoint
-DIRECT en TLS CA-épinglé + `max:1`) :
-- **(A)** Activer le client-TLS sur le PgBouncer Railway (`CLIENT_TLS_SSLMODE=require`
-  + cert) — faisabilité à vérifier sur le template managé (peut nécessiter un cert
-  auto-signé + config non exposée).
-- **(B)** Réseau PRIVÉ : héberger l'app (ou une couche d'accès DB) SUR Railway →
-  `pgbouncer.railway.internal` (poolé, privé, pas de TLS-sur-Internet). Gros
-  changement (l'app est sur Vercel).
-- **(C)** Reconsidérer la cible : un hôte offrant un **pooler serverless chiffré
-  nativement** (ex. Neon : driver HTTPS + pooling TLS) — remet en question le choix
-  Railway pour une app Vercel.
-- **(D)** Rester sur l'endpoint DIRECT (TLS CA-épinglé) + `pool max` bas, en acceptant
-  la limite de montée en charge (viable pour faible concurrence ; fragile en pic).
+### ✅ 6ter. RÉSOLU (2026-07-11, option A) : client-TLS activé sur le PgBouncer Railway
 
-Le CANARY continue sur (D) tel quel — stable et chiffré. La décision pooler+TLS est
-un point de cutover, pas un blocage du test d'invitation.
+L'image managée `ghcr.io/railwayapp-templates/pgbouncer:1` LIT bien les env
+`CLIENT_TLS_SSLMODE` / `CLIENT_TLS_CERT_FILE` / `CLIENT_TLS_KEY_FILE` (mappées dans
+`pgbouncer.ini` par `entrypoint.sh`), mais **ne génère PAS** de cert. On injecte
+donc un cert auto-signé sans forker l'image, via une **Custom Start Command** :
+
+**Config appliquée sur le service PgBouncer (env staging)** :
+- Variables : `CLIENT_TLS_SSLMODE=require`, `CLIENT_TLS_CERT_FILE=/etc/pgbouncer/cert.pem`,
+  `CLIENT_TLS_KEY_FILE=/etc/pgbouncer/key.pem`, `CLIENT_TLS_CERT_PEM=<cert>`,
+  `CLIENT_TLS_KEY_PEM=<clé privée>` (chiffrées côté Railway).
+- Start command (⚠️ Railway REMPLACE l'ENTRYPOINT → il faut ré-appeler `entrypoint.sh`
+  pour qu'il génère `pgbouncer.ini`) :
+  ```sh
+  sh -c 'printf "%s" "$CLIENT_TLS_CERT_PEM" > /etc/pgbouncer/cert.pem && \
+         printf "%s" "$CLIENT_TLS_KEY_PEM" > /etc/pgbouncer/key.pem && \
+         chmod 600 /etc/pgbouncer/key.pem && \
+         exec /entrypoint.sh /usr/bin/pgbouncer /etc/pgbouncer/pgbouncer.ini'
+  ```
+- Cert auto-signé : `CN=pgbouncer`, SAN `DNS:pgbouncer`.
+
+**Côté app** (`railwayDb.ts` `sslConfig()`, inchangé) : `RAILWAY_DB_CA_CERT` = ce
+cert PgBouncer + `RAILWAY_DB_TLS_SERVERNAME=pgbouncer` → **TLS vérifiée (chaîne + identité)**.
+`RAILWAY_DATABASE_URL` = URL POOLÉE (`DATABASE_PUBLIC_URL` du service PgBouncer).
+`pool max` remonté à 10.
+
+**Vérifié** : `sslmode=require` OK sur l'endpoint poolé (cert `CN=pgbouncer` présenté) ;
+smoke complet + `loadTrees` (teda1 71/122) OK **à travers PgBouncer en TLS CA-épinglé**,
+transaction-mode compris.
+
+**⚠️ Caveats (à garder pour le cutover)** :
+- Solution par **workaround** (start command + cert en env), PAS une feature native
+  managée → à re-documenter/re-tester si Railway change l'image PgBouncer.
+- Rotation du cert = régénérer + mettre à jour les 2 env (`CLIENT_TLS_*_PEM`) + `RAILWAY_DB_CA_CERT`.
+- Migrations/restore/psql : toujours l'URL **UNPOOLED** directe (`tokaido…:28994`),
+  qui garde le cert Postgres `root-ca` (≠ cert PgBouncer).
+- **Rollback** : retirer la Custom Start Command + les `CLIENT_TLS_*` du PgBouncer,
+  et repointer `RAILWAY_DATABASE_URL` sur l'endpoint direct.
+
+Le prérequis #1 (pooler+TLS) est donc **levé en staging**. Reste à **répliquer cette
+config PgBouncer sur l'environnement de prod** au moment du cutover.
 
 ## 7. Checklist cutover (à dérouler quand décidé — pas aujourd'hui)
 

@@ -71,15 +71,15 @@ export function getPool(): Pool {
   pool = new Pool({
     connectionString: cs,
     ssl: sslConfig(),
-    // ⚠️ SERVERLESS : chaque instance de fonction Vercel a SON pool. Sans pooler
-    // transaction-mode devant Railway (max_connections = 100), ~20-30 instances ×
-    // un pool de 5 saturent la base → « sorry, too many clients already » (incident
-    // 2026-07-11 : chargement d'arbre KO sur le preview). MITIGATION : borner chaque
-    // instance à UNE connexion + fermeture agressive des connexions inactives
-    // (allowExitOnIdle laisse le process libérer la connexion au gel de l'instance).
-    // ⚠️ Ce n'est QU'UNE mitigation — un PgBouncer/pooler transaction-mode reste un
-    // PRÉREQUIS BLOQUANT au cutover prod. Voir docs/railway-migration.md.
-    max: 1,
+    // Derrière PgBouncer transaction-mode : les connexions app→PgBouncer sont
+    // multiplexées vers un petit nombre de connexions serveur réelles (défaut :
+    // 1000 clients → 20 conns serveur / réplica). Chaque instance de fonction Vercel
+    // peut donc garder un pool modéré sans risque d'épuisement de la base.
+    // ⚠️ REQUIERT que RAILWAY_DATABASE_URL pointe vers l'URL POOLÉE (PgBouncer, TLS) —
+    // l'URL UNPOOLED (directe) est réservée aux migrations/psql/DDL. node-pg n'utilise
+    // PAS de prepared statements nommés → compatible transaction-mode.
+    // Le PgBouncer Railway a le client-TLS activé (cert injecté) — voir docs/railway-migration.md.
+    max: 10,
     idleTimeoutMillis: 10_000,
     allowExitOnIdle: true,
     connectionTimeoutMillis: 10_000,
