@@ -9,6 +9,7 @@
  * portée par la couche applicative (src/lib/authz.ts + RailwayStore). Ne JAMAIS
  * exposer ce pool à un chemin non gardé.
  */
+import tls from 'node:tls';
 import { Pool, types, type PoolClient, type QueryResultRow } from 'pg';
 
 // timestamptz (OID 1184) → chaîne ISO-8601, comme PostgREST/Supabase (node-pg
@@ -41,15 +42,20 @@ export function railwayConfigured(): boolean {
  *     cert auto-signé (chiffré mais non authentifié — acceptable hors prod, à
  *     durcir avant la bascule). Choix CONSCIENT, jamais le défaut.
  */
-function sslConfig(): false | { ca: string; checkServerIdentity: () => undefined } | { rejectUnauthorized: boolean } {
+type SslOption = false | { ca: string; checkServerIdentity: (h: string, c: tls.PeerCertificate) => Error | undefined } | { rejectUnauthorized: boolean };
+function sslConfig(): SslOption {
   const ca = process.env.RAILWAY_DB_CA_CERT;
   if (ca) {
-    // Railway émet un cert leaf CN=localhost via son proxy → la vérification du NOM
-    // d'hôte échouerait toujours (localhost ≠ *.proxy.rlwy.net). On VÉRIFIE donc la
-    // chaîne contre le CA épinglé (un MITM devrait détenir la clé du root-ca Railway)
-    // MAIS on n'impose pas le hostname. Bien plus fort que rejectUnauthorized:false,
-    // qui accepte n'importe quel certificat.
-    return { ca, checkServerIdentity: () => undefined };
+    // Railway émet, via son proxy, un cert dont l'identité est `localhost` (≠ le
+    // hostname *.proxy.rlwy.net) → la vérif de nom d'hôte par défaut échouerait
+    // toujours. On NE désactive PAS la vérification d'identité : on la fait contre
+    // l'identité ATTENDUE du cert Railway (`localhost` par défaut, surchargeable),
+    // avec la logique SAN/CN éprouvée de node. Un cert qui n'identifie pas
+    // légitimement cette valeur est REJETÉ. Couplé au CA épinglé (chaîne signée par
+    // le root-ca Railway), un MITM devrait détenir la clé du CA ET émettre un cert
+    // pour cette identité — bien plus fort que rejectUnauthorized:false (tout passe).
+    const expected = process.env.RAILWAY_DB_TLS_SERVERNAME || 'localhost';
+    return { ca, checkServerIdentity: (_host, cert) => tls.checkServerIdentity(expected, cert) };
   }
   if (process.env.RAILWAY_DB_INSECURE_SSL === '1') {
     return { rejectUnauthorized: false };                  // opt-in explicite (staging, non authentifié)
