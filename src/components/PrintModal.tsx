@@ -54,9 +54,14 @@ function genderColor(g: string) {
 }
 
 function initials(p: Person): string {
-  const a = (p.firstName || '').trim()[0] || '';
-  const b = (p.lastName || '').trim()[0] || '';
-  return (a + b).toUpperCase() || '—';
+  const first = (p.firstName || '').trim();
+  const second = (p.lastName || '').trim();
+  // Convention TEDA : firstName = NOM, lastName = prénom (souvent vide pour les
+  // aïeux saisis sous un seul nom, ex. « MEGNIGUE »). Quand un seul champ est
+  // renseigné, on prend ses 2 premières lettres → toujours une pastille à 2
+  // caractères, jamais une lettre isolée et déséquilibrée.
+  const pair = first && second ? first[0] + second[0] : (first || second).slice(0, 2);
+  return pair.toUpperCase() || '—';
 }
 
 /** Square avatar: real photo when present + enabled, otherwise elegant initials
@@ -96,7 +101,7 @@ function nodeAccent(node: { person: Person; isPivot: boolean }): string {
   return node.person.gender === 'male' ? GENDER_BAR.male : node.person.gender === 'female' ? GENDER_BAR.female : GENDER_BAR.unknown;
 }
 function initialsOf(p: Person): string {
-  return (((p.firstName || '').trim()[0] || '') + ((p.lastName || '').trim()[0] || '')).toUpperCase() || '—';
+  return initials(p);
 }
 function truncate(s: string, n: number): string {
   return s.length > n ? s.slice(0, n - 1) + '…' : s;
@@ -325,57 +330,64 @@ export default function PrintModal({ tree, onClose }: Props) {
           <button onClick={onClose} aria-label={t('close')} className="btn btn-ghost btn-sm btn-icon"><X size={16} aria-hidden="true" /></button>
         </div>
 
-        {/* Options */}
-        <div style={{ padding: '14px 24px', borderBottom: '1px solid var(--border)', display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center', background: 'var(--bg-muted)' }}>
-          <div role="group" aria-label={t('title')} style={{ display: 'flex', gap: '6px' }}>
-            {(['livret','list','cards','summary','tree'] as PrintMode[]).map(m => {
-              const { Icon, labelKey } = PRINT_MODE_META[m];
-              return (
-              <button key={m} onClick={() => setMode(m)} aria-pressed={mode === m} className="btn btn-sm" style={{
-                background: mode === m ? 'var(--accent)' : 'var(--bg-card)',
-                color: mode === m ? '#0d0d0d' : 'var(--text-muted)',
-                borderColor: mode === m ? 'var(--accent)' : 'var(--border-strong)',
-              }}>
-                <Icon size={14} aria-hidden="true" /> {t(labelKey)}
-              </button>
-            ); })}
+        {/* Options — trois familles de contrôles VISUELLEMENT distinctes :
+            1) sélecteur de FORMAT exclusif  → segmented « soudé » (or = actif)
+            2) bascule d'APERÇU (thème écran) → toggle « piste » secondaire (pas d'or)
+            3) cases À INCLURE indépendantes → checkboxes carrées natives */}
+        <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', display: 'flex', gap: '22px', flexWrap: 'wrap', alignItems: 'flex-end', background: 'var(--bg-muted)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
+            <span className="label">{t('sectionFormat')}</span>
+            <div className="seg" role="group" aria-label={t('sectionFormat')}>
+              {(['livret','list','cards','summary','tree'] as PrintMode[]).map(m => {
+                const { Icon, labelKey } = PRINT_MODE_META[m];
+                return (
+                  <button key={m} onClick={() => setMode(m)} aria-pressed={mode === m}>
+                    <Icon size={14} aria-hidden="true" /> {t(labelKey)}
+                  </button>
+                );
+              })}
+            </div>
           </div>
+
           {/* Preview theme toggle (on-screen only — never changes the printed doc). */}
-          <div role="group" aria-label={t('previewLabel')} style={{ display: 'flex', gap: '6px' }}>
-            {(['dark','light'] as PreviewMode[]).map(pm => {
-              const active = previewMode === pm;
-              const Icon = pm === 'light' ? Sun : Moon;
-              return (
-                <button key={pm} onClick={() => applyPreviewMode(pm)} aria-pressed={active} className="btn btn-sm" style={{
-                  background: active ? 'var(--accent)' : 'var(--bg-card)',
-                  color: active ? '#0d0d0d' : 'var(--text-muted)',
-                  borderColor: active ? 'var(--accent)' : 'var(--border-strong)',
-                }}>
-                  <Icon size={14} aria-hidden="true" /> {t(pm === 'light' ? 'previewLight' : 'previewDark')}
-                </button>
-              );
-            })}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
+            <span className="label">{t('previewLabel')}</span>
+            <div className="seg-toggle" role="group" aria-label={t('previewLabel')}>
+              {(['dark','light'] as PreviewMode[]).map(pm => {
+                const active = previewMode === pm;
+                const Icon = pm === 'light' ? Sun : Moon;
+                return (
+                  <button key={pm} onClick={() => applyPreviewMode(pm)} aria-pressed={active}>
+                    <Icon size={13} aria-hidden="true" /> {t(pm === 'light' ? 'previewLight' : 'previewDark')}
+                  </button>
+                );
+              })}
+            </div>
           </div>
+
           {mode !== 'tree' && (
-            <>
-              <label style={{ display: 'flex', gap: '6px', alignItems: 'center', fontSize: '13px', cursor: 'pointer' }}>
-                <input type="checkbox" checked={includePhotos} onChange={e => setIncludePhotos(e.target.checked)} />
-                {t('optPhotos')}
-              </label>
-              <label style={{ display: 'flex', gap: '6px', alignItems: 'center', fontSize: '13px', cursor: 'pointer' }}>
-                <input type="checkbox" checked={includeDeceased} onChange={e => setIncludeDeceased(e.target.checked)} />
-                {t('optDeceased')}
-              </label>
-            </>
-          )}
-          {mode === 'list' && (
-            <label style={{ display: 'flex', gap: '6px', alignItems: 'center', fontSize: '13px', cursor: 'pointer' }}>
-              <input type="checkbox" checked={includeEvents} onChange={e => setIncludeEvents(e.target.checked)} />
-              {t('optEvents')}
-            </label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
+              <span className="label">{t('sectionInclude')}</span>
+              <div style={{ display: 'flex', gap: '16px', alignItems: 'center', minHeight: '34px' }}>
+                <label style={{ display: 'flex', gap: '7px', alignItems: 'center', fontSize: '13px', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={includePhotos} onChange={e => setIncludePhotos(e.target.checked)} />
+                  {t('optPhotos')}
+                </label>
+                <label style={{ display: 'flex', gap: '7px', alignItems: 'center', fontSize: '13px', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={includeDeceased} onChange={e => setIncludeDeceased(e.target.checked)} />
+                  {t('optDeceased')}
+                </label>
+                {mode === 'list' && (
+                  <label style={{ display: 'flex', gap: '7px', alignItems: 'center', fontSize: '13px', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={includeEvents} onChange={e => setIncludeEvents(e.target.checked)} />
+                    {t('optEvents')}
+                  </label>
+                )}
+              </div>
+            </div>
           )}
           {mode === 'tree' && (
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{t('treeRoot', { root: treeLayout.rootName || '—' })}</span>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)', alignSelf: 'center' }}>{t('treeRoot', { root: treeLayout.rootName || '—' })}</span>
           )}
           {mode === 'tree' ? (
             <button onClick={exportTreePdf} disabled={exporting || treeLayout.nodes.length === 0} aria-busy={exporting} className="btn btn-primary btn-sm" style={{ marginLeft: 'auto' }}>
