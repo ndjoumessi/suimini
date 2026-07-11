@@ -334,6 +334,13 @@ export class RailwayStore {
     return { member: mapMemberRow(r), token: r.token ?? token };
   }
 
+  async getMyMemberships(userId: string): Promise<TreeMember[]> {
+    const rows = await query<any>(
+      "select * from tree_members where user_id = $1 and status = 'accepted'", [userId],
+    );
+    return rows.map(mapMemberRow);
+  }
+
   // ── RPC data-plane (membres/invitations) ─────────────────────────────────────
   // Miroir des RPC SECURITY DEFINER 0013 : `auth.uid()` remplacé par `caller`.
 

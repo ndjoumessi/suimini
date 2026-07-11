@@ -1,10 +1,12 @@
 # Migration Railway — plan & prérequis (Phase 1)
 
-> État : **STAGING COMPLET** (démarrée 2026-07-11 ; canary UI complet CLOS le 2026-07-11,
-> pooler PgBouncer+TLS inclus). **Infra Railway PROD provisionnée + vérifiée** (2026-07-11 :
-> Postgres + PgBouncer + client-TLS, schéma vide, AUCUNE donnée, aucun lien Vercel/Supabase
-> prod). Reste avant cutover : brancher Vercel prod + copier les données (§5, §7).
-> **NE PAS cutover en prod** tant que les prérequis bloquants ci-dessous ne sont pas levés.
+> État : **CUTOVER PROD LIVE — OWNER-ONLY** (2026-07-11). `suimini.vercel.app` sert le
+> propriétaire (`a8d07d13…`) depuis **Railway prod** (pooler PgBouncer + client-TLS, cert
+> PROPRE à la prod) ; tous les autres users restent sur Supabase (défaut). Données Supabase
+> copiées + intégrité vérifiée. **Supabase = source de vérité, jamais modifié.**
+> `apiPercent`/`DB_BACKEND_ALLOWLIST` **inchangés** (owner seul). Rollback instantané :
+> `DB_BACKEND=supabase` + redeploy. Reste (sur feu vert) : élargir le rollout (+ activer
+> `fetchMyMemberships` via Railway, code PRÊT-mais-INACTIF, cf. §5.3).
 
 ## 1. Objectif & périmètre
 
@@ -82,10 +84,11 @@ d'usage **normal multi-utilisateurs** (pas seulement sous test intensif).
    `CN=pgbouncer`) ; smoke complet OK à travers le pooler prod en TLS CA-épinglé ;
    connexions saines (3/100). Prod pooled = `tokaido…:30052`, direct/unpooled = `…:59595`.
    Reste au cutover : brancher le Vercel PROD sur l'URL POOLÉE + `RAILWAY_DB_CA_CERT`.
-2. **TLS durci (BLOQUANT).** En prod → **`RAILWAY_DB_CA_CERT`** (cert PgBouncer) +
-   `RAILWAY_DB_TLS_SERVERNAME=pgbouncer`, **jamais** `RAILWAY_DB_INSECURE_SSL`. Déjà
-   la posture de l'infra prod vérifiée ci-dessus. (Idéalement : cert PgBouncer PROPRE
-   à la prod, distinct de celui de staging — rotation = §6ter.)
+2. **TLS durci — ✅ FAIT en prod.** `RAILWAY_DB_CA_CERT` + `RAILWAY_DB_TLS_SERVERNAME
+   =pgbouncer`, jamais `RAILWAY_DB_INSECURE_SSL`. **Cert PgBouncer PROPRE à la prod**
+   (généré 2026-07-11, distinct de staging) ; rotation zéro-downtime via bundle CA
+   (l'app fait confiance à ancien+nouveau le temps du swap). Reste possible plus tard :
+   restreindre le CA prod au seul cert prod (retirer le staging du bundle).
 3. **Décision `fetchMyMemberships` — ✅ CLOSE (2026-07-11) : reste sur Supabase.**
    Raison (comme Phase 0) : liste d'accès en LECTURE (« quels arbres partagés avec
    moi »), fail-open (`error → []`), pas du contenu d'arbre.
@@ -98,6 +101,14 @@ d'usage **normal multi-utilisateurs** (pas seulement sous test intensif).
    avant tout rollout multi-utilisateur avec partage réel (migrer aussi le chemin
    membership, OU cohorter le rollout par arbre entier, OU double-écriture). Ce n'est
    PAS un blocage du canary owner-only actuel.
+   → **✅ CODE PRÊT MAIS INACTIF (2026-07-11)** : `fetchMyMemberships` a désormais le
+   patron `*Direct`/`*ViaApi` (endpoint `GET /api/data/collaboration/my-memberships` +
+   `DataStore.getMyMemberships` + `RailwayStore`), gardé par le flag
+   **`NEXT_PUBLIC_MEMBERSHIPS_VIA_API`** (défaut OFF → lecture directe Supabase, ZÉRO
+   changement). **Activation d'un coup = poser `NEXT_PUBLIC_MEMBERSHIPS_VIA_API=1` sur
+   Vercel + redéployer** (à faire au moment d'élargir le rollout) → la lecture des
+   memberships suit alors `DB_BACKEND` (Railway), COHÉRENTE avec l'écriture. Isolé dans
+   `sharing.ts` (ne touche pas la machinerie DATA_LAYER). Aucun autre dev requis.
 4. **Parité données au moment du cutover** : re-copier l'état Supabase le plus à jour
    → Railway avec vérification de comptes (source vs destination), l'agent n'ayant
    pas les creds DB Supabase (dump fourni par l'utilisateur). **À faire au cutover
@@ -193,15 +204,17 @@ Railway PROD** (2026-07-11, cf. §5.1) — infra prod prête (schéma vide, aucu
       dans l'env prod. **Source == destination** (persons 71, relationships 122,
       tree_members 1, tree_shares 2, comments/suggestions 0, trees 1) ; 0 relation
       orpheline, 0 tombstone. Supabase = source de vérité, **non modifié** (copie).
-- [ ] **⏸️ EN ATTENTE feu vert explicite** — `RAILWAY_DATABASE_URL` (Vercel **prod**
-      scope) = URL POOLÉE prod (`tokaido…:30052`) + `RAILWAY_DB_CA_CERT` (cert PgBouncer,
-      `RAILWAY_DB_TLS_SERVERNAME=pgbouncer`, jamais insecure) ; schéma/restore via
-      l'UNPOOLED prod (`…:59595`).
-- [ ] **⏸️ EN ATTENTE feu vert explicite et SÉPARÉ** — flip `DB_BACKEND=railway`
-      (allowlist owner d'abord) sur Vercel PROD. **NON fait aujourd'hui.**
-- [ ] Monter `DB_BACKEND_ALLOWLIST` progressivement (owner → %, → global) AVANT de
-      basculer le défaut serveur, exactement comme le rollout DATA_LAYER (Edge Config).
-- [ ] Plan de rollback : `DB_BACKEND=supabase` (flip instantané, données Supabase intactes).
+- [x] **Vercel PROD env → pooled+TLS Railway prod.** ✅ 2026-07-11 — `RAILWAY_DATABASE_URL`
+      = URL POOLÉE prod (`tokaido…:30052`), `RAILWAY_DB_CA_CERT` (cert prod propre, bundle),
+      `RAILWAY_DB_TLS_SERVERNAME=pgbouncer`. Schéma/restore via l'UNPOOLED prod (`…:59595`).
+- [x] **Flip `DB_BACKEND=railway`, `DB_BACKEND_ALLOWLIST=owner`.** ✅ 2026-07-11 — 12 commits
+      poussés sur `origin/main` → prod déployé (git-integration). Validé par l'utilisateur
+      (`suimini.vercel.app` : arbre charge + écriture OK).
+- [x] **`fetchMyMemberships` prêt-mais-inactif** (flag `NEXT_PUBLIC_MEMBERSHIPS_VIA_API`, §5.3). ✅
+- [ ] **⏸️ SUR FEU VERT** — Monter `DB_BACKEND_ALLOWLIST` progressivement (owner → %, →
+      global) + activer `NEXT_PUBLIC_MEMBERSHIPS_VIA_API=1`. `apiPercent` Edge Config
+      **inchangé** (=0) jusqu'à ordre explicite.
+- [ ] Rollback dispo à tout moment : `DB_BACKEND=supabase` + redeploy (données Supabase intactes).
 
 **Garde-fous utilisateur** : stop + feu vert explicite avant (a) cutover prod,
 (b) toute écriture/suppression sur la base Supabase de PROD.

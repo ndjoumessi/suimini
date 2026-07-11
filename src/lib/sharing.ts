@@ -43,7 +43,7 @@ interface MemberRow {
   status: MemberStatus;
 }
 
-function mapRow(r: MemberRow): TreeMember {
+export function mapRow(r: MemberRow): TreeMember {
   return {
     id: r.id, treeId: r.tree_id, userId: r.user_id, email: r.email, role: r.role,
     invitedBy: r.invited_by, invitedAt: r.invited_at, acceptedAt: r.accepted_at, status: r.status,
@@ -216,16 +216,49 @@ export async function acceptInvitation(token: string): Promise<{ treeId: string;
 }
 
 /** Accepted memberships of the current user (the trees shared WITH me). */
+/**
+ * Gate d'ACTIVATION (défaut OFF) du routage des memberships vers `/api/data`
+ * (→ Railway en backend `railway`, COHÉRENT avec l'écriture inviteMember/accept).
+ *
+ * Tant que `NEXT_PUBLIC_MEMBERSHIPS_VIA_API` n'est pas = '1', `fetchMyMemberships`
+ * garde EXACTEMENT son comportement historique (lecture directe Supabase) → ZÉRO
+ * changement pour le cutover owner-only actuel. **Activation = poser
+ * `NEXT_PUBLIC_MEMBERSHIPS_VIA_API=1` (Vercel) + redéployer** — à faire au moment
+ * d'élargir le rollout (résout le caveat cross-backend, cf. docs/railway-migration.md
+ * §5.3). Volontairement isolé ici (ne touche PAS la machinerie DATA_LAYER en prod).
+ */
+function membershipsViaApi(): boolean {
+  return process.env.NEXT_PUBLIC_MEMBERSHIPS_VIA_API === '1';
+}
+
+/** Mes appartenances acceptées. Défaut : lecture directe Supabase (inchangé). En mode
+ * `api` + flag activé : via `/api/data` → store (Railway si `DB_BACKEND=railway`). Fail-open. */
 export async function fetchMyMemberships(): Promise<TreeMember[]> {
   if (!supabase) return [];
-  const { data: auth } = await supabase.auth.getUser();
+  if (getDataLayer() === 'api' && membershipsViaApi()) return fetchMyMembershipsViaApi();
+  return fetchMyMembershipsDirect(supabase);
+}
+
+/** Cœur direct (navigateur mode 'direct' — comportement historique ; l'uid vient de la session). */
+export async function fetchMyMembershipsDirect(client: typeof supabase = supabase): Promise<TreeMember[]> {
+  if (!client) return [];
+  const { data: auth } = await client.auth.getUser();
   const uid = auth.user?.id;
   if (!uid) return [];
-  const { data, error } = await supabase
-    .from('tree_members')
-    .select('*')
-    .eq('user_id', uid)
-    .eq('status', 'accepted');
+  const { data, error } = await client
+    .from('tree_members').select('*').eq('user_id', uid).eq('status', 'accepted');
   if (error || !data) return [];
   return (data as MemberRow[]).map(mapRow);
+}
+
+/** Chemin API (activé seulement si le flag est posé). Fail-open. */
+async function fetchMyMembershipsViaApi(): Promise<TreeMember[]> {
+  try {
+    const res = await fetch('/api/data/collaboration/my-memberships', {
+      credentials: 'same-origin', headers: { accept: 'application/json' },
+    });
+    if (!res.ok) return [];
+    const j = (await res.json()) as { memberships?: TreeMember[] };
+    return j.memberships ?? [];
+  } catch { return []; }
 }

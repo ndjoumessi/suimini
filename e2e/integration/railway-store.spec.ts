@@ -131,6 +131,12 @@ describeIntegration('Railway real-cloud store', () => {
       const members = await store.rpc('get_tree_members', { p_tree_id: cTreeId }, caller);
       expect((members.data as any[]).length).toBe(2);
 
+      // getMyMemberships (chemin prêt-mais-inactif) : le membre ACCEPTÉ (user_id 222…)
+      // voit bien cTreeId ; un user sans appartenance → [].
+      const mine = await store.getMyMemberships('22222222-2222-2222-2222-222222222222');
+      expect(mine.some(m => m.treeId === cTreeId && m.status === 'accepted')).toBe(true);
+      expect((await store.getMyMemberships('00000000-0000-0000-0000-000000000000')).length).toBe(0);
+
       const upd = await store.rpc('update_member_role', { p_tree_id: cTreeId, p_email: 'member@suimini.test', p_role: 'editor' }, caller);
       expect(upd.error).toBeNull();
 
