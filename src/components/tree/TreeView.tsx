@@ -196,8 +196,16 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
   };
   const clearKin = () => { setKinPath(null); setKinResult(null); };
 
-  // Un chemin calculé sur un autre arbre n'a pas de sens : on l'efface au changement.
-  useEffect(() => { setKinPath(null); setKinResult(null); }, [tree.id]);
+  // Un chemin/surlignage calculé sur un autre arbre n'a pas de sens : on l'efface
+  // au changement d'arbre. Pattern « adjust state during render » (pas d'effet →
+  // pas de rendu intermédiaire avec l'état périmé).
+  const [prevTreeId, setPrevTreeId] = useState(tree.id);
+  if (prevTreeId !== tree.id) {
+    setPrevTreeId(tree.id);
+    setKinPath(null);
+    setKinResult(null);
+    setHighlightQ(null);
+  }
 
   // Keep a VALID root selected as persons load / change after mount. `rootId` is
   // seeded once via useState, so without this it stays null when the first person
