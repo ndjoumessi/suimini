@@ -188,12 +188,17 @@ Railway PROD** (2026-07-11, cf. §5.1) — infra prod prête (schéma vide, aucu
 - [x] Env Railway `production` provisionné (Postgres + PgBouncer + TLS), schéma appliqué
       (tables vides). ✅ 2026-07-11
 - [x] `fetchMyMemberships` tranché → reste sur Supabase (§5.3 + caveat cross-backend). ✅
-- [ ] `RAILWAY_DATABASE_URL` (Vercel **prod** scope) = URL POOLÉE prod (`tokaido…:30052`) ;
-      schéma/restore via l'UNPOOLED prod (`…:59595`).
-- [ ] `RAILWAY_DB_CA_CERT` (prod) posé, `RAILWAY_DB_INSECURE_SSL` **absent** (déjà la
-      posture staging ; idéalement un cert PgBouncer propre à la prod).
-- [ ] Re-copie données Supabase→Railway PROD + vérif comptes (source vs destination) —
-      **au cutover réel uniquement** (dump anticipé = périmé).
+- [x] **Re-copie données Supabase→Railway PROD + vérif comptes.** ✅ 2026-07-11 16:44
+      Dump frais `suimini-supabase-cutover-20260711-1644.dump` → pg_restore FK-ordonné
+      dans l'env prod. **Source == destination** (persons 71, relationships 122,
+      tree_members 1, tree_shares 2, comments/suggestions 0, trees 1) ; 0 relation
+      orpheline, 0 tombstone. Supabase = source de vérité, **non modifié** (copie).
+- [ ] **⏸️ EN ATTENTE feu vert explicite** — `RAILWAY_DATABASE_URL` (Vercel **prod**
+      scope) = URL POOLÉE prod (`tokaido…:30052`) + `RAILWAY_DB_CA_CERT` (cert PgBouncer,
+      `RAILWAY_DB_TLS_SERVERNAME=pgbouncer`, jamais insecure) ; schéma/restore via
+      l'UNPOOLED prod (`…:59595`).
+- [ ] **⏸️ EN ATTENTE feu vert explicite et SÉPARÉ** — flip `DB_BACKEND=railway`
+      (allowlist owner d'abord) sur Vercel PROD. **NON fait aujourd'hui.**
 - [ ] Monter `DB_BACKEND_ALLOWLIST` progressivement (owner → %, → global) AVANT de
       basculer le défaut serveur, exactement comme le rollout DATA_LAYER (Edge Config).
 - [ ] Plan de rollback : `DB_BACKEND=supabase` (flip instantané, données Supabase intactes).
