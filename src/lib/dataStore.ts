@@ -35,6 +35,7 @@ import {
   fetchPendingSuggestionsDirect, countPendingSuggestionsDirect, addSuggestionDirect, resolveSuggestionDirect,
   type PersonComment, type PersonSuggestion,
 } from '@/lib/collaboration';
+import { inviteMemberDirect, type InviteResult, type MemberRole } from '@/lib/sharing';
 import { railwayConfigured } from '@/lib/railwayDb';
 import type { FamilyTree, Person, Relationship } from '@/types';
 
@@ -75,6 +76,9 @@ export interface DataStore {
   /** tree_id d'une suggestion (la route resolve vérifie ensuite isTreeOwner). */
   getSuggestionTreeId(id: string): Promise<string | null>;
 
+  /** Inviter/ré-inviter un membre par email (upsert tree_members). AuthZ owner par la route. */
+  inviteMember(treeId: string, email: string, role: MemberRole, invitedBy: string): Promise<InviteResult | null>;
+
   // RPC data-plane (membres/invitations) forwardées sous l'identité de l'appelant.
   rpc(name: string, args: Record<string, unknown>, caller: Caller): Promise<RpcResult>;
 }
@@ -110,6 +114,9 @@ export class SupabaseStore implements DataStore {
   async getSuggestionTreeId(id: string) {
     const { data } = await this.client.from('person_suggestions').select('tree_id').eq('id', id).maybeSingle();
     return (data?.tree_id as string | undefined) ?? null;
+  }
+  inviteMember(treeId: string, email: string, role: MemberRole, invitedBy: string) {
+    return inviteMemberDirect({ treeId, email, role, invitedBy }, this.client);
   }
   async rpc(name: string, args: Record<string, unknown>) {
     const { data, error } = await this.client.rpc(name, args);

@@ -148,6 +148,16 @@ describeIntegration('Railway real-cloud store', () => {
       expect(rem.error).toBeNull();
       const after = await store.rpc('get_tree_members', { p_tree_id: cTreeId }, caller);
       expect((after.data as any[]).length).toBe(1);
+
+      // inviteMember (migré derrière le DataStore) — email normalisé, token émis,
+      // et le membre apparaît ensuite via get_tree_members (même backend Railway).
+      const invited = await store.inviteMember(cTreeId, 'Invited-New@Suimini.test', 'editor', caller.userId);
+      expect(invited?.member.email).toBe('invited-new@suimini.test');
+      expect(invited?.member.role).toBe('editor');
+      expect(invited?.member.status).toBe('pending');
+      expect(invited?.token).toBeTruthy();
+      const list2 = await store.rpc('get_tree_members', { p_tree_id: cTreeId }, caller);
+      expect((list2.data as any[]).some(m => m.email === 'invited-new@suimini.test' && m.role === 'editor')).toBe(true);
     } finally {
       await store.deleteTree(cTreeId, caller.userId);
     }

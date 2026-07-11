@@ -18,6 +18,7 @@ import {
 import { type AuthzDataProvider, type Caller, type Permission, type MembershipStatus } from '@/lib/authz';
 import type { PersonComment, PersonSuggestion } from '@/lib/collaboration';
 import type { RpcResult, AddSuggestionInput } from '@/lib/dataStore';
+import type { InviteResult, MemberRole, TreeMember } from '@/lib/sharing';
 import type { FamilyTree, Person, Relationship } from '@/types';
 import type { PoolClient } from 'pg';
 
@@ -314,6 +315,25 @@ export class RailwayStore {
     return rows[0]?.tree_id ?? null;
   }
 
+  async inviteMember(treeId: string, email: string, role: MemberRole, invitedBy: string): Promise<InviteResult | null> {
+    const clean = email.trim().toLowerCase();
+    if (!clean) return null;
+    const token = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const rows = await query<any>(
+      `insert into tree_members (tree_id, email, role, invited_by, status, token, expires_at)
+       values ($1,$2,$3,$4,'pending',$5,$6)
+       on conflict (tree_id, email) do update set
+         role = excluded.role, invited_by = excluded.invited_by, status = 'pending',
+         token = excluded.token, expires_at = excluded.expires_at
+       returning *`,
+      [treeId, clean, role, invitedBy, token, expiresAt],
+    );
+    const r = rows[0];
+    if (!r) return null;
+    return { member: mapMemberRow(r), token: r.token ?? token };
+  }
+
   // ── RPC data-plane (membres/invitations) ─────────────────────────────────────
   // Miroir des RPC SECURITY DEFINER 0013 : `auth.uid()` remplacé par `caller`.
 
@@ -403,5 +423,11 @@ function mapSuggestionRow(r: any): PersonSuggestion {
   return {
     id: r.id, treeId: r.tree_id, personId: r.person_id, authorId: r.author_id, authorName: r.author_name,
     field: r.field, currentValue: r.current_value, suggestedValue: r.suggested_value, status: r.status, createdAt: r.created_at,
+  };
+}
+function mapMemberRow(r: any): TreeMember {
+  return {
+    id: r.id, treeId: r.tree_id, userId: r.user_id, email: r.email, role: r.role,
+    invitedBy: r.invited_by, invitedAt: r.invited_at, acceptedAt: r.accepted_at, status: r.status,
   };
 }

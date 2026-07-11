@@ -3,6 +3,7 @@
 // (errors are swallowed so the single-owner app keeps working).
 import { supabase } from './supabase';
 import { callRpc } from '@/lib/rpcClient';
+import { getDataLayer } from '@/lib/dataClient';
 
 export type MemberRole = 'viewer' | 'editor' | 'admin';
 export type MemberStatus = 'pending' | 'accepted' | 'declined';
@@ -63,8 +64,16 @@ export async function fetchMembers(treeId: string): Promise<TreeMember[]> {
   return (data as MemberRow[]).map(mapRow);
 }
 
-/** Invite (or re-invite) by email. Returns the row or null.
- *  Optional inviterName + treeName trigger an invitation email via /api/send-invite-email. */
+/** Résultat d'une invitation : le membre créé + son token (pour l'email d'invitation). */
+export interface InviteResult { member: TreeMember; token: string }
+
+/** Invite (or re-invite) by email. Returns the member or null.
+ *  Optional inviterName + treeName trigger an invitation email via /api/send-invite-email.
+ *
+ *  Phase 1 — DERRIÈRE LE DATASTORE (comme collaboration.ts) : cœur `*Direct(client)`
+ *  (navigateur mode 'direct' + route serveur) + `*ViaApi()` (navigateur mode 'api').
+ *  L'email d'invitation (effet de bord) reste dans ce wrapper navigateur. `invitedBy`
+ *  n'est PAS envoyé en mode api — le serveur le dérive de la session. */
 export async function inviteMember(
   treeId: string,
   email: string,
@@ -77,41 +86,60 @@ export async function inviteMember(
   const clean = email.trim().toLowerCase();
   if (!clean) return null;
 
-  const token = crypto.randomUUID();
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-
-  const { data, error } = await supabase
-    .from('tree_members')
-    .upsert(
-      {
-        tree_id: treeId,
-        email: clean,
-        role,
-        invited_by: invitedBy,
-        status: 'pending',
-        token,
-        expires_at: expiresAt,
-      },
-      { onConflict: 'tree_id,email' },
-    )
-    .select('*')
-    .single();
-  if (error || !data) return null;
+  const result = getDataLayer() === 'api'
+    ? await inviteMemberViaApi(treeId, clean, role)
+    : await inviteMemberDirect({ treeId, email: clean, role, invitedBy }, supabase);
+  if (!result) return null;
 
   // Send invitation email — fire-and-forget, never blocks the invitation itself.
   if (inviterName && treeName) {
-    const row = data as MemberRow & { token?: string };
-    const emailToken = row.token ?? token;
     fetch('/api/send-invite-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: clean, inviterName, treeName, token: emailToken }),
+      body: JSON.stringify({ email: clean, inviterName, treeName, token: result.token }),
     }).catch((err: unknown) => {
       console.warn('[sharing] Échec envoi email invitation:', err);
     });
   }
 
-  return mapRow(data as MemberRow);
+  return result.member;
+}
+
+/** Cœur direct (navigateur mode 'direct' + routes serveur avec client appelant).
+ *  Génère token + expiration ; upsert sur (tree_id, email). AuthZ = RLS/route. */
+export async function inviteMemberDirect(
+  input: { treeId: string; email: string; role: MemberRole; invitedBy: string | null },
+  client: typeof supabase = supabase,
+): Promise<InviteResult | null> {
+  if (!client) return null;
+  const clean = input.email.trim().toLowerCase();
+  if (!clean) return null;
+  const token = crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await client
+    .from('tree_members')
+    .upsert(
+      { tree_id: input.treeId, email: clean, role: input.role, invited_by: input.invitedBy, status: 'pending', token, expires_at: expiresAt },
+      { onConflict: 'tree_id,email' },
+    )
+    .select('*')
+    .single();
+  if (error || !data) return null;
+  return { member: mapRow(data as MemberRow), token: (data as MemberRow & { token?: string }).token ?? token };
+}
+
+/** Chemin API : POST /api/data/collaboration/members. `invitedBy` dérivé de la session. */
+async function inviteMemberViaApi(treeId: string, email: string, role: MemberRole): Promise<InviteResult | null> {
+  try {
+    const res = await fetch('/api/data/collaboration/members', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { accept: 'application/json', 'content-type': 'application/json' },
+      body: JSON.stringify({ treeId, email, role }),
+    });
+    if (!res.ok) return null;
+    const j = (await res.json()) as { invite?: InviteResult | null };
+    return j.invite ?? null;
+  } catch { return null; }
 }
 
 /** Members of a tree, manager view (owner OR accepted admin). Via SECURITY DEFINER RPC. */
