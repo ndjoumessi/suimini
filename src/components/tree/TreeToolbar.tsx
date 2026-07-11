@@ -64,12 +64,15 @@ export default function TreeToolbar({
 
   return (
     <div style={{ minHeight: '44px', padding: '5px 12px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '6px', rowGap: '5px', flexWrap: 'wrap', flexShrink: 0 }}>
-      {/* Tree name: spacer that pushes controls right on desktop. Hidden on phones
-          (the name already shows in the mobile header). */}
-      {!isMobile && (
+      {/* Nom d'arbre : sur DESKTOP la sidebar l'affiche déjà (« Arbre actif ») → on
+          évite le doublon avec un simple spacer flex neutre qui pousse les contrôles
+          à droite. Sur MOBILE (pas de sidebar visible) on garde le nom comme titre. */}
+      {isMobile ? (
         <h2 className="serif" style={{ margin: 0, fontSize: '1rem', color: 'var(--text)', flex: 1, minWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {treeName}
         </h2>
+      ) : (
+        <div aria-hidden="true" style={{ flex: 1, minWidth: '8px' }} />
       )}
 
       {/* View toggle: Focus (3 generations) vs Complète (full pan/zoom tree) */}
