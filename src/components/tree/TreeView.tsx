@@ -383,6 +383,20 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
   const genColorTV = (g: number) =>
     g <= 1 ? 'var(--accent)' : g <= 3 ? '#7fa0c6' : g <= 5 ? '#7fae94' : '#c490a6';
 
+  // ── Repères de génération (vue Complète verticale) ──────────────────────────
+  // Une entrée par RANGÉE horizontale de nœuds (y distinct) avec le numéro de
+  // génération canonique du premier nœud de la rangée. Rendus en screen-space
+  // sur le bord gauche, alignés sur les bandes — ils suivent le pan vertical
+  // mais restent lisibles à gauche quel que soit le pan horizontal.
+  const genRows = (() => {
+    const map = new Map<number, number>();
+    for (const n of nodes) {
+      const key = Math.round(n.y);
+      if (!map.has(key)) map.set(key, genAbs(n));
+    }
+    return [...map.entries()].map(([y, g]) => ({ y, g }));
+  })();
+
   // ---- Fan chart (ancestor pedigree) layout ----
   const MAX_FAN_GEN = 4;
   const FAN_R0 = 54;
@@ -1165,6 +1179,23 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
               );
             })}
             </g>{/* /tv-content-enter (root-change fade) */}
+          </g>
+
+          {/* Repères de génération — screen-space (hors du <g> pan/zoomé) : petits
+              labels mono discrets sur le bord gauche, alignés verticalement sur
+              chaque bande de génération, dans la couleur de génération partagée. */}
+          <g aria-hidden="true" style={{ pointerEvents: 'none' }}>
+            {genRows.map(({ y, g }) => {
+              const sy = offset.y + scale * (y + NODE_H / 2);
+              if (sy < 14 || sy > viewport.h - 8) return null;
+              return (
+                <text key={y} x={10} y={sy} dominantBaseline="middle"
+                  fontFamily="var(--font-mono)" fontSize={9.5} fontWeight={700}
+                  letterSpacing="0.08em" fill={genColorTV(g)} opacity={0.75}>
+                  {t('genAbbr')} {g + 1}
+                </text>
+              );
+            })}
           </g>
         </svg>
         )}
