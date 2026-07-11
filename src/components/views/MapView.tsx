@@ -38,13 +38,13 @@ function buildAvatar(person: Person): string {
   if (person.profilePhoto) {
     return `<img src="${person.profilePhoto}" alt="" style="width:100%;height:100%;object-fit:cover;" />`;
   }
-  return `<span style="font-size:13px;font-weight:700;color:var(--accent);font-family:Inter,sans-serif;">${initialsOf(person)}</span>`;
+  return `<span style="font-size:13px;font-weight:700;color:var(--accent);font-family:var(--font-body), sans-serif;">${initialsOf(person)}</span>`;
 }
 
 function makeIcon(group: MarkerGroup): L.DivIcon {
   const count = group.points.length;
   if (count > 1) {
-    const html = `<div style="width:42px;height:42px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;border:3px solid var(--bg-card);box-shadow:0 2px 8px rgba(0,0,0,0.3);font-family:Inter,sans-serif;">${count}</div>`;
+    const html = `<div style="width:42px;height:42px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;border:3px solid var(--bg-card);box-shadow:0 2px 8px rgba(0,0,0,0.3);font-family:var(--font-body), sans-serif;">${count}</div>`;
     return L.divIcon({ html, className: 'suimini-marker', iconSize: [42, 42], iconAnchor: [21, 21], popupAnchor: [0, -21] });
   }
   const pt = group.points[0];
