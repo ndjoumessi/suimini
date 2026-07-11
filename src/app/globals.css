@@ -4,8 +4,8 @@
    MODERN HERITAGE · dark by design (ported from the constellation landing)
    Near-black canvas · cream ink · muted gold accent · amber-glow on hover.
    Fonts loaded via next/font (layout.tsx) and exposed as CSS variables:
-     --font-display  Spectral             (titles, names, key numbers)
-     --font-body     Libre Baskerville    (body)
+     --font-display  Fraunces             (titles, names, key numbers)
+     --font-body     Public Sans          (body)
      --font-mono     IBM Plex Mono        (dates, labels, IDs)
    Dark-only: `:root` IS the theme; `data-theme` stays "dark".
    Variable + class names are kept stable so the system cascades app-wide.

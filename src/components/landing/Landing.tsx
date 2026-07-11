@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Spectral } from 'next/font/google';
+import { Fraunces } from 'next/font/google';
 import { useTranslations, useLocale } from 'next-intl';
 import { useAuth } from '@/hooks/useAuth';
 import AuthModal from '@/components/AuthModal';
@@ -11,13 +11,13 @@ import { LOCALES, type Locale } from '@/i18n/config';
 /* =====================================================================
    Suimini — Landing « La constellation des vôtres »
    Drenched midnight. Chaque ancêtre une étoile, chaque lien une ligne de
-   lumière. Une seule famille typographique (Spectral), accent ambre chaud.
+   lumière. Une seule famille typographique (Fraunces), accent ambre chaud.
    Réécrite from scratch. Scopée à la landing (aucun token global modifié).
    ===================================================================== */
 
-const serif = Spectral({
+const serif = Fraunces({
   subsets: ['latin'],
-  weight: ['200', '300', '400', '500', '600', '700'],
+  weight: 'variable', // axe complet (100–900) — le hero utilise des graisses fines (200/300)
   style: ['normal', 'italic'],
   variable: '--lp-serif',
   display: 'swap',
