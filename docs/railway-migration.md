@@ -1,7 +1,9 @@
 # Migration Railway — plan & prérequis (Phase 1)
 
 > État : **STAGING COMPLET** (démarrée 2026-07-11 ; canary UI complet CLOS le 2026-07-11,
-> pooler PgBouncer+TLS inclus). Reste avant prod : les prérequis cutover §5.
+> pooler PgBouncer+TLS inclus). **Infra Railway PROD provisionnée + vérifiée** (2026-07-11 :
+> Postgres + PgBouncer + client-TLS, schéma vide, AUCUNE donnée, aucun lien Vercel/Supabase
+> prod). Reste avant cutover : brancher Vercel prod + copier les données (§5, §7).
 > **NE PAS cutover en prod** tant que les prérequis bloquants ci-dessous ne sont pas levés.
 
 ## 1. Objectif & périmètre
@@ -18,7 +20,8 @@ push) sur Supabase. S'appuie sur la frontière Phase 0 `/api/data/*`.
   + `inviteMember` (POST `/api/data/collaboration/members`).
 - **Reste sur Supabase (par conception)** : auth, `profiles`, RPC admin, et
   **`fetchMyMemberships`** (`useAuth` — « quels arbres partagés AVEC moi », lecture
-  d'accès, hors périmètre Phase 0). Décision à confirmer avant cutover.
+  d'accès, fail-open, hors périmètre Phase 0). **Décision CLOSE (2026-07-11) : reste
+  sur Supabase** — voir §5.3 (avec le caveat cross-backend).
 
 ## 2. Architecture
 
@@ -71,18 +74,34 @@ intra-instance).
 Ces points ne sont **PAS** optionnels — sans eux, la prod échouerait sous une charge
 d'usage **normal multi-utilisateurs** (pas seulement sous test intensif).
 
-1. **Pooler transaction-mode devant Railway (BLOQUANT).** Voir §6. Sans lui,
-   l'épuisement de connexions (§4) se reproduira en prod dès plusieurs utilisateurs
-   concurrents. La mitigation `max:1` n'est qu'un pansement pour le canary.
-2. **TLS durci (BLOQUANT).** Le canary tourne avec `RAILWAY_DB_INSECURE_SSL=1`
-   (staging) OU `RAILWAY_DB_CA_CERT` (CA épinglé). En prod → **`RAILWAY_DB_CA_CERT`
-   uniquement** (jamais le flag insecure). Voir `railwayDb.ts` `sslConfig()`.
-3. **Décision `fetchMyMemberships`** : le migrer derrière le DataStore, ou acter
-   qu'il reste sur Supabase (implique que `tree_members` doit exister/être cohérent
-   des DEUX côtés, ou que ce chemin lit un backend distinct — à trancher).
+1. **Pooler transaction-mode devant Railway (BLOQUANT).** Voir §6 / §6ter. Sans lui,
+   l'épuisement de connexions (§4) se reproduit dès plusieurs utilisateurs concurrents.
+   → **✅ RÉPLIQUÉ + VÉRIFIÉ sur l'env Railway PROD (2026-07-11)** : env `production`
+   dupliqué depuis `staging` (Postgres + PgBouncer + client-TLS start-command + cert) ;
+   schéma appliqué (**10 tables vides, AUCUNE donnée**) ; `sslmode=require` OK (cert
+   `CN=pgbouncer`) ; smoke complet OK à travers le pooler prod en TLS CA-épinglé ;
+   connexions saines (3/100). Prod pooled = `tokaido…:30052`, direct/unpooled = `…:59595`.
+   Reste au cutover : brancher le Vercel PROD sur l'URL POOLÉE + `RAILWAY_DB_CA_CERT`.
+2. **TLS durci (BLOQUANT).** En prod → **`RAILWAY_DB_CA_CERT`** (cert PgBouncer) +
+   `RAILWAY_DB_TLS_SERVERNAME=pgbouncer`, **jamais** `RAILWAY_DB_INSECURE_SSL`. Déjà
+   la posture de l'infra prod vérifiée ci-dessus. (Idéalement : cert PgBouncer PROPRE
+   à la prod, distinct de celui de staging — rotation = §6ter.)
+3. **Décision `fetchMyMemberships` — ✅ CLOSE (2026-07-11) : reste sur Supabase.**
+   Raison (comme Phase 0) : liste d'accès en LECTURE (« quels arbres partagés avec
+   moi »), fail-open (`error → []`), pas du contenu d'arbre.
+   ⚠️ **Caveat cross-backend à connaître** : `tree_members` est ÉCRIT sur Railway (mode
+   `api`+`railway`) alors que `fetchMyMemberships` LIT Supabase. Tant que le rollout est
+   **owner-only** (allowlist = propriétaire), sans effet — le propriétaire voit SES
+   arbres par `owner_id`, pas par appartenance. **MAIS** dès qu'on élargit à des
+   invités : un membre invité côté Railway ne serait pas vu par un `fetchMyMemberships`
+   qui lit Supabase (et réciproquement selon le backend de chaque user). À RÉSOUDRE
+   avant tout rollout multi-utilisateur avec partage réel (migrer aussi le chemin
+   membership, OU cohorter le rollout par arbre entier, OU double-écriture). Ce n'est
+   PAS un blocage du canary owner-only actuel.
 4. **Parité données au moment du cutover** : re-copier l'état Supabase le plus à jour
    → Railway avec vérification de comptes (source vs destination), l'agent n'ayant
-   pas les creds DB Supabase (dump fourni par l'utilisateur).
+   pas les creds DB Supabase (dump fourni par l'utilisateur). **À faire au cutover
+   réel uniquement** (un dump anticipé serait périmé).
 
 ## 6. Pooling Railway — option retenue : PgBouncer MANAGÉ
 
@@ -160,18 +179,21 @@ transaction-mode compris.
 - **Rollback** : retirer la Custom Start Command + les `CLIENT_TLS_*` du PgBouncer,
   et repointer `RAILWAY_DATABASE_URL` sur l'endpoint direct.
 
-Le prérequis #1 (pooler+TLS) est donc **levé en staging**. Reste à **répliquer cette
-config PgBouncer sur l'environnement de prod** au moment du cutover.
+Le prérequis #1 (pooler+TLS) est **levé en staging ET répliqué+vérifié sur l'env
+Railway PROD** (2026-07-11, cf. §5.1) — infra prod prête (schéma vide, aucune donnée).
 
 ## 7. Checklist cutover (à dérouler quand décidé — pas aujourd'hui)
 
-- [ ] PgBouncer transaction-mode activé (staging d'abord, re-tester le canary).
-- [ ] `RAILWAY_DATABASE_URL` (prod scope) = `DATABASE_PUBLIC_URL` **poolé** ;
-      schéma/restore via `DATABASE_PUBLIC_UNPOOLED_URL`.
-- [ ] `RAILWAY_DB_CA_CERT` posé (prod), `RAILWAY_DB_INSECURE_SSL` **absent**.
-- [ ] `railwayDb.ts` `pool max` remonté (ex. 5-10) une fois le pooler en place.
-- [ ] `fetchMyMemberships` tranché.
-- [ ] Re-copie données Supabase→Railway + vérif comptes (source vs destination).
+- [x] PgBouncer transaction-mode + client-TLS activé (staging **et** prod). ✅ 2026-07-11
+- [x] Env Railway `production` provisionné (Postgres + PgBouncer + TLS), schéma appliqué
+      (tables vides). ✅ 2026-07-11
+- [x] `fetchMyMemberships` tranché → reste sur Supabase (§5.3 + caveat cross-backend). ✅
+- [ ] `RAILWAY_DATABASE_URL` (Vercel **prod** scope) = URL POOLÉE prod (`tokaido…:30052`) ;
+      schéma/restore via l'UNPOOLED prod (`…:59595`).
+- [ ] `RAILWAY_DB_CA_CERT` (prod) posé, `RAILWAY_DB_INSECURE_SSL` **absent** (déjà la
+      posture staging ; idéalement un cert PgBouncer propre à la prod).
+- [ ] Re-copie données Supabase→Railway PROD + vérif comptes (source vs destination) —
+      **au cutover réel uniquement** (dump anticipé = périmé).
 - [ ] Monter `DB_BACKEND_ALLOWLIST` progressivement (owner → %, → global) AVANT de
       basculer le défaut serveur, exactement comme le rollout DATA_LAYER (Edge Config).
 - [ ] Plan de rollback : `DB_BACKEND=supabase` (flip instantané, données Supabase intactes).
