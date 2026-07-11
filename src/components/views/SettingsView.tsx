@@ -55,6 +55,7 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
   const [resyncing, setResyncing] = useState(false);
   const [savingName, setSavingName] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [clearCacheOpen, setClearCacheOpen] = useState(false);
   const [confirmText, setConfirmText] = useState('');
   const [busy, setBusy] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
@@ -138,7 +139,6 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
     toast(t('toastExported'));
   }
   function clearCache() {
-    if (!window.confirm(t('confirmClearCache'))) return;
     clearLocalSuimini();
     window.location.href = '/';
   }
@@ -304,7 +304,7 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
                   <Pencil size={14} aria-hidden="true" /> {t('bulkEdit')}
                 </button>
               )}
-              <button className="btn btn-ghost btn-sm set-danger-ghost" style={{ gap: '6px' }} onClick={clearCache}>
+              <button className="btn btn-ghost btn-sm set-danger-ghost" style={{ gap: '6px' }} onClick={() => setClearCacheOpen(true)}>
                 <Trash2 size={14} aria-hidden="true" /> {t('clearCache')}
               </button>
             </div>
@@ -360,6 +360,27 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
                 <button className="btn btn-ghost btn-sm" onClick={() => { setDeleteOpen(false); setConfirmText(''); }}>{t('cancel')}</button>
                 <button className="btn btn-danger btn-sm" onClick={deleteAccount} disabled={confirmText.trim() !== deleteWord.trim() || busy}>
                   {busy ? t('deleting') : t('deletePermanent')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clear-cache confirmation modal (remplace window.confirm natif) */}
+      {clearCacheOpen && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setClearCacheOpen(false)}>
+          <div role="dialog" aria-modal="true" aria-label={t('clearCache')} className="modal" style={{ maxWidth: '420px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: 'var(--bw) solid var(--border-strong)' }}>
+              <h2 className="serif" style={{ margin: 0, fontSize: '1.1rem', color: 'var(--danger)' }}>{t('clearCache')}</h2>
+              <button onClick={() => setClearCacheOpen(false)} aria-label={t('cancel')} className="btn btn-ghost btn-sm btn-icon"><X size={16} /></button>
+            </div>
+            <div style={{ padding: '18px 20px 20px' }}>
+              <p style={{ fontSize: '13px', lineHeight: 1.6, margin: '0 0 14px', color: 'var(--text)' }}>{t('confirmClearCache')}</p>
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                <button className="btn btn-ghost btn-sm" onClick={() => setClearCacheOpen(false)} autoFocus>{t('cancel')}</button>
+                <button className="btn btn-danger btn-sm" onClick={clearCache} style={{ gap: '6px' }}>
+                  <Trash2 size={14} aria-hidden="true" /> {t('clearCache')}
                 </button>
               </div>
             </div>

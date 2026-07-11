@@ -29,7 +29,7 @@ export default function DemoBanner({ onCreateAccount, onExit }: { onCreateAccoun
         .demo-banner-ico { color: var(--accent); flex-shrink: 0; }
         .demo-banner-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .demo-banner-text strong { font-family: var(--font-body); font-size: 12px; font-weight: 700; color: var(--ink); }
-        .demo-banner-note { font-family: var(--font-mono); font-size: 11px; color: #a98f4e; }
+        .demo-banner-note { font-family: var(--font-mono); font-size: 11px; color: var(--accent-muted); }
 
         /* Quit — ghost tiny */
         .demo-banner-exit { flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px; background: transparent; color: var(--text-muted); border: none; font-family: var(--font-body); font-size: 12px; cursor: pointer; transition: color var(--t-fast); white-space: nowrap; }

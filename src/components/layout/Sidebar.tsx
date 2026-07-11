@@ -351,7 +351,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sb-logo { width: 28px; height: 28px; flex-shrink: 0; display: inline-flex; }
         .sb-brand-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.05; }
         .sb-wordmark { font-size: 14px; font-weight: 600; font-style: italic; letter-spacing: 0.01em; color: var(--ink); white-space: nowrap; }
-        .sb-tagline { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.13em; text-transform: uppercase; color: #a98f4e; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sb-tagline { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.13em; text-transform: uppercase; color: var(--accent-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         /* Active tree block */
         .sb-tree {
@@ -383,7 +383,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sb-nav::-webkit-scrollbar-thumb:hover { background: var(--accent); }
         .sb-group { padding: 2px 0; }
         .sb-group + .sb-group { border-top: 1px solid var(--border); }
-        .sb-section { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.18em; text-transform: uppercase; color: #a98f4e; padding: 2px 16px 2px; }
+        .sb-section { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent-muted); padding: 2px 16px 2px; }
         .sb-item {
           position: relative; width: 100%; display: flex; align-items: center; gap: 12px; min-height: 34px;
           padding: 4px 16px; border: none; background: transparent; cursor: pointer; line-height: 1.3;
@@ -426,20 +426,20 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sb-acct-main:hover { background: var(--bg-card); }
         .sb-avatar { width: 28px; height: 28px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--accent); color: var(--ink-on-accent); font-family: var(--font-display); font-size: 12px; font-weight: 700; }
         .sb-acct-name { flex-shrink: 0; max-width: 80px; font-family: var(--font-body); font-size: 12px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .sb-acct-email { min-width: 0; max-width: 100px; font-family: var(--font-mono); font-size: 10px; color: #a98f4e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .sb-acct-email { min-width: 0; max-width: 100px; font-family: var(--font-mono); font-size: 10px; color: var(--accent-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .sb-logout { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex-shrink: 0; border: none; background: transparent; color: var(--text-muted); cursor: pointer; transition: background var(--t-fast), color var(--t-fast); }
         .sb-logout:hover { background: var(--bg-card); color: var(--danger); }
         /* sync line — one row, everything inline */
-        .sb-syncline { display: flex; align-items: center; gap: 5px; height: 22px; width: 100%; padding: 0 3px; background: none; border: none; font-family: var(--font-mono); font-size: 9px; color: #a98f4e; overflow: hidden; }
+        .sb-syncline { display: flex; align-items: center; gap: 5px; height: 22px; width: 100%; padding: 0 3px; background: none; border: none; font-family: var(--font-mono); font-size: 9px; color: var(--accent-muted); overflow: hidden; }
         button.sb-syncline { cursor: pointer; transition: opacity var(--t-fast); }
         button.sb-syncline:hover:not(:disabled) { opacity: 0.8; }
         button.sb-syncline:disabled { cursor: default; }
-        .sb-sync-ico { flex-shrink: 0; color: #a98f4e; }
+        .sb-sync-ico { flex-shrink: 0; color: var(--accent-muted); }
         .sb-sync-word { font-weight: 700; flex-shrink: 0; }
         .sb-sync-ok { color: #5B8A6E; }
         .sb-sync-busy { color: #c98a3a; }
         .sb-sync-bad { color: var(--danger); }
-        .sb-sync-dim { color: #a98f4e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sb-sync-dim { color: var(--accent-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .sb-sync-pres { display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; }
         .sb-demo { font-family: var(--font-mono); font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-text); }
         /* back link — discreet, lowercase */

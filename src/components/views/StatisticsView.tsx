@@ -8,6 +8,7 @@ import PersonAvatar from '../person/PersonAvatar';
 
 interface Props {
   tree: FamilyTree;
+  onSelectPerson?: (id: string) => void;
 }
 
 interface DecadeBucket { decade: number; label: string; count: number }
@@ -160,7 +161,7 @@ function RankRow({ rank, label, value, max, tone }: { rank: number; label: strin
   );
 }
 
-export default function StatisticsView({ tree }: Props) {
+export default function StatisticsView({ tree, onSelectPerson }: Props) {
   const t = useTranslations('statistics');
   const stats = useMemo(() => computeTreeStats(tree), [tree]);
 
@@ -306,8 +307,12 @@ export default function StatisticsView({ tree }: Props) {
 
         /* notable people */
         .sv-notable { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
-        .sv-person { background: var(--bg-card); border: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        .sv-person { background: var(--bg-card); border: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; gap: 12px; font-family: inherit; text-align: left; color: inherit; cursor: pointer; transition: border-color var(--t-fast) ease, box-shadow var(--t-fast) ease, transform var(--t-fast) var(--ease-out); }
+        .sv-person:hover:not(:disabled) { border-color: var(--accent); box-shadow: var(--shadow-sm); transform: translateY(-2px); }
+        .sv-person:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        .sv-person:disabled { cursor: default; }
         .sv-person-founder { background: #2a2218; border-color: var(--accent); }
+        .sv-person-founder:hover:not(:disabled) { box-shadow: var(--shadow-accent); }
         .sv-person-head { display: flex; align-items: center; gap: 14px; }
         .sv-person-name { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; color: var(--ink); line-height: 1.15; }
         .sv-person-dates { font-family: var(--font-mono); font-size: 12px; color: var(--accent-text); margin-top: 3px; }
@@ -455,7 +460,7 @@ export default function StatisticsView({ tree }: Props) {
           <div className="sv-rule" />
           <div className="sv-notable">
             {stats.oldestPerson && (
-              <div className="sv-person">
+              <button type="button" className="sv-person" onClick={() => onSelectPerson?.(stats.oldestPerson!.id)} disabled={!onSelectPerson}>
                 <div className="sv-person-head">
                   <PersonAvatar person={stats.oldestPerson} size={48} />
                   <div>
@@ -466,10 +471,10 @@ export default function StatisticsView({ tree }: Props) {
                   </div>
                 </div>
                 <span className="sv-person-role">{t('doyen')}</span>
-              </div>
+              </button>
             )}
             {stats.youngestPerson && (
-              <div className="sv-person">
+              <button type="button" className="sv-person" onClick={() => onSelectPerson?.(stats.youngestPerson!.id)} disabled={!onSelectPerson}>
                 <div className="sv-person-head">
                   <PersonAvatar person={stats.youngestPerson} size={48} />
                   <div>
@@ -480,10 +485,10 @@ export default function StatisticsView({ tree }: Props) {
                   </div>
                 </div>
                 <span className="sv-person-role">{t('benjamin')}</span>
-              </div>
+              </button>
             )}
             {founder && (
-              <div className="sv-person sv-person-founder">
+              <button type="button" className="sv-person sv-person-founder" onClick={() => onSelectPerson?.(founder.id)} disabled={!onSelectPerson}>
                 <div className="sv-person-head">
                   <PersonAvatar person={founder} size={48} />
                   <div>
@@ -494,7 +499,7 @@ export default function StatisticsView({ tree }: Props) {
                   </div>
                 </div>
                 <span className="sv-person-role"><Crown size={13} aria-hidden="true" /> {t('foundingAncestor')}</span>
-              </div>
+              </button>
             )}
           </div>
         </section>

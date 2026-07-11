@@ -39,6 +39,7 @@
   --accent-hover: #dcbb5e;
   --accent-text: #d4b257;     /* gold text on dark, ≥4.5:1 */
   --accent-light: rgba(201, 168, 76, 0.14);
+  --accent-muted: #a98f4e;    /* gold atténué — eyebrows/taglines mono, ≥4.5:1 sur --bg & --bg-card */
   --ink-on-accent: #0d0d0d;   /* texte SUR le fond or (8.5:1) — jamais de blanc sur or (2.28:1) */
 
   /* Signals (information, not decoration) — tuned for dark. These are the INITIAL

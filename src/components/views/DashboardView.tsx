@@ -367,7 +367,7 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
           padding: 20px 24px 20px; display: flex; flex-direction: column;
           transition: box-shadow var(--t-base) var(--ease-out), transform var(--t-base) var(--ease-out), background var(--t-base) var(--ease-out); }
         .dash-stat:hover { background: #252535; box-shadow: var(--shadow-accent); transform: translateY(-2px); }
-        .dash-stat-icon { color: #a98f4e; margin-bottom: 13px; }
+        .dash-stat-icon { color: var(--accent-muted); margin-bottom: 13px; }
         .dash-stat-num { font-family: var(--font-display); font-weight: 700; line-height: 0.95; font-size: clamp(2.6rem, 5vw, 3.5rem); color: var(--accent); letter-spacing: -0.02em; }
         .dash-stat-num small { font-size: 1.1rem; color: var(--text-muted); font-weight: 600; margin-left: 5px; }
         .dash-stat-label { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-muted); margin-top: 10px; }

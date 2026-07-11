@@ -647,7 +647,7 @@ export default function SuiminiApp() {
             )}
             {view === 'birthdays' && <BirthdaysView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} />}
             {view === 'ancestors' && <AncestorsView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} />}
-            {view === 'statistics' && <StatisticsView tree={store.activeTree ?? emptyTree} />}
+            {view === 'statistics' && <StatisticsView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} />}
             {view === 'settings' && (
               <SettingsView
                 themeId={themeId}

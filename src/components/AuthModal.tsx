@@ -307,7 +307,7 @@ const AUTH_CSS = `
 .auth-head { text-align: center; padding-bottom: 22px; margin-bottom: 24px; border-bottom: 1px solid var(--accent); }
 .auth-brand { display: inline-flex; align-items: center; gap: 11px; }
 .auth-brand-name { font-family: var(--font-display); font-style: italic; font-weight: 500; font-size: 20px; letter-spacing: 0; color: var(--ink); }
-.auth-tagline { margin: 12px 0 0; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #a98f4e; }
+.auth-tagline { margin: 12px 0 0; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-muted); }
 
 /* back link (forgot view) */
 .auth-back { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 14px; padding: 0; background: none; border: none; cursor: pointer; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em; color: var(--text-muted); transition: color 200ms ease; }
@@ -321,7 +321,7 @@ const AUTH_CSS = `
 
 /* fields */
 .auth-field { margin-bottom: 16px; }
-.auth-label { display: block; font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: #a98f4e; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 7px; }
+.auth-label { display: block; font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: var(--accent-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 7px; }
 .auth-input-wrap { position: relative; }
 .auth-input-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
 .auth-input { width: 100%; height: 48px; border: 1px solid var(--border); padding: 0 16px 0 42px; font-size: 15px; font-family: var(--font-body); background: #1A1A24; color: var(--ink); outline: none; transition: border-color 200ms ease, box-shadow 200ms ease; }
@@ -332,7 +332,7 @@ const AUTH_CSS = `
 .auth-eye:hover { color: var(--ink); }
 
 /* forgot link */
-.auth-forgot { display: block; margin: 9px 0 0 auto; padding: 2px; background: none; border: none; cursor: pointer; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.03em; color: #a98f4e; text-align: right; transition: color 200ms ease; }
+.auth-forgot { display: block; margin: 6px 0 0 auto; padding: 6px 4px; min-height: 32px; background: none; border: none; cursor: pointer; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.03em; color: var(--accent-muted); text-align: right; transition: color 200ms ease; }
 .auth-forgot:hover { color: var(--accent-text); }
 
 /* remember */

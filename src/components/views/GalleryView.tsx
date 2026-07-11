@@ -252,7 +252,7 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
         ) : layout === 'grid' ? (
           <div className="gv-grid">
             {photos.map((photo, i) => (
-              <div key={i} className="gv-tile">
+              <div key={`${photo.person.id}-${photo.url}`} className="gv-tile">
                 <button type="button" onClick={() => setSelected(photo)} className="gv-tile-open"
                   aria-label={t('viewPhotoOf', { name: getDisplayName(photo.person) })}>
                   <img src={photo.url} alt={t('photoAlt', { name: getDisplayName(photo.person), n: i + 1 })}
@@ -276,8 +276,8 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
           </div>
         ) : (
           <div className="gv-list">
-            {photos.map((photo, i) => (
-              <div key={i} className="gv-row">
+            {photos.map((photo) => (
+              <div key={`${photo.person.id}-${photo.url}`} className="gv-row">
                 <button type="button" onClick={() => setSelected(photo)} className="gv-row-open"
                   aria-label={t('viewPhotoOf', { name: getDisplayName(photo.person) })}>
                   <img src={photo.url} alt="" loading="lazy" decoding="async"
@@ -409,7 +409,7 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
         .gv-field { display: flex; flex-direction: column; gap: 6px; }
 
         .gv-viewtoggle { display: inline-flex; border: 1px solid var(--border); flex-shrink: 0; }
-        .gv-viewtoggle button { width: 34px; min-height: 36px; display: inline-flex; align-items: center; justify-content: center; background: transparent; border: none; color: var(--text-muted); cursor: pointer; transition: background 150ms, color 150ms; }
+        .gv-viewtoggle button { width: 40px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; background: transparent; border: none; color: var(--text-muted); cursor: pointer; transition: background 150ms, color 150ms; }
         .gv-viewtoggle button + button { border-left: 1px solid var(--border); }
         .gv-viewtoggle button.on { background: var(--accent); color: var(--ink-on-accent); }
         .gv-viewtoggle button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }

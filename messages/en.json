@@ -1150,6 +1150,7 @@
   },
   "timeline": {
     "heading": "Timeline | {name}",
+    "emptyTitle": "No dated events yet",
     "empty": "The timeline will fill in as soon as your relatives have birth dates, death dates, or other events.",
     "eventCount": "{count, plural, =0 {No events} one {# event} other {# events}}",
     "decade": "{decade}s",

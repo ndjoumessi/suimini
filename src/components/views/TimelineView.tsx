@@ -346,7 +346,7 @@ export default function TimelineView({ tree, onSelectPerson }: Props) {
       {/* Body */}
       {isEmpty ? (
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <EmptyState icon={CalendarDays} title={t('empty')} />
+          <EmptyState icon={CalendarDays} title={t('emptyTitle')} description={t('empty')} />
         </div>
       ) : view === 'list' ? (
         /* ─── LIST VIEW — central gold line, alternating event cards ──────── */

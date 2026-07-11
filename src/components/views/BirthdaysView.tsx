@@ -123,8 +123,8 @@ export default function BirthdaysView({ tree, onSelectPerson }: Props) {
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {today.map((a, i) => (
-                <AnniversaryCard key={i} a={a} onSelect={onSelectPerson} typeIcon={typeIcon} typeLabel={typeLabel} typeColor={typeColor} t={t} dateLocale={dateLocale} highlight />
+              {today.map(a => (
+                <AnniversaryCard key={`${a.person.id}-${a.type}-${a.date}`} a={a} onSelect={onSelectPerson} typeIcon={typeIcon} typeLabel={typeLabel} typeColor={typeColor} t={t} dateLocale={dateLocale} highlight />
               ))}
             </div>
           </div>
@@ -145,8 +145,8 @@ export default function BirthdaysView({ tree, onSelectPerson }: Props) {
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t('count', { count: items.length })}</div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {items.map((a, i) => (
-                  <AnniversaryCard key={i} a={a} onSelect={onSelectPerson} typeIcon={typeIcon} typeLabel={typeLabel} typeColor={typeColor} t={t} dateLocale={dateLocale} />
+                {items.map(a => (
+                  <AnniversaryCard key={`${a.person.id}-${a.type}-${a.date}`} a={a} onSelect={onSelectPerson} typeIcon={typeIcon} typeLabel={typeLabel} typeColor={typeColor} t={t} dateLocale={dateLocale} />
                 ))}
               </div>
             </div>

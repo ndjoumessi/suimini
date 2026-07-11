@@ -515,7 +515,7 @@ const CSS = `
 .lp-logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
 .lp-logo-text { display: flex; flex-direction: column; line-height: 1.05; min-width: 0; }
 .lp-logo-name { font-family: var(--lp-serif); font-style: italic; font-weight: 500; font-size: 16px; color: var(--star); }
-.lp-logo-tag { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.14em; text-transform: uppercase; color: #a98f4e; margin-top: 1px; white-space: nowrap; }
+.lp-logo-tag { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-muted); margin-top: 1px; white-space: nowrap; }
 .lp-lang { display: inline-flex; border: 1px solid var(--hair-2); }
 .lp-lang button { appearance: none; background: transparent; border: none; border-left: 1px solid var(--hair-2); cursor: pointer; padding: 5px 9px; font-family: var(--lp-serif); font-size: 12px; font-weight: 500; letter-spacing: 0.06em; color: var(--star-muted); transition: color 0.2s, background 0.2s; }
 .lp-lang button:first-child { border-left: none; }

@@ -338,7 +338,7 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel, rel
 
 const labelStyle: React.CSSProperties = {
   display: 'flex', flexDirection: 'column', gap: '5px',
-  fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: '700', color: '#a98f4e',
+  fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: '700', color: 'var(--accent-muted)',
   textTransform: 'uppercase', letterSpacing: '0.1em'
 };
 
@@ -353,7 +353,7 @@ const PF_CSS = `
 /* sections separated by hairlines, mono gold-muted titles */
 .pf-sec { display: flex; flex-direction: column; gap: 12px; padding: 18px 0; border-top: 1px solid var(--border); }
 .pf-sec-first { border-top: none; padding-top: 4px; }
-.pf-sec-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #a98f4e; }
+.pf-sec-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-muted); }
 
 /* gender toggle */
 .pf-gender { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
@@ -367,7 +367,7 @@ const PF_CSS = `
 /* advanced disclosure */
 .pf-advanced > summary::-webkit-details-marker { display: none; }
 .pf-advanced > summary::marker { content: ''; }
-.pf-summary { cursor: pointer; font-family: var(--font-mono); font-size: 9px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #a98f4e; user-select: none; list-style: none; }
+.pf-summary { cursor: pointer; font-family: var(--font-mono); font-size: 9px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-muted); user-select: none; list-style: none; }
 .pf-summary::before { content: '▸'; margin-right: 6px; color: var(--accent-text); display: inline-block; transition: transform 150ms; }
 .pf-advanced[open] > .pf-summary::before { transform: rotate(90deg); }
 

@@ -1150,6 +1150,7 @@
   },
   "timeline": {
     "heading": "Chronologie | {name}",
+    "emptyTitle": "Aucun événement daté",
     "empty": "La chronologie se remplira dès que vos proches auront des dates de naissance, de décès ou d'autres événements.",
     "eventCount": "{count, plural, =0 {Aucun événement} one {# événement} other {# événements}}",
     "decade": "années {decade}",

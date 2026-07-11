@@ -432,7 +432,7 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         .ft-leg-item { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.04em; color: var(--text-muted); white-space: nowrap; }
         .ft-leg-bar { width: 4px; height: 12px; flex-shrink: 0; }
         .ft-leg-dia { width: 9px; height: 9px; flex-shrink: 0; background: var(--bg); border: 1.5px solid var(--accent); transform: rotate(45deg); }
-        @media (max-width: 560px) { .ft-legend { gap: 10px; padding: 6px 9px; } .ft-leg-item { font-size: 8px; } }
+        @media (max-width: 560px) { .ft-legend { gap: 10px; padding: 6px 9px; } .ft-leg-item { font-size: 9px; } }
 
         @media (prefers-reduced-motion: reduce) {
           .ft-node, .ft-nav, .ft-stage { transition: none !important; }
