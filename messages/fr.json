@@ -113,6 +113,28 @@
     "magicLinkButton": "Connexion par lien magique",
     "successMagicSent": "Lien de connexion envoyé ! Vérifiez votre boîte mail."
   },
+  "resetPassword": {
+    "title": "Nouveau mot de passe",
+    "checkingLink": "Vérification du lien…",
+    "invalidTitle": "Lien invalide ou expiré.",
+    "invalidDesc": "Demandez un nouveau lien de réinitialisation.",
+    "backHome": "Retour à l’accueil",
+    "done": "Mot de passe mis à jour. Redirection…",
+    "passwordPlaceholder": "Min. 8 caractères",
+    "confirmLabel": "Confirmer",
+    "strengthWeak": "Faible",
+    "strengthMedium": "Moyen",
+    "strengthStrong": "Fort",
+    "critLength": "8 caractères",
+    "critUpper": "Majuscule",
+    "critDigit": "Chiffre",
+    "showPassword": "Afficher le mot de passe",
+    "hidePassword": "Masquer le mot de passe",
+    "submit": "Mettre à jour le mot de passe",
+    "submitting": "Mise à jour…",
+    "errorTooShort": "Le mot de passe doit faire au moins 8 caractères.",
+    "errorMismatch": "Les mots de passe ne correspondent pas."
+  },
   "landing": {
     "nav": {
       "how": "Comment ça marche",
@@ -1494,6 +1516,7 @@
     "importing": "Import en cours…",
     "imported": "{count} personnes importées",
     "unsupported": "Format non supporté (.json, .ged, .gedcom)",
+    "errorFormatInvalid": "Format invalide",
     "error": "Erreur :",
     "title": "Import / Export",
     "close": "Fermer",

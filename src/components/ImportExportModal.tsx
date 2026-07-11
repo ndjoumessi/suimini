@@ -64,7 +64,7 @@ export default function ImportExportModal({ tree, onImport, onMerge, onClose, in
       try {
         if (file.name.endsWith('.json')) {
           const imported = JSON.parse(content) as FamilyTree;
-          if (!Array.isArray(imported.persons)) throw new Error('Format invalide');
+          if (!Array.isArray(imported.persons)) throw new Error(tg('errorFormatInvalid'));
           const families = (imported.relationships || []).filter(r => r.type === 'spouse').length;
           setPreview({
             sourceName: file.name.replace(/\.json$/, ''),

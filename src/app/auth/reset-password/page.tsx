@@ -10,6 +10,7 @@ import { BrandLockup } from '@/components/Brand';
 export default function ResetPasswordPage() {
   const router = useRouter();
   const tToast = useTranslations('toasts');
+  const t = useTranslations('resetPassword');
   const [ready, setReady] = useState<'checking' | 'ok' | 'invalid'>('checking');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -30,7 +31,7 @@ export default function ResetPasswordPage() {
   const score = passwordScore(password);
   const level = strengthLevel(score);
   const colors = ['var(--danger)', 'var(--warning)', 'var(--success)'];
-  const labels = ['Faible', 'Moyen', 'Fort'];
+  const labels = [t('strengthWeak'), t('strengthMedium'), t('strengthStrong')];
   const confirmValid = confirm.length > 0 && confirm === password;
   const canSubmit = password.length >= 8 && confirmValid;
 
@@ -38,8 +39,8 @@ export default function ResetPasswordPage() {
     e.preventDefault();
     setError('');
     if (!supabase) return;
-    if (password.length < 8) { setError('Le mot de passe doit faire au moins 8 caractères.'); return; }
-    if (!confirmValid) { setError('Les mots de passe ne correspondent pas.'); return; }
+    if (password.length < 8) { setError(t('errorTooShort')); return; }
+    if (!confirmValid) { setError(t('errorMismatch')); return; }
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
@@ -56,32 +57,32 @@ export default function ResetPasswordPage() {
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px' }}>
             <BrandLockup size={28} color="var(--ink)" accent="var(--accent)" surface="var(--bg-card)" fontSize={22} />
           </div>
-          <h1 className="serif" style={{ fontSize: '1.3rem', margin: '8px 0 0' }}>Nouveau mot de passe</h1>
+          <h1 className="serif" style={{ fontSize: '1.3rem', margin: '8px 0 0' }}>{t('title')}</h1>
         </div>
 
-        {ready === 'checking' && <p role="status" style={{ textAlign: 'center', color: 'var(--text-muted)' }}><span className="spinner" aria-hidden="true" /> Vérification du lien…</p>}
+        {ready === 'checking' && <p role="status" style={{ textAlign: 'center', color: 'var(--text-muted)' }}><span className="spinner" aria-hidden="true" /> {t('checkingLink')}</p>}
 
         {ready === 'invalid' && (
           <div style={{ textAlign: 'center' }}>
-            <p style={{ color: 'var(--danger)', display: 'flex', gap: '6px', justifyContent: 'center', alignItems: 'center' }}><AlertCircle size={16} /> Lien invalide ou expiré.</p>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Demandez un nouveau lien de réinitialisation.</p>
-            <button onClick={() => router.push('/')} className="btn btn-secondary" style={{ marginTop: '10px' }}>Retour à l’accueil</button>
+            <p style={{ color: 'var(--danger)', display: 'flex', gap: '6px', justifyContent: 'center', alignItems: 'center' }}><AlertCircle size={16} /> {t('invalidTitle')}</p>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{t('invalidDesc')}</p>
+            <button onClick={() => router.push('/')} className="btn btn-secondary" style={{ marginTop: '10px' }}>{t('backHome')}</button>
           </div>
         )}
 
         {ready === 'ok' && (done ? (
           <div style={{ textAlign: 'center' }} className="animate-fade-in">
             <CheckCircle2 size={40} style={{ color: 'var(--success)', marginBottom: '8px' }} aria-hidden="true" />
-            <p>Mot de passe mis à jour. Redirection…</p>
+            <p>{t('done')}</p>
           </div>
         ) : (
           <form onSubmit={submit}>
-            <label htmlFor="rp-password" style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '5px' }}>Nouveau mot de passe</label>
+            <label htmlFor="rp-password" style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '5px' }}>{t('title')}</label>
             <div style={{ position: 'relative', marginBottom: '4px' }}>
               <Lock size={16} aria-hidden="true" style={{ position: 'absolute', left: '12px', top: '14px', color: 'var(--text-light)' }} />
               <input id="rp-password" type={show ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} autoFocus autoComplete="new-password"
-                placeholder="Min. 8 caractères" className="input" style={{ paddingLeft: '38px', paddingRight: '40px', minHeight: '44px' }} />
-              <button type="button" onClick={() => setShow(s => !s)} aria-label={show ? 'Masquer le mot de passe' : 'Afficher le mot de passe'} aria-pressed={show} className="icon-btn" style={{ position: 'absolute', right: '4px', top: '4px' }}>
+                placeholder={t('passwordPlaceholder')} className="input" style={{ paddingLeft: '38px', paddingRight: '40px', minHeight: '44px' }} />
+              <button type="button" onClick={() => setShow(s => !s)} aria-label={show ? t('hidePassword') : t('showPassword')} aria-pressed={show} className="icon-btn" style={{ position: 'absolute', right: '4px', top: '4px' }}>
                 {show ? <EyeOff size={15} aria-hidden="true" /> : <Eye size={15} aria-hidden="true" />}
               </button>
             </div>
@@ -92,13 +93,13 @@ export default function ResetPasswordPage() {
                 </div>
                 <div style={{ display: 'flex', gap: '12px', fontSize: '11px' }}>
                   <span style={{ color: colors[level], fontWeight: 700 }}>{labels[level]}</span>
-                  <Crit ok={checks.length} label="8 caractères" />
-                  <Crit ok={checks.upper} label="Majuscule" />
-                  <Crit ok={checks.digit} label="Chiffre" />
+                  <Crit ok={checks.length} label={t('critLength')} />
+                  <Crit ok={checks.upper} label={t('critUpper')} />
+                  <Crit ok={checks.digit} label={t('critDigit')} />
                 </div>
               </div>
             )}
-            <label htmlFor="rp-confirm" style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '5px' }}>Confirmer</label>
+            <label htmlFor="rp-confirm" style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '5px' }}>{t('confirmLabel')}</label>
             <div style={{ position: 'relative', marginBottom: '12px' }}>
               <Lock size={16} aria-hidden="true" style={{ position: 'absolute', left: '12px', top: '14px', color: 'var(--text-light)' }} />
               <input id="rp-confirm" type={show ? 'text' : 'password'} value={confirm} onChange={e => setConfirm(e.target.value)} autoComplete="new-password" aria-invalid={confirm.length > 0 && !confirmValid ? true : undefined}
@@ -107,7 +108,7 @@ export default function ResetPasswordPage() {
             </div>
             {error && <div role="alert" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--danger)', fontSize: '13px', marginBottom: '12px' }}><AlertCircle size={15} /> {error}</div>}
             <button type="submit" disabled={!canSubmit || loading} aria-busy={loading} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', minHeight: '44px' }}>
-              {loading ? <><span className="spinner" aria-hidden="true" /> Mise à jour…</> : <>Mettre à jour le mot de passe <ArrowRight size={16} aria-hidden="true" /></>}
+              {loading ? <><span className="spinner" aria-hidden="true" /> {t('submitting')}</> : <>{t('submit')} <ArrowRight size={16} aria-hidden="true" /></>}
             </button>
           </form>
         ))}

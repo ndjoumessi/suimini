@@ -113,6 +113,28 @@
     "magicLinkButton": "Sign in with a magic link",
     "successMagicSent": "Magic link sent! Check your inbox."
   },
+  "resetPassword": {
+    "title": "New password",
+    "checkingLink": "Verifying link…",
+    "invalidTitle": "Invalid or expired link.",
+    "invalidDesc": "Request a new reset link.",
+    "backHome": "Back to home",
+    "done": "Password updated. Redirecting…",
+    "passwordPlaceholder": "Min. 8 characters",
+    "confirmLabel": "Confirm",
+    "strengthWeak": "Weak",
+    "strengthMedium": "Medium",
+    "strengthStrong": "Strong",
+    "critLength": "8 characters",
+    "critUpper": "Uppercase",
+    "critDigit": "Digit",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "submit": "Update password",
+    "submitting": "Updating…",
+    "errorTooShort": "Password must be at least 8 characters.",
+    "errorMismatch": "Passwords do not match."
+  },
   "landing": {
     "nav": {
       "how": "How it works",
@@ -1494,6 +1516,7 @@
     "importing": "Importing…",
     "imported": "{count} people imported",
     "unsupported": "Unsupported format (.json, .ged, .gedcom)",
+    "errorFormatInvalid": "Invalid format",
     "error": "Error:",
     "title": "Import / Export",
     "close": "Close",
