@@ -81,6 +81,11 @@ supabase/              # schema.sql + scripts *.sql (share-public.sql, storage.s
                        #   update-teda-v2-final.sql…) ; pdf/ = sources du PDF de synthèse
 mobile/                # App React Native / Expo (SDK 54) — voir section « Mobile »
 e2e/                   # tests Playwright
+docs/                  # notes de conception (détails sortis de CLAUDE.md) :
+                       #   phase0-data-api-design.md (design frontière /api/data),
+                       #   phase0-mobile-track.md (piste mobile Phase 0),
+                       #   sync-internals.md (internes sync/conflits — voir « Synchronisation »),
+                       #   handoff-2026-07-10.md (état de reprise Phase 0)
 ```
 
 > ⚠️ Le **root `tsconfig.json` exclut `mobile`** (`exclude: ["node_modules","mobile"]`) : le projet RN a son propre `tsconfig`/`node_modules`. Sans ça, `tsc`/`next build` au root planteraient sur les fichiers `mobile/`.
