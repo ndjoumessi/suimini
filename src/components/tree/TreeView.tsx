@@ -171,6 +171,12 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
   // accent (pivot/spine) pour ne jamais confondre les deux signaux.
   const [kinPath, setKinPath] = useState<string[] | null>(null);
   const [kinResult, setKinResult] = useState<{ label: string; steps: number } | 'notfound' | null>(null);
+  // Navigation clavier (vue Complète) : flèches = nœud connecté dans la direction
+  // (haut = parent, bas = enfant, gauche/droite = fratrie/conjoint), Entrée = fiche.
+  // kbFocusId reste MONTÉ malgré la virtualisation ; le focus DOM est reposé après
+  // rendu via la map de refs.
+  const [kbFocusId, setKbFocusId] = useState<string | null>(null);
+  const nodeRefs = useRef(new Map<string, SVGGElement>());
   // Surlignage de recherche SANS re-centrage : halo vert tireté sur tous les nœuds
   // dont le nom matche la requête, sans changer la racine ni le pan — pour repérer
   // plusieurs personnes d'un coup dans un grand arbre (complément du re-root).
@@ -461,7 +467,10 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
       && n.y + NODE_H >= worldRect.y0 && n.y <= worldRect.y1)
     // Le nœud sélectionné reste monté même hors champ (son anneau/ombre sert de
     // repère au retour, et le focus clavier n'est jamais démonté sous l'utilisateur).
-    || n.person.id === selectedPersonId);
+    || n.person.id === selectedPersonId
+    // Idem pour la cible de la navigation clavier : elle doit exister dans le DOM
+    // pour recevoir le focus() posé après rendu.
+    || n.person.id === kbFocusId);
   // Connecteurs : garder ceux dont la bbox coupe le viewport — y compris ceux qui
   // le TRAVERSENT alors que leurs deux extrémités sont hors champ.
   const visibleEdges = !worldRect ? [] : edges.filter(e =>
@@ -551,6 +560,45 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
     setScale(s);
     setOffset({ x: cw / 2 - cx * s, y: ch / 2 - cy * s });
   };
+
+  // Déplace le focus clavier vers un nœud connecté RENDU dans la direction voulue.
+  // Haut = parent, bas = enfant, gauche/droite = fratrie + conjoints (le candidat le
+  // plus proche horizontalement du bon côté). Recentre puis repose le focus DOM.
+  const moveKbFocus = (fromId: string, key: string) => {
+    const nodeOf = (id: string) => nodes.find(n => n.person.id === id);
+    const cur = nodeOf(fromId);
+    if (!cur) return;
+    let targetId: string | null = null;
+    if (key === 'ArrowUp') {
+      targetId = getParents(fromId, tree.relationships, tree.persons).map(p => p.id).find(id => nodeOf(id)) ?? null;
+    } else if (key === 'ArrowDown') {
+      targetId = getChildren(fromId, tree.relationships, tree.persons).map(p => p.id).find(id => nodeOf(id)) ?? null;
+    } else {
+      const cands = [
+        ...getSiblings(fromId, tree.relationships, tree.persons),
+        ...getSpouses(fromId, tree.relationships, tree.persons),
+      ]
+        .map(p => nodeOf(p.id))
+        .filter((n): n is NonNullable<typeof n> => !!n)
+        .filter(n => (key === 'ArrowLeft' ? n.x < cur.x : n.x > cur.x))
+        .sort((a, b) => Math.abs(a.x - cur.x) - Math.abs(b.x - cur.x));
+      targetId = cands[0]?.person.id ?? null;
+    }
+    if (!targetId) return;
+    setKbFocusId(targetId);
+    centerOn(targetId);
+  };
+
+  // Repose le focus DOM sur la cible clavier une fois le nœud (re)monté — deux
+  // rAF pour laisser la virtualisation commit le <g> après le centerOn.
+  useEffect(() => {
+    if (!kbFocusId) return;
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => { nodeRefs.current.get(kbFocusId)?.focus(); });
+    });
+    return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2); };
+  }, [kbFocusId]);
 
   // Kinship label between a person and the current root, for the hover tooltip.
   const relationToRoot = (id: string): string | null => {
@@ -840,6 +888,12 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
         .person-node:focus-visible .tv-node-inner {
           transform: translateY(-2px);
         }
+        /* Focus clavier visible sur les <g> SVG : anneau or explicite (le
+           focus-ring natif est inégal sur les éléments SVG selon le navigateur)
+           + renfort du contour de la carte. */
+        .person-node:focus { outline: none; }
+        .person-node:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+        .person-node:focus-visible .tv-node-card { stroke: var(--accent); stroke-width: 2.5px; }
         .tv-content-enter {
           animation: tvContentIn 320ms ease forwards;
         }
@@ -1008,6 +1062,10 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
 
               return (
                 <g key={p.id}
+                  ref={el => {
+                    if (el) nodeRefs.current.set(p.id, el);
+                    else nodeRefs.current.delete(p.id);
+                  }}
                   className="person-node"
                   role="button"
                   tabIndex={0}
@@ -1040,7 +1098,15 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
                   // Focus clavier : amène le nœud dans le viewport (2.4.7/2.4.3) —
                   // sans ça, tabuler atterrissait sur un nœud hors écran, invisible.
                   onFocus={() => centerOn(p.id)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleNodeClick(p.id); } }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleNodeClick(p.id); return; }
+                    // Flèches : navigation entre nœuds connectés (parent/enfant/fratrie-conjoint).
+                    if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      moveKbFocus(p.id, e.key);
+                    }
+                  }}
                   opacity={dimmed ? 0.15 : (p.isAlive ? 1 : 0.72)}
                   style={{
                     cursor: dimmed ? 'default' : 'pointer',
