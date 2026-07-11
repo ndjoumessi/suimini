@@ -226,3 +226,35 @@ Railway PROD** (2026-07-11, cf. §5.1) — infra prod prête (schéma vide, aucu
 
 **Garde-fous utilisateur** : stop + feu vert explicite avant (a) cutover prod,
 (b) toute écriture/suppression sur la base Supabase de PROD.
+
+## 8. Prochaine phase — migration Auth + Storage (non commencée)
+
+**État actuel.** La migration des **données** (arbre, collaboration, RPC, invitations) est
+**complète et en prod à 100% sur Railway**, stable depuis le **2026-07-11**. **MAIS** deux
+plans restent **volontairement sur Supabase**, jamais migrés, jamais prévus dans ce chantier :
+- **Auth** — GoTrue / Supabase Auth (sessions, login, `profiles`, RPC admin).
+- **Storage** — fichiers / photos (bucket `avatars`, uploads).
+
+**⚠️ Conséquence à NE JAMAIS OUBLIER.** **Fermer / supprimer le compte Supabase CASSERAIT
+l'authentification de l'app pour TOUS les utilisateurs, y compris le propriétaire** (plus de
+login, plus de session → `/app` inaccessible), et casserait l'affichage des photos. **Supabase
+reste une dépendance ACTIVE et critique**, pas un vieux backend désaffecté qu'on peut couper.
+Le cutover data n'a déplacé que le **plan données d'arbre** ; l'identité et le stockage y sont
+restés par conception (cf. §1 périmètre + « HORS PÉRIMÈTRE » dans `CLAUDE.md`).
+
+**Tâche future (PAS urgente — NE PAS commencer sans décision explicite).** Si l'objectif final
+est de **quitter complètement Supabase**, il faudra un **chantier séparé** pour :
+- **Auth** → migrer vers Railway + une solution d'auth compatible (ex. self-host GoTrue,
+  Ory/Kratos, Better Auth, Lucia…) **ou** un autre provider géré (Clerk, WorkOS, Auth0…).
+  Implique la migration des comptes/sessions, des `profiles`, des RPC admin, et le remplacement
+  de toute la couche `@supabase/ssr` / `useAuth` / `proxy.ts`.
+- **Storage** → déplacer les fichiers (photos) vers Railway **ou** un stockage objet séparé
+  (S3 / Cloudflare R2 / …), avec réécriture de `uploadImage.ts` / bucket `avatars` / RLS storage.
+
+**Ce chantier n'a encore ni plan, ni estimation, ni feu vert.** Il est nettement plus lourd et
+plus risqué que la migration data (l'auth est la primitive de session : une erreur = tout le
+monde dehors).
+
+**Prérequis avant même d'y penser** : laisser le **cutover data actuel tourner stable plusieurs
+jours/semaines en conditions réelles** d'abord. Tant que ce n'est pas validé dans la durée, on
+ne planifie pas la phase Auth/Storage.
