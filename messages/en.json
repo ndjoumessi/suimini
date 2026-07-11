@@ -296,7 +296,15 @@
     "origin": "Origin",
     "originTooltip": "Go to the founding ancestor",
     "pivot": "Pivot",
-    "minimap": "Minimap"
+    "minimap": "Minimap",
+    "pathBtn": "Link",
+    "pathTitle": "How are they related?",
+    "pathPersonA": "Person A…",
+    "pathPersonB": "Person B…",
+    "pathCompute": "Compute",
+    "pathClear": "Clear",
+    "pathNone": "No link found (within 8 degrees)",
+    "pathSteps": "{n, plural, one {# step} other {# steps}}"
   },
   "person": {
     "firstName": "First name",

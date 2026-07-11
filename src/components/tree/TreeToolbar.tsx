@@ -1,9 +1,9 @@
 'use client';
-import type { Dispatch, SetStateAction } from 'react';
+import { useState, type Dispatch, type SetStateAction } from 'react';
 import { useTranslations } from 'next-intl';
 import { Person } from '@/types';
 import { getDisplayName, formatYear } from '@/lib/treeUtils';
-import { Search, ZoomIn, ZoomOut, Crosshair, Info, Plus, Aperture, Printer, Maximize2 } from 'lucide-react';
+import { Search, ZoomIn, ZoomOut, Crosshair, Info, Plus, Aperture, Printer, Maximize2, Route } from 'lucide-react';
 
 function initials(p: Person): string {
   return (((p.firstName?.[0] || '') + (p.lastName?.[0] || '')).toUpperCase()) || '?';
@@ -35,6 +35,11 @@ interface Props {
   readOnly: boolean;
   onExport?: () => void;
   onAddPerson: () => void;
+  /** Chemin de parenté « Comment X est lié à Y ? » (vue Complète verticale). */
+  onComputePath: (aId: string, bId: string) => void;
+  onClearPath: () => void;
+  pathActive: boolean;
+  pathNotFound: boolean;
 }
 
 /** The tree-view control bar: Focus/Complète toggle, root picker (with search
@@ -44,9 +49,15 @@ export default function TreeToolbar({
   isMobile, treeName, treeMode, setTreeMode, showSearch, setShowSearch, searchQ, setSearchQ,
   persons, filteredPersons, onPickRoot, layoutMode, setLayoutMode, onRecenter, onFitToScreen,
   scale, setScale, showLegend, setShowLegend, readOnly, onExport, onAddPerson,
+  onComputePath, onClearPath, pathActive, pathNotFound,
 }: Props) {
   const t = useTranslations('tree');
   const sep = <div aria-hidden="true" style={{ width: '1px', height: '16px', background: 'var(--border)', flexShrink: 0 }} />;
+  // Panneau « chemin de parenté » : deux personnes à relier.
+  const [showPath, setShowPath] = useState(false);
+  const [pathA, setPathA] = useState('');
+  const [pathB, setPathB] = useState('');
+  const sortedPersons = [...persons].sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b)));
 
   return (
     <div style={{ minHeight: '44px', padding: '5px 12px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '6px', rowGap: '5px', flexWrap: 'wrap', flexShrink: 0 }}>
@@ -100,6 +111,43 @@ export default function TreeToolbar({
       </div>
 
       {treeMode === 'full' && layoutMode === 'vertical' && <>
+        {sep}
+        {/* Chemin de parenté — « Comment X est lié à Y ? » */}
+        <div style={{ position: 'relative' }}>
+          <button onClick={() => setShowPath(v => !v)} className="btn btn-secondary btn-sm" style={{ gap: '6px' }}
+            title={t('pathTitle')} aria-label={t('pathTitle')} aria-expanded={showPath} aria-pressed={pathActive}>
+            <Route size={14} aria-hidden="true" /> {!isMobile && t('pathBtn')}
+          </button>
+          {showPath && (
+            <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 200, marginTop: '4px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '10px', width: '260px', boxShadow: 'var(--shadow-lg)' }}>
+              <div className="label" style={{ marginBottom: '8px' }}>{t('pathTitle')}</div>
+              <label htmlFor="kin-person-a" className="sr-only">{t('pathPersonA')}</label>
+              <select id="kin-person-a" className="input" value={pathA} onChange={e => setPathA(e.target.value)} style={{ marginBottom: '6px' }}>
+                <option value="">{t('pathPersonA')}</option>
+                {sortedPersons.map(p => <option key={p.id} value={p.id}>{getDisplayName(p)}</option>)}
+              </select>
+              <label htmlFor="kin-person-b" className="sr-only">{t('pathPersonB')}</label>
+              <select id="kin-person-b" className="input" value={pathB} onChange={e => setPathB(e.target.value)}>
+                <option value="">{t('pathPersonB')}</option>
+                {sortedPersons.map(p => <option key={p.id} value={p.id}>{getDisplayName(p)}</option>)}
+              </select>
+              <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
+                <button className="btn btn-primary btn-sm" disabled={!pathA || !pathB || pathA === pathB}
+                  onClick={() => { onComputePath(pathA, pathB); }}>
+                  {t('pathCompute')}
+                </button>
+                {pathActive && (
+                  <button className="btn btn-secondary btn-sm" onClick={() => { onClearPath(); setShowPath(false); }}>
+                    {t('pathClear')}
+                  </button>
+                )}
+              </div>
+              {pathNotFound && (
+                <div role="alert" style={{ color: 'var(--danger)', fontSize: '12px', marginTop: '6px' }}>{t('pathNone')}</div>
+              )}
+            </div>
+          )}
+        </div>
         {sep}
         <button onClick={onRecenter} className="btn btn-secondary btn-sm btn-icon" title={t('centerOnRoot')} aria-label={t('center')}><Crosshair size={14} aria-hidden="true" /></button>
         <button onClick={onFitToScreen} className="btn btn-secondary btn-sm btn-icon" title={t('fitToScreen')} aria-label={t('fitToScreen')}><Maximize2 size={14} aria-hidden="true" /></button>

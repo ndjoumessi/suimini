@@ -82,8 +82,10 @@ function taupeScale(t: number): string {
 }
 
 interface TreeNode { person: Person; x: number; y: number; role?: 'spouse' }
-/** `ended` = union terminée (divorce/séparation) → trait pointillé. */
-interface Edge { x1: number; y1: number; x2: number; y2: number; type: string; ended?: boolean; }
+/** `ended` = union terminée (divorce/séparation) → trait pointillé.
+ *  `a`/`b` = les deux personnes que le segment relie (pour surligner un chemin de
+ *  parenté) ; un tronc familial partagé ne porte que `a` (le parent). */
+interface Edge { x1: number; y1: number; x2: number; y2: number; type: string; ended?: boolean; a?: string; b?: string; }
 interface Pearl { x: number; y: number; ended?: boolean; }
 
 interface Props {
@@ -164,7 +166,28 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
     if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null; }
   };
 
+  // Chemin de parenté « Comment X est lié à Y ? » : suite d'ids (BFS via
+  // findRelationPath) surlignée en BLEU INFO (var(--info)) — distinct de l'or
+  // accent (pivot/spine) pour ne jamais confondre les deux signaux.
+  const [kinPath, setKinPath] = useState<string[] | null>(null);
+  const [kinResult, setKinResult] = useState<{ label: string; steps: number } | 'notfound' | null>(null);
+
   const rootPerson = tree.persons.find(p => p.id === rootId);
+
+  const computeKin = (aId: string, bId: string) => {
+    if (!aId || !bId || aId === bId) return;
+    const path = findRelationPath(aId, bId, tree.relationships, tree.persons);
+    if (!path) { setKinPath(null); setKinResult('notfound'); return; }
+    setKinPath(path);
+    setKinResult({
+      label: describeRelation(aId, bId, path, tree.relationships, tree.persons),
+      steps: path.length - 1,
+    });
+  };
+  const clearKin = () => { setKinPath(null); setKinResult(null); };
+
+  // Un chemin calculé sur un autre arbre n'a pas de sens : on l'efface au changement.
+  useEffect(() => { setKinPath(null); setKinResult(null); }, [tree.id]);
 
   // Keep a VALID root selected as persons load / change after mount. `rootId` is
   // seeded once via useState, so without this it stays null when the first person
@@ -227,7 +250,7 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
         // Union terminée (divorce/séparation) → connecteur pointillé + losange atténué.
         const rel = findUnion(personId, spouse.id, tree.relationships);
         const ended = rel ? isUnionEnded(rel) : false;
-        edges.push({ x1: prevNodeX + NODE_W, y1: lineY, x2: sx, y2: lineY, type: 'spouse', ended });
+        edges.push({ x1: prevNodeX + NODE_W, y1: lineY, x2: sx, y2: lineY, type: 'spouse', ended, a: personId, b: spouse.id });
         pearls.push({ x: prevNodeX + NODE_W + H_GAP / 2, y: lineY, ended });
         prevNodeX = sx;
       });
@@ -243,13 +266,13 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
         const childMidY = genY + NODE_H + V_GAP / 2;
         const trunkTopY = spouses.length === 1 ? genY + NODE_H / 2 : genY + NODE_H;
 
-        edges.push({ x1: coupleMidX, y1: trunkTopY, x2: coupleMidX, y2: childMidY, type: 'parent' });
+        edges.push({ x1: coupleMidX, y1: trunkTopY, x2: coupleMidX, y2: childMidY, type: 'parent', a: personId });
 
         children.forEach((child, i) => {
           const childX = childStartX + i * (NODE_W + H_GAP);
           const childMidX = childX + NODE_W / 2;
-          edges.push({ x1: coupleMidX, y1: childMidY, x2: childMidX, y2: childMidY, type: 'parent' });
-          edges.push({ x1: childMidX, y1: childMidY, x2: childMidX, y2: childY, type: 'parent' });
+          edges.push({ x1: coupleMidX, y1: childMidY, x2: childMidX, y2: childMidY, type: 'parent', a: personId, b: child.id });
+          edges.push({ x1: childMidX, y1: childMidY, x2: childMidX, y2: childY, type: 'parent', a: personId, b: child.id });
           placeFamily(child.id, childY, childMidX);
         });
       }
@@ -271,9 +294,9 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
               visited.add(parent.id);
               nodes.push({ person: parent, x: parentX, y: parentY });
             }
-            edges.push({ x1: parentMidX2, y1: parentY + NODE_H, x2: parentMidX2, y2: midY, type: 'parent' });
-            edges.push({ x1: parentMidX2, y1: midY, x2: rootMidX, y2: midY, type: 'parent' });
-            edges.push({ x1: rootMidX, y1: midY, x2: rootMidX, y2: genY, type: 'parent' });
+            edges.push({ x1: parentMidX2, y1: parentY + NODE_H, x2: parentMidX2, y2: midY, type: 'parent', a: parent.id, b: personId });
+            edges.push({ x1: parentMidX2, y1: midY, x2: rootMidX, y2: midY, type: 'parent', a: parent.id, b: personId });
+            edges.push({ x1: rootMidX, y1: midY, x2: rootMidX, y2: genY, type: 'parent', a: parent.id, b: personId });
 
             const grandparents = getParents(parent.id, tree.relationships, tree.persons);
             if (grandparents.length > 0) {
@@ -283,9 +306,9 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
                 if (!visited.has(gp.id)) {
                   visited.add(gp.id);
                   nodes.push({ person: gp, x: gpX, y: gpY });
-                  edges.push({ x1: gpX + NODE_W / 2, y1: gpY + NODE_H, x2: gpX + NODE_W / 2, y2: parentY - V_GAP / 2, type: 'parent' });
-                  edges.push({ x1: gpX + NODE_W / 2, y1: parentY - V_GAP / 2, x2: parentMidX2, y2: parentY - V_GAP / 2, type: 'parent' });
-                  edges.push({ x1: parentMidX2, y1: parentY - V_GAP / 2, x2: parentMidX2, y2: parentY, type: 'parent' });
+                  edges.push({ x1: gpX + NODE_W / 2, y1: gpY + NODE_H, x2: gpX + NODE_W / 2, y2: parentY - V_GAP / 2, type: 'parent', a: gp.id, b: parent.id });
+                  edges.push({ x1: gpX + NODE_W / 2, y1: parentY - V_GAP / 2, x2: parentMidX2, y2: parentY - V_GAP / 2, type: 'parent', a: gp.id, b: parent.id });
+                  edges.push({ x1: parentMidX2, y1: parentY - V_GAP / 2, x2: parentMidX2, y2: parentY, type: 'parent', a: gp.id, b: parent.id });
                 }
               });
             }
@@ -297,7 +320,7 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
             const lineY = parentY + NODE_H / 2;
             const rel = findUnion(parents[0].id, parents[1].id, tree.relationships);
             const ended = rel ? isUnionEnded(rel) : false;
-            edges.push({ x1: p0Right, y1: lineY, x2: p1Left, y2: lineY, type: 'spouse', ended });
+            edges.push({ x1: p0Right, y1: lineY, x2: p1Left, y2: lineY, type: 'spouse', ended, a: parents[0].id, b: parents[1].id });
             pearls.push({ x: parentStartX + NODE_W + H_GAP / 2, y: lineY, ended });
           }
         }
@@ -322,6 +345,28 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
   }, [rootId, rootPerson, tree, NODE_W, NODE_H, H_GAP, V_GAP]);
 
   const { nodes, edges, pearls } = buildLayout();
+
+  // ── Surlignage du chemin de parenté ─────────────────────────────────────────
+  // kinSet = nœuds du chemin ; kinPairs = paires adjacentes (segments a↔b) ;
+  // kinTrunkParents = parents dont le lien parent→enfant est emprunté (le tronc
+  // familial partagé ne porte que l'id du parent). Chemin court → coût négligeable.
+  const pairKey = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`);
+  const kinSet = kinPath ? new Set(kinPath) : null;
+  const kinPairs = new Set<string>();
+  const kinTrunkParents = new Set<string>();
+  if (kinPath) {
+    for (let i = 1; i < kinPath.length; i++) {
+      const u = kinPath[i - 1], v = kinPath[i];
+      kinPairs.add(pairKey(u, v));
+      for (const r of tree.relationships) {
+        if (r.type === 'parent' && ((r.person1Id === u && r.person2Id === v) || (r.person1Id === v && r.person2Id === u))) {
+          kinTrunkParents.add(r.person1Id);
+        }
+      }
+    }
+  }
+  const edgeOnKinPath = (e: Edge): boolean =>
+    !!kinPath && (e.a && e.b ? kinPairs.has(pairKey(e.a, e.b)) : e.a ? kinTrunkParents.has(e.a) : false);
 
   // Generation index per node (0 = oldest row), derived from vertical position.
   // Drives the per-node top colour bar + "GÉN. N" tag, matching FocusTree.
@@ -827,6 +872,10 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
         readOnly={readOnly}
         onExport={onExport}
         onAddPerson={onAddPerson}
+        onComputePath={computeKin}
+        onClearPath={clearKin}
+        pathActive={!!kinPath}
+        pathNotFound={kinResult === 'notfound'}
       />
 
       {/* « Focus centré » — 3 generations, larger nodes, side panel via onSelectPerson */}
@@ -887,14 +936,16 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
               // + the union losange below. SEULE exception au « jamais de pointillé » :
               // une union TERMINÉE (divorce/séparation) est tiretée + atténuée — le
               // trait plein reste réservé aux liens actifs.
+              // Segment sur le chemin de parenté calculé → bleu info, plus épais.
+              const onKin = edgeOnKinPath(edge);
               return (
                 <line key={i}
                   x1={edge.x1} y1={edge.y1} x2={edge.x2} y2={edge.y2}
-                  stroke={isSpouse ? 'var(--accent)' : 'var(--ink)'}
-                  strokeWidth={isSpouse ? 2.25 : 1.6}
+                  stroke={onKin ? 'var(--info)' : isSpouse ? 'var(--accent)' : 'var(--ink)'}
+                  strokeWidth={onKin ? 3 : isSpouse ? 2.25 : 1.6}
                   strokeLinecap="round"
                   strokeDasharray={isSpouse && edge.ended ? '7 5' : undefined}
-                  opacity={isSpouse ? (edge.ended ? 0.5 : 0.75) : 0.34}
+                  opacity={onKin ? 0.95 : isSpouse ? (edge.ended ? 0.5 : 0.75) : 0.34}
                 />
               );
             })}
@@ -980,6 +1031,13 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
                       c'est l'animation qui révèle — la couper rendrait le nœud invisible.) */}
                   <g className="tv-node-inner" style={entranceDone ? { animationDuration: '0ms', animationDelay: '0ms' } : { animationDelay: `${delay}ms` }}>
                   <clipPath id={`card-${p.id}`}><rect width={NODE_W} height={NODE_H} rx={0} ry={0} /></clipPath>
+
+                  {/* Halo « chemin de parenté » — anneau bleu info autour des nœuds
+                      du chemin calculé (distinct de l'or sélection/pivot). */}
+                  {kinSet?.has(p.id) && (
+                    <rect x={-4} y={-4} width={NODE_W + 8} height={NODE_H + 8}
+                      fill="none" stroke="var(--info)" strokeWidth={2.5} />
+                  )}
 
                   {/* Hard offset shadow (Atelier) — only on the pivot/root and the
                       selected node, to give them depth and lift them off the page
@@ -1155,6 +1213,27 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
                   {childCount > 0 ? `${hp.id === rootId || kin ? ' · ' : ''}${childCount} ${childCount > 1 ? t('children') : t('child')}` : ''}
                 </span>
               </div>
+            </div>
+          );
+        })()}
+
+        {/* Bannière du chemin de parenté calculé — nom A ↔ nom B, lien nommé + étapes */}
+        {kinPath && kinResult && kinResult !== 'notfound' && layoutMode === 'vertical' && (() => {
+          const pa = tree.persons.find(pp => pp.id === kinPath[0]);
+          const pb = tree.persons.find(pp => pp.id === kinPath[kinPath.length - 1]);
+          if (!pa || !pb) return null;
+          return (
+            <div role="status" style={{
+              position: 'absolute', top: '12px', left: '12px', zIndex: 'var(--z-dropdown)',
+              display: 'flex', alignItems: 'center', gap: '10px', maxWidth: 'calc(100% - 140px)',
+              background: 'var(--bg-card)', border: '1px solid var(--info)',
+              padding: '6px 10px', boxShadow: 'var(--shadow)', fontSize: '12px', color: 'var(--text-muted)',
+            }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--info)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {getDisplayName(pa)} ↔ {getDisplayName(pb)}
+              </span>
+              <span style={{ whiteSpace: 'nowrap' }}>{kinResult.label} · {t('pathSteps', { n: kinResult.steps })}</span>
+              <button onClick={clearKin} className="btn btn-secondary btn-sm">{t('pathClear')}</button>
             </div>
           );
         })()}
