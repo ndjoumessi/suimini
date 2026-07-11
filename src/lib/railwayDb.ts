@@ -41,11 +41,18 @@ export function railwayConfigured(): boolean {
  *     cert auto-signé (chiffré mais non authentifié — acceptable hors prod, à
  *     durcir avant la bascule). Choix CONSCIENT, jamais le défaut.
  */
-function sslConfig(): false | { ca: string } | { rejectUnauthorized: boolean } {
+function sslConfig(): false | { ca: string; checkServerIdentity: () => undefined } | { rejectUnauthorized: boolean } {
   const ca = process.env.RAILWAY_DB_CA_CERT;
-  if (ca) return { ca };                                   // CA épinglé → vérification stricte
+  if (ca) {
+    // Railway émet un cert leaf CN=localhost via son proxy → la vérification du NOM
+    // d'hôte échouerait toujours (localhost ≠ *.proxy.rlwy.net). On VÉRIFIE donc la
+    // chaîne contre le CA épinglé (un MITM devrait détenir la clé du root-ca Railway)
+    // MAIS on n'impose pas le hostname. Bien plus fort que rejectUnauthorized:false,
+    // qui accepte n'importe quel certificat.
+    return { ca, checkServerIdentity: () => undefined };
+  }
   if (process.env.RAILWAY_DB_INSECURE_SSL === '1') {
-    return { rejectUnauthorized: false };                  // opt-in explicite (staging)
+    return { rejectUnauthorized: false };                  // opt-in explicite (staging, non authentifié)
   }
   return { rejectUnauthorized: true };                     // défaut sûr
 }
