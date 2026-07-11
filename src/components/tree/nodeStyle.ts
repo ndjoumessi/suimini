@@ -40,6 +40,19 @@ export function nodeStyle(p: Person, isPivot: boolean, isSpouse = false): NodeSt
   return p.gender === 'male' ? STYLES.male : p.gender === 'female' ? STYLES.female : STYLES.unknown;
 }
 
+/* Teintes muettes pour distinguer VISUELLEMENT chaque union d'une personne
+ * polygame / remariée (connecteurs vers chaque groupe d'enfants + barre conjugale).
+ * L'or accent reste l'union 0 (par défaut) ; les suivantes empruntent les familles
+ * de teintes du système « Atelier » (bleu-gris, terracotta-muted, olive) — assez
+ * distinctes pour lire l'appartenance, jamais criardes sur le fond sombre. */
+const UNION_TINTS = ['#c9a84c', '#6e9aa6', '#b08a6e', '#8a9a6e', '#a67e9a'] as const;
+
+/** Teinte de l'union d'indice `i` (cyclique). Utilisée UNIQUEMENT quand une
+ *  personne a ≥ 2 unions ; sinon les composants gardent `var(--accent)`. */
+export function unionTint(i: number): string {
+  return UNION_TINTS[((i % UNION_TINTS.length) + UNION_TINTS.length) % UNION_TINTS.length];
+}
+
 /** Display lines for a node, robust to missing names (Bug 3).
  *  - first name present → primary = first name, secondary = last name (or none)
  *  - only last name      → primary = last name, no secondary

@@ -255,6 +255,7 @@
     "children": "children",
     "union": "Union",
     "unionEnded": "Ended union",
+    "multiUnionLegend": "Distinct unions",
     "bornM": "b.",
     "bornF": "b.",
     "genderM": "male",

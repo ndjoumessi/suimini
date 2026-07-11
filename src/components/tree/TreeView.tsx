@@ -9,7 +9,7 @@ import { useIsMobile } from '@/hooks/useMediaQuery';
 import { Plus, Sprout, Camera, CheckCircle2, FileText, MapPin, Crown } from 'lucide-react';
 import FocusTree from './FocusTree';
 import TreeToolbar from './TreeToolbar';
-import { nodeStyle, nameLines, GENDER_BAR } from './nodeStyle';
+import { nodeStyle, nameLines, GENDER_BAR, unionTint } from './nodeStyle';
 
 /** Runtime node-layout dimensions. On desktop these are EXACTLY the historical
  *  module constants (so desktop rendering is byte-for-byte unchanged); on phones
@@ -85,8 +85,8 @@ interface TreeNode { person: Person; x: number; y: number; role?: 'spouse' }
 /** `ended` = union terminée (divorce/séparation) → trait pointillé.
  *  `a`/`b` = les deux personnes que le segment relie (pour surligner un chemin de
  *  parenté) ; un tronc familial partagé ne porte que `a` (le parent). */
-interface Edge { x1: number; y1: number; x2: number; y2: number; type: string; ended?: boolean; a?: string; b?: string; }
-interface Pearl { x: number; y: number; ended?: boolean; }
+interface Edge { x1: number; y1: number; x2: number; y2: number; type: string; ended?: boolean; a?: string; b?: string; color?: string; }
+interface Pearl { x: number; y: number; ended?: boolean; color?: string; }
 
 interface Props {
   tree: FamilyTree;
@@ -252,6 +252,18 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
 
       const spouses = getSpouses(personId, tree.relationships, tree.persons).filter(s => !visited.has(s.id));
 
+      // Polygamie / remariage : ≥ 2 conjoints AFFICHÉS → on distingue chaque union
+      // (barre conjugale + groupe d'enfants correspondant) par une teinte muette.
+      const multiUnion = spouses.length >= 2;
+      const spouseIndex = new Map<string, number>(spouses.map((s, i) => [s.id, i]));
+      // Teinte de l'union d'un enfant, via son autre parent parmi les conjoints affichés.
+      const childUnionColor = (childId: string): string | undefined => {
+        if (!multiUnion) return undefined;
+        const coParent = getParents(childId, tree.relationships, tree.persons)
+          .find(p => p.id !== personId && spouseIndex.has(p.id));
+        return coParent ? unionTint(spouseIndex.get(coParent.id)!) : undefined;
+      };
+
       // Couple row centred on `centerX`; spouses extend to the right (x positive).
       const unit = 1 + spouses.length;
       const rowW = unit * NODE_W + (unit - 1) * H_GAP;
@@ -260,7 +272,7 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
       nodes.push({ person, x: mainX, y: genY });
       let prevNodeX = mainX;
 
-      spouses.forEach(spouse => {
+      spouses.forEach((spouse, si) => {
         visited.add(spouse.id);
         const sx = prevNodeX + NODE_W + H_GAP;
         nodes.push({ person: spouse, x: sx, y: genY, role: 'spouse' });
@@ -268,8 +280,10 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
         // Union terminée (divorce/séparation) → connecteur pointillé + losange atténué.
         const rel = findUnion(personId, spouse.id, tree.relationships);
         const ended = rel ? isUnionEnded(rel) : false;
-        edges.push({ x1: prevNodeX + NODE_W, y1: lineY, x2: sx, y2: lineY, type: 'spouse', ended, a: personId, b: spouse.id });
-        pearls.push({ x: prevNodeX + NODE_W + H_GAP / 2, y: lineY, ended });
+        // Teinte d'union (polygamie, union active) : assortie au groupe d'enfants.
+        const uColor = multiUnion && !ended ? unionTint(si) : undefined;
+        edges.push({ x1: prevNodeX + NODE_W, y1: lineY, x2: sx, y2: lineY, type: 'spouse', ended, a: personId, b: spouse.id, color: uColor });
+        pearls.push({ x: prevNodeX + NODE_W + H_GAP / 2, y: lineY, ended, color: uColor });
         prevNodeX = sx;
       });
 
@@ -289,8 +303,11 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
         children.forEach((child, i) => {
           const childX = childStartX + i * (NODE_W + H_GAP);
           const childMidX = childX + NODE_W / 2;
-          edges.push({ x1: coupleMidX, y1: childMidY, x2: childMidX, y2: childMidY, type: 'parent', a: personId, b: child.id });
-          edges.push({ x1: childMidX, y1: childMidY, x2: childMidX, y2: childY, type: 'parent', a: personId, b: child.id });
+          // Le segment horizontal (branche) + la descente verticale vers l'enfant
+          // prennent la teinte de son union quand le parent a plusieurs conjoints.
+          const uColor = childUnionColor(child.id);
+          edges.push({ x1: coupleMidX, y1: childMidY, x2: childMidX, y2: childMidY, type: 'parent', a: personId, b: child.id, color: uColor });
+          edges.push({ x1: childMidX, y1: childMidY, x2: childMidX, y2: childY, type: 'parent', a: personId, b: child.id, color: uColor });
           placeFamily(child.id, childY, childMidX);
         });
       }
@@ -1027,14 +1044,20 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
               // trait plein reste réservé aux liens actifs.
               // Segment sur le chemin de parenté calculé → bleu info, plus épais.
               const onKin = edgeOnKinPath(edge);
+              // Priorité : chemin de parenté (interaction) > teinte d'union (polygamie)
+              // > couleur par défaut (union=accent, filiation=ink).
+              const stroke = onKin ? 'var(--info)' : edge.color ? edge.color : isSpouse ? 'var(--accent)' : 'var(--ink)';
+              // Une filiation teintée est relevée en opacité (0.6) pour que la teinte
+              // d'union ressorte du gris très atténué (0.34) des filiations neutres.
+              const opacity = onKin ? 0.95 : isSpouse ? (edge.ended ? 0.5 : 0.75) : edge.color ? 0.6 : 0.34;
               return (
                 <line key={i}
                   x1={edge.x1} y1={edge.y1} x2={edge.x2} y2={edge.y2}
-                  stroke={onKin ? 'var(--info)' : isSpouse ? 'var(--accent)' : 'var(--ink)'}
+                  stroke={stroke}
                   strokeWidth={onKin ? 3 : isSpouse ? 2.25 : 1.6}
                   strokeLinecap="round"
                   strokeDasharray={isSpouse && edge.ended ? '7 5' : undefined}
-                  opacity={onKin ? 0.95 : isSpouse ? (edge.ended ? 0.5 : 0.75) : 0.34}
+                  opacity={opacity}
                 />
               );
             })}
@@ -1045,7 +1068,7 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
               <rect key={`pearl-${i}`}
                 x={p.x - 4} y={p.y - 4} width={8} height={8}
                 transform={`rotate(45 ${p.x} ${p.y})`}
-                fill="var(--bg-card)" stroke={p.ended ? 'var(--text-muted)' : 'var(--accent)'} strokeWidth={1.5}
+                fill="var(--bg-card)" stroke={p.ended ? 'var(--text-muted)' : p.color || 'var(--accent)'} strokeWidth={1.5}
                 style={{ pointerEvents: 'none' }} />
             ))}
             </g>{/* /edge+pearl focus layer */}
@@ -1421,6 +1444,12 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
                   <line x1="0" y1="5" x2="26" y2="5" stroke="var(--accent)" strokeWidth="2.25" strokeDasharray="5 4" opacity="0.5" />
                   <rect x="10" y="2" width="6" height="6" transform="rotate(45 13 5)" fill="var(--bg-card)" stroke="var(--text-muted)" strokeWidth="1.2" />
                 </svg> {t('unionEnded')}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <svg width="26" height="8" style={{ flexShrink: 0 }}>
+                  <line x1="0" y1="4" x2="13" y2="4" stroke={unionTint(0)} strokeWidth="1.8" opacity="0.7" />
+                  <line x1="13" y1="4" x2="26" y2="4" stroke={unionTint(1)} strokeWidth="1.8" opacity="0.7" />
+                </svg> {t('multiUnionLegend')}
               </div>
             </div>
           </div>
