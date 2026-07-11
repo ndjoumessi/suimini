@@ -352,6 +352,38 @@ input[type="radio"]:focus-visible { outline: 2px solid var(--accent); outline-of
 input[type="checkbox"]:disabled,
 input[type="radio"]:disabled { opacity: 0.45; cursor: not-allowed; }
 
+/* ===== Segmented control — sélecteur exclusif « joint » (Atelier) =====
+   Bande de boutons soudés (zéro radius) pour un choix mutuellement exclusif ;
+   le segment actif prend l'or. Distinct d'une rangée de boutons séparés. */
+.seg { display: inline-flex; border: var(--bw) solid var(--border-strong); background: var(--bg-card); }
+.seg > button {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 0; border-radius: 0; background: transparent;
+  color: var(--text-muted); font-family: var(--font-body);
+  font-size: 13px; font-weight: 600; line-height: 1; padding: 8px 12px; cursor: pointer;
+  transition: background var(--t-fast) ease, color var(--t-fast) ease;
+}
+.seg > button + button { border-left: var(--bw) solid var(--border-strong); }
+.seg > button:hover:not([aria-pressed="true"]) { background: var(--bg-muted); color: var(--ink); }
+.seg > button[aria-pressed="true"] { background: var(--accent); color: var(--ink-on-accent); }
+.seg > button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; position: relative; z-index: 1; }
+.seg > button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ===== Toggle « piste » — bascule binaire secondaire (ex. thème d'aperçu) =====
+   Piste enfoncée + segment actif surélevé (PAS d'or → l'or reste réservé au
+   choix primaire). Se lit comme un interrupteur de confort, pas un sélecteur. */
+.seg-toggle { display: inline-flex; gap: 2px; padding: 2px; border: var(--bw) solid var(--border-strong); background: var(--bg); }
+.seg-toggle > button {
+  display: inline-flex; align-items: center; gap: 5px;
+  border: 0; border-radius: 0; background: transparent;
+  color: var(--text-light); font-family: var(--font-body);
+  font-size: 12px; font-weight: 600; line-height: 1; padding: 6px 10px; cursor: pointer;
+  transition: background var(--t-fast) ease, color var(--t-fast) ease;
+}
+.seg-toggle > button:hover:not([aria-pressed="true"]) { color: var(--ink); }
+.seg-toggle > button[aria-pressed="true"] { background: var(--bg-card); color: var(--ink); box-shadow: inset 0 0 0 1px var(--border-strong); }
+.seg-toggle > button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; position: relative; z-index: 1; }
+
 .field-error { color: var(--danger); font-size: 12px; margin-top: 4px; display: flex; gap: 4px; align-items: center; font-weight: 600; }
 .field-help { color: var(--text-muted); font-size: 12px; margin-top: 4px; }
 fieldset { border: var(--bw) solid var(--border-strong); border-radius: var(--radius); padding: 12px; margin: 0; }

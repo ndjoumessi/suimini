@@ -1182,7 +1182,9 @@
     "pageNumber": "Page {n} / {total}",
     "previewLabel": "Aperçu",
     "previewLight": "Aperçu clair",
-    "previewDark": "Aperçu sombre"
+    "previewDark": "Aperçu sombre",
+    "sectionFormat": "Format",
+    "sectionInclude": "Inclure"
   },
   "timeline": {
     "heading": "Chronologie | {name}",

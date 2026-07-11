@@ -1182,7 +1182,9 @@
     "pageNumber": "Page {n} / {total}",
     "previewLabel": "Preview",
     "previewLight": "Light preview",
-    "previewDark": "Dark preview"
+    "previewDark": "Dark preview",
+    "sectionFormat": "Format",
+    "sectionInclude": "Include"
   },
   "timeline": {
     "heading": "Timeline | {name}",
