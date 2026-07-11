@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { guardTreeWrite, isChildTable } from '@/lib/apiData';
-import { deleteChildRows } from '@/lib/supabaseSync';
 
 // POST /api/data/trees/[id]/children/delete  { table, ids } → soft-delete
 // AuthZ : canWriteTreeContent. `table` whitelisté (persons|relationships|journal_entries).
@@ -16,6 +15,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const ids = body?.ids;
   if (!isChildTable(table) || !Array.isArray(ids)) return NextResponse.json({ error: 'Corps invalide.' }, { status: 400 });
 
-  const ok = await deleteChildRows(table, ids as string[], guard.client);
+  const ok = await guard.store.deleteChildRows(id, table, ids as string[]);
   return NextResponse.json({ ok });
 }

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { guardTreeWrite } from '@/lib/apiData';
-import { restoreEntityAlive } from '@/lib/supabaseSync';
 
 // POST /api/data/trees/[id]/restore  { entityType, entity } → ré-upsert vivant
 // (résolution de conflit « Restaurer »). AuthZ : canWriteTreeContent.
@@ -19,7 +18,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   try {
-    await restoreEntityAlive(id, entityType, entity, guard.client);
+    await guard.store.restoreEntity(id, entityType, entity);
     return NextResponse.json({ ok: true });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : 'Échec de restauration.' }, { status: 500 });

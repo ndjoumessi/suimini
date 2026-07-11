@@ -10,7 +10,7 @@ export interface LoadResult { trees: FamilyTree[]; shared: Record<string, Shared
 
 // ---------- Row mappers (keep every field → no data loss) ----------
 
-function personToRow(p: Person, treeId: string): any {
+export function personToRow(p: Person, treeId: string): any {
   const {
     id, firstName, lastName, gender, birthDate, birthPlace, deathDate, deathPlace,
     isAlive, occupation, bio, profilePhoto, dnaOrigins, citations, customFields,
@@ -29,7 +29,7 @@ function personToRow(p: Person, treeId: string): any {
   };
 }
 
-function rowToPerson(r: any): Person {
+export function rowToPerson(r: any): Person {
   // `extra` (catch-all des champs non normalisés) est étalé EN PREMIER : les colonnes
   // canoniques ci-dessous priment donc TOUJOURS. Étalé en dernier, un `extra` pollué par
   // une clé canonique (ex. un `updatedAt` résiduel) écrasait la vraie valeur de la colonne
@@ -49,7 +49,7 @@ function rowToPerson(r: any): Person {
   };
 }
 
-function relToRow(r: Relationship, treeId: string): any {
+export function relToRow(r: Relationship, treeId: string): any {
   const { id, type, person1Id, person2Id, startDate, endDate, isActive, notes, ...rest } = r;
   return {
     id, tree_id: treeId, type, person1_id: person1Id, person2_id: person2Id,
@@ -59,7 +59,7 @@ function relToRow(r: Relationship, treeId: string): any {
   };
 }
 
-function rowToRel(r: any): Relationship {
+export function rowToRel(r: any): Relationship {
   // `extra` en premier → les colonnes canoniques priment toujours (cf. rowToPerson).
   return {
     ...(r.extra || {}),
@@ -69,7 +69,7 @@ function rowToRel(r: any): Relationship {
   };
 }
 
-function journalToRow(e: JournalEntry, treeId: string): any {
+export function journalToRow(e: JournalEntry, treeId: string): any {
   return {
     id: e.id, tree_id: treeId, title: e.title, date: e.date || null, content: e.content || null,
     mentioned_person_ids: e.mentionedPersonIds ?? null, photos: e.photos ?? null,
@@ -77,7 +77,7 @@ function journalToRow(e: JournalEntry, treeId: string): any {
   };
 }
 
-function rowToJournal(r: any): JournalEntry {
+export function rowToJournal(r: any): JournalEntry {
   return {
     id: r.id, title: r.title || '', date: r.date || '', content: r.content || '',
     mentionedPersonIds: r.mentioned_person_ids || undefined, photos: r.photos || undefined,
