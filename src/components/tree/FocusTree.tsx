@@ -334,10 +334,12 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         </nav>
       )}
 
-      {/* Up nav — previous generation */}
+      {/* Up nav — previous generation (+ compteur = nombre de personnes de cette génération) */}
       {hasParents && (
-        <button className="ft-nav ft-nav-up" onClick={() => navigateGeneration('up')}>
+        <button className="ft-nav ft-nav-up" onClick={() => navigateGeneration('up')}
+          aria-label={`${t('previousGeneration')}, ${t('generationCount', { n: parents.length })}`}>
           <ChevronUp size={14} aria-hidden="true" className="ft-nav-arrow" /> {t('previousGeneration')}
+          <span className="ft-nav-count">{parents.length}</span>
         </button>
       )}
 
@@ -412,10 +414,12 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         </span>
       </div>
 
-      {/* Down nav — next generation */}
+      {/* Down nav — next generation (+ compteur = nombre d'enfants de cette génération) */}
       {hasChildren && (
-        <button className="ft-nav ft-nav-down" onClick={() => navigateGeneration('down')}>
+        <button className="ft-nav ft-nav-down" onClick={() => navigateGeneration('down')}
+          aria-label={`${t('nextGeneration')}, ${t('generationCount', { n: children.length })}`}>
           <ChevronDown size={14} aria-hidden="true" className="ft-nav-arrow" /> {t('nextGeneration')}
+          <span className="ft-nav-count">{children.length}</span>
         </button>
       )}
 
@@ -479,6 +483,11 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
           font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink);
           background: #1a1a24; border: none; padding: 10px 16px; transition: background 160ms, color 160ms; }
         .ft-nav:hover { background: var(--bg-muted); color: var(--accent-text); }
+        /* Compteur de personnes de la génération — petite pastille mono discrète. */
+        .ft-nav-count { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 5px;
+          font-family: var(--font-mono); font-size: 9px; font-weight: 700; letter-spacing: 0; color: var(--accent-text);
+          background: var(--bg-card); border: 1px solid var(--border); }
+        .ft-nav:hover .ft-nav-count { border-color: var(--accent); }
         .ft-nav-up { border-bottom: 1px solid var(--border); }
         .ft-nav-down { border-top: 1px solid var(--border); }
         .ft-nav-up .ft-nav-arrow { animation: ftBounceUp 1.5s ease-in-out infinite; }

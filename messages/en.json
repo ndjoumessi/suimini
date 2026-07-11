@@ -290,6 +290,7 @@
     "generationN": "GENERATION {n}",
     "previousGeneration": "Previous generation",
     "nextGeneration": "Next generation",
+    "generationCount": "{n, plural, =0 {no people} one {# person} other {# people}}",
     "modeFocus": "Focus",
     "modeFull": "Full",
     "displayMode": "Display mode",
