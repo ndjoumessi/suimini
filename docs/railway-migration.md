@@ -98,6 +98,38 @@ Railway propose PgBouncer **managé nativement** (pas de service à déployer so
 - **Après activation** : on peut **remonter `pool max`** dans `railwayDb.ts` (le pooler
   multiplexe) — la mitigation `max:1` redevient inutile.
 
+### ⚠️ 6bis. BLOCAGE découvert (2026-07-11) : PgBouncer public = PLAINTEXT
+
+PgBouncer activé sur staging, MAIS son **endpoint public** (`DATABASE_PUBLIC_URL`
+via `*.proxy.rlwy.net`) **ne supporte PAS TLS** (`sslmode=require` → « server does
+not support SSL » ; `sslmode=disable` fonctionne). Le proxy TCP Railway est un
+passthrough brut (pas de TLS au bord) → **Vercel → PgBouncer public serait EN CLAIR
+sur Internet** (PII non chiffrée). Inacceptable, même en staging.
+
+- La config PgBouncer Railway n'expose PAS `CLIENT_TLS_SSLMODE`/certs (clés vues :
+  POOL_MODE, DEFAULT_POOL_SIZE, MAX_CLIENT_CONN, AUTH_QUERY, SERVER_RESET_QUERY…).
+- L'URL poolée **privée** (`pgbouncer.railway.internal`) est sûre (VPC) mais
+  **injoignable depuis Vercel**.
+
+**Conséquence** : le prérequis #1 (pooler) se dédouble → il faut un pooler
+transaction-mode **ET** chiffré sur le chemin public Vercel→Railway. Options à
+trancher AVANT cutover (aucune ne bloque le canary actuel, qui tourne sur l'endpoint
+DIRECT en TLS CA-épinglé + `max:1`) :
+- **(A)** Activer le client-TLS sur le PgBouncer Railway (`CLIENT_TLS_SSLMODE=require`
+  + cert) — faisabilité à vérifier sur le template managé (peut nécessiter un cert
+  auto-signé + config non exposée).
+- **(B)** Réseau PRIVÉ : héberger l'app (ou une couche d'accès DB) SUR Railway →
+  `pgbouncer.railway.internal` (poolé, privé, pas de TLS-sur-Internet). Gros
+  changement (l'app est sur Vercel).
+- **(C)** Reconsidérer la cible : un hôte offrant un **pooler serverless chiffré
+  nativement** (ex. Neon : driver HTTPS + pooling TLS) — remet en question le choix
+  Railway pour une app Vercel.
+- **(D)** Rester sur l'endpoint DIRECT (TLS CA-épinglé) + `pool max` bas, en acceptant
+  la limite de montée en charge (viable pour faible concurrence ; fragile en pic).
+
+Le CANARY continue sur (D) tel quel — stable et chiffré. La décision pooler+TLS est
+un point de cutover, pas un blocage du test d'invitation.
+
 ## 7. Checklist cutover (à dérouler quand décidé — pas aujourd'hui)
 
 - [ ] PgBouncer transaction-mode activé (staging d'abord, re-tester le canary).
