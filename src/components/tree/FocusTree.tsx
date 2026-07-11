@@ -1,9 +1,9 @@
 'use client';
-import { useMemo, useRef, useEffect, useCallback } from 'react';
+import { useMemo, useRef, useEffect, useCallback, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { FamilyTree, Person } from '@/types';
 import { getParents, getChildren, getSpouses, getDisplayName, formatYear, getAge, formatAge, buildGenerationMap, findUnion, isUnionEnded } from '@/lib/treeUtils';
-import { ChevronUp, ChevronDown, ChevronRight, Crosshair } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Crosshair } from 'lucide-react';
 import TreeNode from './TreeNode';
 import { GENDER_BAR, unionTint } from './nodeStyle';
 
@@ -63,6 +63,16 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
   const t = useTranslations('tree');
   const genMap = useMemo(() => buildGenerationMap(tree), [tree]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Indice de débordement horizontal (façon carousel) : y a-t-il du contenu masqué
+  // à gauche / à droite de la zone visible ? → fondus sur les bords correspondants.
+  const [overflow, setOverflow] = useState({ left: false, right: false });
+  const updateOverflow = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const left = el.scrollLeft > 2;
+    const right = el.scrollWidth - el.scrollLeft - el.clientWidth > 2;
+    setOverflow(o => (o.left === left && o.right === right) ? o : { left, right });
+  }, []);
 
   const focus = tree.persons.find(p => p.id === focusId) || tree.persons[0];
   const spouses = focus ? getSpouses(focus.id, tree.relationships, tree.persons) : [];
@@ -264,7 +274,8 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
     if (!el) return;
     el.scrollLeft = Math.max(0, coupleCenterX - el.clientWidth / 2);
     el.scrollTop = Math.max(0, focusY + NODE_H / 2 - el.clientHeight / 2);
-  }, [coupleCenterX, focusY]);
+    updateOverflow();
+  }, [coupleCenterX, focusY, updateOverflow]);
 
   useEffect(() => { recenter(); }, [focusId, recenter]);
 
@@ -330,7 +341,8 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         </button>
       )}
 
-      <div className="ft-scroll" ref={scrollRef} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <div className="ft-scroll-wrap">
+      <div className="ft-scroll" ref={scrollRef} onScroll={updateOverflow} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         <div className="ft-stage" ref={stageRef} style={{ width: stageW, height: stageH }}>
           <svg className="ft-links" width={stageW} height={stageH} aria-hidden="true">
             {links.map((l, i) => (
@@ -361,6 +373,19 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
           {focusRow.map((n, i) => renderNode(n.p, n.role, focusX(i), focusY))}
           {hasChildren && children.map((c, i) => renderNode(c, 'child', childX(i), childrenY))}
         </div>
+      </div>
+        {/* Fondus de débordement horizontal — révèlent qu'une rangée large (fratrie
+            nombreuse) déborde du viewport ; disparaissent une fois scrollé au bout. */}
+        {overflow.left && (
+          <div className="ft-fade ft-fade-left" aria-hidden="true">
+            <ChevronLeft size={18} className="ft-fade-chev" />
+          </div>
+        )}
+        {overflow.right && (
+          <div className="ft-fade ft-fade-right" aria-hidden="true">
+            <ChevronRight size={18} className="ft-fade-chev" />
+          </div>
+        )}
       </div>
 
       {/* Floating recenter — frames the tree in the visible zone (sidebar/panel aware) */}
@@ -396,8 +421,19 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
 
       <style>{`
         .ft-root { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--bg); overflow: hidden; }
+        .ft-scroll-wrap { flex: 1; min-height: 0; position: relative; display: flex; }
         .ft-scroll { flex: 1; min-height: 0; position: relative; overflow: auto; display: flex;
           background-image: radial-gradient(circle, var(--border) 1px, transparent 1px); background-size: 26px 26px; }
+        /* Fondus latéraux (indice « il y a plus à voir de ce côté ») — gradient vers
+           le fond + chevron discret, non interactifs. */
+        .ft-fade { position: absolute; top: 0; bottom: 0; width: 60px; pointer-events: none; z-index: 3;
+          display: flex; align-items: center; }
+        .ft-fade-left { left: 0; justify-content: flex-start; padding-left: 6px; background: linear-gradient(to right, var(--bg) 30%, transparent); }
+        .ft-fade-right { right: 0; justify-content: flex-end; padding-right: 6px; background: linear-gradient(to left, var(--bg) 30%, transparent); }
+        .ft-fade-chev { color: var(--accent-text); opacity: 0.75; animation: ftFadePulse 1.6s ease-in-out infinite; }
+        .ft-fade-left .ft-fade-chev { animation-name: ftFadePulseL; }
+        @keyframes ftFadePulse { 0%, 100% { transform: translateX(0); opacity: 0.6; } 50% { transform: translateX(3px); opacity: 0.9; } }
+        @keyframes ftFadePulseL { 0%, 100% { transform: translateX(0); opacity: 0.6; } 50% { transform: translateX(-3px); opacity: 0.9; } }
         .ft-stage { position: relative; margin: auto; flex-shrink: 0; }
         .ft-links { position: absolute; inset: 0; pointer-events: none; }
 
@@ -475,6 +511,7 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
           .ft-node:hover { transform: none; }
           .ft-node-focus, .ft-node-focus:hover { transform: scale(1.03); }
           .ft-nav-arrow { animation: none !important; }
+          .ft-fade-chev { animation: none !important; transform: none !important; }
         }
       `}</style>
     </div>
