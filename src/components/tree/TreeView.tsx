@@ -111,6 +111,8 @@ const GRID = 24; // canvas dot-grid spacing
 export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsumed, onSelectPerson, onAddPerson, onExport, readOnly = false }: Props) {
   const t = useTranslations('tree');
   const tc = useTranslations('collaboration');
+  // Libellés des types d'événements (réutilise personPanel.event_* — pas de doublon i18n).
+  const tp = useTranslations('personPanel');
   const { user } = useAuth();
   // Responsive node-layout dims (desktop = historical constants, byte-for-byte).
   const isMobile = useIsMobile();
@@ -149,6 +151,18 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
   // Rich hover tooltip: the person under the pointer + its container-relative anchor.
   // Null when nothing is hovered or while panning (cleared on drag start).
   const [hover, setHover] = useState<{ id: string; x: number; y: number } | null>(null);
+  // Délai d'apparition du tooltip (~400 ms) : évite le clignotement en balayant
+  // l'arbre à la souris. Sur mobile, un APPUI LONG (500 ms) montre le tooltip sans
+  // déclencher « ouvrir la fiche » (le tap simple reste la sélection).
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressShownRef = useRef(false);
+  const clearHoverTimer = () => {
+    if (hoverTimerRef.current) { clearTimeout(hoverTimerRef.current); hoverTimerRef.current = null; }
+  };
+  const clearLongPress = () => {
+    if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null; }
+  };
 
   const rootPerson = tree.persons.find(p => p.id === rootId);
 
@@ -583,6 +597,7 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
     if (e.button === 0) {
       setIsDragging(true);
       setDragMoved(false);
+      clearHoverTimer();
       setHover(null); // hide tooltip while panning
       setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
     }
@@ -623,6 +638,9 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
   };
   const handleTouchStart = (e: React.TouchEvent) => {
     if (layoutMode === 'fan') return;
+    // Un nouveau toucher ferme le tooltip d'appui long éventuellement ouvert
+    // (le handler du nœud, déclenché avant, a pu armer un nouveau timer — voulu).
+    setHover(null);
     if (e.touches.length === 2) {
       // Entering a pinch: stop single-finger panning and seed the distance.
       pinchDistRef.current = touchDist(e);
@@ -675,7 +693,12 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
     }
   };
 
-  const handleNodeClick = (personId: string) => { if (!dragMoved && !readOnly) onSelectPerson(personId); };
+  const handleNodeClick = (personId: string) => {
+    // Un appui long vient d'afficher le tooltip : on avale le click de relâche
+    // pour que « appui long = infos » ne devienne pas « ouvrir la fiche ».
+    if (longPressShownRef.current) { longPressShownRef.current = false; return; }
+    if (!dragMoved && !readOnly) onSelectPerson(personId);
+  };
 
   // Double-click focuses the close family around a person and recenters on them.
   const handleNodeDoubleClick = (personId: string) => {
@@ -917,9 +940,25 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
                   onMouseEnter={(e) => {
                     if (isDragging || dimmed) return;
                     const r = containerRef.current?.getBoundingClientRect();
-                    if (r) setHover({ id: p.id, x: e.clientX - r.left, y: e.clientY - r.top });
+                    if (!r) return;
+                    const pos = { id: p.id, x: e.clientX - r.left, y: e.clientY - r.top };
+                    clearHoverTimer();
+                    hoverTimerRef.current = setTimeout(() => setHover(pos), 400);
                   }}
-                  onMouseLeave={() => setHover(h => (h?.id === p.id ? null : h))}
+                  onMouseLeave={() => { clearHoverTimer(); setHover(h => (h?.id === p.id ? null : h)); }}
+                  // Mobile : appui long (500 ms) = tooltip ; tout mouvement (pan) l'annule.
+                  onTouchStart={(e) => {
+                    if (dimmed) return;
+                    const t0 = e.touches[0];
+                    const r = containerRef.current?.getBoundingClientRect();
+                    if (!t0 || !r) return;
+                    const pos = { id: p.id, x: t0.clientX - r.left, y: t0.clientY - r.top };
+                    clearLongPress();
+                    longPressShownRef.current = false;
+                    longPressRef.current = setTimeout(() => { longPressShownRef.current = true; setHover(pos); }, 500);
+                  }}
+                  onTouchMove={clearLongPress}
+                  onTouchEnd={clearLongPress}
                   // Focus clavier : amène le nœud dans le viewport (2.4.7/2.4.3) —
                   // sans ça, tabuler atterrissait sur un nœud hors écran, invisible.
                   onFocus={() => centerOn(p.id)}
@@ -1079,6 +1118,13 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
           const hp = tree.persons.find(pp => pp.id === hover.id);
           if (!hp) return null;
           const place = [hp.birthPlace?.city, hp.birthPlace?.country].filter(Boolean).join(', ');
+          const deathPlace = !hp.isAlive ? [hp.deathPlace?.city, hp.deathPlace?.country].filter(Boolean).join(', ') : '';
+          // 1-2 événements clés (hors naissance/décès, déjà portés par dates/lieux).
+          const KNOWN_EVT = new Set(['birth', 'death', 'marriage', 'divorce', 'baptism', 'graduation', 'military', 'immigration', 'other']);
+          const evtLabel = (type: string) => KNOWN_EVT.has(type) ? tp(`event_${type}`) : (type.charAt(0).toUpperCase() + type.slice(1));
+          const keyEvents = (hp.events || [])
+            .filter(ev => ev.type !== 'birth' && ev.type !== 'death' && (ev.date || ev.description))
+            .slice(0, 2);
           const childCount = getChildren(hp.id, tree.relationships, tree.persons).length;
           const kin = relationToRoot(hp.id);
           const dl = dateLine(hp);
@@ -1096,6 +1142,12 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
               </div>
               {dl && <div style={{ opacity: 0.85 }}>{dl}</div>}
               {place && <div style={{ opacity: 0.85, display: 'flex', alignItems: 'center', gap: '4px' }}><MapPin size={11} aria-hidden="true" /> {place}</div>}
+              {deathPlace && <div style={{ opacity: 0.85 }}>† {deathPlace}</div>}
+              {keyEvents.map(ev => (
+                <div key={ev.id} style={{ opacity: 0.85 }}>
+                  {evtLabel(ev.type)}{ev.date ? ` · ${formatYear(ev.date)}` : ''}
+                </div>
+              ))}
               <div style={{ opacity: 0.85, display: 'flex', alignItems: 'center', gap: '4px' }}>
                 {hp.id === rootId && <Crown size={11} aria-hidden="true" />}
                 <span>
