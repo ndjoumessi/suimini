@@ -3,7 +3,7 @@ import { useState, type Dispatch, type SetStateAction } from 'react';
 import { useTranslations } from 'next-intl';
 import { Person } from '@/types';
 import { getDisplayName, formatYear } from '@/lib/treeUtils';
-import { Search, ZoomIn, ZoomOut, Crosshair, Info, Plus, Aperture, Printer, Maximize2, Route } from 'lucide-react';
+import { Search, ZoomIn, ZoomOut, Crosshair, Info, Plus, Aperture, Printer, Maximize2, Route, Highlighter } from 'lucide-react';
 
 function initials(p: Person): string {
   return (((p.firstName?.[0] || '') + (p.lastName?.[0] || '')).toUpperCase()) || '?';
@@ -40,6 +40,9 @@ interface Props {
   onClearPath: () => void;
   pathActive: boolean;
   pathNotFound: boolean;
+  /** Surligne les correspondances de la requête dans l'arbre SANS re-centrer. */
+  onHighlight: (q: string) => void;
+  highlightActive: boolean;
 }
 
 /** The tree-view control bar: Focus/Complète toggle, root picker (with search
@@ -49,7 +52,7 @@ export default function TreeToolbar({
   isMobile, treeName, treeMode, setTreeMode, showSearch, setShowSearch, searchQ, setSearchQ,
   persons, filteredPersons, onPickRoot, layoutMode, setLayoutMode, onRecenter, onFitToScreen,
   scale, setScale, showLegend, setShowLegend, readOnly, onExport, onAddPerson,
-  onComputePath, onClearPath, pathActive, pathNotFound,
+  onComputePath, onClearPath, pathActive, pathNotFound, onHighlight, highlightActive,
 }: Props) {
   const t = useTranslations('tree');
   const sep = <div aria-hidden="true" style={{ width: '1px', height: '16px', background: 'var(--border)', flexShrink: 0 }} />;
@@ -93,6 +96,18 @@ export default function TreeToolbar({
         {showSearch && (
           <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 200, marginTop: '4px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px', width: '240px', boxShadow: 'var(--shadow-lg)' }}>
             <input autoFocus value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder={t('personNamePlaceholder')} className="input" style={{ marginBottom: '6px' }} />
+            {/* Surligner sans re-centrer — n'a de sens qu'en vue Complète (canvas). */}
+            {treeMode === 'full' && layoutMode === 'vertical' && (
+              <button
+                className="btn btn-secondary btn-sm"
+                disabled={!searchQ}
+                aria-pressed={highlightActive}
+                style={{ width: '100%', marginBottom: '6px', gap: '6px' }}
+                onClick={() => { onHighlight(searchQ); setShowSearch(false); }}
+              >
+                <Highlighter size={13} aria-hidden="true" /> {t('highlightBtn')}
+              </button>
+            )}
             <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
               {(searchQ ? filteredPersons : persons.slice(0, 20)).map(p => (
                 <button key={p.id} onClick={() => onPickRoot(p.id)}

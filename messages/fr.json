@@ -304,7 +304,10 @@
     "pathCompute": "Calculer",
     "pathClear": "Effacer",
     "pathNone": "Aucun lien trouvé (dans la limite de 8 degrés)",
-    "pathSteps": "{n, plural, one {# étape} other {# étapes}}"
+    "pathSteps": "{n, plural, one {# étape} other {# étapes}}",
+    "highlightBtn": "Surligner dans l'arbre",
+    "highlightCount": "{n, plural, =0 {aucune correspondance} one {# correspondance} other {# correspondances}}",
+    "highlightClear": "Effacer le surlignage"
   },
   "person": {
     "firstName": "Prénom",

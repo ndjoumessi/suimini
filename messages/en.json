@@ -304,7 +304,10 @@
     "pathCompute": "Compute",
     "pathClear": "Clear",
     "pathNone": "No link found (within 8 degrees)",
-    "pathSteps": "{n, plural, one {# step} other {# steps}}"
+    "pathSteps": "{n, plural, one {# step} other {# steps}}",
+    "highlightBtn": "Highlight in tree",
+    "highlightCount": "{n, plural, =0 {no matches} one {# match} other {# matches}}",
+    "highlightClear": "Clear highlighting"
   },
   "person": {
     "firstName": "First name",

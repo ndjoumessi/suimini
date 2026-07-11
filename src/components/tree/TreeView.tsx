@@ -171,6 +171,10 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
   // accent (pivot/spine) pour ne jamais confondre les deux signaux.
   const [kinPath, setKinPath] = useState<string[] | null>(null);
   const [kinResult, setKinResult] = useState<{ label: string; steps: number } | 'notfound' | null>(null);
+  // Surlignage de recherche SANS re-centrage : halo vert tireté sur tous les nœuds
+  // dont le nom matche la requête, sans changer la racine ni le pan — pour repérer
+  // plusieurs personnes d'un coup dans un grand arbre (complément du re-root).
+  const [highlightQ, setHighlightQ] = useState<string | null>(null);
 
   const rootPerson = tree.persons.find(p => p.id === rootId);
 
@@ -775,6 +779,13 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
     ? tree.persons.filter(p => getDisplayName(p).toLowerCase().includes(searchQ.toLowerCase()))
     : [];
 
+  // Ids surlignés par la recherche (même matcher que filteredPersons).
+  const highlightSet: Set<string> | null = highlightQ
+    ? new Set(tree.persons
+        .filter(p => getDisplayName(p).toLowerCase().includes(highlightQ.toLowerCase()))
+        .map(p => p.id))
+    : null;
+
   function dateLine(p: Person): string {
     const birth = formatYear(p.birthDate);
     const death = formatYear(p.deathDate);
@@ -890,6 +901,8 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
         onClearPath={clearKin}
         pathActive={!!kinPath}
         pathNotFound={kinResult === 'notfound'}
+        onHighlight={q => setHighlightQ(q || null)}
+        highlightActive={!!highlightQ}
       />
 
       {/* « Focus centré » — 3 generations, larger nodes, side panel via onSelectPerson */}
@@ -1045,6 +1058,13 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
                       c'est l'animation qui révèle — la couper rendrait le nœud invisible.) */}
                   <g className="tv-node-inner" style={entranceDone ? { animationDuration: '0ms', animationDelay: '0ms' } : { animationDelay: `${delay}ms` }}>
                   <clipPath id={`card-${p.id}`}><rect width={NODE_W} height={NODE_H} rx={0} ry={0} /></clipPath>
+
+                  {/* Halo « résultat de recherche » — anneau vert TIRETÉ (distinct du
+                      bleu plein du chemin de parenté et de l'or sélection/pivot). */}
+                  {highlightSet?.has(p.id) && (
+                    <rect x={-6} y={-6} width={NODE_W + 12} height={NODE_H + 12}
+                      fill="none" stroke="var(--success)" strokeWidth={2.5} strokeDasharray="5 4" />
+                  )}
 
                   {/* Halo « chemin de parenté » — anneau bleu info autour des nœuds
                       du chemin calculé (distinct de l'or sélection/pivot). */}
@@ -1247,6 +1267,25 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
             </div>
           );
         })()}
+
+        {/* Chip du surlignage de recherche — requête + nombre de correspondances */}
+        {highlightQ && highlightSet && layoutMode === 'vertical' && (
+          <div role="status" style={{
+            position: 'absolute', bottom: '12px', left: '50%', transform: 'translateX(-50%)',
+            zIndex: 'var(--z-dropdown)', display: 'flex', alignItems: 'center', gap: '8px',
+            background: 'var(--bg-card)', border: '1px solid var(--success)',
+            padding: '5px 10px', boxShadow: 'var(--shadow)', fontSize: '12px', color: 'var(--text-muted)',
+          }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--success)' }}>
+              « {highlightQ} »
+            </span>
+            <span style={{ whiteSpace: 'nowrap' }}>{t('highlightCount', { n: highlightSet.size })}</span>
+            <button onClick={() => setHighlightQ(null)} className="btn btn-secondary btn-sm btn-icon"
+              aria-label={t('highlightClear')} title={t('highlightClear')} style={{ minHeight: '24px' }}>
+              ×
+            </button>
+          </div>
+        )}
 
         {/* Bannière du chemin de parenté calculé — nom A ↔ nom B, lien nommé + étapes */}
         {kinPath && kinResult && kinResult !== 'notfound' && layoutMode === 'vertical' && (() => {
