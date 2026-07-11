@@ -1,12 +1,17 @@
 # Migration Railway — plan & prérequis (Phase 1)
 
-> État : **CUTOVER PROD LIVE — OWNER-ONLY** (2026-07-11). `suimini.vercel.app` sert le
-> propriétaire (`a8d07d13…`) depuis **Railway prod** (pooler PgBouncer + client-TLS, cert
-> PROPRE à la prod) ; tous les autres users restent sur Supabase (défaut). Données Supabase
-> copiées + intégrité vérifiée. **Supabase = source de vérité, jamais modifié.**
-> `apiPercent`/`DB_BACKEND_ALLOWLIST` **inchangés** (owner seul). Rollback instantané :
-> `DB_BACKEND=supabase` + redeploy. Reste (sur feu vert) : élargir le rollout (+ activer
-> `fetchMyMemberships` via Railway, code PRÊT-mais-INACTIF, cf. §5.3).
+> État : **ÉLARGISSEMENT GLOBAL 100% LIVE** (2026-07-11, feu vert explicite). **TOUS** les
+> utilisateurs authentifiés de `suimini.vercel.app` lisent/écrivent le plan données depuis
+> **Railway prod** (pooler PgBouncer + client-TLS, cert PROPRE à la prod). Trois leviers ouverts
+> ensemble : `DB_BACKEND=railway` + **`DB_BACKEND_ALLOWLIST` retiré** (allowlist vide = tous),
+> Edge Config `data_layer` = **`{"default":"api","apiPercent":100,"apiAllowlist":[]}`**, et
+> **`NEXT_PUBLIC_MEMBERSHIPS_VIA_API=1`** (`fetchMyMemberships` suit Railway). Déploiement =
+> commit `67e6349` → `dpl_E9fjFVKFxWPgPVTBbsohH8VCjCmK`. Post-flip : Railway 10/100 connexions,
+> 71 persons, trafic authentifié `/api/data/*` → 200, 0 erreur 500/« too many clients ».
+> Données Supabase copiées + intégrité vérifiée. **Supabase = source de vérité, jamais modifié.**
+> **ROLLBACK INSTANTANÉ (une ligne, network-only, sans redeploy)** : remettre l'Edge Config
+> `data_layer` à `{"default":"direct","apiPercent":0,"apiAllowlist":["a8d07d13-f795-41ec-824f-5453cce02c0e"]}`
+> → tous en `direct`→Supabase. (Rollback profond : `DB_BACKEND=supabase` + redeploy.)
 
 ## 1. Objectif & périmètre
 
@@ -92,23 +97,19 @@ d'usage **normal multi-utilisateurs** (pas seulement sous test intensif).
 3. **Décision `fetchMyMemberships` — ✅ CLOSE (2026-07-11) : reste sur Supabase.**
    Raison (comme Phase 0) : liste d'accès en LECTURE (« quels arbres partagés avec
    moi »), fail-open (`error → []`), pas du contenu d'arbre.
-   ⚠️ **Caveat cross-backend à connaître** : `tree_members` est ÉCRIT sur Railway (mode
-   `api`+`railway`) alors que `fetchMyMemberships` LIT Supabase. Tant que le rollout est
-   **owner-only** (allowlist = propriétaire), sans effet — le propriétaire voit SES
-   arbres par `owner_id`, pas par appartenance. **MAIS** dès qu'on élargit à des
-   invités : un membre invité côté Railway ne serait pas vu par un `fetchMyMemberships`
-   qui lit Supabase (et réciproquement selon le backend de chaque user). À RÉSOUDRE
-   avant tout rollout multi-utilisateur avec partage réel (migrer aussi le chemin
-   membership, OU cohorter le rollout par arbre entier, OU double-écriture). Ce n'est
-   PAS un blocage du canary owner-only actuel.
-   → **✅ CODE PRÊT MAIS INACTIF (2026-07-11)** : `fetchMyMemberships` a désormais le
-   patron `*Direct`/`*ViaApi` (endpoint `GET /api/data/collaboration/my-memberships` +
-   `DataStore.getMyMemberships` + `RailwayStore`), gardé par le flag
-   **`NEXT_PUBLIC_MEMBERSHIPS_VIA_API`** (défaut OFF → lecture directe Supabase, ZÉRO
-   changement). **Activation d'un coup = poser `NEXT_PUBLIC_MEMBERSHIPS_VIA_API=1` sur
-   Vercel + redéployer** (à faire au moment d'élargir le rollout) → la lecture des
-   memberships suit alors `DB_BACKEND` (Railway), COHÉRENTE avec l'écriture. Isolé dans
-   `sharing.ts` (ne touche pas la machinerie DATA_LAYER). Aucun autre dev requis.
+   ⚠️ **Caveat cross-backend — ✅ RÉSOLU (2026-07-11) par activation du flag** : `tree_members`
+   est ÉCRIT sur Railway (mode `api`+`railway`). Historiquement `fetchMyMemberships` LISAIT
+   Supabase → risque, à l'élargissement, qu'un membre invité côté Railway ne soit pas vu par
+   une lecture Supabase (et réciproquement). **Depuis l'élargissement global, `NEXT_PUBLIC_MEMBERSHIPS_VIA_API=1`
+   est POSÉ** → `fetchMyMemberships` lit désormais **Railway** (même backend que l'écriture) pour
+   tous les users routés en `api` → lecture/écriture COHÉRENTES. Le caveat n'est plus ouvert.
+   → **✅ FLAG ACTIF (2026-07-11)** : `fetchMyMemberships` a le patron `*Direct`/`*ViaApi`
+   (endpoint `GET /api/data/collaboration/my-memberships` + `DataStore.getMyMemberships` +
+   `RailwayStore`), gardé par **`NEXT_PUBLIC_MEMBERSHIPS_VIA_API`**. **Posé à `1` sur Vercel prod**
+   (build-time, redéployé via `67e6349`) → la lecture des memberships suit `DB_BACKEND` (Railway),
+   cohérente avec l'écriture. Isolé dans `sharing.ts` (ne touche pas la machinerie DATA_LAYER).
+   **Rollback** : retirer le flag (repli lecture directe Supabase) — ou, plus simple, le rollback
+   Edge Config `direct` remet tout le monde sur Supabase d'un coup.
 4. **Parité données au moment du cutover** : re-copier l'état Supabase le plus à jour
    → Railway avec vérification de comptes (source vs destination), l'agent n'ayant
    pas les creds DB Supabase (dump fourni par l'utilisateur). **À faire au cutover
@@ -193,7 +194,7 @@ transaction-mode compris.
 Le prérequis #1 (pooler+TLS) est **levé en staging ET répliqué+vérifié sur l'env
 Railway PROD** (2026-07-11, cf. §5.1) — infra prod prête (schéma vide, aucune donnée).
 
-## 7. Checklist cutover (à dérouler quand décidé — pas aujourd'hui)
+## 7. Checklist cutover — ✅ DÉROULÉE + ÉLARGIE À 100%
 
 - [x] PgBouncer transaction-mode + client-TLS activé (staging **et** prod). ✅ 2026-07-11
 - [x] Env Railway `production` provisionné (Postgres + PgBouncer + TLS), schéma appliqué
@@ -210,11 +211,18 @@ Railway PROD** (2026-07-11, cf. §5.1) — infra prod prête (schéma vide, aucu
 - [x] **Flip `DB_BACKEND=railway`, `DB_BACKEND_ALLOWLIST=owner`.** ✅ 2026-07-11 — 12 commits
       poussés sur `origin/main` → prod déployé (git-integration). Validé par l'utilisateur
       (`suimini.vercel.app` : arbre charge + écriture OK).
-- [x] **`fetchMyMemberships` prêt-mais-inactif** (flag `NEXT_PUBLIC_MEMBERSHIPS_VIA_API`, §5.3). ✅
-- [ ] **⏸️ SUR FEU VERT** — Monter `DB_BACKEND_ALLOWLIST` progressivement (owner → %, →
-      global) + activer `NEXT_PUBLIC_MEMBERSHIPS_VIA_API=1`. `apiPercent` Edge Config
-      **inchangé** (=0) jusqu'à ordre explicite.
-- [ ] Rollback dispo à tout moment : `DB_BACKEND=supabase` + redeploy (données Supabase intactes).
+- [x] **`fetchMyMemberships` activé** — `NEXT_PUBLIC_MEMBERSHIPS_VIA_API=1` posé sur Vercel prod
+      (build-time) → `fetchMyMemberships` suit Railway pour tous. ✅ 2026-07-11
+- [x] **ÉLARGISSEMENT GLOBAL 100%** (feu vert explicite, risque assumé). ✅ 2026-07-11 — trois
+      leviers ouverts ensemble : `DB_BACKEND_ALLOWLIST` **retiré** (tous → RailwayStore), Edge
+      Config `data_layer` = `{"default":"api","apiPercent":100,"apiAllowlist":[]}` (network-only),
+      `NEXT_PUBLIC_MEMBERSHIPS_VIA_API=1`. Commit `67e6349` → `dpl_E9fjFVKFxWPgPVTBbsohH8VCjCmK`
+      Ready/aliasé. Vérif : Railway 10/100 connexions, 71 persons, `/api/data/*` authentifié → 200,
+      0 erreur 500/« too many clients ».
+- [x] **Rollback INSTANTANÉ documenté (une ligne)** : Edge Config `data_layer` →
+      `{"default":"direct","apiPercent":0,"apiAllowlist":["a8d07d13-f795-41ec-824f-5453cce02c0e"]}`
+      (network-only, sans redeploy) → tous en `direct`→Supabase. Rollback profond =
+      `DB_BACKEND=supabase` + redeploy (données Supabase intactes).
 
 **Garde-fous utilisateur** : stop + feu vert explicite avant (a) cutover prod,
 (b) toute écriture/suppression sur la base Supabase de PROD.
