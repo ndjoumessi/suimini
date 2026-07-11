@@ -77,6 +77,10 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  // Person combobox (search + alphabetical list) for the upload modal.
+  const [personQuery, setPersonQuery] = useState('');
+  const [personDropdownOpen, setPersonDropdownOpen] = useState(false);
+  const personBlurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Crop (1:1, profile-photo ratio) — see the upload modal.
   const imgRef = useRef<HTMLImageElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -101,8 +105,8 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
   }
 
   const resetCrop = () => { setCrop(undefined); setCompletedCrop(undefined); };
-  const openModal = () => { setAddPersonId(''); setPendingFile(null); setPreviewUrl(''); setDragOver(false); resetCrop(); setShowAdd(true); };
-  const closeModal = () => { setShowAdd(false); setPendingFile(null); setPreviewUrl(''); resetCrop(); };
+  const openModal = () => { setAddPersonId(''); setPendingFile(null); setPreviewUrl(''); setDragOver(false); setPersonQuery(''); setPersonDropdownOpen(false); resetCrop(); setShowAdd(true); };
+  const closeModal = () => { setShowAdd(false); setPendingFile(null); setPreviewUrl(''); setPersonQuery(''); setPersonDropdownOpen(false); resetCrop(); };
 
   // Esc closes the upload / delete modals. (The lightbox handles its own Esc via
   // useOverlay in PhotoLightbox.)
@@ -194,9 +198,23 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
   }, [tree, filterPersonId]);
 
   const personsWithPhotos = useMemo(
-    () => tree.persons.filter(p => p.profilePhoto || (p.photos && p.photos.length > 0)),
+    () => tree.persons
+      .filter(p => p.profilePhoto || (p.photos && p.photos.length > 0))
+      .sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b), 'fr', { sensitivity: 'base' })),
     [tree],
   );
+
+  // Alphabetical, searchable person list for the upload modal's "associate with" combobox.
+  const sortedPersons = useMemo(
+    () => [...tree.persons].sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b), 'fr', { sensitivity: 'base' })),
+    [tree.persons],
+  );
+  const filteredAddPersons = useMemo(() => {
+    const q = personQuery.trim().toLowerCase();
+    if (!q) return sortedPersons;
+    return sortedPersons.filter(p => getDisplayName(p).toLowerCase().includes(q));
+  }, [sortedPersons, personQuery]);
+  const selectedPerson = addPersonId ? tree.persons.find(p => p.id === addPersonId) : undefined;
 
   const FALLBACK_IMG = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='120'><rect width='160' height='120' fill='%231a1a24'/><g transform='translate(60,40) scale(1.7)' fill='none' stroke='%236c6c82' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z'/><circle cx='12' cy='13' r='3'/></g></svg>";
 
@@ -311,14 +329,49 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
               <button onClick={closeModal} aria-label={t('cancel')} className="btn btn-ghost btn-sm btn-icon"><X size={16} /></button>
             </div>
             <div style={{ padding: '16px 20px 20px', display: 'flex', flexDirection: 'column', gap: '14px', overflowY: 'auto', minHeight: 0 }}>
-              {/* 1. Person selector */}
-              <label className="gv-field">
-                <span className="label">{t('associateWith')}</span>
-                <select value={addPersonId} onChange={e => setAddPersonId(e.target.value)} className="gv-select gv-select-full">
-                  <option value="">{t('choosePerson')}</option>
-                  {tree.persons.map(p => <option key={p.id} value={p.id}>{getDisplayName(p)}</option>)}
-                </select>
-              </label>
+              {/* 1. Person selector — searchable, alphabetically sorted combobox */}
+              <div className="gv-field" style={{ position: 'relative' }}>
+                <span className="label" id="gv-person-label">{t('associateWith')}</span>
+                <input
+                  type="text"
+                  role="combobox"
+                  aria-expanded={personDropdownOpen}
+                  aria-controls="gv-person-listbox"
+                  aria-autocomplete="list"
+                  aria-labelledby="gv-person-label"
+                  autoComplete="off"
+                  placeholder={t('choosePerson')}
+                  value={personDropdownOpen ? personQuery : (selectedPerson ? getDisplayName(selectedPerson) : '')}
+                  onFocus={() => {
+                    if (personBlurTimer.current) clearTimeout(personBlurTimer.current);
+                    setPersonQuery('');
+                    setPersonDropdownOpen(true);
+                  }}
+                  onChange={e => { setPersonQuery(e.target.value); if (addPersonId) setAddPersonId(''); }}
+                  onKeyDown={e => { if (e.key === 'Escape') { setPersonDropdownOpen(false); (e.target as HTMLInputElement).blur(); } }}
+                  onBlur={() => { personBlurTimer.current = setTimeout(() => setPersonDropdownOpen(false), 120); }}
+                  className="input gv-select-full"
+                />
+                {personDropdownOpen && (
+                  <ul id="gv-person-listbox" role="listbox" aria-label={t('choosePersonLabel')} className="gv-person-listbox">
+                    {filteredAddPersons.length === 0 ? (
+                      <li className="gv-person-empty" role="presentation">{t('personSearchEmpty')}</li>
+                    ) : filteredAddPersons.map(p => (
+                      <li key={p.id} role="option" aria-selected={p.id === addPersonId}>
+                        <button
+                          type="button"
+                          className="gv-person-option"
+                          onMouseDown={e => e.preventDefault()}
+                          onClick={() => { setAddPersonId(p.id); setPersonQuery(''); setPersonDropdownOpen(false); }}
+                        >
+                          <span className="gv-dot gv-dot-static" style={{ background: genderDot(p) }} aria-hidden="true" />
+                          {getDisplayName(p)}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
 
               {/* 2. Drop zone / preview */}
               <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }}
@@ -407,6 +460,11 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
         .gv-select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         .gv-select-full { width: 100%; max-width: none; }
         .gv-field { display: flex; flex-direction: column; gap: 6px; }
+        .gv-person-listbox { position: absolute; z-index: 5; top: calc(100% + 4px); left: 0; right: 0; max-height: 240px; overflow-y: auto; margin: 0; padding: 4px; list-style: none; background: #1a1a24; border: 1px solid var(--border-strong); box-shadow: var(--shadow); }
+        .gv-person-option { width: 100%; display: flex; align-items: center; gap: 8px; padding: 7px 8px; background: transparent; border: none; color: var(--text); font-family: var(--font-body); font-size: 13px; text-align: left; cursor: pointer; }
+        .gv-person-option:hover, .gv-person-option:focus-visible { background: var(--bg-card); outline: none; }
+        li[aria-selected="true"] .gv-person-option { color: var(--accent); font-weight: 600; }
+        .gv-person-empty { padding: 8px; font-size: 13px; color: var(--text-muted); }
 
         .gv-viewtoggle { display: inline-flex; border: 1px solid var(--border); flex-shrink: 0; }
         .gv-viewtoggle button { width: 40px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; background: transparent; border: none; color: var(--text-muted); cursor: pointer; transition: background 150ms, color 150ms; }

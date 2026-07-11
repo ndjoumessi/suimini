@@ -1222,6 +1222,8 @@
     "previewAlt": "Aperçu de la photo à ajouter",
     "uploadingLabel": "Envoi en cours…",
     "needPerson": "Choisissez d’abord une personne",
+    "personSearchEmpty": "Aucune personne trouvée",
+    "changePerson": "Changer de personne",
     "cropInstruction": "Ajustez le cadre pour recadrer votre photo",
     "previewLabel": "Aperçu",
     "deletePhoto": "Supprimer la photo",

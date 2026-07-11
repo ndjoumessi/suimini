@@ -1222,6 +1222,8 @@
     "previewAlt": "Preview of the photo to add",
     "uploadingLabel": "Uploading…",
     "needPerson": "Choose a person first",
+    "personSearchEmpty": "No matching person",
+    "changePerson": "Change person",
     "cropInstruction": "Adjust the frame to crop your photo",
     "previewLabel": "Preview",
     "deletePhoto": "Delete photo",
