@@ -398,8 +398,11 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sb-icon { width: 16px; display: inline-flex; justify-content: center; position: relative; flex-shrink: 0; color: var(--accent-text); transition: color var(--t-fast); }
         .sb-count { margin-left: auto; background: var(--danger); color: #fff; padding: 1px 6px; font-family: var(--font-mono); font-size: 10px; font-weight: 700; }
 
-        /* Quick actions */
-        .sb-actions { padding: 9px 12px 8px; border-top: 1px solid var(--border); }
+        /* Quick actions — inset horizontal aligné sur le bloc « Arbre actif »
+           (.sb-tree, 14px) et le pied de compte, pour que le bouton « Ajouter »,
+           la rangée d'icônes et l'avatar partagent la même marge gauche (plus de
+           rangée d'icônes qui semble collée au bord). */
+        .sb-actions { padding: 9px 14px 8px; border-top: 1px solid var(--border); }
         .sb-add {
           width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
           background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); cursor: pointer;
@@ -419,8 +422,9 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sb-chip:hover { border-color: var(--accent); color: var(--accent-text); background: var(--accent-light); }
         .sb-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-        /* Account footer — compact (≤100px): account 36 · sync 22 · back 24 */
-        .sb-account { padding: 8px 10px 9px; border-top: 1px solid var(--border); }
+        /* Account footer — compact (≤100px): account 36 · sync 22 · back 24.
+           Même inset horizontal (14px) que les actions/le bloc arbre → colonne alignée. */
+        .sb-account { padding: 8px 14px 9px; border-top: 1px solid var(--border); }
         .sb-acct { display: flex; align-items: center; gap: 8px; height: 36px; }
         .sb-acct-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; background: none; border: none; padding: 3px; cursor: pointer; text-align: left; transition: background var(--t-fast); }
         .sb-acct-main:hover { background: var(--bg-card); }
