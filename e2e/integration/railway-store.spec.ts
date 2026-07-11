@@ -17,6 +17,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { test, expect } from '@playwright/test';
 import { RailwayStore } from '@/lib/railwayStore';
+import { query } from '@/lib/railwayDb';
 
 const TEST_URL = process.env.RAILWAY_TEST_DATABASE_URL;
 const RUN = !!TEST_URL;
@@ -88,5 +89,67 @@ describeIntegration('Railway real-cloud store', () => {
       await store.deleteTree(treeId, caller.userId);
     }
     expect(await store.loadOneTree(treeId)).toBeNull();
+  });
+
+  test('collaboration + data-plane RPC (members / invitation)', async () => {
+    const store = new RailwayStore();
+    const cTreeId = 'itest-collab-' + Math.random().toString(36).slice(2, 8);
+    const tree: any = {
+      id: cTreeId, name: 'Collab Tree', createdAt: '2026-07-11T10:00:00.000Z', updatedAt: '2026-07-11T10:00:00.000Z',
+      persons: [{ id: 'cp1', firstName: 'A', lastName: 'B', gender: 'male', isAlive: true, createdAt: '2026-07-11T10:00:00.000Z', updatedAt: '2026-07-11T10:00:00.000Z' }],
+      relationships: [], journal: [],
+    };
+    try {
+      await store.saveTree(tree, caller.userId, true);
+
+      // Comments.
+      const c = await store.addComment(cTreeId, 'cp1', 'Bonjour', { id: caller.userId, name: 'Canary' });
+      expect(c?.content).toBe('Bonjour');
+      const comments = await store.fetchComments(cTreeId, 'cp1');
+      expect(comments.length).toBe(1);
+      expect(comments[0].authorName).toBe('Canary');
+
+      // Suggestions.
+      const s = await store.addSuggestion({ treeId: cTreeId, personId: 'cp1', field: 'firstName', currentValue: 'A', suggestedValue: 'Alpha', author: { id: caller.userId, name: 'Canary' } });
+      expect(s?.suggestedValue).toBe('Alpha');
+      expect(await store.countPendingSuggestions(cTreeId)).toBe(1);
+      expect(await store.getSuggestionTreeId(s!.id)).toBe(cTreeId);
+      expect(await store.resolveSuggestion(s!.id, 'accepted')).toBe(true);
+      expect(await store.countPendingSuggestions(cTreeId)).toBe(0);
+
+      // RPC my_tree_role : owner → 'owner'.
+      const roleRes = await store.rpc('my_tree_role', { p_tree_id: cTreeId }, caller);
+      expect(roleRes.data).toBe('owner');
+
+      // Seed a member + a pending invitation directly, then exercise the member RPCs.
+      await query(
+        `insert into tree_members (tree_id, user_id, email, role, status, token, expires_at)
+         values ($1,$2,$3,'viewer','accepted',null, now()+interval '7 days'),
+                ($1,null,$4,'viewer','pending','itok-'||$5, now()+interval '7 days')`,
+        [cTreeId, '22222222-2222-2222-2222-222222222222', 'member@suimini.test', 'invitee@suimini.test', cTreeId],
+      );
+      const members = await store.rpc('get_tree_members', { p_tree_id: cTreeId }, caller);
+      expect((members.data as any[]).length).toBe(2);
+
+      const upd = await store.rpc('update_member_role', { p_tree_id: cTreeId, p_email: 'member@suimini.test', p_role: 'editor' }, caller);
+      expect(upd.error).toBeNull();
+
+      // get_invitation by token (inviter_name null on Railway by design).
+      const inv = await store.rpc('get_invitation', { p_token: 'itok-' + cTreeId }, caller);
+      expect((inv.data as any[])[0]?.tree_name).toBe('Collab Tree');
+      expect((inv.data as any[])[0]?.invited_email).toBe('invitee@suimini.test');
+
+      // accept_invitation stamps the caller.
+      const acc = await store.rpc('accept_invitation', { p_token: 'itok-' + cTreeId }, caller);
+      expect((acc.data as any[])[0]?.tree_id).toBe(cTreeId);
+      expect((acc.data as any[])[0]?.tree_name).toBe('Collab Tree');
+
+      const rem = await store.rpc('remove_member', { p_tree_id: cTreeId, p_email: 'member@suimini.test' }, caller);
+      expect(rem.error).toBeNull();
+      const after = await store.rpc('get_tree_members', { p_tree_id: cTreeId }, caller);
+      expect((after.data as any[]).length).toBe(1);
+    } finally {
+      await store.deleteTree(cTreeId, caller.userId);
+    }
   });
 });

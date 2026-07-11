@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { guardTreeWrite } from '@/lib/apiData';
-import { fetchCommentsDirect, addCommentDirect } from '@/lib/collaboration';
 
 // Phase 0 — commentaires de personne.
 //   GET  ?treeId&personId          → { comments }
@@ -18,7 +17,7 @@ export async function GET(req: Request) {
   const guard = await guardTreeWrite(treeId, 'owner');
   if (!guard.ok) return guard.res;
 
-  const comments = await fetchCommentsDirect(treeId, personId, guard.client);
+  const comments = await guard.store.fetchComments(treeId, personId);
   return NextResponse.json({ comments });
 }
 
@@ -35,10 +34,8 @@ export async function POST(req: Request) {
   const guard = await guardTreeWrite(treeId, 'owner');
   if (!guard.ok) return guard.res;
 
-  const comment = await addCommentDirect(
-    treeId, personId, content,
-    { id: guard.caller.userId, name: authorName },
-    guard.client,
+  const comment = await guard.store.addComment(
+    treeId, personId, content, { id: guard.caller.userId, name: authorName },
   );
   return NextResponse.json({ comment });
 }

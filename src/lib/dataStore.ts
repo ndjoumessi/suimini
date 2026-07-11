@@ -30,10 +30,25 @@ import {
 import {
   createSupabaseAuthzProvider, type AuthzDataProvider, type Caller,
 } from '@/lib/authz';
+import {
+  fetchCommentsDirect, addCommentDirect,
+  fetchPendingSuggestionsDirect, countPendingSuggestionsDirect, addSuggestionDirect, resolveSuggestionDirect,
+  type PersonComment, type PersonSuggestion,
+} from '@/lib/collaboration';
 import { railwayConfigured } from '@/lib/railwayDb';
 import type { FamilyTree, Person, Relationship } from '@/types';
 
 export type Backend = 'supabase' | 'railway';
+
+export interface RpcResult { data: any; error: { message: string } | null }
+export interface AddSuggestionInput {
+  treeId: string; personId: string; field: string; currentValue: string | null; suggestedValue: string;
+  author: { id: string; name: string };
+}
+/** RPC data-plane forwardées vers le store (les RPC admin/profil restent Supabase). */
+export const DATA_PLANE_RPCS = new Set([
+  'get_tree_members', 'update_member_role', 'remove_member', 'my_tree_role', 'get_invitation', 'accept_invitation',
+]);
 
 /** Opérations DONNÉES d'arbre, backend-agnostiques. Miroir de l'interface navigateur
  * `DataClient` (dataClient.ts), côté serveur. */
@@ -49,6 +64,19 @@ export interface DataStore {
   deleteChildRows(treeId: string, table: ChildTable, ids: string[]): Promise<boolean>;
   detectDeleteConflicts(treeId: string, table: ChildTable, entities: { id: string; updatedAt?: string }[]): Promise<DeleteConflict[]>;
   restoreEntity(treeId: string, entityType: 'person' | 'relationship', entity: Person | Relationship): Promise<void>;
+
+  // Collaboration (commentaires + suggestions). AuthZ owner-only faite par la route.
+  fetchComments(treeId: string, personId: string): Promise<PersonComment[]>;
+  addComment(treeId: string, personId: string, content: string, author: { id: string; name: string }): Promise<PersonComment | null>;
+  fetchPendingSuggestions(treeId: string, personId?: string): Promise<PersonSuggestion[]>;
+  countPendingSuggestions(treeId: string): Promise<number>;
+  addSuggestion(input: AddSuggestionInput): Promise<PersonSuggestion | null>;
+  resolveSuggestion(id: string, status: 'accepted' | 'rejected'): Promise<boolean>;
+  /** tree_id d'une suggestion (la route resolve vérifie ensuite isTreeOwner). */
+  getSuggestionTreeId(id: string): Promise<string | null>;
+
+  // RPC data-plane (membres/invitations) forwardées sous l'identité de l'appelant.
+  rpc(name: string, args: Record<string, unknown>, caller: Caller): Promise<RpcResult>;
 }
 
 /** Backend Supabase : passe-plat vers supabaseSync sous le client de l'appelant.
@@ -72,6 +100,21 @@ export class SupabaseStore implements DataStore {
   deleteChildRows(_treeId: string, table: ChildTable, ids: string[]) { return deleteChildRowsSupa(table, ids, this.client); }
   detectDeleteConflicts(_treeId: string, table: ChildTable, entities: { id: string; updatedAt?: string }[]) { return detectConflictsSupa(table, entities, this.client); }
   restoreEntity(treeId: string, entityType: 'person' | 'relationship', entity: Person | Relationship) { return restoreEntityAlive(treeId, entityType, entity, this.client); }
+
+  fetchComments(treeId: string, personId: string) { return fetchCommentsDirect(treeId, personId, this.client); }
+  addComment(treeId: string, personId: string, content: string, author: { id: string; name: string }) { return addCommentDirect(treeId, personId, content, author, this.client); }
+  fetchPendingSuggestions(treeId: string, personId?: string) { return fetchPendingSuggestionsDirect(treeId, personId, this.client); }
+  countPendingSuggestions(treeId: string) { return countPendingSuggestionsDirect(treeId, this.client); }
+  addSuggestion(input: AddSuggestionInput) { return addSuggestionDirect(input, this.client); }
+  resolveSuggestion(id: string, status: 'accepted' | 'rejected') { return resolveSuggestionDirect(id, status, this.client); }
+  async getSuggestionTreeId(id: string) {
+    const { data } = await this.client.from('person_suggestions').select('tree_id').eq('id', id).maybeSingle();
+    return (data?.tree_id as string | undefined) ?? null;
+  }
+  async rpc(name: string, args: Record<string, unknown>) {
+    const { data, error } = await this.client.rpc(name, args);
+    return { data: data ?? null, error: error ? { message: error.message as string } : null };
+  }
 }
 
 // ── Sélecteur de backend ─────────────────────────────────────────────────────

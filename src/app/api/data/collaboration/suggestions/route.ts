@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { guardTreeWrite } from '@/lib/apiData';
-import { fetchPendingSuggestionsDirect, addSuggestionDirect } from '@/lib/collaboration';
 
 // Phase 0 — suggestions d'édition.
 //   GET  ?treeId[&personId]        → { suggestions } (pending, plus ancien d'abord)
@@ -17,7 +16,7 @@ export async function GET(req: Request) {
   const guard = await guardTreeWrite(treeId, 'owner');
   if (!guard.ok) return guard.res;
 
-  const suggestions = await fetchPendingSuggestionsDirect(treeId, personId, guard.client);
+  const suggestions = await guard.store.fetchPendingSuggestions(treeId, personId);
   return NextResponse.json({ suggestions });
 }
 
@@ -36,9 +35,8 @@ export async function POST(req: Request) {
   const guard = await guardTreeWrite(treeId, 'owner');
   if (!guard.ok) return guard.res;
 
-  const suggestion = await addSuggestionDirect(
+  const suggestion = await guard.store.addSuggestion(
     { treeId, personId, field, currentValue, suggestedValue, author: { id: guard.caller.userId, name: authorName } },
-    guard.client,
   );
   return NextResponse.json({ suggestion });
 }

@@ -16,6 +16,8 @@ import {
   type LoadResult, type SharedMeta, type DeleteConflict, type ChildTable,
 } from '@/lib/supabaseSync';
 import { type AuthzDataProvider, type Caller, type Permission, type MembershipStatus } from '@/lib/authz';
+import type { PersonComment, PersonSuggestion } from '@/lib/collaboration';
+import type { RpcResult, AddSuggestionInput } from '@/lib/dataStore';
 import type { FamilyTree, Person, Relationship } from '@/types';
 import type { PoolClient } from 'pg';
 
@@ -264,4 +266,142 @@ export class RailwayStore {
       else await upsertRows(c, 'relationships', [relToRow(entity as Relationship, treeId)]);
     });
   }
+
+  // ── Collaboration ───────────────────────────────────────────────────────────
+  // (AuthZ owner-only faite par la route AVANT ces appels ; mêmes formes que
+  // les mappers de collaboration.ts — snake_case → camelCase.)
+
+  async fetchComments(treeId: string, personId: string): Promise<PersonComment[]> {
+    const rows = await query<any>(
+      'select * from person_comments where tree_id = $1 and person_id = $2 order by created_at asc', [treeId, personId],
+    );
+    return rows.map(mapCommentRow);
+  }
+  async addComment(treeId: string, personId: string, content: string, author: { id: string; name: string }): Promise<PersonComment | null> {
+    const trimmed = content.trim();
+    if (!trimmed) return null;
+    const rows = await query<any>(
+      `insert into person_comments (tree_id, person_id, author_id, author_name, content)
+       values ($1,$2,$3,$4,$5) returning *`,
+      [treeId, personId, author.id, author.name, trimmed],
+    );
+    return rows[0] ? mapCommentRow(rows[0]) : null;
+  }
+  async fetchPendingSuggestions(treeId: string, personId?: string): Promise<PersonSuggestion[]> {
+    const rows = personId
+      ? await query<any>('select * from person_suggestions where tree_id = $1 and status = $2 and person_id = $3 order by created_at asc', [treeId, 'pending', personId])
+      : await query<any>('select * from person_suggestions where tree_id = $1 and status = $2 order by created_at asc', [treeId, 'pending']);
+    return rows.map(mapSuggestionRow);
+  }
+  async countPendingSuggestions(treeId: string): Promise<number> {
+    const rows = await query<{ n: string }>("select count(*)::int as n from person_suggestions where tree_id = $1 and status = 'pending'", [treeId]);
+    return Number(rows[0]?.n ?? 0);
+  }
+  async addSuggestion(s: AddSuggestionInput): Promise<PersonSuggestion | null> {
+    const rows = await query<any>(
+      `insert into person_suggestions (tree_id, person_id, author_id, author_name, field, current_value, suggested_value)
+       values ($1,$2,$3,$4,$5,$6,$7) returning *`,
+      [s.treeId, s.personId, s.author.id, s.author.name, s.field, s.currentValue, s.suggestedValue],
+    );
+    return rows[0] ? mapSuggestionRow(rows[0]) : null;
+  }
+  async resolveSuggestion(id: string, status: 'accepted' | 'rejected'): Promise<boolean> {
+    try { await query('update person_suggestions set status = $2 where id = $1', [id, status]); return true; }
+    catch { return false; }
+  }
+  async getSuggestionTreeId(id: string): Promise<string | null> {
+    const rows = await query<{ tree_id: string }>('select tree_id from person_suggestions where id = $1', [id]);
+    return rows[0]?.tree_id ?? null;
+  }
+
+  // ── RPC data-plane (membres/invitations) ─────────────────────────────────────
+  // Miroir des RPC SECURITY DEFINER 0013 : `auth.uid()` remplacé par `caller`.
+
+  async rpc(name: string, args: Record<string, unknown>, caller: Caller): Promise<RpcResult> {
+    try {
+      switch (name) {
+        case 'get_tree_members': return { data: await this.getTreeMembers(String(args.p_tree_id), caller), error: null };
+        case 'update_member_role': return await this.updateMemberRole(String(args.p_tree_id), String(args.p_email), String(args.p_role), caller);
+        case 'remove_member': return await this.removeMember(String(args.p_tree_id), String(args.p_email), caller);
+        case 'my_tree_role': return { data: await this.myTreeRole(String(args.p_tree_id), caller), error: null };
+        case 'accept_invitation': return { data: await this.acceptInvitation(String(args.p_token), caller), error: null };
+        case 'get_invitation': return { data: await this.getInvitation(String(args.p_token)), error: null };
+        default: return { data: null, error: { message: `RPC ${name} non implémentée pour Railway.` } };
+      }
+    } catch (e) {
+      return { data: null, error: { message: e instanceof Error ? e.message : 'RPC échouée.' } };
+    }
+  }
+
+  /** Owner OU membre accepté 'admin'. */
+  private async canManageMembers(treeId: string, caller: Caller): Promise<boolean> {
+    const rows = await query<{ ok: boolean }>(
+      `select exists(
+         select 1 from trees where id = $1 and owner_id = $2
+         union all
+         select 1 from tree_members where tree_id = $1 and user_id = $2 and status = 'accepted' and role = 'admin'
+       ) as ok`, [treeId, caller.userId],
+    );
+    return !!rows[0]?.ok;
+  }
+
+  private async getTreeMembers(treeId: string, caller: Caller) {
+    if (!(await this.canManageMembers(treeId, caller))) throw new Error('Unauthorized');
+    return query<any>(
+      'select email, role, status, invited_at, accepted_at from tree_members where tree_id = $1 order by invited_at desc', [treeId],
+    );
+  }
+  private async updateMemberRole(treeId: string, email: string, role: string, caller: Caller): Promise<RpcResult> {
+    if (!(await this.canManageMembers(treeId, caller))) return { data: null, error: { message: 'Unauthorized' } };
+    if (!['viewer', 'editor', 'admin'].includes(role)) return { data: null, error: { message: 'Rôle invalide.' } };
+    await query('update tree_members set role = $3 where tree_id = $1 and lower(email) = lower($2)', [treeId, email, role]);
+    return { data: null, error: null };
+  }
+  private async removeMember(treeId: string, email: string, caller: Caller): Promise<RpcResult> {
+    if (!(await this.canManageMembers(treeId, caller))) return { data: null, error: { message: 'Unauthorized' } };
+    await query('delete from tree_members where tree_id = $1 and lower(email) = lower($2)', [treeId, email]);
+    return { data: null, error: null };
+  }
+  private async myTreeRole(treeId: string, caller: Caller): Promise<string | null> {
+    const owner = await query<{ owner_id: string }>('select owner_id from trees where id = $1', [treeId]);
+    if (owner[0]?.owner_id === caller.userId) return 'owner';
+    const m = await query<{ role: string }>(
+      "select role from tree_members where tree_id = $1 and user_id = $2 and status = 'accepted'", [treeId, caller.userId],
+    );
+    return m[0]?.role ?? null;
+  }
+  private async acceptInvitation(token: string, caller: Caller): Promise<Array<{ tree_id: string; tree_name: string; role: string }>> {
+    return withTransaction(async (c) => {
+      const inv = await c.query<any>('select * from tree_members where token = $1', [token]);
+      const row = inv.rows[0];
+      if (!row) throw new Error('Invitation introuvable.');
+      if (row.expires_at && Date.parse(row.expires_at) < Date.now()) throw new Error('Invitation expirée.');
+      await c.query(
+        "update tree_members set status = 'accepted', user_id = $2, accepted_at = now() where token = $1", [token, caller.userId],
+      );
+      const t = await c.query<{ name: string }>('select name from trees where id = $1', [row.tree_id]);
+      return [{ tree_id: row.tree_id, tree_name: t.rows[0]?.name ?? '', role: row.role }];
+    });
+  }
+  private async getInvitation(token: string): Promise<Array<any>> {
+    const rows = await query<any>(
+      `select tm.role, tm.status, tm.email as invited_email, tm.expires_at, t.name as tree_name
+         from tree_members tm join trees t on t.id = tm.tree_id where tm.token = $1`, [token],
+    );
+    if (!rows[0]) return [];
+    // inviter_name vit dans profiles (Supabase, hors périmètre Railway) → null ici.
+    // (En mode api, l'appel anonyme /invite reste sur Supabase ; ce chemin ne sert
+    //  qu'un appelant authentifié allowlisté.) Suivi : enrichir via get_public_profiles.
+    return [{ ...rows[0], inviter_name: null }];
+  }
+}
+
+function mapCommentRow(r: any): PersonComment {
+  return { id: r.id, treeId: r.tree_id, personId: r.person_id, authorId: r.author_id, authorName: r.author_name, content: r.content, createdAt: r.created_at };
+}
+function mapSuggestionRow(r: any): PersonSuggestion {
+  return {
+    id: r.id, treeId: r.tree_id, personId: r.person_id, authorId: r.author_id, authorName: r.author_name,
+    field: r.field, currentValue: r.current_value, suggestedValue: r.suggested_value, status: r.status, createdAt: r.created_at,
+  };
 }
