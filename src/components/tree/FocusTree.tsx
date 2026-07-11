@@ -2,7 +2,7 @@
 import { useMemo, useRef, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { FamilyTree, Person } from '@/types';
-import { getParents, getChildren, getSpouses, getDisplayName, formatYear, getAge, formatAge, buildGenerationMap } from '@/lib/treeUtils';
+import { getParents, getChildren, getSpouses, getDisplayName, formatYear, getAge, formatAge, buildGenerationMap, findUnion, isUnionEnded } from '@/lib/treeUtils';
 import { ChevronUp, ChevronDown, ChevronRight, Crosshair } from 'lucide-react';
 import TreeNode from './TreeNode';
 import { GENDER_BAR } from './nodeStyle';
@@ -135,14 +135,17 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
   const focusX = (i: number) => frStart + i * (NODE_W + GAP);
 
   // ---- connectors ----
-  const links: { x1: number; y1: number; x2: number; y2: number }[] = [];
+  // `ended` = union terminée (divorce/séparation) → trait pointillé + losange atténué.
+  const links: { x1: number; y1: number; x2: number; y2: number; ended?: boolean }[] = [];
   // Diamond markers on each conjugal connector (◇ = lien conjugal).
-  const unions: { x: number; y: number }[] = [];
-  // spouse bar
+  const unions: { x: number; y: number; ended?: boolean }[] = [];
+  // spouse bar — chaque segment porte l'état de l'union focus ↔ conjoint concerné.
   for (let i = 1; i < focusRow.length; i++) {
     const ly = focusY + NODE_H / 2;
-    links.push({ x1: focusX(i - 1) + NODE_W, y1: ly, x2: focusX(i), y2: ly });
-    unions.push({ x: (focusX(i - 1) + NODE_W + focusX(i)) / 2, y: ly });
+    const rel = focus ? findUnion(focus.id, focusRow[i].p.id, tree.relationships) : undefined;
+    const ended = rel ? isUnionEnded(rel) : false;
+    links.push({ x1: focusX(i - 1) + NODE_W, y1: ly, x2: focusX(i), y2: ly, ended });
+    unions.push({ x: (focusX(i - 1) + NODE_W + focusX(i)) / 2, y: ly, ended });
   }
   // parents -> focus
   if (hasParents) {
@@ -312,13 +315,15 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         <div className="ft-stage" ref={stageRef} style={{ width: stageW, height: stageH }}>
           <svg className="ft-links" width={stageW} height={stageH} aria-hidden="true">
             {links.map((l, i) => (
-              <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke="var(--accent)" strokeOpacity={0.5} strokeWidth={1.5} strokeLinecap="round" />
+              <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke="var(--accent)"
+                strokeOpacity={l.ended ? 0.35 : 0.5} strokeWidth={1.5} strokeLinecap="round"
+                strokeDasharray={l.ended ? '6 5' : undefined} />
             ))}
-            {/* Conjugal diamond (◇) on each spouse connector */}
+            {/* Conjugal diamond (◇) on each spouse connector — atténué si union terminée */}
             {unions.map((u, i) => (
               <rect key={`u-${i}`} x={u.x - 5} y={u.y - 5} width={10} height={10}
                 transform={`rotate(45 ${u.x} ${u.y})`}
-                fill="var(--bg)" stroke="var(--accent)" strokeWidth={1.5} />
+                fill="var(--bg)" stroke={u.ended ? 'var(--text-muted)' : 'var(--accent)'} strokeWidth={1.5} />
             ))}
           </svg>
           {/* Generation band labels, centred on the connector bus between rows */}
@@ -349,6 +354,12 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         <span className="ft-leg-item"><span className="ft-leg-bar" style={{ background: GENDER_BAR.female }} />{t('female')}</span>
         <span className="ft-leg-item"><span className="ft-leg-bar" style={{ background: GENDER_BAR.pivot }} />{t('pivot')}</span>
         <span className="ft-leg-item"><span className="ft-leg-dia" />{t('spouse')}</span>
+        <span className="ft-leg-item">
+          <svg width="18" height="6" aria-hidden="true" style={{ flexShrink: 0 }}>
+            <line x1="0" y1="3" x2="18" y2="3" stroke="var(--accent)" strokeWidth="1.5" strokeDasharray="4 3" strokeOpacity="0.6" />
+          </svg>
+          {t('unionEnded')}
+        </span>
       </div>
 
       {/* Down nav — next generation */}

@@ -254,6 +254,7 @@
     "child": "child",
     "children": "children",
     "union": "Union",
+    "unionEnded": "Ended union",
     "bornM": "b.",
     "bornF": "b.",
     "genderM": "male",

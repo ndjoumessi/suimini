@@ -211,6 +211,23 @@ export function getSpouses(personId: string, relationships: Relationship[], pers
     .filter(Boolean) as Person[];
 }
 
+/** La relation conjugale (spouse/partner) entre deux personnes, si elle existe. */
+export function findUnion(aId: string, bId: string, relationships: Relationship[]): Relationship | undefined {
+  return relationships.find(r =>
+    (r.type === 'spouse' || r.type === 'partner') &&
+    ((r.person1Id === aId && r.person2Id === bId) || (r.person1Id === bId && r.person2Id === aId))
+  );
+}
+
+/** Union « terminée » (divorce/séparation) : événement de divorce, date de fin,
+ * ou `isActive === false` EXPLICITE (undefined = union en cours — la plupart des
+ * relations existantes ne posent pas ce champ). Champ non-breaking : aucune
+ * migration du modèle nécessaire. */
+export function isUnionEnded(rel: Relationship): boolean {
+  if (rel.type !== 'spouse' && rel.type !== 'partner') return false;
+  return !!rel.divorceEvent || !!rel.endDate || rel.isActive === false;
+}
+
 export function getSiblings(personId: string, relationships: Relationship[], persons: Person[]): Person[] {
   const parents = getParents(personId, relationships, persons);
   if (parents.length === 0) return [];

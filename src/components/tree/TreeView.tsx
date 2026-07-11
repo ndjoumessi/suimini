@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { FamilyTree, Person } from '@/types';
-import { getParents, getChildren, getSpouses, getSiblings, getDisplayName, formatYear, getAge, formatAge, personCompleteness, findRelationPath, describeRelation, buildGenerationMap } from '@/lib/treeUtils';
+import { getParents, getChildren, getSpouses, getSiblings, getDisplayName, formatYear, getAge, formatAge, personCompleteness, findRelationPath, describeRelation, buildGenerationMap, findUnion, isUnionEnded } from '@/lib/treeUtils';
 import { joinTreeCursors, presenceColor, collaborationEnabled, type CursorPeer } from '@/lib/collaboration';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/useMediaQuery';
@@ -82,8 +82,9 @@ function taupeScale(t: number): string {
 }
 
 interface TreeNode { person: Person; x: number; y: number; role?: 'spouse' }
-interface Edge { x1: number; y1: number; x2: number; y2: number; type: string; }
-interface Pearl { x: number; y: number; }
+/** `ended` = union terminée (divorce/séparation) → trait pointillé. */
+interface Edge { x1: number; y1: number; x2: number; y2: number; type: string; ended?: boolean; }
+interface Pearl { x: number; y: number; ended?: boolean; }
 
 interface Props {
   tree: FamilyTree;
@@ -209,8 +210,11 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
         const sx = prevNodeX + NODE_W + H_GAP;
         nodes.push({ person: spouse, x: sx, y: genY, role: 'spouse' });
         const lineY = genY + NODE_H / 2;
-        edges.push({ x1: prevNodeX + NODE_W, y1: lineY, x2: sx, y2: lineY, type: 'spouse' });
-        pearls.push({ x: prevNodeX + NODE_W + H_GAP / 2, y: lineY });
+        // Union terminée (divorce/séparation) → connecteur pointillé + losange atténué.
+        const rel = findUnion(personId, spouse.id, tree.relationships);
+        const ended = rel ? isUnionEnded(rel) : false;
+        edges.push({ x1: prevNodeX + NODE_W, y1: lineY, x2: sx, y2: lineY, type: 'spouse', ended });
+        pearls.push({ x: prevNodeX + NODE_W + H_GAP / 2, y: lineY, ended });
         prevNodeX = sx;
       });
 
@@ -277,8 +281,10 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
             const p0Right = parentStartX + NODE_W;
             const p1Left = parentStartX + NODE_W + H_GAP;
             const lineY = parentY + NODE_H / 2;
-            edges.push({ x1: p0Right, y1: lineY, x2: p1Left, y2: lineY, type: 'spouse' });
-            pearls.push({ x: parentStartX + NODE_W + H_GAP / 2, y: lineY });
+            const rel = findUnion(parents[0].id, parents[1].id, tree.relationships);
+            const ended = rel ? isUnionEnded(rel) : false;
+            edges.push({ x1: p0Right, y1: lineY, x2: p1Left, y2: lineY, type: 'spouse', ended });
+            pearls.push({ x: parentStartX + NODE_W + H_GAP / 2, y: lineY, ended });
           }
         }
       }
@@ -855,24 +861,28 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
               const isSpouse = edge.type === 'spouse';
               // Union (spouse): thick SOLID terracotta horizontal bar. Filiation
               // (parent): thinner solid ink elbow. Differentiated by weight + colour
-              // + the union losange below — never by dashing (both read as solid).
+              // + the union losange below. SEULE exception au « jamais de pointillé » :
+              // une union TERMINÉE (divorce/séparation) est tiretée + atténuée — le
+              // trait plein reste réservé aux liens actifs.
               return (
                 <line key={i}
                   x1={edge.x1} y1={edge.y1} x2={edge.x2} y2={edge.y2}
                   stroke={isSpouse ? 'var(--accent)' : 'var(--ink)'}
                   strokeWidth={isSpouse ? 2.25 : 1.6}
                   strokeLinecap="round"
-                  opacity={isSpouse ? 0.75 : 0.34}
+                  strokeDasharray={isSpouse && edge.ended ? '7 5' : undefined}
+                  opacity={isSpouse ? (edge.ended ? 0.5 : 0.75) : 0.34}
                 />
               );
             })}
 
-            {/* Union marker — a small terracotta losange (◆) centred on each couple's bar */}
+            {/* Union marker — a small terracotta losange (◆) centred on each couple's bar.
+                Union terminée : losange atténué (gris), assorti au trait tireté. */}
             {visiblePearls.map((p, i) => (
               <rect key={`pearl-${i}`}
                 x={p.x - 4} y={p.y - 4} width={8} height={8}
                 transform={`rotate(45 ${p.x} ${p.y})`}
-                fill="var(--bg-card)" stroke="var(--accent)" strokeWidth={1.5}
+                fill="var(--bg-card)" stroke={p.ended ? 'var(--text-muted)' : 'var(--accent)'} strokeWidth={1.5}
                 style={{ pointerEvents: 'none' }} />
             ))}
             </g>{/* /edge+pearl focus layer */}
@@ -1130,6 +1140,12 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
                   <line x1="0" y1="5" x2="26" y2="5" stroke="var(--accent)" strokeWidth="2.25" opacity="0.75" />
                   <rect x="10" y="2" width="6" height="6" transform="rotate(45 13 5)" fill="var(--bg-card)" stroke="var(--accent)" strokeWidth="1.2" />
                 </svg> {t('union')}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <svg width="26" height="10" style={{ flexShrink: 0 }}>
+                  <line x1="0" y1="5" x2="26" y2="5" stroke="var(--accent)" strokeWidth="2.25" strokeDasharray="5 4" opacity="0.5" />
+                  <rect x="10" y="2" width="6" height="6" transform="rotate(45 13 5)" fill="var(--bg-card)" stroke="var(--text-muted)" strokeWidth="1.2" />
+                </svg> {t('unionEnded')}
               </div>
             </div>
           </div>

@@ -254,6 +254,7 @@
     "child": "enfant",
     "children": "enfants",
     "union": "Union",
+    "unionEnded": "Union terminée",
     "bornM": "né",
     "bornF": "née",
     "genderM": "homme",
