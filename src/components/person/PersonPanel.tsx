@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef, useMemo, useId } from 'react';
+import { useState, useEffect, useRef, useMemo, useId, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Person, FamilyTree, Relationship, RelationType, FamilyEvent, EventType, Note, Citation, DnaOrigin, AiNarrative } from '@/types';
 import { getParents, getChildren, getSpouses, getSiblings, getAge, formatDate, formatYear, getDisplayName, generateId, safeHttpUrl, compareByBirthDate } from '@/lib/treeUtils';
@@ -13,7 +13,7 @@ import { useOverlay } from '@/hooks/useOverlay';
 import ReactMarkdown from 'react-markdown';
 import PersonForm from './PersonForm';
 import { PersonCombobox } from '../ui/PersonCombobox';
-import { X, Pencil, Trash2, User, Clock, Users, Calendar, StickyNote, BookOpen, Lightbulb, Link2, AlertCircle, Dna, FileText, Images, ScanFace, ScanLine, Landmark, MessageSquare, MapPin, Briefcase, Globe, GraduationCap, Church, Baby, Skull, Heart, Swords, Plane, GripVertical, CalendarDays, ArrowLeft } from 'lucide-react';
+import { X, Pencil, Trash2, User, Clock, Users, Calendar, StickyNote, BookOpen, Lightbulb, Link2, AlertCircle, Dna, FileText, Images, ScanFace, ScanLine, Landmark, MessageSquare, MapPin, Briefcase, Globe, GraduationCap, Church, Baby, Skull, Heart, Swords, Plane, GripVertical, CalendarDays, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Props {
   person: Person;
@@ -163,6 +163,34 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
   const suggestValueId = `${baseId}-suggest-value`;
 
   const reducedMotion = useReducedMotion();
+
+  // Horizontal-overflow indicator for the tabs row (same carousel pattern as
+  // FocusTree): show a gradient fade + pulsing chevron on each side that still
+  // has clipped tabs, so users know the row scrolls to reveal more sections.
+  const tabsRef = useRef<HTMLDivElement>(null);
+  const [tabOverflow, setTabOverflow] = useState({ left: false, right: false });
+  const updateTabOverflow = useCallback(() => {
+    const el = tabsRef.current;
+    if (!el) return;
+    const left = el.scrollLeft > 2;
+    const right = el.scrollWidth - el.scrollLeft - el.clientWidth > 2;
+    setTabOverflow(o => (o.left === left && o.right === right) ? o : { left, right });
+  }, []);
+  useEffect(() => {
+    const el = tabsRef.current;
+    if (!el) return;
+    updateTabOverflow();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => updateTabOverflow());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [updateTabOverflow, readOnly]);
+  // Keep the active tab in view when it changes (e.g. jumping to "edit").
+  useEffect(() => {
+    const el = tabsRef.current;
+    el?.querySelector<HTMLElement>('[aria-selected="true"]')?.scrollIntoView({ block:'nearest', inline:'nearest' });
+    updateTabOverflow();
+  }, [tab, updateTabOverflow]);
 
   const commentsEnabled = collaborationEnabled() && !!user;
   const commentAuthor = user
@@ -522,7 +550,8 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
       </div>
 
       {/* Tabs */}
-      <div className="tabs" role="tablist" aria-label={t('tabsAria')} style={{ margin:'0 14px', paddingTop:'4px', overflowX:'auto', flexShrink:0 }}>
+      <div className="pp-tabs-wrap" style={{ flexShrink:0 }}>
+      <div ref={tabsRef} onScroll={updateTabOverflow} className="tabs pp-tabs" role="tablist" aria-label={t('tabsAria')} style={{ paddingTop:'4px', overflowX:'auto' }}>
         {([
           { id:'profile', Icon:User },
           { id:'life', Icon:Clock },
@@ -545,6 +574,13 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
           </button>
           );
         })}
+      </div>
+        {tabOverflow.left && (
+          <div className="pp-tabfade pp-tabfade-left" aria-hidden="true"><ChevronLeft size={16} className="pp-tabfade-chev" /></div>
+        )}
+        {tabOverflow.right && (
+          <div className="pp-tabfade pp-tabfade-right" aria-hidden="true"><ChevronRight size={16} className="pp-tabfade-chev" /></div>
+        )}
       </div>
 
       {/* Content */}
@@ -759,7 +795,10 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
         {tab==='events' && (
           <div className="animate-fade-in">
             {(!person.events||person.events.length===0) ? (
-              <div style={{ textAlign:'center', padding:'20px', color:'var(--text-muted)' }}>{t('noEvents')}</div>
+              !showAddEvent ? (
+                <EmptyState Icon={Calendar} title={t('noEvents')} hint={t('noEventsHint')}
+                  action={!readOnly ? <button onClick={()=>setShowAddEvent(true)} className="btn btn-primary btn-sm">+ {t('addEvent')}</button> : undefined} />
+              ) : null
             ) : (
               <>
                 <div style={{ fontSize:'11px', color:'var(--text-light)', marginBottom:'8px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
@@ -825,7 +864,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
               </>
             )}
             {!showAddEvent ? (
-              !readOnly ? <button onClick={()=>setShowAddEvent(true)} className="btn btn-secondary btn-sm">+ {t('addEvent')}</button> : null
+              (!readOnly && person.events && person.events.length>0) ? <button onClick={()=>setShowAddEvent(true)} className="btn btn-secondary btn-sm">+ {t('addEvent')}</button> : null
             ) : (
               <div style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)' }} className="animate-fade-in">
                 <h4 style={{ margin:'0 0 10px', fontSize:'13px' }}>{t('newEvent')}</h4>
@@ -853,10 +892,14 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
 
         {tab==='notes' && (
           <div className="animate-fade-in">
-            <div style={{ display:'flex', flexDirection:'column', gap:'10px', marginBottom:'12px' }}>
-              {(!person.notes||person.notes.length===0) ? (
-                <div style={{ textAlign:'center', padding:'20px', color:'var(--text-muted)' }}>{t('noNotes')}</div>
-              ) : (
+            {(!person.notes||person.notes.length===0) ? (
+              !showAddNote ? (
+                <EmptyState Icon={StickyNote} title={t('noNotes')} hint={t('noNotesHint')}
+                  action={!readOnly ? <button onClick={()=>setShowAddNote(true)} className="btn btn-primary btn-sm">+ {t('addNote')}</button> : undefined} />
+              ) : null
+            ) : (
+              <div style={{ display:'flex', flexDirection:'column', gap:'10px', marginBottom:'12px' }}>
+              {
                 person.notes.map(note=>(
                   <div key={note.id} style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)', border:'1px solid var(--border)' }}>
                     {editNoteId===note.id ? (
@@ -883,10 +926,11 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                     )}
                   </div>
                 ))
-              )}
-            </div>
+              }
+              </div>
+            )}
             {!showAddNote ? (
-              !readOnly ? <button onClick={()=>setShowAddNote(true)} className="btn btn-secondary btn-sm">+ {t('addNote')}</button> : null
+              (!readOnly && person.notes && person.notes.length>0) ? <button onClick={()=>setShowAddNote(true)} className="btn btn-secondary btn-sm">+ {t('addNote')}</button> : null
             ) : (
               <div style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)' }} className="animate-fade-in">
                 <textarea autoFocus value={newNoteContent} onChange={e=>setNewNoteContent(e.target.value)} className="input" rows={3} style={{ resize:'vertical', marginBottom:'8px', width:'100%' }} placeholder={t('noteplaceholder')} />
@@ -906,10 +950,14 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                 <ScanLine size={14} aria-hidden="true" /> {to('scanButton')}
               </button>
             )}
-            <div style={{ display:'flex', flexDirection:'column', gap:'10px', marginBottom:'12px' }}>
-              {(!person.citations||person.citations.length===0) ? (
-                <div style={{ textAlign:'center', padding:'20px', color:'var(--text-muted)' }}>{t('noSources')}</div>
-              ) : (
+            {(!person.citations||person.citations.length===0) ? (
+              !showAddCitation ? (
+                <EmptyState Icon={BookOpen} title={t('noSources')} hint={t('noSourcesHint')}
+                  action={!readOnly ? <button onClick={()=>setShowAddCitation(true)} className="btn btn-primary btn-sm">+ {t('addSource')}</button> : undefined} />
+              ) : null
+            ) : (
+              <div style={{ display:'flex', flexDirection:'column', gap:'10px', marginBottom:'12px' }}>
+              {
                 person.citations.map(citation=>(
                   <div key={citation.id} style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)', border:'1px solid var(--border)', borderLeft:'3px solid var(--accent)' }}>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:'8px' }}>
@@ -929,10 +977,11 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                     </div>
                   </div>
                 ))
-              )}
-            </div>
+              }
+              </div>
+            )}
             {!showAddCitation ? (
-              !readOnly && <button onClick={()=>setShowAddCitation(true)} className="btn btn-secondary btn-sm">+ {t('addSource')}</button>
+              (!readOnly && person.citations && person.citations.length>0) ? <button onClick={()=>setShowAddCitation(true)} className="btn btn-secondary btn-sm">+ {t('addSource')}</button> : null
             ) : (
               <div style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)' }} className="animate-fade-in">
                 <h4 style={{ margin:'0 0 10px', fontSize:'13px' }}>{t('newSource')}</h4>
@@ -975,11 +1024,8 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                 ))}
               </div>
             ) : (
-              <div style={{ textAlign:'center', padding:'40px 16px', color:'var(--text-muted)', display:'flex', flexDirection:'column', alignItems:'center', gap:'10px' }}>
-                <Images size={40} strokeWidth={1.2} aria-hidden="true" />
-                <p style={{ margin:0, fontSize:'13px' }}>{t('noPhotos')}</p>
-                {!readOnly && <button onClick={()=>setTab('edit')} className="btn btn-secondary btn-sm"><Pencil size={13} aria-hidden="true" /> {t('addPhotos')}</button>}
-              </div>
+              <EmptyState Icon={Images} title={t('noPhotos')} hint={t('noPhotosHint')}
+                action={!readOnly ? <button onClick={()=>setTab('edit')} className="btn btn-primary btn-sm"><Pencil size={13} aria-hidden="true" /> {t('addPhotos')}</button> : undefined} />
             )}
           </div>
         )}
@@ -1306,6 +1352,21 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
       )}
 
       <style>{`
+        /* Tabs row + horizontal-overflow affordance (fade + pulsing chevron),
+           mirrors FocusTree's carousel indicator so a clipped tabs row reveals
+           that more sections scroll into view left/right. */
+        .pp-tabs-wrap { position: relative; margin: 0 14px; }
+        .pp-tabs { scrollbar-width: none; margin-bottom: 0; }
+        .pp-tabs::-webkit-scrollbar { display: none; }
+        .pp-tabfade { position: absolute; top: 0; bottom: 0; width: 34px; pointer-events: none; z-index: 3; display: flex; align-items: center; }
+        .pp-tabfade-left { left: 0; justify-content: flex-start; padding-left: 2px; background: linear-gradient(to right, var(--bg-card) 40%, transparent); }
+        .pp-tabfade-right { right: 0; justify-content: flex-end; padding-right: 2px; background: linear-gradient(to left, var(--bg-card) 40%, transparent); }
+        .pp-tabfade-chev { color: var(--accent-text); animation: ppTabPulse 1.6s ease-in-out infinite; }
+        .pp-tabfade-left .pp-tabfade-chev { animation-name: ppTabPulseL; }
+        @keyframes ppTabPulse { 0%, 100% { transform: translateX(0); opacity: 0.6; } 50% { transform: translateX(3px); opacity: 0.95; } }
+        @keyframes ppTabPulseL { 0%, 100% { transform: translateX(0); opacity: 0.6; } 50% { transform: translateX(-3px); opacity: 0.95; } }
+        @media (prefers-reduced-motion: reduce) { .pp-tabfade-chev { animation: none; opacity: 0.8; } }
+
         .pp-photo { position: relative; }
         .pp-photo-del { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; background: rgba(176,42,42,0.9); color: #fff; border: none; cursor: pointer; opacity: 0; transition: opacity 150ms ease, background 150ms ease; }
         .pp-photo:hover .pp-photo-del, .pp-photo-del:focus-visible { opacity: 1; }
@@ -1360,6 +1421,20 @@ function Spinner() {
       border:'2px solid var(--border)', borderTopColor:'var(--accent)',
       animation: reduce ? 'none' : 'spin 0.7s linear infinite',
     }} />
+  );
+}
+
+// Centered empty state for the panel's per-tab content area — an icon, a title,
+// an optional hint and an optional CTA. Fills the dead vertical space that short
+// tabs used to leave blank, with a consistent look across notes/events/sources/gallery.
+function EmptyState({ Icon, title, hint, action }: { Icon: typeof User; title: string; hint?: string; action?: React.ReactNode }) {
+  return (
+    <div style={{ minHeight:'260px', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center', gap:'12px', padding:'24px 16px' }}>
+      <Icon size={40} strokeWidth={1.2} aria-hidden="true" style={{ color:'var(--text-light)' }} />
+      <p style={{ margin:0, fontSize:'14px', fontWeight:600, color:'var(--text-muted)', maxWidth:'240px', lineHeight:1.4 }}>{title}</p>
+      {hint && <p style={{ margin:0, fontSize:'12.5px', color:'var(--text-light)', maxWidth:'240px', lineHeight:1.5 }}>{hint}</p>}
+      {action && <div style={{ marginTop:'2px' }}>{action}</div>}
+    </div>
   );
 }
 
