@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { FamilyTree, Person } from '@/types';
 import { Network, ArrowLeftRight, Scale, TreePine, Sprout, AlertCircle, Dna, ChevronDown } from 'lucide-react';
 import { GENDER_BAR } from '../tree/nodeStyle';
+import { PersonCombobox } from '../ui/PersonCombobox';
 import {
   getDisplayName, formatYear, formatAge, getAllAncestors, getAllDescendants,
   findCommonAncestors, findRelationPath, describeRelation, getAge,
@@ -102,25 +103,32 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
           {/* Selectors */}
           <div className="ex-selectors">
             <div className="ex-field">
-              <label className="ex-flabel" htmlFor="ex-p1">{dual ? t('personA') : t('person')}</label>
-              <select id="ex-p1" value={person1Id} onChange={e => setPerson1Id(e.target.value)} className="ex-select">
-                <option value="">{t('choosePlaceholder')}</option>
-                {tree.persons.map(p => (
-                  <option key={p.id} value={p.id}>{getDisplayName(p)} {p.birthDate ? `(${formatYear(p.birthDate)})` : ''}</option>
-                ))}
-              </select>
+              <label className="ex-flabel" id="ex-p1-label" htmlFor="ex-p1">{dual ? t('personA') : t('person')}</label>
+              <PersonCombobox
+                id="ex-p1"
+                persons={tree.persons}
+                selectedId={person1Id}
+                onSelect={setPerson1Id}
+                placeholder={t('choosePlaceholder')}
+                emptySearchLabel={t('noPersonFound')}
+                ariaLabelledBy="ex-p1-label"
+              />
             </div>
             {dual && (
               <>
                 <span className="ex-swap" aria-hidden="true"><ArrowLeftRight size={20} /></span>
                 <div className="ex-field">
-                  <label className="ex-flabel" htmlFor="ex-p2">{t('personB')}</label>
-                  <select id="ex-p2" value={person2Id} onChange={e => setPerson2Id(e.target.value)} className="ex-select">
-                    <option value="">{t('choosePlaceholder')}</option>
-                    {tree.persons.filter(p => p.id !== person1Id).map(p => (
-                      <option key={p.id} value={p.id}>{getDisplayName(p)} {p.birthDate ? `(${formatYear(p.birthDate)})` : ''}</option>
-                    ))}
-                  </select>
+                  <label className="ex-flabel" id="ex-p2-label" htmlFor="ex-p2">{t('personB')}</label>
+                  <PersonCombobox
+                    id="ex-p2"
+                    persons={tree.persons}
+                    selectedId={person2Id}
+                    onSelect={setPerson2Id}
+                    excludeIds={[person1Id]}
+                    placeholder={t('choosePlaceholder')}
+                    emptySearchLabel={t('noPersonFound')}
+                    ariaLabelledBy="ex-p2-label"
+                  />
                 </div>
               </>
             )}
@@ -316,9 +324,7 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
         .ex-selectors { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 24px; }
         .ex-field { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 6px; }
         .ex-flabel { font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-text); }
-        .ex-select { width: 100%; background: #1a1a24; border: 1px solid var(--border); color: var(--text); padding: 10px 12px; font-family: var(--font-body); font-size: 14px; min-height: 42px; cursor: pointer; }
-        .ex-select:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; border-color: var(--accent); }
-        .ex-swap { display: inline-flex; align-items: center; justify-content: center; color: var(--accent); flex-shrink: 0; height: 42px; }
+        .ex-swap { display: inline-flex; align-items: center; justify-content: center; color: var(--accent); flex-shrink: 0; height: 40px; }
 
         /* Result card */
         .ex-result { background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--accent); padding: 22px 20px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }

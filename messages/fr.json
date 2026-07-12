@@ -770,6 +770,9 @@
     "titlePlaceholder": "Titre *",
     "contentPlaceholder": "Racontez ce moment… (les retours à la ligne sont conservés)",
     "mentionedPersons": "Personnes mentionnées",
+    "mentionSearchAria": "Rechercher une personne à mentionner",
+    "mentionSearchPlaceholder": "Rechercher une personne…",
+    "noPersonFound": "Aucune personne trouvée",
     "photosPlaceholder": "URLs de photos (une par ligne, https://…)",
     "save": "Enregistrer"
   },
@@ -814,6 +817,7 @@
     "personA": "Personne A",
     "personB": "Personne B",
     "choosePlaceholder": "Choisir...",
+    "noPersonFound": "Aucune personne trouvée",
     "degrees": "{count, plural, one {# degré de parenté} other {# degrés de parenté}}",
     "noFamilyLink": "Aucun lien familial trouvé",
     "kinshipPath": "Chemin de parenté",

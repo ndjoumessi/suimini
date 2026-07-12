@@ -770,6 +770,9 @@
     "titlePlaceholder": "Title *",
     "contentPlaceholder": "Tell this moment… (line breaks are preserved)",
     "mentionedPersons": "Mentioned people",
+    "mentionSearchAria": "Search for a person to mention",
+    "mentionSearchPlaceholder": "Search for a person…",
+    "noPersonFound": "No person found",
     "photosPlaceholder": "Photo URLs (one per line, https://…)",
     "save": "Save"
   },
@@ -814,6 +817,7 @@
     "personA": "Person A",
     "personB": "Person B",
     "choosePlaceholder": "Choose...",
+    "noPersonFound": "No person found",
     "degrees": "{count, plural, one {# degree of kinship} other {# degrees of kinship}}",
     "noFamilyLink": "No family link found",
     "kinshipPath": "Kinship path",
