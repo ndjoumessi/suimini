@@ -12,6 +12,7 @@ import { useIsMobile } from '@/hooks/useMediaQuery';
 import { useOverlay } from '@/hooks/useOverlay';
 import ReactMarkdown from 'react-markdown';
 import PersonForm from './PersonForm';
+import { PersonCombobox } from '../ui/PersonCombobox';
 import { X, Pencil, Trash2, User, Clock, Users, Calendar, StickyNote, BookOpen, Lightbulb, Link2, AlertCircle, Dna, FileText, Images, ScanFace, ScanLine, Landmark, MessageSquare, MapPin, Briefcase, Globe, GraduationCap, Church, Baby, Skull, Heart, Swords, Plane, GripVertical, CalendarDays, ArrowLeft } from 'lucide-react';
 
 interface Props {
@@ -736,10 +737,15 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                     <option value="child">{t('relIsChildOf')}</option>
                     <option value="sibling">{t('relSibling')}</option>
                   </select>
-                  <select aria-label={t('choosePerson')} value={newRelPersonId} onChange={e=>setNewRelPersonId(e.target.value)} className="input">
-                    <option value="">{t('choosePerson')}</option>
-                    {availablePersons.map(p=><option key={p.id} value={p.id}>{getDisplayName(p)}</option>)}
-                  </select>
+                  <PersonCombobox
+                    id={`${baseId}-add-rel-person`}
+                    persons={availablePersons}
+                    selectedId={newRelPersonId}
+                    onSelect={setNewRelPersonId}
+                    placeholder={t('choosePerson')}
+                    ariaLabel={t('choosePerson')}
+                    emptySearchLabel={t('noPersonFound')}
+                  />
                 </div>
                 <div style={{ display:'flex', gap:'6px' }}>
                   <button onClick={()=>{ if(newRelPersonId){onAddRelationship({type:newRelType,person1Id:person.id,person2Id:newRelPersonId}); setShowAddRel(false); setNewRelPersonId(''); }}} className="btn btn-primary btn-sm" disabled={!newRelPersonId}>{t('add')}</button>
@@ -1044,10 +1050,15 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
             {/* Comparative narrative (#3C) */}
             {person.aiNarrative && !narrativeLoading && availableComparePersons.length > 0 && (
               <div>
-                <select value={comparePersonId} onChange={e=>runCompare(e.target.value)} className="input" aria-label={tn('compareWith')}>
-                  <option value="">{tn('compareWith')}</option>
-                  {availableComparePersons.map(p => <option key={p.id} value={p.id}>{getDisplayName(p)}</option>)}
-                </select>
+                <PersonCombobox
+                  id={`${baseId}-compare-person`}
+                  persons={availableComparePersons}
+                  selectedId={comparePersonId}
+                  onSelect={runCompare}
+                  placeholder={tn('compareWith')}
+                  ariaLabel={tn('compareWith')}
+                  emptySearchLabel={t('noPersonFound')}
+                />
                 {compareLoading && (
                   <div role="status" aria-live="polite" style={{ display:'flex', alignItems:'center', gap:'10px', padding:'12px 0', color:'var(--text-muted)', fontSize:'13px' }}>
                     <Spinner /> {tn('generating')}

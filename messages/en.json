@@ -1213,6 +1213,7 @@
     "scopeFamily": "Family",
     "scopeIndividual": "Individual",
     "choosePerson": "Choose a person",
+    "noPersonFound": "No matching person",
     "living": "living"
   },
   "gallery": {
