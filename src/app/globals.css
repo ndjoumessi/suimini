@@ -533,11 +533,14 @@ body.modal-open { overflow: hidden; }
 .leaflet-popup-content { margin: 10px 12px; }
 /* Leaflet's default popup chrome is a plain white card — with the light
    (--text) ink used inside our popup content, that rendered near-invisible
-   white-on-white. Re-theme the chrome to match the dark "Atelier" system. */
-.leaflet-popup-content-wrapper { background: var(--bg-card); color: var(--text); border: var(--bw) solid var(--border-strong); border-radius: 0; box-shadow: var(--shadow); }
-.leaflet-popup-tip { background: var(--bg-card); border: var(--bw) solid var(--border-strong); box-shadow: none; }
-.leaflet-popup-close-button { color: var(--text-muted) !important; }
-.leaflet-popup-close-button:hover { color: var(--text) !important; }
+   white-on-white. Re-theme the chrome to match the dark "Atelier" system.
+   `leaflet/dist/leaflet.css` is imported inside MapView (loaded/injected
+   after globals.css), so at equal selector specificity IT wins the cascade —
+   hence !important here to guarantee our theme always applies. */
+.leaflet-container .leaflet-popup-content-wrapper { background: var(--bg-card) !important; color: var(--text) !important; border: var(--bw) solid var(--border-strong) !important; border-radius: 0 !important; box-shadow: var(--shadow) !important; }
+.leaflet-container .leaflet-popup-tip { background: var(--bg-card) !important; border: var(--bw) solid var(--border-strong) !important; box-shadow: none !important; }
+.leaflet-container .leaflet-popup-close-button { color: var(--text-muted) !important; }
+.leaflet-container .leaflet-popup-close-button:hover { color: var(--text) !important; }
 
 /* ===== Print preview well (PrintModal on-screen only) =====
    Toggles how the printable document is previewed WITHOUT touching the real
