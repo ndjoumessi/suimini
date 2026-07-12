@@ -18,11 +18,19 @@ const clampPct = (n: number) => Math.max(0, Math.min(100, n));
 export interface PhotoPosition { x: number; y: number }
 
 export default function PhotoPositionControl({
-  src, position, onChange, size = 112,
+  src, position, onChange, onCommit, size = 112,
 }: {
   src: string;
   position?: PhotoPosition;
+  /** Appelé en continu pendant le geste (aperçu live) — ne doit PAS déclencher
+   *  d'écriture coûteuse (store/toast) : peut tirer des dizaines de fois/seconde
+   *  pendant un glissé. */
   onChange: (pos: PhotoPosition) => void;
+  /** Appelé UNE fois quand le geste se termine (relâchement du pointeur) ou
+   *  après un nudge clavier discret — c'est le bon endroit pour committer
+   *  vers le store. Si absent, le consommateur peut committer via onChange
+   *  directement (comportement historique). */
+  onCommit?: (pos: PhotoPosition) => void;
   size?: number;
 }) {
   const t = useTranslations('personPanel');
@@ -48,9 +56,14 @@ export default function PhotoPositionControl({
     onChange({ x: Math.round(nx), y: Math.round(ny) });
   };
   const endDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    const wasDragging = dragRef.current !== null;
     dragRef.current = null;
     setDragging(false);
     try { e.currentTarget.releasePointerCapture(e.pointerId); } catch { /* déjà relâché */ }
+    // Commit UNE fois à la fin du geste (pas à chaque pointermove) — `pos` reflète
+    // déjà la dernière position (chaque onChange pendant le drag a re-rendu ce
+    // composant avec le `position` prop à jour).
+    if (wasDragging) onCommit?.(pos);
   };
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const STEP = 5;
@@ -61,7 +74,10 @@ export default function PhotoPositionControl({
     else if (e.key === 'ArrowDown') y = clampPct(y + STEP);
     else return;
     e.preventDefault();
-    onChange({ x: Math.round(x), y: Math.round(y) });
+    const next = { x: Math.round(x), y: Math.round(y) };
+    onChange(next);
+    // Nudge clavier = action discrète (pas un flux continu) → commit immédiat.
+    onCommit?.(next);
   };
 
   return (
@@ -100,7 +116,7 @@ export default function PhotoPositionControl({
           <Move size={Math.round(size * 0.18)} />
         </span>
       </div>
-      <button type="button" onClick={() => onChange({ x: 50, y: 50 })} className="btn btn-ghost btn-sm" style={{ gap: '5px' }}>
+      <button type="button" onClick={() => { const center = { x: 50, y: 50 }; onChange(center); onCommit?.(center); }} className="btn btn-ghost btn-sm" style={{ gap: '5px' }}>
         <RotateCcw size={13} aria-hidden="true" /> {t('recenterReset')}
       </button>
     </div>

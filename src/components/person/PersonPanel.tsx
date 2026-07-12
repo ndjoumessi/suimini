@@ -127,6 +127,11 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
   // Étape « recentrer » (cadrage de la photo) — ouverte automatiquement après un
   // upload réussi, ré-ouvrable ensuite via le bouton près de l'avatar.
   const [reposition, setReposition] = useState(false);
+  // Position « brouillon » pendant le glissé (aperçu live, PAS d'écriture store) —
+  // le commit réel (onUpdate) n'arrive qu'une fois, sur onCommit (relâchement du
+  // pointeur / nudge clavier), sinon chaque pointermove spamme le store ET un
+  // toast « Profil mis à jour » (bug remonté : toasts empilés pendant le drag).
+  const [draftPhotoPos, setDraftPhotoPos] = useState<{ x: number; y: number } | undefined>(undefined);
   // Relations editor (edit tab): which group is adding + its search query.
   const [addRelKind, setAddRelKind] = useState<'parent' | 'spouse' | 'child' | null>(null);
   const [relQuery, setRelQuery] = useState('');
@@ -368,6 +373,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
       const res = await uploadAvatar(file, person.id);
       // Nouvelle photo → cadrage remis au centre + on propose de la recentrer.
       onUpdate({ profilePhoto: res.url, profilePhotoPosition: undefined });
+      setDraftPhotoPos(undefined);
       setReposition(true);
     } catch {
       setAvatarError(t('photoUploadFailed'));
@@ -604,8 +610,9 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
           <div className="animate-fade-in" style={{ marginTop:'14px', paddingTop:'14px', borderTop:'1px solid var(--border)', display:'flex', gap:'14px', alignItems:'flex-start' }}>
             <PhotoPositionControl
               src={person.profilePhoto}
-              position={person.profilePhotoPosition}
-              onChange={(pos)=>onUpdate({ profilePhotoPosition: pos })}
+              position={draftPhotoPos ?? person.profilePhotoPosition}
+              onChange={setDraftPhotoPos}
+              onCommit={(pos)=>{ onUpdate({ profilePhotoPosition: pos }); setDraftPhotoPos(undefined); }}
               size={96}
             />
             <div style={{ flex:1, minWidth:0 }}>

@@ -135,6 +135,16 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
   // Ownership label: "Propriétaire" when owner/admin, else "Invité".
   const ownershipKey = userRole === 'owner' || userRole === 'admin' ? 'owner' : 'guest';
 
+  // En vue Admin, les items scopés à un arbre (VUE hors Accueil + tout EXPLORER)
+  // ne mènent qu'à des écrans vides ("Aucun arbre") — ils n'apportent rien à la
+  // tâche de modération. On les masque, en gardant Accueil (retour choisir/créer
+  // un arbre) pour ne rien perdre : la nav complète revient dès qu'on quitte Admin.
+  const visibleGroups = activeView === 'admin'
+    ? NAV_GROUPS
+        .map(group => ({ ...group, items: group.items.filter(item => item.view === 'dashboard') }))
+        .filter(group => group.items.length > 0)
+    : NAV_GROUPS;
+
   const navItem = (item: NavItem) => {
     const active = activeView === item.view;
     const badge = item.view === 'birthdays' ? birthdayAlertCount : 0;
@@ -206,7 +216,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
 
         {/* Navigation — the only scrollable zone (header & footer stay fixed) */}
         <nav className="sb-nav" aria-label={ts('navAria')}>
-          {NAV_GROUPS.map(group => (
+          {visibleGroups.map(group => (
             <div key={group.labelKey} className="sb-group">
               <div className="sb-section">{ts(group.labelKey)}</div>
               {group.items.map(navItem)}
