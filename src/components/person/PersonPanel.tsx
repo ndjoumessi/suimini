@@ -3,9 +3,10 @@ import { useState, useEffect, useRef, useMemo, useId, useCallback } from 'react'
 import { useTranslations, useLocale } from 'next-intl';
 import { Person, FamilyTree, Relationship, RelationType, FamilyEvent, EventType, Note, Citation, DnaOrigin, AiNarrative } from '@/types';
 import { getParents, getChildren, getSpouses, getSiblings, getAge, formatDate, formatYear, getDisplayName, generateId, safeHttpUrl, compareByBirthDate } from '@/lib/treeUtils';
-import { deleteAvatarByUrl } from '@/lib/uploadImage';
+import { deleteAvatarByUrl, uploadAvatar } from '@/lib/uploadImage';
 import { personEras, type HistoricalEvent } from '@/lib/history';
 import PersonAvatar from './PersonAvatar';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { fetchComments, addComment, subscribeComments, collaborationEnabled, type PersonComment, fetchPendingSuggestions, addSuggestion, resolveSuggestion, type PersonSuggestion } from '@/lib/collaboration';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/useMediaQuery';
@@ -13,7 +14,7 @@ import { useOverlay } from '@/hooks/useOverlay';
 import ReactMarkdown from 'react-markdown';
 import PersonForm from './PersonForm';
 import { PersonCombobox } from '../ui/PersonCombobox';
-import { X, Pencil, Trash2, User, Clock, Users, Calendar, StickyNote, BookOpen, Lightbulb, Link2, AlertCircle, Dna, FileText, Images, ScanFace, ScanLine, Landmark, MessageSquare, MapPin, Briefcase, Globe, GraduationCap, Church, Baby, Skull, Heart, Swords, Plane, GripVertical, CalendarDays, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Pencil, Trash2, User, Clock, Users, Calendar, StickyNote, BookOpen, Lightbulb, Link2, AlertCircle, Dna, FileText, Images, ScanFace, ScanLine, Landmark, MessageSquare, MapPin, Briefcase, Globe, GraduationCap, Church, Baby, Skull, Heart, Swords, Plane, GripVertical, CalendarDays, ArrowLeft, ChevronLeft, ChevronRight, Camera } from 'lucide-react';
 
 interface Props {
   person: Person;
@@ -117,6 +118,11 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
   const eras = personEras(person);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [photoToDelete, setPhotoToDelete] = useState<number | null>(null);
+  // Header avatar quick-upload (direct entry point — mirrors PersonForm's flow
+  // but writes straight through onUpdate, no need to open the edit form).
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState('');
   // Relations editor (edit tab): which group is adding + its search query.
   const [addRelKind, setAddRelKind] = useState<'parent' | 'spouse' | 'child' | null>(null);
   const [relQuery, setRelQuery] = useState('');
@@ -345,6 +351,25 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
     setSendingComment(false);
   }
 
+  // Direct avatar upload from the header (reuses PersonForm's validation).
+  async function handleAvatarFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setAvatarError('');
+    if (!file.type.startsWith('image/')) { setAvatarError(t('photoNotImage')); return; }
+    if (file.size > 8 * 1024 * 1024) { setAvatarError(t('photoTooLarge')); return; }
+    setAvatarUploading(true);
+    try {
+      const res = await uploadAvatar(file, person.id);
+      onUpdate({ profilePhoto: res.url });
+    } catch {
+      setAvatarError(t('photoUploadFailed'));
+    } finally {
+      setAvatarUploading(false);
+    }
+  }
+
   const parents = getParents(person.id, tree.relationships, tree.persons);
   const children = getChildren(person.id, tree.relationships, tree.persons);
   const spouses = getSpouses(person.id, tree.relationships, tree.persons);
@@ -530,7 +555,23 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
           <button onClick={onClose} className="icon-btn" aria-label={t('closePanel')} title={t('close')}><X size={18} aria-hidden="true" /></button>
         </div>
         <div style={{ display:'flex', alignItems:'flex-start', gap:'12px' }}>
-          <PersonAvatar person={person} size={72} />
+          {readOnly ? (
+            <PersonAvatar person={person} size={72} />
+          ) : (
+            <div style={{ flexShrink:0 }}>
+              <input ref={avatarInputRef} type="file" accept="image/*" onChange={handleAvatarFile} style={{ display:'none' }} />
+              <button type="button" className="pp-avatar-edit" onClick={()=>avatarInputRef.current?.click()}
+                disabled={avatarUploading} aria-label={t('changePhoto')} title={t('changePhoto')} aria-busy={avatarUploading || undefined}>
+                <PersonAvatar person={person} size={72} />
+                <span className="pp-avatar-scrim" aria-hidden="true">
+                  {avatarUploading ? <LoadingSpinner size={20} /> : <Camera size={18} aria-hidden="true" />}
+                </span>
+              </button>
+              {avatarError && (
+                <div role="alert" style={{ marginTop:'5px', fontSize:'11px', lineHeight:1.3, color:'var(--danger)', maxWidth:'72px' }}>{avatarError}</div>
+              )}
+            </div>
+          )}
           <div style={{ flex:1, minWidth:0 }}>
             <h2 className="serif" style={{ margin:'0 0 4px', fontSize:'1.2rem', lineHeight:1.25 }}>
               {person.firstName} {person.maidenName?`(${person.maidenName}) `:''}{person.lastName}
@@ -1366,6 +1407,16 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
         @keyframes ppTabPulse { 0%, 100% { transform: translateX(0); opacity: 0.6; } 50% { transform: translateX(3px); opacity: 0.95; } }
         @keyframes ppTabPulseL { 0%, 100% { transform: translateX(0); opacity: 0.6; } 50% { transform: translateX(-3px); opacity: 0.95; } }
         @media (prefers-reduced-motion: reduce) { .pp-tabfade-chev { animation: none; opacity: 0.8; } }
+
+        /* Header avatar = direct photo-change trigger. Circular button (true
+           circle → keeps its radius by design), dark scrim + camera icon on
+           hover/focus, spinner while uploading. */
+        .pp-avatar-edit { position: relative; display: inline-flex; padding: 0; border: none; background: none; cursor: pointer; border-radius: 50%; line-height: 0; -webkit-tap-highlight-color: transparent; }
+        .pp-avatar-edit:disabled { cursor: default; }
+        .pp-avatar-scrim { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(13,13,13,0.55); color: var(--ink); opacity: 0; transition: opacity 150ms ease; }
+        .pp-avatar-edit:hover .pp-avatar-scrim, .pp-avatar-edit:focus-visible .pp-avatar-scrim, .pp-avatar-edit[aria-busy="true"] .pp-avatar-scrim { opacity: 1; }
+        .pp-avatar-edit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        @media (prefers-reduced-motion: reduce) { .pp-avatar-scrim { transition: none; } }
 
         .pp-photo { position: relative; }
         .pp-photo-del { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; background: rgba(176,42,42,0.9); color: #fff; border: none; cursor: pointer; opacity: 0; transition: opacity 150ms ease, background 150ms ease; }

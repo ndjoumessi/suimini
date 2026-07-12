@@ -1,14 +1,14 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import {
-  ShieldCheck, Users, Building2, Bell, CheckCircle, Check, X, Search,
+  ShieldCheck, Users, Bell, CheckCircle, Check, X, Search,
   MoreVertical, UserPlus, Pause, Play, ArrowUp, ArrowDown, Clock,
 } from 'lucide-react';
 import type { AdminData } from '@/hooks/useAdminData';
 import type { UserProfile, UserStatus, UserRole } from '@/types';
 
-type Tab = 'pending' | 'users' | 'tenants' | 'notifications';
+type Tab = 'pending' | 'users' | 'notifications';
 type Toast = (msg: string, type?: 'success' | 'error' | 'info') => void;
 type T = ReturnType<typeof useTranslations>;
 
@@ -74,29 +74,49 @@ export default function AdminDashboard({ admin, role, onToast }: { admin: AdminD
 
   useEffect(() => {
     admin.fetchUsers();
-    admin.fetchTenants();
     admin.fetchNotifications();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const pending = useMemo(() => admin.users.filter(u => u.status === 'pending'), [admin.users]);
+  const activeCount = useMemo(() => admin.users.filter(u => u.status === 'approved').length, [admin.users]);
+
+  // At-a-glance summary — surfaces the total-users count that the tab badges
+  // don't show, so it's complementary rather than redundant with them.
+  const stats: { key: Tab | 'active'; label: string; value: number; tone: string }[] = [
+    { key: 'users', label: t('statTotalUsers'), value: admin.users.length, tone: 'var(--accent)' },
+    { key: 'active', label: t('statActive'), value: activeCount, tone: 'var(--success)' },
+    { key: 'pending', label: t('statPending'), value: pending.length, tone: pending.length ? 'var(--warning)' : 'var(--text-muted)' },
+    { key: 'notifications', label: t('statUnread'), value: admin.unreadCount, tone: admin.unreadCount ? 'var(--danger)' : 'var(--text-muted)' },
+  ];
 
   const TABS: { id: Tab; label: string; Icon: typeof Users; badge?: number }[] = [
     { id: 'pending', label: t('tabPending'), Icon: Clock, badge: pending.length },
     { id: 'users', label: t('tabUsers'), Icon: Users },
-    { id: 'tenants', label: t('tabTenants'), Icon: Building2 },
     { id: 'notifications', label: t('tabNotifications'), Icon: Bell, badge: admin.unreadCount },
   ];
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Header */}
-      <div style={{ padding: '16px 20px 0', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)' }}>
+      <div style={{ padding: '18px 20px 0', borderBottom: 'var(--bw) solid var(--border-strong)', background: 'var(--bg-card)' }}>
         <h1 className="serif" style={{ margin: 0, fontSize: '1.5rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <ShieldCheck size={22} style={{ color: 'var(--accent)' }} aria-hidden="true" /> {t('title')}
         </h1>
+        <p style={{ margin: '5px 0 0', fontSize: '13px', color: 'var(--text-muted)', maxWidth: '620px', lineHeight: 1.5 }}>{t('subtitle')}</p>
+
+        {/* At-a-glance summary strip */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 0, marginTop: '16px', border: 'var(--bw) solid var(--border-strong)', background: 'var(--bg)', maxWidth: '640px' }}>
+          {stats.map((s, i) => (
+            <div key={s.key} style={{ flex: '1 1 120px', minWidth: '96px', padding: '10px 14px', borderLeft: i > 0 ? '1px solid var(--border)' : 'none' }}>
+              <div className="serif" style={{ fontSize: '1.5rem', lineHeight: 1.05, fontWeight: 600, color: s.tone }}>{s.value}</div>
+              <div className="label" style={{ fontSize: '9px', letterSpacing: '0.12em', marginTop: '3px' }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+
         {/* Tabs */}
-        <div role="tablist" style={{ display: 'flex', gap: '4px', marginTop: '14px', overflowX: 'auto' }}>
+        <div role="tablist" style={{ display: 'flex', gap: '4px', marginTop: '16px', overflowX: 'auto' }}>
           {TABS.map(tabDef => {
             const active = tab === tabDef.id;
             return (
@@ -114,11 +134,15 @@ export default function AdminDashboard({ admin, role, onToast }: { admin: AdminD
       <div style={{ flex: 1, overflowY: 'auto', padding: '20px', background: 'var(--bg)' }}>
         {tab === 'pending' && <PendingTab admin={admin} pending={pending} onToast={onToast} />}
         {tab === 'users' && <UsersTab admin={admin} isSuperAdmin={isSuperAdmin} onToast={onToast} />}
-        {tab === 'tenants' && <TenantsTab admin={admin} onToast={onToast} />}
         {tab === 'notifications' && <NotificationsTab admin={admin} onToast={onToast} />}
       </div>
     </div>
   );
+}
+
+/* Small tab-intro subtitle — clarifies each section's purpose (queue vs directory). */
+function TabIntro({ children }: { children: ReactNode }) {
+  return <p style={{ margin: '0 0 14px', fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5, maxWidth: '620px' }}>{children}</p>;
 }
 
 /* ===================== TAB 1 — Pending requests ===================== */
@@ -155,8 +179,9 @@ function PendingTab({ admin, pending, onToast }: { admin: AdminData; pending: Us
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '760px' }}>
+      <TabIntro>{t('pendingHint')}</TabIntro>
       {pending.map(u => (
-        <div key={u.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '14px 16px' }}>
+        <div key={u.id} className="card" style={{ padding: '14px 16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <Avatar name={u.display_name} email={u.email} />
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -213,6 +238,7 @@ function UsersTab({ admin, isSuperAdmin, onToast }: { admin: AdminData; isSuperA
 
   return (
     <div style={{ maxWidth: '960px' }}>
+      <TabIntro>{t('usersHint')}</TabIntro>
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '14px' }}>
         <div style={{ position: 'relative', flex: 1, minWidth: '180px' }}>
           <Search size={15} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} aria-hidden="true" />
@@ -227,20 +253,23 @@ function UsersTab({ admin, isSuperAdmin, onToast }: { admin: AdminData; isSuperA
         </select>
       </div>
 
-      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'visible' }}>
+      <div className="card" style={{ overflow: 'visible' }}>
         {rows.length === 0 && <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>{t('noUsers')}</div>}
         {rows.map((u, i) => (
-          <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderTop: i > 0 ? '1px solid var(--border)' : 'none' }}>
+          <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '13px 16px', borderTop: i > 0 ? '1px solid var(--border)' : 'none' }}>
             <Avatar name={u.display_name} email={u.email} />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>
-                {u.display_name || u.email}
-                {u.role !== 'user' && <span style={{ marginLeft: '6px', fontSize: '10px', fontWeight: 700, color: 'var(--accent)', background: 'var(--accent-light)', padding: '1px 7px', borderRadius: 0 }}>{u.role}</span>}
+              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.display_name || u.email}</span>
+                {u.role !== 'user' && <span style={{ flexShrink: 0, fontSize: '9px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--accent)', background: 'var(--accent-light)', padding: '2px 7px', borderRadius: 0 }}>{u.role}</span>}
               </div>
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email}</div>
             </div>
-            <div style={{ width: '90px', flexShrink: 0 }}><StatusBadge status={u.status} /></div>
-            <div style={{ width: '96px', flexShrink: 0, fontSize: '12px', color: 'var(--text-light)' }} className="hide-sm">{fmtDate(u.created_at)}</div>
+            {/* Right meta cluster: status + join date stacked, right-aligned, then the actions menu. */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0, minWidth: '84px' }}>
+              <StatusBadge status={u.status} />
+              <span className="hide-sm" style={{ fontSize: '11px', color: 'var(--text-light)', fontFamily: 'var(--font-mono)' }}>{fmtDate(u.created_at)}</span>
+            </div>
             <div style={{ position: 'relative', flexShrink: 0 }}>
               <button onClick={() => setMenuId(menuId === u.id ? null : u.id)} className="btn btn-ghost btn-icon btn-sm" aria-label={t('actions')}><MoreVertical size={16} aria-hidden="true" /></button>
               {menuId === u.id && (
@@ -284,68 +313,7 @@ function MenuItem({ Icon, label, onClick }: { Icon: typeof Check; label: string;
   );
 }
 
-/* ===================== TAB 3 — Tenants ===================== */
-function slugify(s: string): string {
-  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-}
-
-function TenantsTab({ admin, onToast }: { admin: AdminData; onToast: Toast }) {
-  const t = useTranslations('admin');
-  const [name, setName] = useState('');
-  const [slug, setSlug] = useState('');
-  const [slugEdited, setSlugEdited] = useState(false);
-  const [plan, setPlan] = useState<'free' | 'family' | 'pro'>('free');
-  const [busy, setBusy] = useState(false);
-
-  const effectiveSlug = slugEdited ? slug : slugify(name);
-
-  async function create() {
-    if (!name.trim() || !effectiveSlug) { onToast(t('toastTenantNameSlug'), 'error'); return; }
-    setBusy(true);
-    const { error } = await admin.createTenant({ name: name.trim(), slug: effectiveSlug, plan });
-    setBusy(false);
-    if (error) { onToast(t('toastError', { error }), 'error'); return; }
-    onToast(t('toastTenantCreated'), 'success');
-    setName(''); setSlug(''); setSlugEdited(false); setPlan('free');
-  }
-
-  return (
-    <div style={{ maxWidth: '760px' }}>
-      {/* Create form */}
-      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '16px', marginBottom: '16px' }}>
-        <h3 className="serif" style={{ margin: '0 0 12px', fontSize: '1.05rem' }}>{t('newTenant')}</h3>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <input value={name} onChange={e => setName(e.target.value)} placeholder={t('tenantNamePlaceholder')} className="input" style={{ flex: 1, minWidth: '160px' }} />
-          <input value={effectiveSlug} onChange={e => { setSlug(slugify(e.target.value)); setSlugEdited(true); }} placeholder={t('slugPlaceholder')} className="input" style={{ flex: 1, minWidth: '120px' }} />
-          <select value={plan} onChange={e => setPlan(e.target.value as 'free' | 'family' | 'pro')} className="input" style={{ width: 'auto' }}>
-            <option value="free">Free</option>
-            <option value="family">Family</option>
-            <option value="pro">Pro</option>
-          </select>
-          <button onClick={create} disabled={busy} className="btn btn-primary btn-sm" style={{ gap: '5px' }}><UserPlus size={14} aria-hidden="true" /> {t('create')}</button>
-        </div>
-      </div>
-
-      {/* List */}
-      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
-        {admin.tenants.length === 0 && <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>{t('noTenants')}</div>}
-        {admin.tenants.map((tenant, i) => (
-          <div key={tenant.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderTop: i > 0 ? '1px solid var(--border)' : 'none' }}>
-            <Building2 size={18} style={{ color: 'var(--accent)', flexShrink: 0 }} aria-hidden="true" />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>{tenant.name}</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>/{tenant.slug} · {t('membersMax', { count: tenant.max_members })}</div>
-            </div>
-            <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--accent)', background: 'var(--accent-light)', padding: '2px 8px', borderRadius: 0, flexShrink: 0 }}>{tenant.plan}</span>
-            <span style={{ fontSize: '11px', fontWeight: 700, color: tenant.is_active ? 'var(--success)' : 'var(--text-light)', flexShrink: 0 }}>{tenant.is_active ? t('tenantActive') : t('tenantInactive')}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ===================== TAB 4 — Notifications ===================== */
+/* ===================== TAB 3 — Notifications ===================== */
 function NotificationsTab({ admin, onToast }: { admin: AdminData; onToast: Toast }) {
   const t = useTranslations('admin');
   async function markAll() {
@@ -355,6 +323,7 @@ function NotificationsTab({ admin, onToast }: { admin: AdminData; onToast: Toast
 
   return (
     <div style={{ maxWidth: '760px' }}>
+      <TabIntro>{t('notificationsHint')}</TabIntro>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
         <span className="label">{admin.notifications.length > 1 ? t('notifUnreadPlural', { count: admin.notifications.length }) : t('notifUnread', { count: admin.notifications.length })}</span>
         {admin.notifications.length > 0 && (
@@ -369,7 +338,7 @@ function NotificationsTab({ admin, onToast }: { admin: AdminData; onToast: Toast
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {admin.notifications.map(n => (
-            <div key={n.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '12px 14px' }}>
+            <div key={n.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px' }}>
               <span style={{ width: '34px', height: '34px', flexShrink: 0, borderRadius: 0, background: 'var(--accent-light)', color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                 <UserPlus size={16} aria-hidden="true" />
               </span>

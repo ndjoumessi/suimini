@@ -2,17 +2,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { callRpc } from '@/lib/rpcClient';
-import type { UserProfile, AdminNotification, Tenant, UserStatus, UserRole } from '@/types';
-
-export interface NewTenantInput {
-  name: string;
-  slug: string;
-  plan: 'free' | 'family' | 'pro';
-}
+import type { UserProfile, AdminNotification, UserStatus, UserRole } from '@/types';
 
 /**
  * Admin data layer: wraps the SECURITY DEFINER RPCs (admin-only, enforced
- * server-side) plus the tenants table. Subscribes to Supabase Realtime when
+ * server-side). Subscribes to Supabase Realtime when
  * `enabled` (the admin status of the current user) so `unreadCount` and the
  * notifications list stay fresh for the sidebar badge and the notifications tab
  * without polling. All calls are guarded so a non-admin / pre-migration database
@@ -22,7 +16,6 @@ export interface NewTenantInput {
 export function useAdminData({ enabled }: { enabled: boolean }) {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
-  const [tenants, setTenants] = useState<Tenant[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
 
@@ -42,12 +35,6 @@ export function useAdminData({ enabled }: { enabled: boolean }) {
       setNotifications(list);
       setUnreadCount(list.length);
     }
-  }, []);
-
-  const fetchTenants = useCallback(async () => {
-    if (!supabase) return;
-    const { data, error } = await supabase.from('tenants').select('*').order('created_at', { ascending: false });
-    if (!error && data) setTenants(data as Tenant[]);
   }, []);
 
   const approveUser = useCallback(async (id: string) => {
@@ -77,13 +64,6 @@ export function useAdminData({ enabled }: { enabled: boolean }) {
     if (!error) await fetchUsers();
     return { error: error?.message };
   }, [fetchUsers]);
-
-  const createTenant = useCallback(async (input: NewTenantInput) => {
-    if (!supabase) return { error: 'Supabase non configuré.' };
-    const { error } = await supabase.from('tenants').insert(input);
-    if (!error) await fetchTenants();
-    return { error: error?.message };
-  }, [fetchTenants]);
 
   const markAllNotificationsRead = useCallback(async () => {
     if (!supabase) return { error: 'Supabase non configuré.' };
@@ -138,9 +118,9 @@ export function useAdminData({ enabled }: { enabled: boolean }) {
   }, [unreadCount]);
 
   return {
-    users, notifications, tenants, unreadCount, loading,
-    fetchUsers, fetchNotifications, fetchTenants,
-    approveUser, rejectUser, setStatus, setRole, createTenant, markAllNotificationsRead,
+    users, notifications, unreadCount, loading,
+    fetchUsers, fetchNotifications,
+    approveUser, rejectUser, setStatus, setRole, markAllNotificationsRead,
   };
 }
 
