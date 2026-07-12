@@ -199,6 +199,17 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
     return filterPersonId ? items.filter(i => i.person.id === filterPersonId) : items;
   }, [tree, filterPersonId]);
 
+  // Sans filtre explicite, si les photos actuellement affichées appartiennent
+  // TOUTES à une seule et même personne (petit arbre, une seule photo…), on la
+  // considère comme le sujet évident — pas besoin de forcer l'utilisateur à
+  // toucher le filtre "personne" avant d'analyser. Redevient ambigu (undefined)
+  // dès qu'il y a plusieurs personnes dans la vue.
+  const soleVisiblePersonId = useMemo(() => {
+    if (photos.length === 0) return undefined;
+    const first = photos[0].person.id;
+    return photos.every(p => p.person.id === first) ? first : undefined;
+  }, [photos]);
+
   const personsWithPhotos = useMemo(
     () => tree.persons
       .filter(p => p.profilePhoto || (p.photos && p.photos.length > 0))
@@ -241,7 +252,7 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
               <button onClick={() => setLayout('list')} aria-pressed={layout === 'list'} aria-label={t('layoutMasonry')} title={t('layoutMasonry')} className={layout === 'list' ? 'on' : ''}><Rows3 size={15} aria-hidden="true" /></button>
             </div>
             {onAnalyzePhoto && (
-              <button onClick={() => onAnalyzePhoto(filterPersonId || undefined)} className="btn btn-secondary btn-sm" style={{ gap: '6px' }}>
+              <button onClick={() => onAnalyzePhoto(filterPersonId || soleVisiblePersonId)} className="btn btn-secondary btn-sm" style={{ gap: '6px' }}>
                 <ScanFace size={14} aria-hidden="true" /> {tp('galleryButton')}
               </button>
             )}
