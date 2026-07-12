@@ -368,13 +368,29 @@ export default function SuiminiApp() {
   // First-run onboarding: an approved, logged-in user who hasn't onboarded and has
   // no real tree yet. The store seeds a sample tree ('tree1') for everyone, so we
   // treat "only the untouched sample" as first access.
+  //
+  // Debounced on purpose: on a fresh cloud login, `useFamilyStore`'s effect can
+  // briefly run its GUEST branch first (if `user` resolves in React state a tick
+  // before the cloud fetch has actually started/settled — see the cold-token-race
+  // comments in useFamilyStore.ts) — which seeds the sample tree and flips
+  // `loaded=true` BEFORE the real cloud trees (e.g. an existing 71-person tree)
+  // have loaded. That produced a one-render flash of "onlySample" for accounts
+  // that already have real data, permanently showing the onboarding wizard over
+  // it. Waiting a beat and re-checking against the LATEST trees before actually
+  // opening the wizard closes that window without weakening the real first-run
+  // case (an actually-empty account still shows it, just ~2s later).
   useEffect(() => {
     if (!store.loaded || !user || isDemo) return;
     let onboarded = false;
     try { onboarded = localStorage.getItem('suimini_onboarded') === 'true'; } catch { /* ignore */ }
     if (onboarded) return;
     const onlySample = store.trees.length === 0 || (store.trees.length === 1 && store.trees[0].id === 'tree1');
-    if (onlySample) setShowOnboarding(true);
+    if (!onlySample) return;
+    const timer = setTimeout(() => {
+      const stillOnlySample = store.trees.length === 0 || (store.trees.length === 1 && store.trees[0].id === 'tree1');
+      if (stillOnlySample) setShowOnboarding(true);
+    }, 2000);
+    return () => clearTimeout(timer);
   }, [store.loaded, store.trees, user, isDemo]);
 
   const handleOnboardingComplete = useCallback((data: OnboardingData) => {
