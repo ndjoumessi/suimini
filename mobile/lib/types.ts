@@ -94,6 +94,12 @@ export interface Person {
   education?: string;
   bio?: string;
   profilePhoto?: string;
+  /** Cadrage de la photo de profil : object-position en % (0–100 ; 50/50 = centré,
+   *  valeur par défaut quand absent). Miroir du champ web (src/types/index.ts) —
+   *  round-trip via `extra` côté serveur, aucune migration schéma requise. Mobile
+   *  n'édite pas encore ce champ (pas de UI de recentrage) mais le lit/préserve
+   *  pour ne pas écraser un cadrage défini depuis le web. */
+  profilePhotoPosition?: { x: number; y: number };
   photos?: string[];
   events?: FamilyEvent[];
   notes?: Note[];
