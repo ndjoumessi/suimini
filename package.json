@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "vercel-build": "next build && node scripts/inject-sw-version.mjs",
     "start": "next start",
     "lint": "eslint",
     "test:e2e": "playwright test",
