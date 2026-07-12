@@ -257,6 +257,11 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
                     );
                   })}
                 </ul>
+                {/* Sparse this-month list next to a taller activity card: a discreet
+                    closure line gives the card intent instead of a stubby cut-off. */}
+                {!birthdays.upcoming && birthdays.items.length < 3 && (
+                  <p className="dash-else">{t('nothingElseThisMonth')}</p>
+                )}
               </>
             ) : (
               <p className="dash-empty">{t('noBirthdays')}</p>
@@ -352,7 +357,7 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
         .dash-hero-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 22px; }
         .dash-date { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); }
         .dash-user { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
-        .dash-user-ava { width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: #12131a; font-family: var(--font-display); font-weight: 700; font-size: 12px; }
+        .dash-user-ava { width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: var(--ink-on-accent); font-family: var(--font-display); font-weight: 700; font-size: 12px; }
         .dash-title { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.5rem, 6vw, 4rem); line-height: 1; letter-spacing: -0.03em; color: var(--accent); margin: 0; text-wrap: balance; overflow-wrap: break-word; }
         .dash-rule { display: block; width: 60px; height: 2px; background: var(--accent); margin: 18px 0 0; }
         .dash-sub { font-family: var(--font-mono); font-size: 13px; color: var(--text-muted); margin: 16px 0 0; letter-spacing: 0.02em; }
@@ -397,6 +402,7 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
         .dash-row-sub { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .dash-when { font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--accent-text); flex-shrink: 0; }
         .dash-empty { color: var(--text-muted); font-size: 13px; margin: 4px 0 0; }
+        .dash-else { margin: 12px 0 2px; padding-top: 12px; border-top: 1px solid var(--border); text-align: center; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em; color: var(--text-light); }
 
         /* Quick access 3×2 */
         .dash-quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }

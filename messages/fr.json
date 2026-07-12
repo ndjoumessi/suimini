@@ -638,6 +638,7 @@
     "peopleCountInline": "{count, plural, one {<b>#</b> membre} other {<b>#</b> membres}}",
     "birthdaysFull": "Anniversaires & commémorations",
     "upcomingBirthdays": "Prochains anniversaires",
+    "nothingElseThisMonth": "Rien d'autre à venir ce mois-ci",
     "inDays": "{days, plural, one {dans # jour} other {dans # jours}}",
     "birthdayToday": "aujourd'hui",
     "actionAdded": "ajoutée",

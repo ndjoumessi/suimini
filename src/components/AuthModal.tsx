@@ -325,7 +325,7 @@ const AUTH_CSS = `
 .auth-input-wrap { position: relative; }
 .auth-input-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
 .auth-input { width: 100%; height: 48px; border: 1px solid var(--border); padding: 0 16px 0 42px; font-size: 15px; font-family: var(--font-body); background: #1A1A24; color: var(--ink); outline: none; transition: border-color 200ms ease, box-shadow 200ms ease; }
-.auth-input::placeholder { color: rgba(245,240,232,0.3); }
+.auth-input::placeholder { color: var(--text-light); }
 /* focus: 2px gold border, no glow (inset shadow thickens the 1px border without layout shift) */
 .auth-input:focus { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 .auth-eye { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; transition: color 200ms ease; }
@@ -347,8 +347,13 @@ const AUTH_CSS = `
 
 /* submit CTA */
 .auth-submit { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 48px; background: var(--accent); border: none; color: var(--ink-on-accent); font-weight: 700; font-size: 14px; font-family: var(--font-body); cursor: pointer; transition: filter 150ms ease, opacity 200ms ease; }
-.auth-submit:hover:not(:disabled) { filter: brightness(1.1); }
-.auth-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+.auth-submit:hover:not(:disabled) { background: var(--accent-hover); }
+/* Disabled (inactive form) reads as a clear neutral button — never a muddy,
+   half-transparent gold that clashes with the vivid --accent used elsewhere.
+   While submitting (aria-busy) the CTA keeps its gold identity. */
+.auth-submit:disabled { cursor: not-allowed; }
+.auth-submit:disabled:not([aria-busy="true"]) { background: var(--bg-muted); color: var(--text-light); }
+.auth-submit[aria-busy="true"] { opacity: 0.85; }
 .auth-submit-spinner { color: var(--ink-on-accent) !important; }
 
 /* separator */
@@ -360,5 +365,8 @@ const AUTH_CSS = `
 .auth-ghost { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 46px; background: transparent; border: 1px solid var(--border); color: var(--text-muted); font-weight: 600; font-size: 14px; font-family: var(--font-body); cursor: pointer; transition: border-color 200ms ease, color 200ms ease; }
 .auth-ghost:hover:not(:disabled) { border-color: var(--accent); color: var(--ink); }
 .auth-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
-.auth-demo { margin-top: 10px; }
+/* Demo = tertiary action: borderless, discreet — below the outlined magic-link
+   button so the trio reads filled → outline → text (decreasing weight). */
+.auth-demo { margin-top: 8px; height: 42px; border-color: transparent; color: var(--text-light); }
+.auth-demo:hover:not(:disabled) { border-color: transparent; background: var(--bg-muted); color: var(--ink); }
 `;
