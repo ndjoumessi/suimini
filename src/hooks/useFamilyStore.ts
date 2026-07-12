@@ -305,9 +305,22 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
             if (active) { settled = true; setLoaded(true); }
             return;
           }
+          // Remote came back empty — could be a genuinely empty account, OR the cold-
+          // token race described above (access token not attached to the FIRST REST
+          // call yet). Retry BEFORE concluding anything, including before offering the
+          // local→cloud migration prompt: taking the `hasRealLocal` fallback on attempt 1
+          // used to short-circuit these retries entirely, so an existing account with
+          // real cloud data (TEDA, etc.) that merely raced on its first read would
+          // permanently latch `migrationPending=true` — a "importer vos données locales ?"
+          // prompt stuck showing over an account that already has cloud data. Now BOTH
+          // branches (real local data or not) wait out the retries first.
+          if (attempt < MAX_ATTEMPTS) {
+            retryTimer = setTimeout(() => { if (active) run(attempt + 1); }, 400 * attempt);
+            return; // keep the loading screen up; do NOT flip `loaded` yet
+          }
           if (hasRealLocal) {
-            // Cloud empty but genuine local data → show it + offer migration (never the
-            // sample), UNLESS already imported/dismissed on this browser.
+            // Cloud genuinely empty (retries exhausted) but real local data → show it +
+            // offer migration (never the sample), UNLESS already imported/dismissed here.
             setMigrationPending(!importPromptSuppressed());
             setTrees(localTrees);
             rememberKnownIds(localTrees);
@@ -315,11 +328,6 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
             setSyncStatus('saved');
             if (active) { settled = true; setLoaded(true); }
             return;
-          }
-          // Empty + no local data: could be a token-not-ready race → retry, else onboard.
-          if (attempt < MAX_ATTEMPTS) {
-            retryTimer = setTimeout(() => { if (active) run(attempt + 1); }, 400 * attempt);
-            return; // keep the loading screen up; do NOT flip `loaded` yet
           }
           setMigrationPending(false);
           setTrees([]);
