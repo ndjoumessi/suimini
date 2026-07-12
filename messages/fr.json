@@ -283,6 +283,8 @@
     "genderM": "homme",
     "genderF": "femme",
     "canvasAria": "Arbre généalogique",
+    "scrollLeft": "Défiler vers la gauche",
+    "scrollRight": "Défiler vers la droite",
     "fanAria": "Éventail des ancêtres",
     "inYear": "en",
     "emptyTreeTitle": "Cet arbre est vide",

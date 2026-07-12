@@ -283,6 +283,8 @@
     "genderM": "male",
     "genderF": "female",
     "canvasAria": "Family tree",
+    "scrollLeft": "Scroll left",
+    "scrollRight": "Scroll right",
     "fanAria": "Ancestor fan chart",
     "inYear": "in",
     "emptyTreeTitle": "This tree is empty",

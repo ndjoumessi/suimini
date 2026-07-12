@@ -74,6 +74,16 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
     setOverflow(o => (o.left === left && o.right === right) ? o : { left, right });
   }, []);
 
+  // Les fondus de débordement gauche/droite (ci-dessous) ont l'air de boutons de
+  // navigation (chevron pulsant) — ils doivent en être un : faire défiler d'un
+  // « cran » (~1 carte + son espacement) au clic, pas rester purement décoratifs.
+  const scrollByPage = (dir: 1 | -1) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const reduceMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    el.scrollBy({ left: dir * (NODE_W + GAP), behavior: reduceMotion ? 'auto' : 'smooth' });
+  };
+
   const focus = tree.persons.find(p => p.id === focusId) || tree.persons[0];
   const spouses = focus ? getSpouses(focus.id, tree.relationships, tree.persons) : [];
   const parents = focus ? getParents(focus.id, tree.relationships, tree.persons) : [];
@@ -385,16 +395,18 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         </div>
       </div>
         {/* Fondus de débordement horizontal — révèlent qu'une rangée large (fratrie
-            nombreuse) déborde du viewport ; disparaissent une fois scrollé au bout. */}
+            nombreuse) déborde du viewport ; disparaissent une fois scrollé au bout.
+            De vrais boutons cliquables (pas juste décoratifs) : ils ressemblent à des
+            flèches de navigation, ils doivent en être — faire défiler d'un « cran ». */}
         {overflow.left && (
-          <div className="ft-fade ft-fade-left" aria-hidden="true">
-            <ChevronLeft size={18} className="ft-fade-chev" />
-          </div>
+          <button type="button" className="ft-fade ft-fade-left" onClick={() => scrollByPage(-1)} aria-label={t('scrollLeft')}>
+            <ChevronLeft size={18} className="ft-fade-chev" aria-hidden="true" />
+          </button>
         )}
         {overflow.right && (
-          <div className="ft-fade ft-fade-right" aria-hidden="true">
-            <ChevronRight size={18} className="ft-fade-chev" />
-          </div>
+          <button type="button" className="ft-fade ft-fade-right" onClick={() => scrollByPage(1)} aria-label={t('scrollRight')}>
+            <ChevronRight size={18} className="ft-fade-chev" aria-hidden="true" />
+          </button>
         )}
       </div>
 
@@ -437,11 +449,15 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         .ft-scroll { flex: 1; min-height: 0; position: relative; overflow: auto; display: flex;
           background-image: radial-gradient(circle, var(--border) 1px, transparent 1px); background-size: 26px 26px; }
         /* Fondus latéraux (indice « il y a plus à voir de ce côté ») — gradient vers
-           le fond + chevron discret, non interactifs. */
-        .ft-fade { position: absolute; top: 0; bottom: 0; width: 60px; pointer-events: none; z-index: 3;
-          display: flex; align-items: center; }
+           le fond + chevron pulsant, VRAIMENT cliquables (font défiler d'un cran) :
+           reset des styles natifs de <button>, curseur pointeur, focus visible. */
+        .ft-fade { position: absolute; top: 0; bottom: 0; width: 60px; z-index: 3;
+          display: flex; align-items: center; border: none; padding: 0; margin: 0;
+          font: inherit; appearance: none; cursor: pointer; }
         .ft-fade-left { left: 0; justify-content: flex-start; padding-left: 6px; background: linear-gradient(to right, var(--bg) 30%, transparent); }
         .ft-fade-right { right: 0; justify-content: flex-end; padding-right: 6px; background: linear-gradient(to left, var(--bg) 30%, transparent); }
+        .ft-fade:hover .ft-fade-chev, .ft-fade:focus-visible .ft-fade-chev { opacity: 1; }
+        .ft-fade:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
         .ft-fade-chev { color: var(--accent-text); opacity: 0.75; animation: ftFadePulse 1.6s ease-in-out infinite; }
         .ft-fade-left .ft-fade-chev { animation-name: ftFadePulseL; }
         @keyframes ftFadePulse { 0%, 100% { transform: translateX(0); opacity: 0.6; } 50% { transform: translateX(3px); opacity: 0.9; } }
