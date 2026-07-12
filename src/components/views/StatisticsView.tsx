@@ -3,7 +3,7 @@ import { useMemo, useState, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { FamilyTree, Person } from '@/types';
 import { computeTreeStats, getAge, formatAge, getDisplayName, formatYear } from '@/lib/treeUtils';
-import { Crown } from 'lucide-react';
+import { Crown, Users, Layers, Waypoints } from 'lucide-react';
 import PersonAvatar from '../person/PersonAvatar';
 
 interface Props {
@@ -20,9 +20,11 @@ interface RankItem { label: string; value: number; tone?: 'male' | 'female' | 'm
    notable-people cards + founder. No chart library; full control, dark Atelier.
    ========================================================================== */
 
-/** Donut: répartition par genre. Pure SVG (stroke-dasharray arcs). */
-function GenderDonut({ male, female, other, abbrMen, abbrWomen }: {
-  male: number; female: number; other: number; abbrMen: string; abbrWomen: string;
+/** Donut: répartition par genre. Pure SVG (stroke-dasharray arcs).
+ *  Centre = TOTAL (une seule valeur, lisible d'un coup d'œil) ; le détail
+ *  H/F chiffré + % vit dans la légende à côté. */
+function GenderDonut({ male, female, other, totalLabel, ariaLabel }: {
+  male: number; female: number; other: number; totalLabel: string; ariaLabel: string;
 }) {
   const total = male + female + other;
   const R = 52, SW = 18, CX = 80, CY = 80;
@@ -37,7 +39,7 @@ function GenderDonut({ male, female, other, abbrMen, abbrWomen }: {
   let acc = 0;
   return (
     <svg viewBox="0 0 160 160" width="160" height="160" role="img"
-      aria-label={`${male} ${abbrMen}, ${female} ${abbrWomen}`} style={{ flexShrink: 0 }}>
+      aria-label={ariaLabel} style={{ flexShrink: 0 }}>
       <circle cx={CX} cy={CY} r={R} fill="none" stroke="var(--bg-muted)" strokeWidth={SW} />
       {segs.map((s, i) => {
         const len = Math.max((s.v / total) * C - GAP, 0);
@@ -49,15 +51,11 @@ function GenderDonut({ male, female, other, abbrMen, abbrWomen }: {
         acc += (s.v / total) * C;
         return el;
       })}
-      {/* Centre: gender split in Spectral, gender-coloured to echo the arcs */}
-      <text x={CX} y={CY - 6} textAnchor="middle" fontFamily="var(--font-display)" fontWeight={700}>
-        <tspan fontSize={26} fill="var(--male)">{male}</tspan>
-        <tspan fontSize={13} fill="var(--text-muted)" fontFamily="var(--font-mono, monospace)" dy={-1}> {abbrMen}</tspan>
-      </text>
-      <text x={CX} y={CY + 22} textAnchor="middle" fontFamily="var(--font-display)" fontWeight={700}>
-        <tspan fontSize={26} fill="var(--female)">{female}</tspan>
-        <tspan fontSize={13} fill="var(--text-muted)" fontFamily="var(--font-mono, monospace)" dy={-1}> {abbrWomen}</tspan>
-      </text>
+      {/* Centre: total en or (Fraunces) + libellé mono discret dessous */}
+      <text x={CX} y={CY - 2} textAnchor="middle" fontFamily="var(--font-display)" fontWeight={700}
+        fontSize={40} fill="var(--accent)" letterSpacing="-0.02em">{total}</text>
+      <text x={CX} y={CY + 22} textAnchor="middle" fontFamily="var(--font-mono, monospace)"
+        fontSize={10} letterSpacing="0.14em" fill="var(--text-muted)">{totalLabel.toUpperCase()}</text>
     </svg>
   );
 }
@@ -143,8 +141,10 @@ function DecadeChart({ buckets, tooltipFor }: { buckets: DecadeBucket[]; tooltip
   );
 }
 
-/** A typographic ranking row: gold rank, name (Spectral), proportional gold bar, count. */
-function RankRow({ rank, label, value, max, tone }: { rank: number; label: string; value: number; max: number; tone?: RankItem['tone'] }) {
+/** A typographic ranking row: gold rank, name (Fraunces), proportional gold bar, count.
+ *  `uniform` = toutes les valeurs de la liste sont égales → la barre ne compare rien,
+ *  on la masque et on garde le chiffre (seule info utile). */
+function RankRow({ rank, label, value, max, tone, uniform }: { rank: number; label: string; value: number; max: number; tone?: RankItem['tone']; uniform?: boolean }) {
   const pct = max > 0 ? Math.max((value / max) * 100, 2) : 0;
   const nameColor = tone === 'male' ? 'var(--male)' : tone === 'female' ? 'var(--female)' : 'var(--ink)';
   return (
@@ -155,7 +155,7 @@ function RankRow({ rank, label, value, max, tone }: { rank: number; label: strin
           <span className="sv-rank-name" style={{ color: nameColor }}>{label}</span>
           <span className="sv-rank-count">{value}</span>
         </div>
-        <div className="sv-rank-track"><div className="sv-rank-fill" style={{ width: `${pct}%` }} /></div>
+        {!uniform && <div className="sv-rank-track"><div className="sv-rank-fill" style={{ width: `${pct}%` }} /></div>}
       </div>
     </li>
   );
@@ -185,7 +185,9 @@ export default function StatisticsView({ tree, onSelectPerson }: Props) {
     return out;
   }, [tree]);
 
-  // Top first names.
+  // Noms les plus portés — agrège le 1er token du champ `firstName`. Selon la
+  // convention de saisie de l'arbre ce champ peut porter un prénom OU un nom de
+  // famille (ex. arbres TEDA : first_name = NOM) → libellé i18n neutre `topNames`.
   const topNames = useMemo<RankItem[]>(() => {
     const counts = new Map<string, { display: string; count: number; male: number; female: number }>();
     tree.persons.forEach(p => {
@@ -237,6 +239,9 @@ export default function StatisticsView({ tree, onSelectPerson }: Props) {
 
   const maxName = topNames[0]?.value ?? 1;
   const maxGeo = geo[0]?.value ?? 1;
+  // Barre inutile quand aucune valeur ne discrimine (toutes égales) : on la masque.
+  const namesUniform = topNames.length > 0 && topNames.every(e => e.value === topNames[0].value);
+  const geoUniform = geo.length > 0 && geo.every(g => g.value === geo[0].value);
 
   if (stats.totalPersons === 0) {
     return (
@@ -257,12 +262,13 @@ export default function StatisticsView({ tree, onSelectPerson }: Props) {
         .sv-reveal { animation: svReveal 0.6s var(--ease-out) both; }
         @keyframes svReveal { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
 
-        /* ---- Hero masthead ---- */
-        .sv-hero { display: flex; align-items: stretch; gap: 0; padding: 8px 0 30px; border-bottom: 1px solid var(--border); margin-bottom: 36px; }
-        .sv-hero-cell { flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 6px 12px; min-width: 0; }
-        .sv-hero-num { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.75rem, 7vw, 5rem); line-height: 0.95; color: var(--accent); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
-        .sv-hero-label { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--text-muted); margin-top: 12px; }
-        .sv-hero-sep { width: 1px; align-self: stretch; background: var(--accent); opacity: 0.5; flex-shrink: 0; }
+        /* ---- Hero — cartes chiffrées (mêmes bordures que les panneaux) ---- */
+        .sv-hero { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 8px; }
+        .sv-hero-cell { background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--accent); padding: 20px 24px; display: flex; flex-direction: column; min-width: 0; transition: box-shadow var(--t-base) var(--ease-out), transform var(--t-base) var(--ease-out); }
+        .sv-hero-cell:hover { box-shadow: var(--shadow-accent); transform: translateY(-2px); }
+        .sv-hero-icon { color: var(--accent-muted); margin-bottom: 12px; }
+        .sv-hero-num { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.4rem, 5vw, 3.4rem); line-height: 0.95; color: var(--accent); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+        .sv-hero-label { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-muted); margin-top: 10px; }
 
         /* ---- Section scaffolding (single Spectral title, no eyebrow-on-every-section) ---- */
         .sv-section { margin-top: 40px; }
@@ -276,10 +282,12 @@ export default function StatisticsView({ tree, onSelectPerson }: Props) {
 
         /* gender donut block */
         .sv-donut-row { display: flex; align-items: center; gap: 22px; }
-        .sv-legend { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-        .sv-legend-item { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text); }
-        .sv-dot { width: 12px; height: 12px; flex-shrink: 0; }
-        .sv-legend-pct { font-family: var(--font-mono); color: var(--text-muted); font-size: 12px; }
+        .sv-legend { display: flex; flex-direction: column; gap: 14px; min-width: 0; flex: 1; }
+        .sv-legend-item { display: flex; align-items: baseline; gap: 10px; font-size: 14px; color: var(--text); }
+        .sv-dot { width: 12px; height: 12px; flex-shrink: 0; align-self: center; }
+        .sv-legend-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .sv-legend-val { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; color: var(--ink); font-variant-numeric: tabular-nums; }
+        .sv-legend-pct { font-family: var(--font-mono); color: var(--text-muted); font-size: 12px; min-width: 34px; text-align: right; }
 
         /* living vs deceased */
         .sv-split-bar { display: flex; height: 28px; overflow: hidden; border: 1px solid var(--border); }
@@ -311,7 +319,7 @@ export default function StatisticsView({ tree, onSelectPerson }: Props) {
         .sv-person:hover:not(:disabled) { border-color: var(--accent); box-shadow: var(--shadow-sm); transform: translateY(-2px); }
         .sv-person:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         .sv-person:disabled { cursor: default; }
-        .sv-person-founder { background: #2a2218; border-color: var(--accent); }
+        .sv-person-founder { background: linear-gradient(150% 120% at 0% 0%, rgba(201,168,76,0.10), transparent 55%), var(--bg-card); border-color: var(--accent); }
         .sv-person-founder:hover:not(:disabled) { box-shadow: var(--shadow-accent); }
         .sv-person-head { display: flex; align-items: center; gap: 14px; }
         .sv-person-name { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; color: var(--ink); line-height: 1.15; }
@@ -322,35 +330,38 @@ export default function StatisticsView({ tree, onSelectPerson }: Props) {
         @media (max-width: 720px) {
           .sv-2col { grid-template-columns: 1fr; }
           .sv-rank-grid { grid-template-columns: 1fr; }
-          .sv-hero { flex-wrap: wrap; }
         }
         @media (max-width: 520px) {
-          .sv-hero { flex-direction: column; gap: 4px; align-items: stretch; }
-          .sv-hero-sep { width: 100%; height: 1px; }
-          .sv-hero-cell { flex-direction: row; justify-content: space-between; align-items: baseline; padding: 10px 4px; }
-          .sv-hero-label { margin-top: 0; }
+          .sv-hero { grid-template-columns: 1fr; gap: 12px; }
+          .sv-hero-cell { flex-direction: row; align-items: baseline; gap: 14px; padding: 14px 18px; }
+          .sv-hero-icon { display: none; }
+          .sv-hero-num { font-size: 2.2rem; }
+          .sv-hero-label { margin-top: 0; margin-left: auto; }
           .sv-donut-row { flex-direction: column; align-items: flex-start; }
+          .sv-legend { align-self: stretch; }
         }
         @media (prefers-reduced-motion: reduce) {
           .sv-reveal { animation: none; }
           .sv-rank-fill { transition: none; }
+          .sv-hero-cell:hover, .sv-person:hover:not(:disabled) { transform: none; }
         }
       `}</style>
 
       <div className="sv-wrap">
-        {/* ===== HERO ===== */}
+        {/* ===== HERO — 3 cartes cohérentes avec les panneaux de la page ===== */}
         <div className="sv-hero sv-reveal" style={{ animationDelay: '0ms' }}>
           <div className="sv-hero-cell">
+            <Users className="sv-hero-icon" size={17} aria-hidden="true" />
             <span className="sv-hero-num">{stats.totalPersons}</span>
             <span className="sv-hero-label">{t('members')}</span>
           </div>
-          <span className="sv-hero-sep" aria-hidden="true" />
           <div className="sv-hero-cell">
+            <Layers className="sv-hero-icon" size={17} aria-hidden="true" />
             <span className="sv-hero-num">{stats.totalGenerations}</span>
             <span className="sv-hero-label">{t('generations')}</span>
           </div>
-          <span className="sv-hero-sep" aria-hidden="true" />
           <div className="sv-hero-cell">
+            <Waypoints className="sv-hero-icon" size={17} aria-hidden="true" />
             <span className="sv-hero-num">{stats.totalRelationships}</span>
             <span className="sv-hero-label">{t('links')}</span>
           </div>
@@ -366,20 +377,27 @@ export default function StatisticsView({ tree, onSelectPerson }: Props) {
               <h4 className="sv-panel-h">{t('genderRatio')}</h4>
               <div className="sv-donut-row">
                 <GenderDonut male={stats.totalMales} female={stats.totalFemales} other={other}
-                  abbrMen={t('abbrMen')} abbrWomen={t('abbrWomen')} />
+                  totalLabel={t('members')}
+                  ariaLabel={`${stats.totalMales} ${t('males')}, ${stats.totalFemales} ${t('females')}${other > 0 ? `, ${other} ${t('otherGender')}` : ''}`} />
                 <div className="sv-legend">
                   <div className="sv-legend-item">
                     <span className="sv-dot" style={{ background: 'var(--male)' }} />
-                    {t('males')} <span className="sv-legend-pct">{pctMale}%</span>
+                    <span className="sv-legend-name">{t('males')}</span>
+                    <span className="sv-legend-val">{stats.totalMales}</span>
+                    <span className="sv-legend-pct">{pctMale}%</span>
                   </div>
                   <div className="sv-legend-item">
                     <span className="sv-dot" style={{ background: 'var(--female)' }} />
-                    {t('females')} <span className="sv-legend-pct">{pctFemale}%</span>
+                    <span className="sv-legend-name">{t('females')}</span>
+                    <span className="sv-legend-val">{stats.totalFemales}</span>
+                    <span className="sv-legend-pct">{pctFemale}%</span>
                   </div>
                   {other > 0 && (
                     <div className="sv-legend-item">
                       <span className="sv-dot" style={{ background: 'var(--border-strong)' }} />
-                      {other} <span className="sv-legend-pct">{Math.round((other / stats.totalPersons) * 100)}%</span>
+                      <span className="sv-legend-name">{t('otherGender')}</span>
+                      <span className="sv-legend-val">{other}</span>
+                      <span className="sv-legend-pct">{Math.round((other / stats.totalPersons) * 100)}%</span>
                     </div>
                   )}
                 </div>
@@ -426,14 +444,14 @@ export default function StatisticsView({ tree, onSelectPerson }: Props) {
           )}
         </section>
 
-        {/* ===== 3. ONOMASTIQUE — prénoms les plus portés ===== */}
+        {/* ===== 3. ONOMASTIQUE — noms les plus portés ===== */}
         <section className="sv-section sv-reveal" style={{ animationDelay: '180ms' }}>
-          <h3 className="sv-h">{t('topFirstNames')}</h3>
+          <h3 className="sv-h">{t('topNames')}</h3>
           <div className="sv-rule" />
           {topNames.length > 0 ? (
             <ol className="sv-rank-grid">
               {topNames.map((e, i) => (
-                <RankRow key={e.label} rank={i + 1} label={e.label} value={e.value} max={maxName} tone={e.tone} />
+                <RankRow key={e.label} rank={i + 1} label={e.label} value={e.value} max={maxName} tone={e.tone} uniform={namesUniform} />
               ))}
             </ol>
           ) : (
@@ -448,7 +466,7 @@ export default function StatisticsView({ tree, onSelectPerson }: Props) {
             <div className="sv-rule" />
             <ol className="sv-rank-list">
               {geo.map((g, i) => (
-                <RankRow key={g.label} rank={i + 1} label={g.label} value={g.value} max={maxGeo} />
+                <RankRow key={g.label} rank={i + 1} label={g.label} value={g.value} max={maxGeo} uniform={geoUniform} />
               ))}
             </ol>
           </section>
