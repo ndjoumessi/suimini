@@ -153,17 +153,40 @@ export function getGeneration(
   relationships: Relationship[],
   persons: Person[],
   memo: Map<string, number> = new Map(),
+  visiting: Set<string> = new Set(),
 ): number {
   if (memo.has(personId)) return memo.get(personId)!;
+  if (visiting.has(personId)) return 0; // cycle guard — see spouse fallback below
+
   const parents = getParents(personId, relationships, persons);
-  if (parents.length === 0) {
-    memo.set(personId, 0);
-    return 0;
+  if (parents.length > 0) {
+    visiting.add(personId);
+    const maxParentGen = Math.max(
+      ...parents.map((p) => getGeneration(p.id, relationships, persons, memo, visiting)),
+    );
+    visiting.delete(personId);
+    const gen = maxParentGen + 1;
+    memo.set(personId, gen);
+    return gen;
   }
-  const maxParentGen = Math.max(
-    ...parents.map((p) => getGeneration(p.id, relationships, persons, memo)),
+
+  // No recorded parents — either a genuine root ancestor, or (far more
+  // common in a real, partially-documented family tree) a spouse who
+  // married in without their own ancestry on file. Defaulting those straight
+  // to 0 collapsed every such spouse onto the founders' row regardless of
+  // which generation they actually married into — their children (whose
+  // OTHER parent sits many rows down) then got a parent→child edge spanning
+  // the tree's full height, which is what turned the "Arbre" view into a
+  // dense diagonal crosshatch on any tree with real intermarriage. Anchoring
+  // on a spouse/partner's generation instead keeps couples on the same row.
+  // A spouse pair who are BOTH rootless (e.g. the founding couple) still
+  // falls through to 0 via the cycle guard above.
+  visiting.add(personId);
+  const spouseGens = getSpouses(personId, relationships, persons).map((s) =>
+    getGeneration(s.id, relationships, persons, memo, visiting),
   );
-  const gen = maxParentGen + 1;
+  visiting.delete(personId);
+  const gen = spouseGens.length ? Math.max(...spouseGens) : 0;
   memo.set(personId, gen);
   return gen;
 }

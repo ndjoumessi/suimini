@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Svg, { Line } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -75,19 +75,27 @@ export function TreeView({
       <GestureDetector gesture={composed}>
         <Animated.View style={[styles.canvas, animatedStyle]}>
           <Svg width={layout.width} height={layout.height}>
-            {layout.edges.map((e, i) => (
-              <Line
-                key={`edge-${i}`}
-                x1={e.x1}
-                y1={e.y1}
-                x2={e.x2}
-                y2={e.y2}
-                stroke={colors.border}
-                strokeWidth={1.5}
-                strokeOpacity={0.65}
-                strokeLinecap="round"
-              />
-            ))}
+            {layout.edges.map((e, i) => {
+              // Right-angled "elbow" connector (down / across / down) instead
+              // of a straight diagonal. On a tree with real intermarriage,
+              // a parent and child rarely share the same x — many short
+              // diagonals crossing each other read as noise, while the same
+              // connectors bent at a shared mid-height read as a chart even
+              // when several of them cross. Standard org-chart technique.
+              const midY = (e.y1 + e.y2) / 2;
+              const d = `M${e.x1},${e.y1} L${e.x1},${midY} L${e.x2},${midY} L${e.x2},${e.y2}`;
+              return (
+                <Path
+                  key={`edge-${i}`}
+                  d={d}
+                  stroke={colors.border}
+                  strokeWidth={1.5}
+                  strokeOpacity={0.7}
+                  strokeLinecap="round"
+                  fill="none"
+                />
+              );
+            })}
             {layout.nodes.map((n) => (
               <PersonNode
                 key={n.person.id}
