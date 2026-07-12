@@ -142,6 +142,7 @@ export function PersonCombobox({
         placeholder={placeholder}
         value={displayValue}
         onFocus={() => { if (blurTimer.current) clearTimeout(blurTimer.current); setQuery(''); setActiveIndex(0); setOpen(true); }}
+        onClick={() => { if (blurTimer.current) clearTimeout(blurTimer.current); if (!open) { setQuery(''); setActiveIndex(0); setOpen(true); } }}
         onChange={e => { setQuery(e.target.value); setActiveIndex(0); if (!open) setOpen(true); }}
         onKeyDown={onKeyDown}
         onBlur={() => { blurTimer.current = setTimeout(() => setOpen(false), 120); }}

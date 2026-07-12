@@ -121,14 +121,13 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusId, tree]);
 
-  // Compteurs des boutons de nav haut/bas : la rangée parents/enfants ACTUELLE
-  // est déjà visible à l'écran (redondant d'y répéter son propre effectif) — le
-  // nombre utile est celui de la génération sur laquelle on va effectivement
-  // atterrir en cliquant (parents du futur focus « up », enfants du futur focus
-  // « down »), pas celui déjà affiché.
-  const upTarget = parents[0];
-  const prevGenCount = upTarget ? getParents(upTarget.id, tree.relationships, tree.persons).length : 0;
-  const nextGenCount = downTarget ? getChildren(downTarget.id, tree.relationships, tree.persons).length : 0;
+  // Compteurs des boutons de nav haut/bas : nombre de personnes dans la rangée
+  // DÉJÀ VISIBLE à l'écran (parents / enfants du focus actuel). Un compteur
+  // pointant vers une génération plus lointaine (grands-parents, petits-enfants)
+  // affichait 0 dès que cette génération plus lointaine n'était pas renseignée,
+  // ce qui semblait faux à côté d'une rangée visiblement peuplée.
+  const prevGenCount = parents.length;
+  const nextGenCount = children.length;
 
   // Validation dev : l'ordre des enfants affichés doit être croissant par birth_date
   // (getChildren les trie, toutes mères confondues — cf. treeUtils.compareByBirthDate).
