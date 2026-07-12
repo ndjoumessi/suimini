@@ -1,9 +1,11 @@
-/* Suimini — service worker v6 : cache offline des assets statiques + API Supabase.
- * v6 : bump pour livrer le bundle « défaut serveur runtime » (getDataLayer lit
- * désormais /api/data-layer + cookie override bidirectionnel). Purge l'ancien cache
- * (HTML + bundles) → la 1ʳᵉ navigation post-activation part réseau et charge la
- * nouvelle logique. Flip global Phase 0. */
-const CACHE = 'suimini-static-v6';
+/* Suimini — service worker v7 : cache offline des assets statiques + API Supabase.
+ * v7 : bump après une série de déploiements rapprochés (polices Fraunces/Public
+ * Sans, fixes i18n, UX impression) sans changement de version de cache — des
+ * clients avaient fini avec un mélange de chunks JS/CSS venant de builds
+ * différents (404 sur des assets hashés + échec de la navigation elle-même).
+ * Purge l'ancien cache (HTML + bundles) → la 1ʳᵉ navigation post-activation part
+ * réseau et recharge un bundle cohérent. */
+const CACHE = 'suimini-static-v7';
 
 // Assets statiques pré-mis en cache lors de l'installation.
 const PRECACHE_URLS = [
