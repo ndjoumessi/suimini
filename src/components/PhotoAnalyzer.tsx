@@ -122,9 +122,16 @@ export default function PhotoAnalyzer({ tree, preselectPersonId, onClose, onConf
       setFaces(detected);
       setConfidence(data.confidence ?? null);
       setPhotoDescription(data.photoDescription || '');
-      // Pre-assign the first face to the current person when opened from a profile.
+      // Pre-assign to the current person ONLY when there's exactly one detected
+      // face — an unambiguous solo portrait (the common case when opened from a
+      // profile, or from a gallery filtered/limited to a single person). On a
+      // group photo, "face #1" is just whichever face Claude happened to list
+      // first (no relation to the preselected person) — auto-assigning it would
+      // create a WRONG family-tree association that's easy to miss and confirm
+      // by accident. Multiple faces always start on "unknown".
       const init: Record<number, string> = {};
-      detected.forEach((f, i) => { init[f.id] = i === 0 && preselectPersonId ? preselectPersonId : 'unknown'; });
+      const soleFace = detected.length === 1 ? detected[0] : null;
+      detected.forEach((f) => { init[f.id] = f === soleFace && preselectPersonId ? preselectPersonId : 'unknown'; });
       setAssignments(init);
       setStep('results');
     } catch (e) {
