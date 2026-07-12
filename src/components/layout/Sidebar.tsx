@@ -135,13 +135,14 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
   // Ownership label: "Propriétaire" when owner/admin, else "Invité".
   const ownershipKey = userRole === 'owner' || userRole === 'admin' ? 'owner' : 'guest';
 
-  // En vue Admin OU Paramètres, les items scopés à un arbre (VUE hors Accueil +
-  // tout EXPLORER) ne mènent qu'à des écrans vides ("Aucun arbre") — ni la
-  // modération ni les réglages de compte n'en ont besoin. On les masque, en
-  // gardant Accueil (retour choisir/créer un arbre) pour ne rien perdre : la
-  // nav complète revient dès qu'on quitte ces deux sections.
-  const REDUCED_NAV_VIEWS: ViewMode[] = ['admin', 'settings'];
-  const visibleGroups = REDUCED_NAV_VIEWS.includes(activeView)
+  // Sans arbre actif (ex. compte admin pur, qui n'en a jamais — "Aucun arbre" y
+  // est l'état normal, permanent), les items scopés à un arbre (VUE hors Accueil
+  // + tout EXPLORER) ne mènent QUE vers des écrans vides, sur N'IMPORTE QUELLE
+  // page (pas seulement Admin/Paramètres — le Tableau de bord aussi). On les
+  // masque tant qu'aucun arbre n'est actif ; Accueil reste (choisir/créer un
+  // arbre) donc rien n'est perdu, et la nav complète revient dès qu'un arbre
+  // est sélectionné.
+  const visibleGroups = !activeTree
     ? NAV_GROUPS
         .map(group => ({ ...group, items: group.items.filter(item => item.view === 'dashboard') }))
         .filter(group => group.items.length > 0)
