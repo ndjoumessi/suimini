@@ -110,7 +110,13 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         model: ANTHROPIC_MODEL,
-        max_tokens: 1500,
+        // 1500 était trop court pour une photo de groupe (chaque visage ajoute
+        // ~50-80 tokens de JSON + description) : au-delà d'une dizaine de
+        // personnes la réponse était tronquée en plein milieu → JSON invalide →
+        // "Réponse de l'IA illisible." 4096 couvre confortablement une grande
+        // photo de famille (50+ visages) sans réellement augmenter le coût pour
+        // les photos courantes (1-5 visages), qui s'arrêtent bien avant la limite.
+        max_tokens: 4096,
         messages: [
           {
             role: 'user',
