@@ -5,7 +5,10 @@ import type { Person } from '@/types';
 export const runtime = 'nodejs';
 export const maxDuration = 30;
 
-const ANTHROPIC_MODEL = 'claude-sonnet-4-20250514';
+// claude-sonnet-4-20250514 a été retiré par Anthropic le 15/06/2026 (404 sur
+// /v1/messages) → remplacement recommandé officiel : claude-sonnet-4-6.
+// https://platform.claude.com/docs/en/about-claude/model-deprecations
+const ANTHROPIC_MODEL = 'claude-sonnet-4-6';
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 
 interface AnthropicTextBlock { type: string; text?: string }

@@ -6,8 +6,11 @@ import type { Person } from '@/types';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-// Vision-capable Sonnet 4 (same model pinned in /api/narrative).
-const ANTHROPIC_MODEL = 'claude-sonnet-4-20250514';
+// Vision-capable Sonnet (même modèle épinglé dans /api/narrative).
+// claude-sonnet-4-20250514 a été retiré par Anthropic le 15/06/2026 (404 sur
+// /v1/messages) → remplacement recommandé officiel : claude-sonnet-4-6.
+// https://platform.claude.com/docs/en/about-claude/model-deprecations
+const ANTHROPIC_MODEL = 'claude-sonnet-4-6';
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 
 const SUPPORTED_MEDIA = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'] as const;
