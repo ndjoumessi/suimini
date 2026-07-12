@@ -79,7 +79,7 @@ export function BrandLockup({
         style={{
           fontSize: fontSize ?? size * 0.78,
           fontWeight: 700,
-          letterSpacing: '-0.03em',
+          letterSpacing: '-0.01em',
           color: wordColor ?? color,
         }}
       >

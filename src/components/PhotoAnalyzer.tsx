@@ -315,7 +315,7 @@ export default function PhotoAnalyzer({ tree, preselectPersonId, onClose, onConf
 
 const PA_CSS = `
 .pa-overlay { position: fixed; inset: 0; z-index: var(--z-modal); background: var(--scrim, rgba(27,22,18,0.55)); display: flex; align-items: flex-start; justify-content: center; padding: 6vh 16px 40px; overflow-y: auto; }
-.pa-modal { position: relative; width: 100%; max-width: 680px; background: var(--bg-card); border: var(--bw) solid var(--border-strong); box-shadow: var(--shadow-xl, 10px 10px 0 var(--shadow-color)); border-radius: var(--radius); }
+.pa-modal { position: relative; width: 100%; max-width: 680px; background: var(--bg-card); border: var(--bw) solid var(--border-strong); box-shadow: var(--shadow-xl); border-radius: var(--radius-xl); }
 .pa-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 20px 22px 14px; border-bottom: var(--bw) solid var(--border-strong); }
 .pa-title { margin: 0 0 3px; font-size: 1.3rem; display: flex; align-items: center; gap: 9px; }
 .pa-title svg { color: var(--accent); }
@@ -341,7 +341,7 @@ const PA_CSS = `
 /* Full-height element with a thin accent band at its top; translateY sweeps it the
    full container height (transform, not the layout 'top' property). */
 .pa-scan-line { position: absolute; left: 0; right: 0; top: 0; height: 100%; pointer-events: none; will-change: transform;
-  background: linear-gradient(to bottom, rgba(191,75,44,0.55) 0, var(--accent) 2px, rgba(191,75,44,0.35) 5px, transparent 9px);
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--accent) 55%, transparent) 0, var(--accent) 2px, color-mix(in srgb, var(--accent) 35%, transparent) 5px, transparent 9px);
   animation: paScan 1.8s cubic-bezier(0.45,0,0.55,1) infinite; }
 .pa-scan-grid { position: absolute; inset: 0; background-image: linear-gradient(var(--accent) 1px, transparent 1px), linear-gradient(90deg, var(--accent) 1px, transparent 1px); background-size: 28px 28px; opacity: 0.12; pointer-events: none; }
 @keyframes paScan { from { transform: translateY(0); } to { transform: translateY(100%); } }
@@ -357,19 +357,19 @@ const PA_CSS = `
 /* Result face frames */
 .pa-result-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
 .pa-identify-hint { margin: -6px 0 12px; font-size: 12px; line-height: 1.5; color: var(--text-muted); }
-.pa-face { position: absolute; border: 2px solid var(--accent); box-shadow: 4px 4px 0 var(--ink); border-radius: 0; pointer-events: none; }
-.pa-face-tag { position: absolute; top: -11px; left: -2px; min-width: 20px; height: 20px; padding: 0 5px; display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: #fff; font-family: var(--font-mono); font-size: 11px; font-weight: 700; border: 1.5px solid var(--ink); }
+.pa-face { position: absolute; border: 2px solid var(--accent); box-shadow: 0 0 0 1.5px rgba(0,0,0,0.45); border-radius: 0; pointer-events: none; }
+.pa-face-tag { position: absolute; top: -11px; left: -2px; min-width: 20px; height: 20px; padding: 0 5px; display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: var(--ink-on-accent); font-family: var(--font-mono); font-size: 11px; font-weight: 700; border: 1.5px solid var(--ink); border-radius: var(--radius-sm); }
 .pa-empty { margin: 16px 0 0; font-size: 14px; color: var(--text-muted); text-align: center; }
 
 .pa-list { list-style: none; margin: 18px 0 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
 .pa-row { display: flex; gap: 12px; padding: 12px; border: var(--bw) solid var(--border-strong); border-radius: var(--radius); background: var(--bg-card); }
-.pa-row-num { flex-shrink: 0; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: #fff; font-family: var(--font-mono); font-weight: 700; font-size: 12px; border: 1.5px solid var(--ink); }
+.pa-row-num { flex-shrink: 0; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: var(--ink-on-accent); font-family: var(--font-mono); font-weight: 700; font-size: 12px; border: 1.5px solid var(--ink); border-radius: var(--radius-sm); }
 .pa-row-info { flex: 1; min-width: 0; }
 .pa-row-badges { display: flex; gap: 6px; flex-wrap: wrap; }
-.pa-badge { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.5px; font-size: 10px; font-weight: 700; padding: 2px 7px; border: 1px solid var(--border-strong); background: var(--bg-muted); color: var(--text); }
+.pa-badge { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.5px; font-size: 10px; font-weight: 700; padding: 2px 8px; border: 1px solid var(--border-strong); border-radius: var(--radius-full); background: var(--bg-muted); color: var(--text); }
 .pa-badge-g { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
 .pa-row-desc { margin: 7px 0 0; font-size: 13px; color: var(--text-muted); }
 .pa-assign-label { display: block; margin: 10px 0 5px; color: var(--text-muted); }
 .pa-select { width: 100%; }
-.pa-modal .btn-primary svg.animate-spin { color: #fff !important; }
+.pa-modal .btn-primary svg.animate-spin { color: var(--ink-on-accent) !important; }
 `;

@@ -84,48 +84,48 @@ export default function ListView({ tree, onSelectPerson, onAddPerson, canEdit = 
         .lv-toolbar { padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--bg-card); display: flex; flex-direction: column; gap: 10px; }
         .lv-search-wrap { position: relative; display: flex; align-items: center; }
         .lv-search-ico { position: absolute; left: 12px; color: var(--accent-text); pointer-events: none; }
-        .lv-search { width: 100%; height: 42px; padding: 0 12px 0 38px; background: #1A1A24; color: var(--text);
-          border: 1px solid var(--border-strong); font-family: var(--font-body); font-size: 14px; border-radius: 0; }
+        .lv-search { width: 100%; height: 42px; padding: 0 12px 0 38px; background: var(--bg); color: var(--text);
+          border: 1px solid var(--border-strong); font-family: var(--font-body); font-size: 14px; border-radius: var(--radius); }
         .lv-search::placeholder { color: var(--text-muted); }
         .lv-search:focus { outline: none; border: 2px solid var(--accent); padding-left: 37px; }
 
         .lv-row2 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         .lv-chips { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; min-width: 0; }
         .lv-chip { padding: 6px 12px; background: transparent; border: 1px solid var(--border-strong); color: var(--text-muted);
-          font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em; cursor: pointer; border-radius: 0;
+          font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em; cursor: pointer; border-radius: var(--radius-full);
           transition: border-color var(--t-fast), color var(--t-fast), background var(--t-fast); white-space: nowrap; }
         .lv-chip:hover { border-color: var(--accent); color: var(--accent-text); }
-        .lv-chip-active { background: var(--accent); border-color: var(--accent); color: #12131a; font-weight: 700; }
+        .lv-chip-active { background: var(--accent); border-color: var(--accent); color: var(--ink-on-accent); font-weight: 700; }
         .lv-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-        .lv-sort { height: 34px; background: #1A1A24; color: var(--text); border: 1px solid var(--border-strong);
-          font-family: var(--font-mono); font-size: 11px; padding: 0 8px; border-radius: 0; cursor: pointer; }
-        .lv-seg { display: inline-flex; border: 1px solid var(--border-strong); flex-shrink: 0; }
+        .lv-sort { height: 34px; background: var(--bg); color: var(--text); border: 1px solid var(--border-strong);
+          font-family: var(--font-mono); font-size: 11px; padding: 0 8px; border-radius: var(--radius); cursor: pointer; }
+        .lv-seg { display: inline-flex; border: 1px solid var(--border-strong); flex-shrink: 0; border-radius: var(--radius); overflow: hidden; }
         .lv-seg-btn { width: 36px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
           background: transparent; border: none; color: var(--text-muted); cursor: pointer; transition: background var(--t-fast), color var(--t-fast); }
         .lv-seg-btn + .lv-seg-btn { border-left: 1px solid var(--border-strong); }
         .lv-seg-btn:hover { color: var(--accent-text); }
-        .lv-seg-active { background: var(--accent); color: #12131a; }
+        .lv-seg-active { background: var(--accent); color: var(--ink-on-accent); }
         .lv-add { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px;
-          background: var(--accent); color: #12131a; border: 1px solid var(--accent); cursor: pointer;
-          font-family: var(--font-display); font-weight: 700; font-size: 13px; border-radius: 0; transition: background var(--t-fast); }
+          background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); cursor: pointer;
+          font-family: var(--font-display); font-weight: 700; font-size: 13px; border-radius: var(--radius); transition: background var(--t-fast); }
         .lv-add:hover { background: var(--accent-hover); }
         .lv-count { font-family: var(--font-mono); font-size: 11px; color: var(--accent-text); opacity: 0.85; flex-shrink: 0; }
 
         /* ---- shared avatar (square, gender-coloured, Spectral initials) ---- */
         .lv-ava { width: 36px; height: 36px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
-          font-family: var(--font-display); font-weight: 700; font-size: 13px; overflow: hidden; border-radius: 0; }
+          font-family: var(--font-display); font-weight: 700; font-size: 13px; overflow: hidden; border-radius: var(--radius-sm); }
         .lv-ava-lg { width: 48px; height: 48px; font-size: 16px; }
         .lv-ava img { width: 100%; height: 100%; object-fit: cover; }
         .lv-dates { font-family: var(--font-mono); font-size: 11px; color: var(--accent-text); opacity: 0.9; }
         .lv-place { display: inline-flex; align-items: center; gap: 3px; font-family: var(--font-mono); font-size: 10.5px; color: var(--text-muted); white-space: nowrap; }
 
         /* ---- LIST rows ---- */
-        .lv-list { max-width: 820px; margin: 0 auto; border: 1px solid var(--border); border-bottom: none; }
+        .lv-list { max-width: 820px; margin: 0 auto; border: 1px solid var(--border); border-bottom: none; border-radius: var(--radius-lg) var(--radius-lg) 0 0; overflow: hidden; }
         .lv-row { position: relative; width: 100%; display: flex; align-items: center; gap: 12px; height: 52px;
           padding: 0 14px 0 18px; background: transparent; border: none; border-bottom: 1px solid var(--border);
           text-align: left; cursor: pointer; transition: background var(--t-fast); }
-        .lv-row:hover { background: #1A1A24; }
+        .lv-row:hover { background: var(--interactive); }
         .lv-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
         .lv-rbar { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--bar); transition: background var(--t-fast), width var(--t-fast); }
         .lv-row:hover .lv-rbar { background: var(--accent); }
@@ -138,6 +138,7 @@ export default function ListView({ tree, onSelectPerson, onAddPerson, canEdit = 
         .lv-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; max-width: 720px; margin: 0 auto; }
         .lv-gcard { position: relative; display: flex; flex-direction: column; align-items: center; gap: 7px; min-height: 180px;
           padding: 22px 14px 16px; background: var(--bg-card); border: 1px solid var(--border); cursor: pointer; text-align: center;
+          border-radius: var(--radius-lg); overflow: hidden;
           transition: border-color var(--t-fast), box-shadow var(--t-base), transform var(--t-fast); }
         .lv-gcard:hover { border-color: var(--accent); box-shadow: var(--shadow-accent); transform: translateY(-2px); }
         .lv-gcard:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

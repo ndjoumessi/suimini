@@ -589,7 +589,7 @@ export default function SuiminiApp() {
 
       <main id="main-content" className="app-main" style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', minWidth: 0, isolation: 'isolate' }}>
         {!isOnline && (
-          <div role="status" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 16px', background: 'color-mix(in srgb, var(--accent) 12%, var(--bg-card))', borderBottom: 'var(--bw) solid var(--accent)', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--ink)', letterSpacing: '0.02em' }}>
+          <div role="status" style={{ position: 'fixed', top: '10px', left: '12px', right: '12px', zIndex: 200, display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px', background: 'color-mix(in srgb, var(--accent) 12%, var(--bg-card))', border: '1px solid color-mix(in srgb, var(--accent) 45%, var(--border))', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--ink)', letterSpacing: '0.02em' }}>
             <WifiOff size={14} aria-hidden="true" style={{ flexShrink: 0, color: 'var(--accent)' }} />
             <span><strong>{tOffline('banner')}</strong> — {tOffline('saved')}</span>
           </div>
@@ -597,7 +597,7 @@ export default function SuiminiApp() {
         {/* Cloud sync failure: surface it prominently (not just the sidebar dot) with
             a one-tap retry. Only when online — offline has its own banner above. */}
         {isOnline && store.cloud && store.syncStatus === 'error' && (
-          <div role="alert" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '7px 16px', background: 'color-mix(in srgb, var(--danger) 16%, var(--bg-card))', borderBottom: 'var(--bw) solid var(--danger)', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--ink)', letterSpacing: '0.02em' }}>
+          <div role="alert" style={{ position: 'fixed', top: '10px', left: '12px', right: '12px', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '8px 14px', background: 'color-mix(in srgb, var(--danger) 16%, var(--bg-card))', border: '1px solid color-mix(in srgb, var(--danger) 45%, var(--border))', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--ink)', letterSpacing: '0.02em' }}>
             <AlertTriangle size={14} aria-hidden="true" style={{ flexShrink: 0, color: 'var(--danger)' }} />
             <span>{tOffline('syncError')}</span>
             <button onClick={handleRetrySync} className="btn btn-sm" style={{ minHeight: '26px', padding: '3px 10px', gap: '5px' }}>
@@ -611,7 +611,7 @@ export default function SuiminiApp() {
           <UpdateBanner onRefresh={swUpdate.applyUpdate} onDismiss={swUpdate.dismiss} />
         )}
         {/* Mobile header */}
-        <header style={{ display: 'none', padding: '10px 16px', borderBottom: 'var(--bw) solid var(--border-strong)', background: 'var(--bg-card)', alignItems: 'center', gap: '12px' }} className="mobile-header">
+        <header style={{ display: 'none', padding: '10px 16px', borderBottom: 'var(--bw) solid var(--border)', background: 'var(--surface-3)', alignItems: 'center', gap: '12px' }} className="mobile-header">
           {/* Sur mobile, le ContentHeader (et son h1) est masqué : ce h1 sr-only
               garantit un titre de page pour les vues qui en dépendent (2.4.6).
               Le header mobile est display:none sur desktop → jamais de double h1. */}

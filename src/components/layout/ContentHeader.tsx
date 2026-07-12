@@ -48,7 +48,7 @@ export default function ContentHeader({ activeView, activeTreeName, onPresent, o
         .content-header {
           display: flex; align-items: center; gap: 16px;
           padding: 14px 24px; border-bottom: var(--bw) solid var(--border);
-          background: var(--bg); flex-shrink: 0;
+          background: var(--surface-3); flex-shrink: 0;
         }
         .ch-title { flex: 1; min-width: 0; }
         .ch-eyebrow { display: block; color: var(--accent-text); margin-bottom: 1px; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

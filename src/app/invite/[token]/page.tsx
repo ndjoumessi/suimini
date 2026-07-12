@@ -80,33 +80,33 @@ export default function InvitePage() {
 
   // ─── Styles (Atelier — literal hex fallbacks so the page renders standalone) ──
   const pageStyle: React.CSSProperties = {
-    minHeight: '100dvh', backgroundColor: 'var(--bg, #f4f1ea)',
+    minHeight: '100dvh', backgroundColor: 'var(--bg, #171310)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    padding: '32px 16px', fontFamily: 'var(--font-body, "Hanken Grotesk", sans-serif)',
+    padding: '32px 16px', fontFamily: 'var(--font-body, Figtree, sans-serif)',
   };
   const cardStyle: React.CSSProperties = {
-    maxWidth: '460px', width: '100%', backgroundColor: 'var(--bg-card, #ffffff)',
-    border: '1.5px solid var(--border-strong, #1b1b1b)',
-    boxShadow: '6px 6px 0 var(--shadow-color, rgba(27,22,18,0.9))',
-    borderRadius: 0, overflow: 'hidden',
+    maxWidth: '460px', width: '100%', backgroundColor: 'var(--bg-card, #221d17)',
+    border: '1.5px solid var(--border-strong, #4a4033)',
+    boxShadow: 'var(--shadow-lg, 0 8px 20px rgba(12, 8, 4, 0.4))',
+    borderRadius: 'var(--radius-lg, 16px)', overflow: 'hidden',
   };
   const headerStyle: React.CSSProperties = {
-    backgroundColor: 'var(--ink, #1b1b1b)', padding: '16px 28px',
-    fontFamily: 'var(--font-mono, "IBM Plex Mono", monospace)', color: '#ffffff',
+    backgroundColor: 'var(--ink, #f3ecdf)', padding: '16px 28px',
+    fontFamily: 'var(--font-mono, "IBM Plex Mono", monospace)', color: 'var(--bg, #171310)',
     textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 700, fontSize: '13px',
   };
   const bodyStyle: React.CSSProperties = {
-    padding: '28px', color: 'var(--text, #1b1b1b)', fontSize: '15px', lineHeight: 1.6,
+    padding: '28px', color: 'var(--text, #f3ecdf)', fontSize: '15px', lineHeight: 1.6,
   };
   const h1Style: React.CSSProperties = {
-    margin: '0 0 16px', fontFamily: 'var(--font-display, "Bricolage Grotesque", sans-serif)',
-    fontWeight: 700, fontSize: '24px', letterSpacing: '-0.02em',
+    margin: '0 0 16px', fontFamily: 'var(--font-display, "Playfair Display", serif)',
+    fontWeight: 700, fontSize: '24px', letterSpacing: '-0.01em',
   };
-  const mutedStyle: React.CSSProperties = { color: 'var(--text-muted, #4a4742)', fontSize: '13px' };
+  const mutedStyle: React.CSSProperties = { color: 'var(--text-muted, #aa9e8c)', fontSize: '13px' };
   const iconCircle: React.CSSProperties = {
     width: '52px', height: '52px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-    border: '1.5px solid var(--border-strong, #1b1b1b)', borderRadius: 0,
-    background: 'var(--accent-light, #f6e1d8)', color: 'var(--accent, #bf4b2c)',
+    border: '1.5px solid var(--border-strong, #4a4033)', borderRadius: 'var(--radius, 10px)',
+    background: 'var(--accent-light, rgba(201, 168, 76, 0.14))', color: 'var(--accent, #c9a84c)',
   };
 
   function Shell({ children }: { children: React.ReactNode }) {
@@ -147,7 +147,7 @@ export default function InvitePage() {
     return (
       <Shell>
         <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
-          <span style={{ ...iconCircle, background: 'color-mix(in srgb, var(--danger, #9e2b25) 14%, var(--bg-card, #fff))', color: 'var(--danger, #9e2b25)' }} aria-hidden="true"><Clock size={24} /></span>
+          <span style={{ ...iconCircle, background: 'color-mix(in srgb, var(--danger, #e07862) 14%, var(--bg-card, #221d17))', color: 'var(--danger, #e07862)' }} aria-hidden="true"><Clock size={24} /></span>
           <div>
             <h1 style={h1Style}>{t('joinExpired')}</h1>
             <p style={{ margin: '0 0 20px', ...mutedStyle }}>
@@ -183,7 +183,7 @@ export default function InvitePage() {
       <div style={{ display: 'flex', gap: '14px', alignItems: 'center', marginBottom: '20px' }}>
         <span style={iconCircle} aria-hidden="true"><TreePine size={26} /></span>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: 'var(--text-muted, #4a4742)' }}>
+          <div style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: 'var(--text-muted, #aa9e8c)' }}>
             {invite.inviterName ? t('joinDesc', { inviter: invite.inviterName }) : t('title')}
           </div>
           <h1 style={{ ...h1Style, margin: '2px 0 0' }}>{t('joinTitle', { tree: invite.treeName })}</h1>
@@ -193,7 +193,7 @@ export default function InvitePage() {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '22px' }}>
         <span className="badge badge-accent">{t('role')} : {roleLabel(invite.role)}</span>
         {expiry && (
-          <span className="badge" style={{ background: 'var(--bg-muted, #ece7dc)', color: 'var(--text-muted, #4a4742)', borderColor: 'var(--border, #d8d2c6)' }}>
+          <span className="badge" style={{ background: 'var(--bg-muted, #2b251d)', color: 'var(--text-muted, #aa9e8c)', borderColor: 'var(--border, #362f26)' }}>
             <Clock size={10} aria-hidden="true" style={{ marginRight: '4px' }} /> {ti('expiresOn')} {expiry}
           </span>
         )}

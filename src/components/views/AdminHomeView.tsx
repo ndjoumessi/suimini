@@ -78,7 +78,7 @@ export default function AdminHomeView({ admin, role, displayName, userEmail, onO
   ];
 
   return (
-    <div className="adh-root" style={{ flex: 1, overflowY: 'auto', background: 'radial-gradient(130% 80% at 50% -5%, rgba(201,168,76,0.06), transparent 58%), var(--bg)' }}>
+    <div className="adh-root" style={{ flex: 1, overflowY: 'auto', background: 'radial-gradient(130% 80% at 50% -5%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 58%), var(--bg)' }}>
       <div className="adh-wrap">
 
         {/* ===== HERO ===== */}
@@ -196,24 +196,24 @@ export default function AdminHomeView({ admin, role, displayName, userEmail, onO
         .adh-hero { padding: 4px 0 2px; }
         .adh-hero-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 22px; }
         .adh-date { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); }
-        .adh-role { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-text); background: var(--accent-light); padding: 4px 10px; }
-        .adh-title { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.5rem, 6vw, 4rem); line-height: 1; letter-spacing: -0.03em; color: var(--accent); margin: 0; text-wrap: balance; overflow-wrap: break-word; }
+        .adh-role { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-text); background: var(--accent-light); padding: 4px 12px; border-radius: var(--radius-full); }
+        .adh-title { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.5rem, 6vw, 4rem); line-height: 1; letter-spacing: -0.01em; color: var(--accent); margin: 0; text-wrap: balance; overflow-wrap: break-word; }
         .adh-rule { display: block; width: 60px; height: 2px; background: var(--accent); margin: 18px 0 0; }
         .adh-sub { font-family: var(--font-body); font-size: 14px; color: var(--text-muted); margin: 16px 0 0; max-width: 56ch; line-height: 1.5; }
 
         .adh-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-        .adh-stat { position: relative; background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--accent);
+        .adh-stat { position: relative; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg);
           padding: 18px 20px; display: flex; flex-direction: column; align-items: flex-start; cursor: pointer; text-align: left;
           font-family: inherit; transition: box-shadow var(--t-base) var(--ease-out), transform var(--t-base) var(--ease-out), background var(--t-base) var(--ease-out); }
-        .adh-stat:hover { background: #252535; box-shadow: var(--shadow-accent); transform: translateY(-2px); }
+        .adh-stat:hover { background: var(--interactive); box-shadow: var(--shadow-accent); transform: translateY(-2px); }
         .adh-stat:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         .adh-stat-icon { margin-bottom: 11px; }
-        .adh-stat-num { font-family: var(--font-display); font-weight: 700; line-height: 0.95; font-size: clamp(2rem, 4vw, 2.6rem); letter-spacing: -0.02em; }
+        .adh-stat-num { font-family: var(--font-display); font-weight: 700; line-height: 0.95; font-size: clamp(2rem, 4vw, 2.6rem); letter-spacing: -0.01em; }
         .adh-stat-label { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); margin-top: 8px; }
 
         .adh-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
-        .adh-card { background: var(--bg-card); border: 1px solid var(--border); padding: 22px 24px; display: flex; flex-direction: column; }
-        .adh-card-warm { background: linear-gradient(150% 120% at 0% 0%, rgba(201,168,76,0.07), transparent 55%), var(--bg-card); border-color: color-mix(in srgb, var(--accent) 22%, var(--border)); }
+        .adh-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px 24px; display: flex; flex-direction: column; }
+        .adh-card-warm { background: linear-gradient(150% 120% at 0% 0%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 55%), var(--bg-card); border-color: color-mix(in srgb, var(--accent) 22%, var(--border)); }
         .adh-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
         .adh-eyebrow { display: flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-text); margin-bottom: 5px; }
         .adh-h { margin: 0; font-family: var(--font-display); font-size: 1.3rem; font-weight: 600; letter-spacing: -0.005em; }
@@ -221,10 +221,10 @@ export default function AdminHomeView({ admin, role, displayName, userEmail, onO
         .adh-head-link:hover { color: var(--accent); }
 
         .adh-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
-        .adh-row { width: 100%; display: flex; align-items: center; gap: 11px; padding: 8px; border: none; background: transparent; cursor: pointer; text-align: left; transition: background var(--t-fast); font-family: inherit; }
-        .adh-row:hover { background: var(--bg-muted); }
+        .adh-row { width: 100%; display: flex; align-items: center; gap: 11px; padding: 8px; border: none; background: transparent; border-radius: var(--radius); cursor: pointer; text-align: left; transition: background var(--t-fast); font-family: inherit; }
+        .adh-row:hover { background: var(--interactive); }
         .adh-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-        .adh-ava { width: 32px; height: 32px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: var(--accent-light); color: var(--accent); font-size: 12px; font-weight: 700; font-family: var(--font-body); }
+        .adh-ava { width: 32px; height: 32px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: var(--accent-light); color: var(--accent); border-radius: 50%; font-size: 12px; font-weight: 700; font-family: var(--font-body); }
         .adh-row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
         .adh-row-name { font-family: var(--font-body); font-size: 14px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .adh-row-sub { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -233,20 +233,20 @@ export default function AdminHomeView({ admin, role, displayName, userEmail, onO
         .adh-empty p { margin: 0; font-size: 13px; color: var(--text-muted); }
 
         .adh-quick { display: flex; flex-direction: column; gap: 8px; }
-        .adh-quick-btn { position: relative; display: flex; align-items: center; gap: 14px; text-align: left; padding: 14px 16px; cursor: pointer; background: var(--bg); border: 1px solid var(--border); color: var(--text-muted); font-family: inherit; transition: transform var(--t-fast) var(--ease-out), box-shadow var(--t-fast), border-color var(--t-fast), background var(--t-fast); }
+        .adh-quick-btn { position: relative; display: flex; align-items: center; gap: 14px; text-align: left; padding: 14px 16px; cursor: pointer; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-muted); font-family: inherit; transition: transform var(--t-fast) var(--ease-out), box-shadow var(--t-fast), border-color var(--t-fast), background var(--t-fast); }
         .adh-quick-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-accent); background: var(--bg-card); border-color: var(--accent); }
         .adh-quick-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-        .adh-quick-icon { position: relative; flex-shrink: 0; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; background: var(--accent-light); color: var(--accent); }
-        .adh-quick-badge { position: absolute; top: -6px; right: -6px; background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; padding: 1px 6px; }
+        .adh-quick-icon { position: relative; flex-shrink: 0; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; background: var(--accent-light); color: var(--accent); border-radius: var(--radius-sm); }
+        .adh-quick-badge { position: absolute; top: -6px; right: -6px; background: var(--danger); color: #1c0c07; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: var(--radius-full); }
         .adh-quick-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
         .adh-quick-t { font-family: var(--font-body); font-size: 14px; font-weight: 700; color: var(--ink); }
         .adh-quick-d { font-family: var(--font-body); font-size: 12px; color: var(--text-muted); }
         .adh-quick-go { color: var(--text-light); flex-shrink: 0; transition: color var(--t-fast), transform var(--t-fast) var(--ease-out); }
         .adh-quick-btn:hover .adh-quick-go { color: var(--accent-text); transform: translateX(3px); }
 
-        .adh-status { display: flex; align-items: center; gap: 14px; padding: 16px 20px; background: var(--bg-card); border: 1px solid var(--border); text-decoration: none; transition: border-color var(--t-fast), background var(--t-fast); }
-        .adh-status:hover { border-color: var(--accent); background: #252535; }
-        .adh-status-icon { flex-shrink: 0; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; background: var(--bg-muted); color: var(--text-muted); }
+        .adh-status { display: flex; align-items: center; gap: 14px; padding: 16px 20px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); text-decoration: none; transition: border-color var(--t-fast), background var(--t-fast); }
+        .adh-status:hover { border-color: var(--accent); background: var(--interactive); }
+        .adh-status-icon { flex-shrink: 0; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; background: var(--bg-muted); color: var(--text-muted); border-radius: var(--radius-sm); }
         .adh-status-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
         .adh-status-t { font-family: var(--font-body); font-size: 13px; font-weight: 700; color: var(--ink); }
         .adh-status-d { font-family: var(--font-body); font-size: 12px; color: var(--text-muted); }

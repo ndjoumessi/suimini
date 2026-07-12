@@ -53,7 +53,7 @@ function GenderDonut({ male, female, other, totalLabel, ariaLabel }: {
       })}
       {/* Centre: total en or (Fraunces) + libellé mono discret dessous */}
       <text x={CX} y={CY - 2} textAnchor="middle" fontFamily="var(--font-display)" fontWeight={700}
-        fontSize={40} fill="var(--accent)" letterSpacing="-0.02em">{total}</text>
+        fontSize={40} fill="var(--accent)" letterSpacing="-0.01em">{total}</text>
       <text x={CX} y={CY + 22} textAnchor="middle" fontFamily="var(--font-mono, monospace)"
         fontSize={10} letterSpacing="0.14em" fill="var(--text-muted)">{totalLabel.toUpperCase()}</text>
     </svg>
@@ -132,7 +132,7 @@ function DecadeChart({ buckets, tooltipFor }: { buckets: DecadeBucket[]; tooltip
           transform: 'translate(-50%, calc(-100% - 14px))', pointerEvents: 'none',
           background: 'var(--ink)', color: 'var(--bg)', padding: '6px 10px',
           fontFamily: 'var(--font-mono)', fontSize: '11px', whiteSpace: 'nowrap',
-          boxShadow: '3px 3px 0 var(--accent)', zIndex: 2,
+          borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)', zIndex: 2,
         }}>
           {tooltipFor(buckets[hover.i])}
         </div>
@@ -264,10 +264,10 @@ export default function StatisticsView({ tree, onSelectPerson }: Props) {
 
         /* ---- Hero — cartes chiffrées (mêmes bordures que les panneaux) ---- */
         .sv-hero { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 8px; }
-        .sv-hero-cell { background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--accent); padding: 20px 24px; display: flex; flex-direction: column; min-width: 0; transition: box-shadow var(--t-base) var(--ease-out), transform var(--t-base) var(--ease-out); }
+        .sv-hero-cell { background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 20px 24px; display: flex; flex-direction: column; min-width: 0; transition: box-shadow var(--t-base) var(--ease-out), transform var(--t-base) var(--ease-out); }
         .sv-hero-cell:hover { box-shadow: var(--shadow-accent); transform: translateY(-2px); }
         .sv-hero-icon { color: var(--accent-muted); margin-bottom: 12px; }
-        .sv-hero-num { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.4rem, 5vw, 3.4rem); line-height: 0.95; color: var(--accent); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+        .sv-hero-num { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.4rem, 5vw, 3.4rem); line-height: 0.95; color: var(--accent); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
         .sv-hero-label { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-muted); margin-top: 10px; }
 
         /* ---- Section scaffolding (single Spectral title, no eyebrow-on-every-section) ---- */
@@ -277,7 +277,7 @@ export default function StatisticsView({ tree, onSelectPerson }: Props) {
 
         /* ---- Two-column blocks ---- */
         .sv-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .sv-panel { background: var(--bg-card); border: 1px solid var(--border); padding: 22px; }
+        .sv-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 22px; }
         .sv-panel-h { font-family: var(--font-display); font-size: 1.05rem; color: var(--ink); margin: 0 0 16px; }
 
         /* gender donut block */
@@ -290,10 +290,10 @@ export default function StatisticsView({ tree, onSelectPerson }: Props) {
         .sv-legend-pct { font-family: var(--font-mono); color: var(--text-muted); font-size: 12px; min-width: 34px; text-align: right; }
 
         /* living vs deceased */
-        .sv-split-bar { display: flex; height: 28px; overflow: hidden; border: 1px solid var(--border); }
+        .sv-split-bar { display: flex; height: 28px; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius-full); }
         .sv-split-caption { display: flex; gap: 18px; margin-top: 12px; font-size: 13px; }
         .sv-life { margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--border); }
-        .sv-life-num { font-family: var(--font-display); font-weight: 700; font-size: 3rem; line-height: 1; color: var(--accent); letter-spacing: -0.02em; }
+        .sv-life-num { font-family: var(--font-display); font-weight: 700; font-size: 3rem; line-height: 1; color: var(--accent); letter-spacing: -0.01em; }
         .sv-life-num small { font-size: 1.1rem; color: var(--text-muted); font-weight: 600; margin-left: 6px; }
         .sv-life-label { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-muted); margin-top: 8px; }
 
@@ -309,17 +309,17 @@ export default function StatisticsView({ tree, onSelectPerson }: Props) {
         .sv-rank-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 5px; }
         .sv-rank-name { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .sv-rank-count { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); flex-shrink: 0; }
-        .sv-rank-track { height: 6px; background: var(--bg-muted); overflow: hidden; }
+        .sv-rank-track { height: 6px; background: var(--bg-muted); overflow: hidden; border-radius: var(--radius-full); }
         .sv-rank-fill { height: 100%; background: var(--accent); transition: width var(--t-base) var(--ease-out); }
         .sv-rank-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 14px 44px; }
 
         /* notable people */
         .sv-notable { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
-        .sv-person { background: var(--bg-card); border: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; gap: 12px; font-family: inherit; text-align: left; color: inherit; cursor: pointer; transition: border-color var(--t-fast) ease, box-shadow var(--t-fast) ease, transform var(--t-fast) var(--ease-out); }
+        .sv-person { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; display: flex; flex-direction: column; gap: 12px; font-family: inherit; text-align: left; color: inherit; cursor: pointer; transition: border-color var(--t-fast) ease, box-shadow var(--t-fast) ease, transform var(--t-fast) var(--ease-out); }
         .sv-person:hover:not(:disabled) { border-color: var(--accent); box-shadow: var(--shadow-sm); transform: translateY(-2px); }
         .sv-person:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         .sv-person:disabled { cursor: default; }
-        .sv-person-founder { background: linear-gradient(150% 120% at 0% 0%, rgba(201,168,76,0.10), transparent 55%), var(--bg-card); border-color: var(--accent); }
+        .sv-person-founder { background: linear-gradient(150% 120% at 0% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 55%), var(--bg-card); border-color: var(--accent); }
         .sv-person-founder:hover:not(:disabled) { box-shadow: var(--shadow-accent); }
         .sv-person-head { display: flex; align-items: center; gap: 14px; }
         .sv-person-name { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; color: var(--ink); line-height: 1.15; }

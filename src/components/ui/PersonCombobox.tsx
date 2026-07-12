@@ -177,11 +177,11 @@ export function PersonCombobox({
         .pc-wrap { position: relative; width: 100%; }
         .pc-chevron { position: absolute; top: 50%; right: 10px; transform: translateY(-50%); display: inline-flex; color: var(--text-muted); pointer-events: none; }
         .pc-input { cursor: pointer; padding-right: 32px; text-overflow: ellipsis; }
-        .pc-listbox { position: absolute; z-index: 20; top: calc(100% + 4px); left: 0; right: 0; max-height: 264px; overflow-y: auto; margin: 0; padding: 4px; list-style: none; background: #1a1a24; border: 1px solid var(--border-strong); box-shadow: var(--shadow); }
-        .pc-option { width: 100%; display: flex; align-items: center; gap: 9px; padding: 8px 9px; background: transparent; border: none; color: var(--text); font-family: var(--font-body); font-size: 13.5px; text-align: left; cursor: pointer; }
+        .pc-listbox { position: absolute; z-index: 20; top: calc(100% + 4px); left: 0; right: 0; max-height: 264px; overflow-y: auto; margin: 0; padding: 4px; list-style: none; background: var(--surface-3); border: 1px solid var(--border-strong); border-radius: var(--radius-md); box-shadow: var(--shadow); }
+        .pc-option { width: 100%; display: flex; align-items: center; gap: 9px; padding: 8px 9px; background: transparent; border: none; border-radius: var(--radius-sm); color: var(--text); font-family: var(--font-body); font-size: 13.5px; text-align: left; cursor: pointer; }
         .pc-option.active, .pc-option:hover { background: var(--bg-card); outline: none; }
         li[aria-selected="true"] .pc-option { color: var(--accent); font-weight: 600; }
-        .pc-dot { width: 9px; height: 9px; flex-shrink: 0; background: var(--text-light); }
+        .pc-dot { width: 9px; height: 9px; flex-shrink: 0; border-radius: 50%; background: var(--text-light); }
         .pc-dot-all { background: transparent; border: 1.5px solid var(--text-light); }
         .pc-empty { padding: 9px; font-size: 13px; color: var(--text-muted); }
       `}</style>

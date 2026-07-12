@@ -1154,35 +1154,35 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
                       (PAS animation:'none' : l'opacité de base de .tv-node-inner est 0,
                       c'est l'animation qui révèle — la couper rendrait le nœud invisible.) */}
                   <g className="tv-node-inner" style={entranceDone ? { animationDuration: '0ms', animationDelay: '0ms' } : { animationDelay: `${delay}ms` }}>
-                  <clipPath id={`card-${p.id}`}><rect width={NODE_W} height={NODE_H} rx={0} ry={0} /></clipPath>
+                  <clipPath id={`card-${p.id}`}><rect width={NODE_W} height={NODE_H} rx={10} ry={10} /></clipPath>
 
                   {/* Halo « résultat de recherche » — anneau vert TIRETÉ (distinct du
                       bleu plein du chemin de parenté et de l'or sélection/pivot). */}
                   {highlightSet?.has(p.id) && (
-                    <rect x={-6} y={-6} width={NODE_W + 12} height={NODE_H + 12}
+                    <rect x={-6} y={-6} width={NODE_W + 12} height={NODE_H + 12} rx={14} ry={14}
                       fill="none" stroke="var(--success)" strokeWidth={2.5} strokeDasharray="5 4" />
                   )}
 
                   {/* Halo « chemin de parenté » — anneau bleu info autour des nœuds
                       du chemin calculé (distinct de l'or sélection/pivot). */}
                   {kinSet?.has(p.id) && (
-                    <rect x={-4} y={-4} width={NODE_W + 8} height={NODE_H + 8}
+                    <rect x={-4} y={-4} width={NODE_W + 8} height={NODE_H + 8} rx={13} ry={13}
                       fill="none" stroke="var(--info)" strokeWidth={2.5} />
                   )}
 
-                  {/* Hard offset shadow (Atelier) — only on the pivot/root and the
+                  {/* Soft underlay (Veillée) — only on the pivot/root and the
                       selected node, to give them depth and lift them off the page
-                      without muddying every card. Accent shadow for the root. */}
+                      without muddying every card. Accent glow for the root. */}
                   {(isRoot || isSelected) && (
-                    <rect x={isRoot ? 4 : 3} y={isRoot ? 4 : 3} width={NODE_W} height={NODE_H}
+                    <rect x={0} y={isRoot ? 4 : 3} width={NODE_W} height={NODE_H} rx={10} ry={10}
                       fill={isRoot ? 'var(--accent)' : 'var(--border-strong)'}
-                      opacity={isRoot ? 0.9 : 0.16} />
+                      opacity={isRoot ? 0.4 : 0.16} />
                   )}
 
                   {/* Card — gender-tinted face (blue=H, rose=F, gold=pivot). Generation
                       on the top band, state on the outline + crown.
                       Root = 2px gold outline; selected = 2px gold; else thin border. */}
-                  <rect className="tv-node-card" width={NODE_W} height={NODE_H} rx={0} ry={0}
+                  <rect className="tv-node-card" width={NODE_W} height={NODE_H} rx={10} ry={10}
                     fill={st.bg}
                     stroke={isSelected || isRoot ? 'var(--accent)' : 'var(--border-strong)'}
                     strokeWidth={isRoot ? 2.5 : isSelected ? 2 : 1.25} />
@@ -1207,7 +1207,7 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
                     return (
                       <g>
                         <clipPath id={`avatar-${p.id}`}><circle cx={AV_CX} cy={AV_CY} r={AV_R} /></clipPath>
-                        <circle cx={AV_CX} cy={AV_CY} r={AV_R} fill="#1c1c1c" />
+                        <circle cx={AV_CX} cy={AV_CY} r={AV_R} fill="var(--surface-3)" />
                         <image href={p.profilePhoto} x={AV_CX - AV_R} y={AV_CY - AV_R} width={AV_R * 2} height={AV_R * 2}
                           clipPath={`url(#avatar-${p.id})`} preserveAspectRatio={`${xa}${ya} slice`} />
                         <circle cx={AV_CX} cy={AV_CY} r={AV_R} fill="none" stroke="var(--border-strong)" strokeWidth={1} />
@@ -1483,8 +1483,8 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
           </div>
         )}
 
-        {/* Node count — terracotta figures, stronger outline (Atelier) */}
-        <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'var(--bg-card)', border: 'var(--bw) solid var(--border-strong)', borderRadius: 0, padding: '4px 13px', fontSize: '12px', color: 'var(--text-muted)', boxShadow: 'var(--shadow-sm)' }}>
+        {/* Node count — accent figures, soft outline (Veillée) */}
+        <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'var(--bg-card)', border: 'var(--bw) solid var(--border-strong)', borderRadius: 'var(--radius)', padding: '4px 13px', fontSize: '12px', color: 'var(--text-muted)', boxShadow: 'var(--shadow-sm)' }}>
           <strong style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{nodes.length}</strong>
           <span style={{ opacity: 0.6 }}> / {tree.persons.length}</span> {t('persons')}
         </div>
@@ -1499,7 +1499,7 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
               position: 'absolute', top: '48px', right: '12px', zIndex: 'var(--z-dropdown)',
               display: 'flex', alignItems: 'center', gap: '8px',
               background: 'var(--bg-card)', border: 'var(--bw, 1px) solid var(--border-strong, var(--border))',
-              borderRadius: 0, padding: '4px 12px 4px 8px',
+              borderRadius: 'var(--radius-full)', padding: '4px 12px 4px 8px',
               boxShadow: 'var(--shadow)',
             }}
           >
@@ -1510,7 +1510,7 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
                   className="tv-presence-avatar"
                   title={u.name}
                   style={{
-                    width: '26px', height: '26px', borderRadius: 0,
+                    width: '26px', height: '26px', borderRadius: '50%',
                     background: u.color || presenceColor(u.id), color: '#fff',
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: '11px', fontWeight: 700, fontFamily: 'var(--font-display)',
@@ -1527,7 +1527,7 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
                   className="tv-presence-avatar"
                   title={peers.slice(4).map(u => u.name).join(', ')}
                   style={{
-                    width: '26px', height: '26px', borderRadius: 0,
+                    width: '26px', height: '26px', borderRadius: '50%',
                     background: 'var(--text-muted)', color: '#fff',
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: '10px', fontWeight: 700, fontFamily: 'var(--font-mono)',

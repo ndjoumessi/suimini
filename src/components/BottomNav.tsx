@@ -44,17 +44,17 @@ export default function BottomNav({ activeView, onViewChange, onOpenMenu }: Prop
           .bottom-nav {
             display: flex; position: fixed; left: 0; bottom: 0; z-index: var(--z-sticky);
             width: 100vw; max-width: 100vw; box-sizing: border-box;
-            background: var(--bg-card); border-top: var(--bw) solid var(--border-strong);
-            padding: 4px 0 calc(4px + env(safe-area-inset-bottom, 0px));
+            background: var(--surface-3); border-top: var(--bw) solid var(--border);
+            padding: 4px 4px calc(4px + env(safe-area-inset-bottom, 0px));
           }
           .bn-item {
             position: relative; flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px;
-            background: none; border: none; cursor: pointer; padding: 8px 2px; min-height: 52px;
-            font-family: var(--font-body); touch-action: manipulation; transition: color var(--t-fast);
+            background: none; border: none; border-radius: var(--radius); margin: 0 2px; cursor: pointer; padding: 8px 2px; min-height: 52px;
+            font-family: var(--font-body); touch-action: manipulation; transition: color var(--t-fast), background var(--t-fast);
           }
           .bn-item-active { background: var(--accent-light); }
           .bn-label { font-size: 10px; font-weight: 700; letter-spacing: 0.2px; }
-          .bn-active { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 30px; height: 3px; background: var(--accent); }
+          .bn-active { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 30px; height: 3px; border-radius: var(--radius-full); background: var(--accent); }
         }
       `}</style>
     </nav>

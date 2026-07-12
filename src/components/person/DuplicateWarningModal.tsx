@@ -63,7 +63,7 @@ export default function DuplicateWarningModal({ candidates, onCancel, onAddAnywa
           {/* Liste des candidats */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {candidates.map(({ person, score, reasons }) => (
-              <div key={person.id} style={{ border: '1px solid var(--border-strong)', background: '#1A1A24', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div key={person.id} style={{ border: '1px solid var(--border-strong)', background: 'var(--surface-3)', borderRadius: 'var(--radius-lg)', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '10px' }}>
                   <span className="serif" style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--ink)' }}>
                     {getDisplayName(person) || t('unnamed')}
@@ -75,14 +75,14 @@ export default function DuplicateWarningModal({ candidates, onCancel, onAddAnywa
                 </div>
 
                 {/* Jauge de score */}
-                <div aria-hidden="true" style={{ height: '4px', background: 'var(--border)', overflow: 'hidden' }}>
+                <div aria-hidden="true" style={{ height: '4px', background: 'var(--border)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
                   <div style={{ width: `${Math.min(100, score)}%`, height: '100%', background: score >= 90 ? 'var(--danger)' : 'var(--accent)' }} />
                 </div>
 
                 {/* Raisons */}
                 <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                   {reasons.map(r => (
-                    <li key={r} style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', border: '1px solid var(--border)', padding: '2px 7px' }}>
+                    <li key={r} style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '2px 7px' }}>
                       {t(REASON_KEY[r] ?? r)}
                     </li>
                   ))}

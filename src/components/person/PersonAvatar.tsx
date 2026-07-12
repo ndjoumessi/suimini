@@ -4,14 +4,14 @@ import { Person } from '@/types';
 import { GENDER_BAR } from '../tree/nodeStyle';
 
 /* =====================================================================
-   PersonAvatar — élégant, Modern Heritage. Photo réelle si présente,
-   sinon initiales en Spectral sur fond coloré par genre. Le genre suit
+   PersonAvatar — élégant, « Veillée ». Photo réelle si présente,
+   sinon initiales en display sur fond coloré par genre. Le genre suit
    la SOURCE UNIQUE GENDER_BAR (comme l'arbre, la liste, l'exploration) :
      homme  → bleu  #4A90D9 (initiales encre)
      femme  → rose  #C47BA0 (initiales encre)
-     inconnu→ #2A2A2A (initiales crème)
+     inconnu→ neutre chaud #4a4033 (initiales encre papier)
    L'or reste réservé au pivot/fondateur — l'avatar ne l'utilise plus.
-   Pas d'avatar cartoon. Carré (zéro border-radius) ou rond via `round`.
+   Pas d'avatar cartoon. Coins doux (--radius-sm) ou rond via `round`.
    ===================================================================== */
 
 function initials(p: Person): string {
@@ -44,8 +44,8 @@ export default function PersonAvatar({ person, size = 44, round = true, style }:
       aria-hidden="true"
       style={{
         width: size, height: size, flexShrink: 0,
-        borderRadius: round ? '50%' : 0,
-        background: showPhoto ? '#1c1c1c' : bg,
+        borderRadius: round ? '50%' : 'var(--radius-sm)',
+        background: showPhoto ? 'var(--surface-3)' : bg,
         color: fg,
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         overflow: 'hidden',

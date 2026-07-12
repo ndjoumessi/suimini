@@ -267,7 +267,7 @@ export default function TimelineView({ tree, onSelectPerson }: Props) {
   const segBtn = (active: boolean): React.CSSProperties => ({
     border: 'var(--bw) solid var(--border-strong)',
     background: active ? 'var(--accent)' : 'var(--bg-card)',
-    color: active ? '#12131a' : 'var(--text)',
+    color: active ? 'var(--ink-on-accent)' : 'var(--text)',
     cursor: 'pointer',
     padding: '5px 12px',
     fontSize: '11px',
@@ -461,7 +461,7 @@ export default function TimelineView({ tree, onSelectPerson }: Props) {
                         width: `${width}%`,
                         minWidth: '14px',
                         background: color,
-                        color: '#12131a',
+                        color: 'var(--ink-on-accent)',
                         border: 'var(--bw) solid var(--border-strong)',
                         borderRight: living ? '2.5px dotted var(--border-strong)' : `var(--bw) solid var(--border-strong)`,
                         borderRadius: 'var(--radius)',
@@ -505,7 +505,7 @@ export default function TimelineView({ tree, onSelectPerson }: Props) {
         .tl::before { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; transform: translateX(-50%);
           background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 14%, transparent)); }
         .tl-decade { position: relative; display: flex; justify-content: center; margin: 32px 0 22px; }
-        .tl-decade > span { position: relative; z-index: 1; font-family: var(--font-display); font-weight: 600; font-size: 2rem; letter-spacing: -0.02em; color: var(--accent-text); background: var(--bg); padding: 2px 18px; }
+        .tl-decade > span { position: relative; z-index: 1; font-family: var(--font-display); font-weight: 600; font-size: 2rem; letter-spacing: -0.01em; color: var(--accent-text); background: var(--bg); padding: 2px 18px; }
         .tl-decade-s { font-size: 0.58em; color: var(--text-light); }
         .tl-row { position: relative; width: 50%; box-sizing: border-box; padding: 0 40px 18px; }
         .tl-row-left { left: 0; }
@@ -514,7 +514,7 @@ export default function TimelineView({ tree, onSelectPerson }: Props) {
         .tl-row-left .tl-node { right: -7px; }
         .tl-row-right .tl-node { left: -7px; }
         .tl-card { width: 100%; display: flex; flex-direction: column; gap: 5px; text-align: left;
-          background: var(--bg-card); border: 1px solid var(--border); border-radius: 0; padding: 13px 16px; cursor: pointer;
+          background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 13px 16px; cursor: pointer;
           opacity: 0; transform: translateX(var(--tl-dx, 24px));
           transition: opacity 600ms var(--ease-out), transform 600ms var(--ease-out), border-color 160ms ease, box-shadow 200ms ease; }
         .tl-row-left .tl-card { --tl-dx: -24px; text-align: right; align-items: flex-end; }

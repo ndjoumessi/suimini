@@ -118,7 +118,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
   return (
     <>
       {text.slice(0, idx)}
-      <mark style={{ background: 'var(--accent-light)', color: 'inherit', borderRadius: 0, padding: '0 1px', fontWeight: 700 }}>
+      <mark style={{ background: 'var(--accent-light)', color: 'inherit', borderRadius: '3px', padding: '0 1px', fontWeight: 700 }}>
         {text.slice(idx, idx + query.length)}
       </mark>
       {text.slice(idx + query.length)}
@@ -126,10 +126,10 @@ function Highlight({ text, query }: { text: string; query: string }) {
   );
 }
 
-/** 32px square avatar: photo or initials on a tinted square (Atelier sharp corners). */
+/** 32px square avatar: photo or initials on a tinted square (Veillée soft corners). */
 function Avatar({ person }: { person: Person }) {
   const common: React.CSSProperties = {
-    width: '32px', height: '32px', flexShrink: 0, borderRadius: 0,
+    width: '32px', height: '32px', flexShrink: 0, borderRadius: 'var(--radius-sm)',
     border: '1.5px solid var(--border-strong)', objectFit: 'cover',
   };
   if (person.profilePhoto) {
@@ -406,7 +406,7 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
 
   const toggleBtnStyle = (on: boolean): React.CSSProperties => ({
     fontFamily: 'var(--font-mono)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em',
-    padding: '5px 9px', borderRadius: 0, cursor: 'pointer',
+    padding: '5px 11px', borderRadius: 'var(--radius-full)', cursor: 'pointer',
     border: `1.5px solid ${on ? 'var(--accent)' : 'var(--border-strong)'}`,
     background: on ? 'var(--accent-light)' : 'var(--bg-card)',
     color: on ? 'var(--accent)' : 'var(--text-muted)',
@@ -439,7 +439,7 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
             aria-activedescendant={flat.length > 0 ? `cp-opt-${active}` : undefined}
             style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: '16px', color: 'var(--text)', fontFamily: 'var(--font-body)' }}
           />
-          <kbd style={{ fontSize: '10px', color: 'var(--text-light)', border: '1px solid var(--border)', borderRadius: 0, padding: '2px 6px' }}>Esc</kbd>
+          <kbd style={{ fontSize: '10px', color: 'var(--text-light)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '2px 6px' }}>Esc</kbd>
         </div>
 
         {/* Tools bar: Filters toggle + AI search */}
@@ -452,7 +452,7 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
           >
             <SlidersHorizontal size={13} aria-hidden="true" />
             {ts('filters')}
-            {hasFilters && <span style={{ width: '6px', height: '6px', background: 'var(--accent)', borderRadius: 0 }} aria-hidden="true" />}
+            {hasFilters && <span style={{ width: '6px', height: '6px', background: 'var(--accent)', borderRadius: '50%' }} aria-hidden="true" />}
           </button>
 
           <button
@@ -544,7 +544,7 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
                 style={{
                   marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: '6px',
                   fontFamily: 'var(--font-mono)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em',
-                  padding: '5px 9px', borderRadius: 0, border: '1.5px solid var(--border-strong)',
+                  padding: '5px 11px', borderRadius: 'var(--radius-full)', border: '1.5px solid var(--border-strong)',
                   background: 'var(--bg-card)', color: 'var(--text-muted)',
                   cursor: hasFilters ? 'pointer' : 'not-allowed', opacity: hasFilters ? 1 : 0.45,
                 }}
@@ -626,10 +626,10 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
                           </div>
                           {item.approx && typeof item.score === 'number' && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginTop: '3px' }}>
-                              <span className="label" style={{ fontSize: '9px', color: 'var(--accent)', border: '1px solid var(--accent)', padding: '1px 5px', letterSpacing: '0.03em', flexShrink: 0 }}>
+                              <span className="label" style={{ fontSize: '9px', color: 'var(--accent)', border: '1px solid var(--accent)', borderRadius: 'var(--radius-full)', padding: '1px 6px', letterSpacing: '0.03em', flexShrink: 0 }}>
                                 {ts('approxMatch')}
                               </span>
-                              <span aria-hidden="true" style={{ position: 'relative', width: '48px', height: '4px', background: 'var(--border-strong)', flexShrink: 0 }}>
+                              <span aria-hidden="true" style={{ position: 'relative', width: '48px', height: '4px', background: 'var(--border-strong)', borderRadius: 'var(--radius-full)', overflow: 'hidden', flexShrink: 0 }}>
                                 <span style={{ position: 'absolute', inset: 0, width: `${Math.round(item.score * 100)}%`, background: 'var(--accent)' }} />
                               </span>
                               <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--text-muted)', flexShrink: 0 }}>

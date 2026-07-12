@@ -33,7 +33,7 @@ export default function UpdateBanner({
         background: 'color-mix(in srgb, var(--accent) 12%, var(--bg-card))',
         border: 'var(--bw) solid var(--accent)',
         boxShadow: 'var(--shadow)',
-        borderRadius: 0,
+        borderRadius: 'var(--radius-md)',
         fontFamily: 'var(--font-body)',
         fontSize: '13px',
         color: 'var(--ink)',

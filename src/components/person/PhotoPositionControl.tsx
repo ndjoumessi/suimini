@@ -98,7 +98,7 @@ export default function PhotoPositionControl({
         style={{
           position: 'relative', width: size, height: size, flexShrink: 0,
           borderRadius: '50%', overflow: 'hidden',
-          border: '1.5px solid var(--border-strong)', background: '#1c1c1c',
+          border: '1.5px solid var(--border-strong)', background: 'var(--surface-3)',
           cursor: dragging ? 'grabbing' : 'grab', touchAction: 'none',
           outlineOffset: '2px',
         }}
@@ -109,7 +109,7 @@ export default function PhotoPositionControl({
         {/* Repère de manipulation — s'efface pendant le glissé pour dégager la vue. */}
         <span aria-hidden="true" style={{
           position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'rgba(255,255,255,0.9)', pointerEvents: 'none',
+          color: 'var(--ink)', pointerEvents: 'none',
           opacity: dragging ? 0 : 0.85, transition: 'opacity 150ms ease',
           textShadow: '0 1px 3px rgba(0,0,0,0.6)',
         }}>

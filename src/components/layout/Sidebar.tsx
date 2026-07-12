@@ -333,13 +333,13 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sidebar { width: 200px; flex-shrink: 0; position: relative; z-index: var(--z-sticky); }
         .sidebar-panel {
           position: absolute; inset: 0; width: 200px;
-          background: var(--bg); border-right: 1px solid var(--border);
+          background: var(--surface-3); border-right: 1px solid var(--border);
           display: flex; flex-direction: column; overflow: hidden;
         }
         /* Standard desktop: drop to 180px so mid-size laptops keep more canvas. */
         @media (min-width: 769px) and (max-width: 1200px) {
           .sidebar, .sidebar-panel { width: 180px; }
-          .sb-item { font-size: 13px; gap: 10px; padding: 4px 14px; }
+          .sb-item { font-size: 13px; gap: 10px; padding: 4px 8px; }
           .sb-head, .sb-tree { padding-left: 12px; padding-right: 12px; }
           .sb-section { padding-left: 14px; }
         }
@@ -348,7 +348,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
            fit without the scroll cutting off « Statistiques ». The nav still scrolls
            as a safety net. >= 800px keeps the comfortable 34px / 13px. */
         @media (max-height: 799px) {
-          .sb-item { min-height: 30px; font-size: 11px; padding: 3px 16px; gap: 10px; }
+          .sb-item { min-height: 30px; font-size: 11px; padding: 3px 10px; gap: 10px; }
           .sb-icon { width: 15px; }
           .sb-section { font-size: 7.5px; padding-top: 1px; padding-bottom: 1px; }
           .sb-group { padding: 1px 0; }
@@ -381,10 +381,10 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sb-tree-chev { color: var(--text-light); flex-shrink: 0; }
         .sb-tree-name { font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .sb-tree-meta { font-family: var(--font-mono); font-size: 10px; color: var(--accent-text); opacity: 0.85; }
-        .sb-tree-badge { align-self: flex-start; margin-top: 5px; font-family: var(--font-mono); font-size: 8.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; padding: 2px 7px; border: 1px solid currentColor; }
+        .sb-tree-badge { align-self: flex-start; margin-top: 5px; font-family: var(--font-mono); font-size: 8.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; padding: 2px 8px; border: 1px solid currentColor; border-radius: var(--radius-full); }
         .sb-badge-owner { color: var(--accent-text); }
         .sb-badge-guest { color: var(--text-muted); }
-        .sb-pending { min-width: 18px; height: 18px; padding: 0 5px; display: inline-flex; align-items: center; justify-content: center; background: var(--danger); color: #fff; font-family: var(--font-mono); font-size: 10px; font-weight: 700; flex-shrink: 0; }
+        .sb-pending { min-width: 18px; height: 18px; padding: 0 5px; display: inline-flex; align-items: center; justify-content: center; background: var(--danger); color: #1c0c07; border-radius: var(--radius-full); font-family: var(--font-mono); font-size: 10px; font-weight: 700; flex-shrink: 0; }
 
         /* Layout: fixed top + fixed footer, only the nav scrolls */
         .sb-top { flex-shrink: 0; }
@@ -401,18 +401,18 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sb-group + .sb-group { border-top: 1px solid var(--border); }
         .sb-section { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent-muted); padding: 2px 16px 2px; }
         .sb-item {
-          position: relative; width: 100%; display: flex; align-items: center; gap: 12px; min-height: 34px;
-          padding: 4px 16px; border: none; background: transparent; cursor: pointer; line-height: 1.3;
+          position: relative; width: calc(100% - 12px); margin: 0 6px; display: flex; align-items: center; gap: 12px; min-height: 34px;
+          padding: 4px 10px; border: none; background: transparent; border-radius: var(--radius); cursor: pointer; line-height: 1.3;
           color: var(--text-muted); font-family: var(--font-body); font-size: 13px; font-weight: 500;
           text-align: left; text-decoration: none; transition: background var(--t-fast), color var(--t-fast);
         }
-        .sb-item:hover { background: #1a1a24; color: var(--ink); }
+        .sb-item:hover { background: var(--interactive); color: var(--ink); }
         .sb-item:hover .sb-icon { color: var(--accent-text); }
-        .sb-item-active { color: var(--accent-text); font-weight: 700; background: var(--bg-card); }
+        .sb-item-active { color: var(--accent-text); font-weight: 700; background: var(--accent-light); }
         .sb-item-active .sb-icon { color: var(--accent); }
-        .sb-active-bar { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); }
+        .sb-active-bar { display: none; }
         .sb-icon { width: 16px; display: inline-flex; justify-content: center; position: relative; flex-shrink: 0; color: var(--accent-text); transition: color var(--t-fast); }
-        .sb-count { margin-left: auto; background: var(--danger); color: #fff; padding: 1px 6px; font-family: var(--font-mono); font-size: 10px; font-weight: 700; }
+        .sb-count { margin-left: auto; background: var(--danger); color: #1c0c07; border-radius: var(--radius-full); padding: 1px 7px; font-family: var(--font-mono); font-size: 10px; font-weight: 700; }
 
         /* Quick actions — inset horizontal aligné sur le bloc « Arbre actif »
            (.sb-tree, 14px) et le pied de compte, pour que le bouton « Ajouter »,
@@ -423,7 +423,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
           width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
           background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); cursor: pointer;
           font-family: var(--font-body); font-size: 12px; font-weight: 700; padding: 0 12px; min-height: 34px;
-          white-space: nowrap; line-height: 1;
+          white-space: nowrap; line-height: 1; border-radius: var(--radius);
           transition: background var(--t-fast), box-shadow var(--t-fast);
         }
         .sb-add:hover { background: var(--accent-hover); box-shadow: var(--shadow-accent); }
@@ -432,7 +432,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sb-action-grid { display: flex; gap: 6px; margin-top: 6px; }
         .sb-chip {
           flex: 1; height: 26px; display: inline-flex; align-items: center; justify-content: center;
-          background: transparent; border: 1px solid var(--border); color: var(--text-muted); cursor: pointer;
+          background: transparent; border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer;
           transition: border-color var(--t-fast), color var(--t-fast), background var(--t-fast);
         }
         .sb-chip:hover { border-color: var(--accent); color: var(--accent-text); background: var(--accent-light); }
@@ -442,13 +442,13 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
            Même inset horizontal (14px) que les actions/le bloc arbre → colonne alignée. */
         .sb-account { padding: 8px 14px 9px; border-top: 1px solid var(--border); }
         .sb-acct { display: flex; align-items: center; gap: 8px; height: 36px; }
-        .sb-acct-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; background: none; border: none; padding: 3px; cursor: pointer; text-align: left; transition: background var(--t-fast); }
-        .sb-acct-main:hover { background: var(--bg-card); }
-        .sb-avatar { width: 28px; height: 28px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--accent); color: var(--ink-on-accent); font-family: var(--font-display); font-size: 12px; font-weight: 700; }
+        .sb-acct-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; background: none; border: none; border-radius: var(--radius-sm); padding: 3px; cursor: pointer; text-align: left; transition: background var(--t-fast); }
+        .sb-acct-main:hover { background: var(--interactive); }
+        .sb-avatar { width: 28px; height: 28px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--accent); color: var(--ink-on-accent); border-radius: 50%; font-family: var(--font-display); font-size: 12px; font-weight: 700; }
         .sb-acct-name { flex-shrink: 0; max-width: 80px; font-family: var(--font-body); font-size: 12px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .sb-acct-email { min-width: 0; max-width: 100px; font-family: var(--font-mono); font-size: 10px; color: var(--accent-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .sb-logout { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex-shrink: 0; border: none; background: transparent; color: var(--text-muted); cursor: pointer; transition: background var(--t-fast), color var(--t-fast); }
-        .sb-logout:hover { background: var(--bg-card); color: var(--danger); }
+        .sb-logout { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex-shrink: 0; border: none; background: transparent; border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer; transition: background var(--t-fast), color var(--t-fast); }
+        .sb-logout:hover { background: var(--interactive); color: var(--danger); }
         /* sync line — one row, everything inline */
         .sb-syncline { display: flex; align-items: center; gap: 5px; height: 22px; width: 100%; padding: 0 3px; background: none; border: none; font-family: var(--font-mono); font-size: 9px; color: var(--accent-muted); overflow: hidden; }
         button.sb-syncline { cursor: pointer; transition: opacity var(--t-fast); }
@@ -456,8 +456,8 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         button.sb-syncline:disabled { cursor: default; }
         .sb-sync-ico { flex-shrink: 0; color: var(--accent-muted); }
         .sb-sync-word { font-weight: 700; flex-shrink: 0; }
-        .sb-sync-ok { color: #5B8A6E; }
-        .sb-sync-busy { color: #c98a3a; }
+        .sb-sync-ok { color: var(--success); }
+        .sb-sync-busy { color: var(--warning); }
         .sb-sync-bad { color: var(--danger); }
         .sb-sync-dim { color: var(--accent-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .sb-sync-pres { display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; }

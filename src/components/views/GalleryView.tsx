@@ -469,17 +469,18 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
         .gv-toolbar { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--bg-card); flex-wrap: wrap; }
         .gv-count { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); flex: 1; min-width: 80px; }
         .gv-toolbar-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-        .gv-select { background: #1a1a24; color: var(--text); border: 1px solid var(--border); padding: 7px 10px; font-family: var(--font-body); font-size: 13px; min-height: 36px; cursor: pointer; max-width: 200px; }
+        .gv-select { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius); padding: 7px 10px; font-family: var(--font-body); font-size: 13px; min-height: 36px; cursor: pointer; max-width: 200px; }
         .gv-select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         .gv-select-full { width: 100%; max-width: none; }
         .gv-field { display: flex; flex-direction: column; gap: 6px; }
-        .gv-person-listbox { position: absolute; z-index: 5; top: calc(100% + 4px); left: 0; right: 0; max-height: 240px; overflow-y: auto; margin: 0; padding: 4px; list-style: none; background: #1a1a24; border: 1px solid var(--border-strong); box-shadow: var(--shadow); }
+        .gv-person-listbox { position: absolute; z-index: 5; top: calc(100% + 4px); left: 0; right: 0; max-height: 240px; overflow-y: auto; margin: 0; padding: 4px; list-style: none; background: var(--bg-card); border: 1px solid var(--border-strong); border-radius: var(--radius-md); box-shadow: var(--shadow); }
         .gv-person-option { width: 100%; display: flex; align-items: center; gap: 8px; padding: 7px 8px; background: transparent; border: none; color: var(--text); font-family: var(--font-body); font-size: 13px; text-align: left; cursor: pointer; }
-        .gv-person-option:hover, .gv-person-option:focus-visible { background: var(--bg-card); outline: none; }
+        .gv-person-option { border-radius: var(--radius-sm); }
+        .gv-person-option:hover, .gv-person-option:focus-visible { background: var(--interactive); outline: none; }
         li[aria-selected="true"] .gv-person-option { color: var(--accent); font-weight: 600; }
         .gv-person-empty { padding: 8px; font-size: 13px; color: var(--text-muted); }
 
-        .gv-viewtoggle { display: inline-flex; border: 1px solid var(--border); flex-shrink: 0; }
+        .gv-viewtoggle { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; flex-shrink: 0; }
         .gv-viewtoggle button { width: 40px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; background: transparent; border: none; color: var(--text-muted); cursor: pointer; transition: background 150ms, color 150ms; }
         .gv-viewtoggle button + button { border-left: 1px solid var(--border); }
         .gv-viewtoggle button.on { background: var(--accent); color: var(--ink-on-accent); }
@@ -494,7 +495,7 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
 
         /* Grid */
         .gv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
-        .gv-tile { position: relative; border: 1px solid var(--border); background: var(--bg-muted); overflow: hidden; aspect-ratio: 4 / 3; transition: border-color 200ms var(--ease-out), box-shadow 200ms var(--ease-out), transform 200ms var(--ease-out); }
+        .gv-tile { position: relative; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-muted); overflow: hidden; aspect-ratio: 4 / 3; transition: border-color 200ms var(--ease-out), box-shadow 200ms var(--ease-out), transform 200ms var(--ease-out); }
         .gv-tile-open { position: absolute; inset: 0; padding: 0; border: none; background: none; cursor: pointer; width: 100%; height: 100%; }
         .gv-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .gv-tile:hover, .gv-tile:focus-within { border-color: var(--accent); box-shadow: var(--shadow-accent); transform: translateY(-2px); }
@@ -506,27 +507,28 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
         .gv-ov-name { color: var(--ink); font-size: 15px; font-weight: 700; line-height: 1.15; }
         .gv-ov-dates { color: var(--accent-text); font-family: var(--font-mono); font-size: 11px; }
         /* delete button — appears on hover/focus, top-right (over the gender dot) */
-        .gv-del { position: absolute; top: 6px; right: 6px; z-index: 3; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; background: rgba(176,42,42,0.9); color: #fff; border: none; cursor: pointer; opacity: 0; transition: opacity 150ms ease, background 150ms ease; }
+        .gv-del { position: absolute; top: 6px; right: 6px; z-index: 3; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; background: rgba(176,42,42,0.9); color: #fff; border: none; border-radius: var(--radius-sm); cursor: pointer; opacity: 0; transition: opacity 150ms ease, background 150ms ease; }
         .gv-tile:hover .gv-del, .gv-del:focus-visible { opacity: 1; }
         .gv-del:hover { background: #c0392b; }
 
         /* List */
         .gv-list { display: flex; flex-direction: column; gap: 6px; }
-        .gv-row { display: flex; align-items: center; gap: 12px; padding: 8px; border: 1px solid var(--border); background: var(--bg-card); transition: border-color 150ms, background 150ms; }
-        .gv-row:hover, .gv-row:focus-within { border-color: var(--accent); background: var(--bg-muted); }
+        .gv-row { display: flex; align-items: center; gap: 12px; padding: 8px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card); transition: border-color 150ms, background 150ms; }
+        .gv-row:hover, .gv-row:focus-within { border-color: var(--accent); background: var(--interactive); }
         .gv-row-open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 0; border: none; background: none; cursor: pointer; text-align: left; }
         .gv-row-open:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-        .gv-row img { width: 64px; height: 48px; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border); }
+        .gv-row img { width: 64px; height: 48px; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border); border-radius: var(--radius-sm); }
         .gv-row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
         .gv-row-name { font-size: 15px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .gv-row-dates { font-family: var(--font-mono); font-size: 11px; color: var(--accent-text); }
         .gv-dot-static { position: static; flex-shrink: 0; }
         .gv-del-row { flex-shrink: 0; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; background: transparent; color: var(--text-muted); border: none; cursor: pointer; transition: color 150ms ease, background 150ms ease; }
+        .gv-del-row { border-radius: var(--radius-sm); }
         .gv-del-row:hover, .gv-del-row:focus-visible { color: #fff; background: rgba(176,42,42,0.9); outline: none; }
 
         /* Modal */
         .gv-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: var(--bw) solid var(--border-strong); }
-        .gv-drop { width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 32px 16px; background: #1a1a24; border: 1.5px dashed var(--border-strong); color: var(--text-muted); font-size: 13px; cursor: pointer; transition: border-color 150ms, background 150ms, color 150ms; }
+        .gv-drop { width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 32px 16px; background: var(--bg-muted); border: 1.5px dashed var(--border-strong); border-radius: var(--radius-lg); color: var(--text-muted); font-size: 13px; cursor: pointer; transition: border-color 150ms, background 150ms, color 150ms; }
         .gv-drop:hover, .gv-drop.over, .gv-drop:focus-visible { border-color: var(--accent); color: var(--accent-text); background: var(--accent-light); outline: none; }
         .gv-hint { margin: 0; font-size: 12px; color: var(--accent-text); text-align: right; }
 
@@ -535,11 +537,11 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
         .gv-cropmain { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
         .gv-reactcrop { width: 100%; background: var(--ink-on-accent); border: 1px solid var(--border-strong);
           /* theme: gold handles, gold focus (override the library's vars) */
-          --rc-drag-handle-size: 14px; --rc-drag-handle-bg-colour: #C9A84C; --rc-border-color: #C9A84C; --rc-focus-color: #C9A84C; }
+          --rc-drag-handle-size: 14px; --rc-drag-handle-bg-colour: var(--accent); --rc-border-color: var(--accent); --rc-focus-color: var(--accent); }
         .gv-cropimg { display: block; width: 100%; max-height: 46vh; object-fit: contain; }
         /* dark overlay on excluded zones (huge spread shadow leaves the selection clear) */
         .gv-reactcrop .ReactCrop__crop-selection { box-shadow: 0 0 0 9999px rgba(13,13,13,0.64); }
-        .gv-reactcrop .ReactCrop__drag-handle { background-color: #C9A84C; border-color: var(--ink-on-accent); }
+        .gv-reactcrop .ReactCrop__drag-handle { background-color: var(--accent); border-color: var(--ink-on-accent); }
         .gv-cropinstr { margin: 0; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.04em; color: var(--text-muted); }
         .gv-change { flex-shrink: 0; }
         .gv-cropside { width: 120px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; align-items: center; }

@@ -670,7 +670,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                   <span style={{ fontSize:'13px', fontWeight:700, display:'inline-flex', alignItems:'center', gap:'5px' }}><Lightbulb size={14} aria-hidden="true" /> {t('suggestions')}</span>
                   <span style={{ fontSize:'13px', fontWeight:700, color:completionColor }}>{completionScore}%</span>
                 </div>
-                <div style={{ height:'7px', background:'var(--bg-muted)', borderRadius: 0, overflow:'hidden', marginBottom:'10px' }}>
+                <div style={{ height:'7px', background:'var(--bg-muted)', borderRadius: 'var(--radius-full)', overflow:'hidden', marginBottom:'10px' }}>
                   <div style={{ width:`${completionScore}%`, height:'100%', background:completionColor, transition:'width 0.3s' }} />
                 </div>
                 <div style={{ display:'flex', flexDirection:'column', gap:'5px' }}>
@@ -1447,7 +1447,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
            hover/focus, spinner while uploading. */
         .pp-avatar-edit { position: relative; display: inline-flex; padding: 0; border: none; background: none; cursor: pointer; border-radius: 50%; line-height: 0; -webkit-tap-highlight-color: transparent; }
         .pp-avatar-edit:disabled { cursor: default; }
-        .pp-avatar-scrim { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(13,13,13,0.55); color: var(--ink); opacity: 0; transition: opacity 150ms ease; }
+        .pp-avatar-scrim { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(23,16,6,0.55); color: var(--ink); opacity: 0; transition: opacity 150ms ease; }
         .pp-avatar-edit:hover .pp-avatar-scrim, .pp-avatar-edit:focus-visible .pp-avatar-scrim, .pp-avatar-edit[aria-busy="true"] .pp-avatar-scrim { opacity: 1; }
         .pp-avatar-edit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         @media (prefers-reduced-motion: reduce) { .pp-avatar-scrim { transition: none; } }
@@ -1726,7 +1726,7 @@ function DnaPie({ origins }: { origins: DnaOrigin[] }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', flex: 1, minWidth: '140px' }}>
         {origins.map((o, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px' }}>
-            <span style={{ width: '11px', height: '11px', borderRadius: 0, background: DNA_COLORS[i % DNA_COLORS.length], flexShrink: 0 }} />
+            <span style={{ width: '11px', height: '11px', borderRadius: '50%', background: DNA_COLORS[i % DNA_COLORS.length], flexShrink: 0 }} />
             <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.region}</span>
             <span style={{ fontWeight: 700, color: 'var(--text-muted)' }}>{Math.round(o.percent)}%</span>
           </div>

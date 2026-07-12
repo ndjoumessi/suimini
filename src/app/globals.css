@@ -1,75 +1,93 @@
 @import "tailwindcss";
 
 /* =====================================================================
-   MODERN HERITAGE · dark by design (ported from the constellation landing)
-   Near-black canvas · cream ink · muted gold accent · amber-glow on hover.
-   Fonts loaded via next/font (layout.tsx) and exposed as CSS variables:
-     --font-display  Fraunces             (titles, names, key numbers)
-     --font-body     Public Sans          (body)
-     --font-mono     IBM Plex Mono        (dates, labels, IDs)
-   Dark-only: `:root` IS the theme; `data-theme` stays "dark".
+   VEILLÉE · the fireside hour, dark by design
+   ---------------------------------------------------------------------
+   Suimini's web design system — the nocturnal sibling of the mobile app's
+   "Canopée" (warm paper / forest daylight). Where Canopée is the family
+   album read in daylight, Veillée is the evening where the stories are
+   told: a warm ember-dark canvas, paper-cream ink, soft rounded geometry,
+   and a candle-gold default accent (user-themable at runtime — the
+   neutrals below are tuned to flatter all six accent themes).
+
+   Fonts loaded via next/font (layout.tsx), exposed as CSS variables:
+     --font-display  Playfair Display  (titles, names, key numbers)
+     --font-body     Figtree           (UI, body, labels — shared w/ mobile)
+     --font-mono     IBM Plex Mono     (dates, IDs, archival metadata)
+
+   TYPE SCALE — major third, ratio 1.25, base 15px:
+     step -1   12px   captions, metadata
+     step  0   15px   body
+     step  1   18.75  h5 / lead
+     step  2   23.4   h4
+     step  3   29.3   h3
+     step  4   36.6   h2
+     step  5   45.8   h1 / display
+
+   Dark-only: `:root` IS the theme; `data-theme` stays "dark" (useDarkMode).
    Variable + class names are kept stable so the system cascades app-wide.
    ===================================================================== */
 
 :root {
-  /* Surfaces — deep indigo-night (ported from the constellation landing), three
-     tiers. Softer than pure black: less eye-strain, coherent with the landing. */
-  --bg: #111118;              /* app canvas */
-  --bg-card: #1e1e28;         /* cards, panels, raised surfaces */
-  --bg-muted: #25252f;        /* inert zones / hover fills */
+  /* Surfaces — warm ember-dark (espresso / heartwood), three tiers.
+     Warmer than black, softer than the old indigo: firelight, not void. */
+  --bg: #171310;              /* app canvas */
+  --bg-card: #221d17;         /* cards, panels, raised surfaces */
+  --bg-muted: #2b251d;        /* inert zones / hover fills */
   --surface-1: var(--bg);
   --surface-2: var(--bg-card);
-  --surface-3: #18181f;       /* sidebars, toolbars, recessed chrome */
-  --interactive: #25252f;     /* hover state */
+  --surface-3: #1c1713;       /* sidebars, toolbars, recessed chrome */
+  --interactive: #2b251d;     /* hover state */
 
-  /* Ink + text (cream on indigo-night) */
-  --ink: #f5f0e8;
-  --text: #f5f0e8;
-  --text-muted: #9094a6;      /* secondary — cool grey, ≥4.5:1 on --bg & --bg-card */
-  --text-light: #888896;      /* tertiary — ≥4.5:1 on --bg AND --bg-card (WCAG AA small text) */
+  /* Ink + text (warm paper on ember) */
+  --ink: #f3ecdf;
+  --text: #f3ecdf;
+  --text-muted: #aa9e8c;      /* secondary — warm grey, ≥4.5:1 on --bg & --bg-card */
+  --text-light: #9c9081;      /* tertiary — ≥4.5:1 on --bg AND --bg-card (WCAG AA small text) */
 
   /* Rules */
-  --border: #2d2d3a;          /* hairline dividers + card outlines */
-  --border-strong: #3a3a4a;   /* interactive outlines (inputs/buttons) */
+  --border: #362f26;          /* hairline dividers + card outlines */
+  --border-strong: #4a4033;   /* interactive outlines (inputs/buttons) */
   --bw: 1px;                  /* structural border width */
 
-  /* Accent — muted gold. Reads ≥4.5:1 on dark, so `--accent-text` ≈ accent.
+  /* Accent — candle gold (default). applyColorTheme() in lib/themes.ts
+     overrides these at runtime from the user's colour theme; treat every
+     accent usage as "any warm mid-tone", never hardcode gold.
      Text ON the accent fill must be dark ink (see .btn-primary). */
   --accent: #c9a84c;
   --accent-hover: #dcbb5e;
-  --accent-text: #d4b257;     /* gold text on dark, ≥4.5:1 */
+  --accent-text: #d4b257;     /* accent as text on dark, ≥4.5:1 */
   --accent-light: rgba(201, 168, 76, 0.14);
-  --accent-muted: #a98f4e;    /* gold atténué — eyebrows/taglines mono, ≥4.5:1 sur --bg & --bg-card */
-  --ink-on-accent: #0d0d0d;   /* texte SUR le fond or (8.5:1) — jamais de blanc sur or (2.28:1) */
+  --accent-muted: #a98f4e;    /* subdued accent — metadata, ≥4.5:1 on --bg & --bg-card */
+  --ink-on-accent: #171006;   /* text ON the accent fill (≥8:1) — never white on gold */
 
-  /* Signals (information, not decoration) — tuned for dark. These are the INITIAL
-     gender values; applyColorTheme() in lib/themes.ts overrides them at runtime as
-     inline <html> vars (so themes.ts is the effective source — keep both + the tree's
-     GENDER_BAR in nodeStyle.ts in sync). The brighter pair matches the tree and
-     clears AA for coloured name text on the dark bg (the old #5b7fa6 didn't). */
+  /* Signals (information, not decoration) — tuned for the warm dark canvas.
+     Gender values are the INITIAL pair; applyColorTheme() re-applies them at
+     runtime (keep in sync with GENDER_BAR in tree/nodeStyle.ts). */
   --male: #4a90d9;            /* vivid blue  — matches tree GENDER_BAR.male   */
   --female: #c47ba0;          /* vivid rose  — matches tree GENDER_BAR.female */
-  --deceased: #9a9184;    /* ≥4.5:1 sur --bg-card ET le fond du badge deceased (AA) */
-  --success: #4fa890;
-  --danger: #d3645a;
-  --warning: #d3a24e;
-  --info: #7b9ac0;        /* ≥4.5:1 sur --bg-card (l'ancien #5b7fa6 plafonnait à 3.96) */
+  --deceased: #a2988a;        /* ≥4.5:1 on --bg-card AND the deceased badge tint */
+  --success: #58b294;
+  --danger: #e07862;
+  --warning: #d8a555;
+  --info: #8aa8cc;            /* ≥4.5:1 on --bg-card */
 
-  /* Shadows — neutral depth at rest; amber GLOW answers hover/elevation */
-  --shadow-color: rgba(0, 0, 0, 0.6);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
-  --shadow: 0 6px 22px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 18px 44px rgba(0, 0, 0, 0.58);
-  --shadow-xl: 0 28px 64px rgba(0, 0, 0, 0.62);
-  --shadow-accent: 0 0 0 1px rgba(201, 168, 76, 0.40), 0 12px 36px rgba(201, 168, 76, 0.20);
-  --scrim: rgba(0, 0, 0, 0.66);   /* modal / overlay backdrop */
+  /* Shadows — deep, warm, diffuse (candlelight, not studio strobe) */
+  --shadow-color: rgba(12, 8, 4, 0.6);
+  --shadow-sm: 0 1px 2px rgba(12, 8, 4, 0.35), 0 2px 8px rgba(12, 8, 4, 0.25);
+  --shadow: 0 4px 12px rgba(12, 8, 4, 0.35), 0 12px 32px rgba(12, 8, 4, 0.35);
+  --shadow-lg: 0 8px 20px rgba(12, 8, 4, 0.4), 0 24px 56px rgba(12, 8, 4, 0.45);
+  --shadow-xl: 0 12px 28px rgba(12, 8, 4, 0.45), 0 36px 80px rgba(12, 8, 4, 0.5);
+  --shadow-accent: 0 0 0 1px rgba(201, 168, 76, 0.35), 0 8px 28px rgba(201, 168, 76, 0.18);
+  --scrim: rgba(10, 7, 4, 0.68);   /* modal / overlay backdrop */
 
-  /* Radii — zero by design (Modern Heritage) */
-  --radius-sm: 0px;
-  --radius: 0px;
-  --radius-md: 0px;
-  --radius-lg: 0px;
-  --radius-xl: 0px;
+  /* Radii — soft and generous (Veillée breaks with the old zero-radius) */
+  --radius-sm: 6px;           /* chips, small controls, thumbnails */
+  --radius: 10px;             /* buttons, inputs, list rows */
+  --radius-md: 12px;          /* dropdowns, popovers, toasts */
+  --radius-lg: 16px;          /* cards, panels */
+  --radius-xl: 22px;          /* modals, hero surfaces */
+  --radius-full: 999px;       /* pills, avatars */
 
   --focus-ring: var(--accent);
 
@@ -80,17 +98,26 @@
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
 
-  /* Z-index scale */
+  /* Z-index scale (semantic — never invent arbitrary values) */
   --z-dropdown: 100;
   --z-sticky: 200;
   --z-modal: 1000;
   --z-toast: 9999;
+
+  /* Type scale (major third, 1.25 — see header table) */
+  --step--1: 0.75rem;     /* 12px  */
+  --step-0: 0.9375rem;    /* 15px  */
+  --step-1: 1.1719rem;    /* 18.75 */
+  --step-2: 1.4648rem;    /* 23.4  */
+  --step-3: 1.8311rem;    /* 29.3  */
+  --step-4: 2.2888rem;    /* 36.6  */
+  --step-5: 2.8611rem;    /* 45.8  */
   /* --font-display / --font-body / --font-mono are injected by next/font on <html> (see layout.tsx) */
 }
 
-/* Atelier Noir is dark-only: `:root` above is the single source of truth.
+/* Veillée is dark-only: `:root` above is the single source of truth.
    `data-theme="dark"` is still set on <html> (see useDarkMode) so the badge
-   tints below — which need a darker backing on noir — keep applying. */
+   tints below — which need a darker backing — keep applying. */
 
 * { box-sizing: border-box; }
 
@@ -108,35 +135,36 @@ body {
   overscroll-behavior: none; /* prevent pull-to-refresh / over-bounce in PWA */
 }
 
-/* ===== Typography hierarchy — editorial serif, high contrast, generous ===== */
+/* ===== Typography hierarchy — literary serif, high contrast, generous ===== */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
   font-weight: 600;
-  letter-spacing: -0.005em;
+  letter-spacing: 0;
   margin: 0;
   color: var(--ink);
 }
-h1 { font-size: 2.8rem; line-height: 1.04; font-weight: 600; }
-h2 { font-size: 2rem; line-height: 1.1; }
-h3 { font-size: 1.45rem; line-height: 1.2; }
-h4 { font-size: 1.15rem; line-height: 1.3; }
-h5, h6 { font-size: 1rem; line-height: 1.35; }
+h1 { font-size: var(--step-5); line-height: 1.06; font-weight: 600; }
+h2 { font-size: var(--step-4); line-height: 1.12; }
+h3 { font-size: var(--step-3); line-height: 1.2; }
+h4 { font-size: var(--step-2); line-height: 1.28; }
+h5, h6 { font-size: var(--step-1); line-height: 1.35; }
 
-/* `.serif` is a legacy hook now mapped to the editorial display face. */
-.serif { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.005em; }
+/* `.serif` — the display face for names, dates that matter, key numbers. */
+.serif { font-family: var(--font-display); font-weight: 600; letter-spacing: 0; }
 .mono { font-family: var(--font-mono); }
 
 /* Masthead — the one piece of type allowed to dominate the viewport. */
 .display-xxl {
   font-family: var(--font-display);
-  font-weight: 600;
+  font-weight: 500;
   font-size: clamp(2.8rem, 7vw, 5rem);
-  line-height: 1.0;
+  line-height: 1.02;
   letter-spacing: -0.01em;
   margin: 0;
 }
 
-/* Eyebrows / labels — archival mono, small caps feel. */
+/* Eyebrows / labels — archival mono. Reserve for metadata & form labels,
+   NOT a decorative prefix above every section. */
 .label {
   font-family: var(--font-mono);
   font-size: 11px; font-weight: 500; text-transform: uppercase;
@@ -144,7 +172,7 @@ h5, h6 { font-size: 1rem; line-height: 1.35; }
 }
 
 /* ===== Editorial utilities ===== */
-/* Drop cap — large gold initial for lead paragraphs (biographies, intros). */
+/* Drop cap — large accent initial for lead paragraphs (biographies, intros). */
 .dropcap::first-letter {
   font-family: var(--font-display);
   font-weight: 600;
@@ -154,7 +182,8 @@ h5, h6 { font-size: 1rem; line-height: 1.35; }
   margin: 0.06em 0.10em 0 0;
   color: var(--accent);
 }
-/* Pull quote — large italic Cormorant with a gold rule. */
+/* Pull quote — large italic display type, marked by an oversized ligature
+   (no coloured side-border: quotation is carried by type, not decoration). */
 .pullquote {
   font-family: var(--font-display);
   font-style: italic;
@@ -162,24 +191,30 @@ h5, h6 { font-size: 1rem; line-height: 1.35; }
   font-size: 1.6rem;
   line-height: 1.3;
   color: var(--ink);
-  border-left: 2px solid var(--accent);
-  padding-left: 18px;
+  position: relative;
+  padding-left: 34px;
   margin: 0;
+}
+.pullquote::before {
+  content: "\201C";
+  position: absolute; left: 0; top: -0.12em;
+  font-size: 2.2em; line-height: 1;
+  color: var(--accent); opacity: 0.9;
 }
 /* Hairline + strong editorial rules. */
 .rule { border: none; border-top: 1px solid var(--border); margin: 0; }
 .rule-strong { border: none; border-top: var(--bw) solid var(--border-strong); margin: 0; }
-/* Gold accent hairline used under mastheads / section heads. */
-.rule-accent { border: none; border-top: 2px solid var(--accent); margin: 0; width: 56px; }
+/* Accent hairline used under mastheads / section heads. */
+.rule-accent { border: none; border-top: 2px solid var(--accent); margin: 0; width: 56px; border-radius: 2px; }
 
 html { scroll-behavior: smooth; }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--bg-muted); }
-::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 0; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: var(--radius-full); }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
-::selection { background: rgba(163, 107, 30, 0.20); color: inherit; }
+::selection { background: rgba(201, 168, 76, 0.24); color: inherit; }
 
 /* Avoid Chrome's blue autofill background */
 input:-webkit-autofill,
@@ -194,7 +229,7 @@ input:-webkit-autofill:focus {
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-  border-radius: 0;
+  border-radius: var(--radius-sm);
 }
 *:focus:not(:focus-visible) { outline: none; }
 
@@ -210,6 +245,7 @@ input:-webkit-autofill:focus {
   position: fixed; left: 8px; top: -64px; z-index: 10000;
   background: var(--accent); color: var(--ink-on-accent);
   padding: 10px 16px; font-family: var(--font-body); font-weight: 700; font-size: 14px;
+  border-radius: var(--radius);
   text-decoration: none; transition: top var(--t-fast) ease;
 }
 .skip-link:focus-visible { top: 8px; }
@@ -262,23 +298,22 @@ input:-webkit-autofill:focus {
 }
 
 /* ===== Cards ===== */
-/* Editorial: hairline border + generous whitespace carry structure; a soft
-   shadow answers elevation (no brutalist hard offset). */
+/* Soft raised paper: hairline border, generous radius, warm diffuse shadow. */
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
 }
 
 /* ===== Buttons ===== */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-  padding: 8px 16px; border-radius: var(--radius);
+  padding: 8px 18px; border-radius: var(--radius);
   border: var(--bw) solid var(--border-strong);
   cursor: pointer; font-family: var(--font-body); font-size: 14px;
-  font-weight: 700; line-height: 1.2;
-  transition: background var(--t-fast) ease, color var(--t-fast) ease, transform var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out);
+  font-weight: 600; line-height: 1.2;
+  transition: background var(--t-fast) ease, color var(--t-fast) ease, border-color var(--t-fast) ease, transform var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out);
   text-decoration: none; min-height: 44px;
   touch-action: manipulation; user-select: none; -webkit-tap-highlight-color: transparent;
   position: relative;
@@ -286,7 +321,7 @@ input:-webkit-autofill:focus {
 .btn:active { transform: translateY(1px); box-shadow: none; }
 .btn:disabled, .btn[disabled] { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
 
-.btn-primary { background: var(--accent); color: var(--ink-on-accent); border-color: var(--accent); }
+.btn-primary { background: var(--accent); color: var(--ink-on-accent); border-color: var(--accent); font-weight: 700; }
 .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); box-shadow: var(--shadow-accent); }
 
 .btn-secondary { background: var(--bg-card); color: var(--text); }
@@ -295,18 +330,18 @@ input:-webkit-autofill:focus {
 .btn-ghost { background: transparent; color: var(--text-muted); border-color: transparent; }
 .btn-ghost:hover { background: var(--interactive); color: var(--text); }
 
-.btn-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+.btn-danger { background: var(--danger); color: #1c0c07; border-color: var(--danger); }
 .btn-danger:hover { box-shadow: var(--shadow); filter: brightness(1.06); }
 
-.btn-sm { padding: 7px 12px; font-size: 12px; min-height: 40px; gap: 5px; }
-.btn-lg { padding: 13px 26px; font-size: 16px; min-height: 50px; }
+.btn-sm { padding: 7px 13px; font-size: 12px; min-height: 40px; gap: 5px; border-radius: var(--radius-sm); }
+.btn-lg { padding: 13px 28px; font-size: 16px; min-height: 50px; border-radius: var(--radius-md); }
 .btn-icon { padding: 8px; min-width: 38px; }
 
 /* ===== Inputs / fields ===== */
 .input {
-  width: 100%; padding: 9px 12px;
+  width: 100%; padding: 9px 13px;
   border: var(--bw) solid var(--border-strong);
-  border-radius: var(--radius); background: var(--bg-card); color: var(--text);
+  border-radius: var(--radius); background: var(--bg); color: var(--text);
   font-family: var(--font-body); font-size: 14px;
   transition: border-color var(--t-fast) ease, box-shadow var(--t-fast) ease; outline: none;
 }
@@ -317,9 +352,9 @@ input:-webkit-autofill:focus {
 .input[aria-invalid="true"]:focus { box-shadow: 0 0 0 1px var(--danger); }
 select.input { cursor: pointer; }
 
-/* ===== Custom checkbox / radio — square ink controls (no native browser UI) =====
+/* ===== Custom checkbox / radio — soft ink controls (no native browser UI) =====
    Global, so every input[type=checkbox|radio] across the app picks up the
-   Atelier Noir language at once. Square (radio = pill), terracotta when on. */
+   Veillée language at once. Rounded square (radio = circle), accent when on. */
 input[type="checkbox"],
 input[type="radio"] {
   appearance: none; -webkit-appearance: none; margin: 0;
@@ -327,7 +362,7 @@ input[type="radio"] {
   display: inline-grid; place-content: center;
   background: var(--bg-card);
   border: var(--bw) solid var(--border-strong);
-  border-radius: 0; cursor: pointer;
+  border-radius: 5px; cursor: pointer;
   transition: background var(--t-fast) ease, border-color var(--t-fast) ease, box-shadow var(--t-fast) ease;
   vertical-align: -3px;
 }
@@ -338,11 +373,11 @@ input[type="radio"]::before {
   transition: transform var(--t-fast) var(--ease-out);
 }
 input[type="checkbox"]::before {
-  /* dark check mark (on the gold checked fill) */
+  /* dark check mark (on the accent checked fill) */
   clip-path: polygon(14% 47%, 0 60%, 39% 100%, 100% 18%, 86% 5%, 39% 73%);
-  background: var(--bg);
+  background: var(--ink-on-accent);
 }
-input[type="radio"]::before { border-radius: 50%; background: var(--bg); width: 8px; height: 8px; }
+input[type="radio"]::before { border-radius: 50%; background: var(--ink-on-accent); width: 8px; height: 8px; }
 input[type="checkbox"]:checked,
 input[type="radio"]:checked { background: var(--accent); border-color: var(--accent); }
 input[type="checkbox"]:checked::before,
@@ -352,10 +387,10 @@ input[type="radio"]:focus-visible { outline: 2px solid var(--accent); outline-of
 input[type="checkbox"]:disabled,
 input[type="radio"]:disabled { opacity: 0.45; cursor: not-allowed; }
 
-/* ===== Segmented control — sélecteur exclusif « joint » (Atelier) =====
-   Bande de boutons soudés (zéro radius) pour un choix mutuellement exclusif ;
-   le segment actif prend l'or. Distinct d'une rangée de boutons séparés. */
-.seg { display: inline-flex; border: var(--bw) solid var(--border-strong); background: var(--bg-card); }
+/* ===== Segmented control — exclusive selector (Veillée) =====
+   A soft rail of joined options; the active segment takes the accent.
+   Distinct from a row of separate buttons. */
+.seg { display: inline-flex; border: var(--bw) solid var(--border-strong); background: var(--bg-card); border-radius: var(--radius); overflow: hidden; }
 .seg > button {
   display: inline-flex; align-items: center; gap: 6px;
   border: 0; border-radius: 0; background: transparent;
@@ -363,19 +398,19 @@ input[type="radio"]:disabled { opacity: 0.45; cursor: not-allowed; }
   font-size: 13px; font-weight: 600; line-height: 1; padding: 8px 12px; cursor: pointer;
   transition: background var(--t-fast) ease, color var(--t-fast) ease;
 }
-.seg > button + button { border-left: var(--bw) solid var(--border-strong); }
+.seg > button + button { border-left: var(--bw) solid var(--border); }
 .seg > button:hover:not([aria-pressed="true"]) { background: var(--bg-muted); color: var(--ink); }
 .seg > button[aria-pressed="true"] { background: var(--accent); color: var(--ink-on-accent); }
 .seg > button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; position: relative; z-index: 1; }
 .seg > button:disabled { opacity: 0.45; cursor: not-allowed; }
 
-/* ===== Toggle « piste » — bascule binaire secondaire (ex. thème d'aperçu) =====
-   Piste enfoncée + segment actif surélevé (PAS d'or → l'or reste réservé au
-   choix primaire). Se lit comme un interrupteur de confort, pas un sélecteur. */
-.seg-toggle { display: inline-flex; gap: 2px; padding: 2px; border: var(--bw) solid var(--border-strong); background: var(--bg); }
+/* ===== Toggle « piste » — secondary binary switch (e.g. preview theme) =====
+   Recessed track + raised active segment (NO accent → the accent stays
+   reserved for the primary choice). Reads as a comfort switch. */
+.seg-toggle { display: inline-flex; gap: 2px; padding: 2px; border: var(--bw) solid var(--border-strong); background: var(--bg); border-radius: var(--radius); }
 .seg-toggle > button {
   display: inline-flex; align-items: center; gap: 5px;
-  border: 0; border-radius: 0; background: transparent;
+  border: 0; border-radius: calc(var(--radius) - 3px); background: transparent;
   color: var(--text-light); font-family: var(--font-body);
   font-size: 12px; font-weight: 600; line-height: 1; padding: 6px 10px; cursor: pointer;
   transition: background var(--t-fast) ease, color var(--t-fast) ease;
@@ -389,10 +424,10 @@ input[type="radio"]:disabled { opacity: 0.45; cursor: not-allowed; }
 fieldset { border: var(--bw) solid var(--border-strong); border-radius: var(--radius); padding: 12px; margin: 0; }
 legend { font-family: var(--font-mono); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); padding: 0 6px; }
 
-/* ===== Badges — rectangular, mono ===== */
+/* ===== Badges — soft pills, mono ===== */
 .badge {
-  display: inline-flex; align-items: center; padding: 2px 8px;
-  border-radius: var(--radius); font-family: var(--font-mono);
+  display: inline-flex; align-items: center; padding: 2px 9px;
+  border-radius: var(--radius-full); font-family: var(--font-mono);
   font-size: 10px; font-weight: 700;
   letter-spacing: 0.6px; text-transform: uppercase;
   border: 1px solid currentColor;
@@ -402,29 +437,30 @@ legend { font-family: var(--font-mono); font-size: 11px; font-weight: 700; text-
 .badge-alive { background: #d6efe9; color: var(--success); }
 .badge-deceased { background: #ebe8e3; color: var(--deceased); }
 .badge-accent { background: var(--accent-light); color: var(--accent-text); }
-[data-theme="dark"] .badge-male { background: #16242f; }
-[data-theme="dark"] .badge-female { background: #2a1a22; }
-[data-theme="dark"] .badge-alive { background: #142823; }
-[data-theme="dark"] .badge-deceased { background: #2a2620; }
+[data-theme="dark"] .badge-male { background: #182430; }
+[data-theme="dark"] .badge-female { background: #2c1c24; }
+[data-theme="dark"] .badge-alive { background: #16281f; }
+[data-theme="dark"] .badge-deceased { background: #2c2720; }
 
 .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
 
 /* ===== Tabs ===== */
-.tabs { display: flex; gap: 4px; border-bottom: var(--bw) solid var(--border-strong); margin-bottom: 16px; }
+.tabs { display: flex; gap: 4px; border-bottom: var(--bw) solid var(--border); margin-bottom: 16px; }
 .tab {
   padding: 8px 16px; border: none; background: none; cursor: pointer;
   font-family: var(--font-body); font-size: 14px; font-weight: 600; color: var(--text-muted);
   border-bottom: 3px solid transparent; margin-bottom: calc(-1 * var(--bw)); transition: color var(--t-fast) ease, border-color var(--t-fast) ease;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
   touch-action: manipulation;
 }
-.tab:hover { color: var(--text); }
-.tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
+.tab:hover { color: var(--text); background: var(--interactive); }
+.tab.active { color: var(--accent-text); border-bottom-color: var(--accent); font-weight: 700; }
 
 /* ===== Timeline ===== */
 .timeline-item { position: relative; padding-left: 28px; padding-bottom: 16px; }
-.timeline-item::before { content: ''; position: absolute; left: 8px; top: 8px; bottom: -8px; width: 2px; background: var(--border-strong); }
+.timeline-item::before { content: ''; position: absolute; left: 8px; top: 8px; bottom: -8px; width: 2px; background: var(--border-strong); border-radius: 1px; }
 .timeline-item:last-child::before { display: none; }
-.timeline-dot { position: absolute; left: 2px; top: 4px; width: 14px; height: 14px; border-radius: 0; background: var(--accent); border: 2px solid var(--bg-card); box-shadow: 0 0 0 1.5px var(--border-strong); }
+.timeline-dot { position: absolute; left: 2px; top: 4px; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg-card); box-shadow: 0 0 0 1.5px var(--border-strong); }
 
 /* ===== Modals ===== */
 .modal-overlay {
@@ -433,10 +469,10 @@ legend { font-family: var(--font-mono); font-size: 11px; font-weight: 700; text-
   animation: fadeIn var(--t-base) ease-out;
 }
 .modal {
-  background: var(--bg-card); border-radius: var(--radius-lg);
+  background: var(--bg-card); border-radius: var(--radius-xl);
   max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto;
   box-shadow: var(--shadow-xl); animation: scaleIn var(--t-base) var(--ease-out);
-  border: var(--bw) solid var(--border-strong);
+  border: var(--bw) solid var(--border);
 }
 body.modal-open { overflow: hidden; }
 
@@ -450,29 +486,31 @@ body.modal-open { overflow: hidden; }
      bloquer les clics sous lui quand il est vide. */
   pointer-events: none;
 }
+/* Semantic colour is carried by the icon + progress bar (plus text for SRs),
+   not by a decorative side-border. */
 .toast {
   position: relative; overflow: hidden; cursor: pointer; pointer-events: auto;
   background: var(--bg-card); color: var(--text);
-  border: var(--bw) solid var(--border-strong); border-left: 6px solid var(--accent);
-  padding: 12px 16px; border-radius: var(--radius); box-shadow: var(--shadow-lg);
+  border: var(--bw) solid var(--border-strong);
+  padding: 12px 16px; border-radius: var(--radius-md); box-shadow: var(--shadow-lg);
   font-family: var(--font-body); font-size: 14px; font-weight: 500; text-align: left;
   display: flex; align-items: center; gap: 10px;
   min-width: 240px; max-width: 360px; animation: toastIn var(--t-base) var(--ease-out);
 }
-.toast-success { border-left-color: var(--success); }
-.toast-error   { border-left-color: var(--danger); }
-.toast-info    { border-left-color: var(--info); }
-.toast-warning { border-left-color: var(--warning); }
-.toast-icon { flex-shrink: 0; display: flex; }
+.toast-icon { flex-shrink: 0; display: flex; color: var(--accent-text); }
 .toast-success .toast-icon { color: var(--success); }
 .toast-error   .toast-icon { color: var(--danger); }
 .toast-info    .toast-icon { color: var(--info); }
 .toast-warning .toast-icon { color: var(--warning); }
 .toast-progress {
   position: absolute; left: 0; bottom: 0; height: 3px; width: 100%;
-  background: currentColor; opacity: 0.4; transform-origin: left;
+  background: var(--accent); opacity: 0.55; transform-origin: left;
   animation: toastProgress linear forwards;
 }
+.toast-success .toast-progress { background: var(--success); }
+.toast-error   .toast-progress { background: var(--danger); }
+.toast-info    .toast-progress { background: var(--info); }
+.toast-warning .toast-progress { background: var(--warning); }
 
 /* ===== Right side panel (PersonPanel) ===== */
 @keyframes slideInRight { from { transform: translateX(100%); opacity: 0.4; } to { transform: translateX(0); opacity: 1; } }
@@ -480,7 +518,7 @@ body.modal-open { overflow: hidden; }
 
 /* ===== Birthday animated badge ===== */
 @keyframes badgePulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
-@keyframes dotPulse { 0% { box-shadow: 0 0 0 0 rgba(158,43,37,0.55); } 70% { box-shadow: 0 0 0 6px rgba(158,43,37,0); } 100% { box-shadow: 0 0 0 0 rgba(158,43,37,0); } }
+@keyframes dotPulse { 0% { box-shadow: 0 0 0 0 rgba(224,120,98,0.55); } 70% { box-shadow: 0 0 0 6px rgba(224,120,98,0); } 100% { box-shadow: 0 0 0 0 rgba(224,120,98,0); } }
 .birthday-badge { animation: badgePulse 1.4s ease-in-out infinite; }
 .birthday-pulse-dot {
   position: absolute; top: -2px; right: -3px; width: 7px; height: 7px;
@@ -505,7 +543,7 @@ body.modal-open { overflow: hidden; }
 .tree-node { transition: transform var(--t-fast) ease; }
 /* Hover affordance: the ring (stroke-width 0 at rest) thickens on node hover. */
 .person-node:hover .node-hover-ring { stroke-width: 2.5; }
-/* Focus clavier VISIBLE sur les nœuds SVG (WCAG 2.4.7) : outline or + anneau. */
+/* Focus clavier VISIBLE sur les nœuds SVG (WCAG 2.4.7) : outline accent + anneau. */
 .person-node:focus-visible,
 .fan-slot:focus-visible {
   outline: 2px solid var(--accent);
@@ -513,7 +551,7 @@ body.modal-open { overflow: hidden; }
 }
 .person-node:focus-visible .node-hover-ring { stroke-width: 2.5; }
 
-/* ===== Icon button (accessible square) ===== */
+/* ===== Icon button (accessible, soft square) ===== */
 .icon-btn {
   display: inline-flex; align-items: center; justify-content: center;
   width: 44px; height: 44px; border-radius: var(--radius); border: none;
@@ -533,11 +571,11 @@ body.modal-open { overflow: hidden; }
 .leaflet-popup-content { margin: 10px 12px; }
 /* Leaflet's default popup chrome is a plain white card — with the light
    (--text) ink used inside our popup content, that rendered near-invisible
-   white-on-white. Re-theme the chrome to match the dark "Atelier" system.
+   white-on-white. Re-theme the chrome to match the dark "Veillée" system.
    `leaflet/dist/leaflet.css` is imported inside MapView (loaded/injected
    after globals.css), so at equal selector specificity IT wins the cascade —
    hence !important here to guarantee our theme always applies. */
-.leaflet-container .leaflet-popup-content-wrapper { background: var(--bg-card) !important; color: var(--text) !important; border: var(--bw) solid var(--border-strong) !important; border-radius: 0 !important; box-shadow: var(--shadow) !important; }
+.leaflet-container .leaflet-popup-content-wrapper { background: var(--bg-card) !important; color: var(--text) !important; border: var(--bw) solid var(--border-strong) !important; border-radius: var(--radius-md) !important; box-shadow: var(--shadow) !important; }
 .leaflet-container .leaflet-popup-tip { background: var(--bg-card) !important; border: var(--bw) solid var(--border-strong) !important; box-shadow: none !important; }
 .leaflet-container .leaflet-popup-close-button { color: var(--text-muted) !important; }
 .leaflet-container .leaflet-popup-close-button:hover { color: var(--text) !important; }
@@ -547,5 +585,5 @@ body.modal-open { overflow: hidden; }
    print output (which goes through window.open/print, unaffected by these).
    The inner .print-doc is always white with dark ink, so it stays legible in
    both themes; only the surrounding well changes. */
-.print-preview-dark { background: #3a3a44; }
+.print-preview-dark { background: #3d3831; }
 .print-preview-light { background: #ffffff; color: #1a1714; }

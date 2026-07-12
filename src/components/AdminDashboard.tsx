@@ -49,21 +49,21 @@ function relative(d: string, t: T): string {
 }
 
 const STATUS_BADGE: Record<UserStatus, { labelKey: string; bg: string; fg: string }> = {
-  pending: { labelKey: 'statusPending', bg: 'rgba(199,125,26,0.16)', fg: 'var(--warning)' },
-  approved: { labelKey: 'statusApproved', bg: 'rgba(74,124,89,0.16)', fg: 'var(--success)' },
-  rejected: { labelKey: 'statusRejected', bg: 'rgba(156,59,59,0.14)', fg: 'var(--danger)' },
+  pending: { labelKey: 'statusPending', bg: 'color-mix(in srgb, var(--warning) 16%, transparent)', fg: 'var(--warning)' },
+  approved: { labelKey: 'statusApproved', bg: 'color-mix(in srgb, var(--success) 16%, transparent)', fg: 'var(--success)' },
+  rejected: { labelKey: 'statusRejected', bg: 'color-mix(in srgb, var(--danger) 14%, transparent)', fg: 'var(--danger)' },
   suspended: { labelKey: 'statusSuspended', bg: 'var(--bg-muted)', fg: 'var(--text-muted)' },
 };
 
 function StatusBadge({ status }: { status: UserStatus }) {
   const t = useTranslations('admin');
   const b = STATUS_BADGE[status] ?? STATUS_BADGE.pending;
-  return <span style={{ display: 'inline-block', fontSize: '11px', fontWeight: 700, padding: '2px 10px', borderRadius: 0, background: b.bg, color: b.fg }}>{t(b.labelKey)}</span>;
+  return <span style={{ display: 'inline-block', fontSize: '11px', fontWeight: 700, padding: '2px 10px', borderRadius: 'var(--radius-full)', background: b.bg, color: b.fg }}>{t(b.labelKey)}</span>;
 }
 
 function Avatar({ name, email }: { name?: string; email?: string }) {
   return (
-    <span style={{ width: '36px', height: '36px', flexShrink: 0, borderRadius: 0, background: 'var(--accent-light)', color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700 }}>
+    <span style={{ width: '36px', height: '36px', flexShrink: 0, borderRadius: '50%', background: 'var(--accent-light)', color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700 }}>
       {initials(name, email)}
     </span>
   );
@@ -109,7 +109,7 @@ export default function AdminDashboard({ admin, role, initialTab, onToast }: { a
         <p style={{ margin: '5px 0 0', fontSize: '13px', color: 'var(--text-muted)', maxWidth: '620px', lineHeight: 1.5 }}>{t('subtitle')}</p>
 
         {/* At-a-glance summary strip */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 0, marginTop: '16px', border: 'var(--bw) solid var(--border-strong)', background: 'var(--bg)', maxWidth: '640px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 0, marginTop: '16px', border: 'var(--bw) solid var(--border-strong)', borderRadius: 'var(--radius-md)', overflow: 'hidden', background: 'var(--bg)', maxWidth: '640px' }}>
           {stats.map((s, i) => (
             <div key={s.key} style={{ flex: '1 1 120px', minWidth: '96px', padding: '10px 14px', borderLeft: i > 0 ? '1px solid var(--border)' : 'none' }}>
               <div className="serif" style={{ fontSize: '1.5rem', lineHeight: 1.05, fontWeight: 600, color: s.tone }}>{s.value}</div>
@@ -126,7 +126,7 @@ export default function AdminDashboard({ admin, role, initialTab, onToast }: { a
               <button key={tabDef.id} role="tab" aria-selected={active} onClick={() => setTab(tabDef.id)}
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', whiteSpace: 'nowrap', padding: '9px 14px', minHeight: '44px', border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: active ? 700 : 400, color: active ? 'var(--accent)' : 'var(--text-muted)', borderBottom: `2px solid ${active ? 'var(--accent)' : 'transparent'}` }}>
                 <tabDef.Icon size={15} aria-hidden="true" /> {tabDef.label}
-                {tabDef.badge ? <span style={{ background: 'var(--danger)', color: '#fff', fontSize: '10px', fontWeight: 700, borderRadius: 0, padding: '1px 7px' }}>{tabDef.badge}</span> : null}
+                {tabDef.badge ? <span style={{ background: 'var(--danger)', color: '#1c0c07', fontSize: '10px', fontWeight: 700, borderRadius: 'var(--radius-full)', padding: '1px 7px' }}>{tabDef.badge}</span> : null}
               </button>
             );
           })}
@@ -196,7 +196,7 @@ function PendingTab({ admin, pending, onToast }: { admin: AdminData; pending: Us
               </div>
             </div>
             <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-              <button onClick={() => approve(u)} disabled={busy === u.id} className="btn btn-sm" style={{ background: 'var(--success)', color: '#fff', gap: '5px' }} aria-label={t('approve')}>
+              <button onClick={() => approve(u)} disabled={busy === u.id} className="btn btn-sm" style={{ background: 'var(--success)', color: 'var(--ink-on-accent)', gap: '5px' }} aria-label={t('approve')}>
                 <Check size={14} aria-hidden="true" /> {t('approve')}
               </button>
               <button onClick={() => { setRejectingId(rejectingId === u.id ? null : u.id); setReason(''); }} disabled={busy === u.id} className="btn btn-sm" style={{ background: 'var(--bg-muted)', color: 'var(--danger)', border: '1px solid var(--border)', gap: '5px' }} aria-label={t('reject')}>
@@ -210,7 +210,7 @@ function PendingTab({ admin, pending, onToast }: { admin: AdminData; pending: Us
                 className="input" style={{ width: '100%', resize: 'vertical', fontFamily: 'var(--font-body)' }} autoFocus />
               <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', marginTop: '8px' }}>
                 <button onClick={() => { setRejectingId(null); setReason(''); }} className="btn btn-ghost btn-sm">{t('cancel')}</button>
-                <button onClick={() => confirmReject(u)} disabled={busy === u.id} className="btn btn-sm" style={{ background: 'var(--danger)', color: '#fff' }}>{t('confirmReject')}</button>
+                <button onClick={() => confirmReject(u)} disabled={busy === u.id} className="btn btn-sm" style={{ background: 'var(--danger)', color: 'var(--ink-on-accent)' }}>{t('confirmReject')}</button>
               </div>
             </div>
           )}
@@ -278,7 +278,7 @@ function UsersTab({ admin, isSuperAdmin, onToast }: { admin: AdminData; isSuperA
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.display_name || u.email}</span>
-                {u.role !== 'user' && <span style={{ flexShrink: 0, fontSize: '9px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--accent)', background: 'var(--accent-light)', padding: '2px 7px', borderRadius: 0 }}>{u.role}</span>}
+                {u.role !== 'user' && <span style={{ flexShrink: 0, fontSize: '9px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--accent)', background: 'var(--accent-light)', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>{u.role}</span>}
               </div>
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email}</div>
             </div>
@@ -303,7 +303,7 @@ function UsersTab({ admin, isSuperAdmin, onToast }: { admin: AdminData; isSuperA
                 <>
                   <div onClick={() => closeMenu()} aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 'calc(var(--z-dropdown) - 1)' }} />
                   <div role="menu" aria-label={t('actions')} onKeyDown={e => { if (e.key === 'Escape') { e.preventDefault(); closeMenu(u.id); } }}
-                    style={{ position: 'absolute', right: 0, top: '100%', zIndex: 'var(--z-dropdown)', marginTop: '4px', minWidth: '190px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow-lg)', padding: '4px', display: 'flex', flexDirection: 'column' }}>
+                    style={{ position: 'absolute', right: 0, top: '100%', zIndex: 'var(--z-dropdown)', marginTop: '4px', minWidth: '190px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)', padding: '4px', display: 'flex', flexDirection: 'column' }}>
                     {(u.status === 'pending' || u.status === 'rejected') && (
                       <MenuItem Icon={Check} label={t('approve')} onClick={() => act(admin.approveUser(u.id), t('toastApproved'), () => notifyApproval(u.email, u.display_name))} />
                     )}
@@ -367,7 +367,7 @@ function NotificationsTab({ admin, onToast }: { admin: AdminData; onToast: Toast
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {admin.notifications.map(n => (
             <div key={n.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px' }}>
-              <span style={{ width: '34px', height: '34px', flexShrink: 0, borderRadius: 0, background: 'var(--accent-light)', color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ width: '34px', height: '34px', flexShrink: 0, borderRadius: 'var(--radius-sm)', background: 'var(--accent-light)', color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                 <UserPlus size={16} aria-hidden="true" />
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -398,7 +398,7 @@ function SystemTab() {
       <TabIntro>{t('systemHint')}</TabIntro>
       <div className="card" style={{ padding: '18px 20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span style={{ width: '40px', height: '40px', flexShrink: 0, background: 'var(--accent-light)', color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ width: '40px', height: '40px', flexShrink: 0, borderRadius: 'var(--radius-sm)', background: 'var(--accent-light)', color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
             <Activity size={20} aria-hidden="true" />
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>

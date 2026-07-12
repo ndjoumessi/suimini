@@ -91,7 +91,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: Props) {
           <span className="label" style={{ color: 'var(--accent)' }}>{t('step', { step })}</span>
           <div style={{ display: 'flex', gap: '6px' }}>
             {[1, 2, 3].map(n => (
-              <span key={n} style={{ width: n === step ? '26px' : '10px', height: '10px', background: n <= step ? 'var(--accent)' : 'var(--bg-muted)', border: '1.5px solid var(--border-strong)', transition: 'all .25s' }} />
+              <span key={n} style={{ width: n === step ? '26px' : '10px', height: '10px', borderRadius: 'var(--radius-full)', background: n <= step ? 'var(--accent)' : 'var(--bg-muted)', border: '1.5px solid var(--border-strong)', transition: 'all .25s' }} />
             ))}
           </div>
         </div>
@@ -140,7 +140,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: Props) {
                 return (
                   <button key={g.value} type="button" onClick={() => setGender(g.value)}
                     className="btn btn-sm" aria-pressed={active}
-                    style={{ flex: 1, background: active ? 'var(--accent)' : 'var(--bg-card)', color: active ? '#fff' : 'var(--text)' }}>
+                    style={{ flex: 1, background: active ? 'var(--accent)' : 'var(--bg-card)', color: active ? 'var(--ink-on-accent)' : 'var(--text)' }}>
                     {t(g.key)}
                   </button>
                 );
@@ -204,7 +204,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: Props) {
 function Suggestion({ Icon, text }: { Icon: typeof Users; text: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: 'var(--bg-card)', border: '1.5px solid var(--border-strong)', borderRadius: 'var(--radius)' }}>
-      <span style={{ width: '30px', height: '30px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--accent-light)', border: '1.5px solid var(--border-strong)', color: 'var(--accent)' }}><Icon size={15} aria-hidden="true" /></span>
+      <span style={{ width: '30px', height: '30px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--accent-light)', border: '1.5px solid var(--border-strong)', borderRadius: 'var(--radius-sm)', color: 'var(--accent)' }}><Icon size={15} aria-hidden="true" /></span>
       <span style={{ fontSize: '14px', fontWeight: 600 }}>{text}</span>
       <ArrowRight size={15} style={{ marginLeft: 'auto', color: 'var(--text-light)' }} aria-hidden="true" />
     </div>

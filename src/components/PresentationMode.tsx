@@ -68,10 +68,10 @@ export default function PresentationMode({ persons, onClose }: Props) {
       <div key={index} className="present-fade"
         style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', maxWidth: '760px', padding: '0 60px' }}
       >
-        {/* Photo — square brutalist frame */}
+        {/* Photo — soft-framed portrait */}
         <div style={{
           width: 'min(320px, 40vh)', height: 'min(320px, 40vh)', overflow: 'hidden',
-          border: `3px solid ${accent}`, boxShadow: '10px 10px 0 rgba(0,0,0,0.55)', marginBottom: '34px',
+          border: `3px solid ${accent}`, borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-xl)', marginBottom: '34px',
           background: '#2a2620', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6e6a62',
         }}>
           {person.profilePhoto
@@ -80,7 +80,7 @@ export default function PresentationMode({ persons, onClose }: Props) {
         </div>
 
         {/* Name */}
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 'clamp(2rem, 6vw, 52px)', color: '#f4f1ea', margin: '0 0 14px', fontWeight: 700, lineHeight: 1.02, letterSpacing: '-0.03em' }}>
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 'clamp(2rem, 6vw, 52px)', color: '#f4f1ea', margin: '0 0 14px', fontWeight: 700, lineHeight: 1.08, letterSpacing: '-0.01em' }}>
           {getFullName(person)}
         </h1>
 
@@ -108,7 +108,7 @@ export default function PresentationMode({ persons, onClose }: Props) {
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '60%' }}>
           {ordered.map((_, i) => (
             <button key={i} onClick={() => setIndex(i)} aria-label={t('slide', { number: i + 1 })}
-              style={{ width: i === index ? '24px' : '9px', height: '9px', border: 'none', cursor: 'pointer', padding: 0, transition: 'all 0.25s', background: i === index ? accent : 'rgba(255,255,255,0.25)' }}
+              style={{ width: i === index ? '24px' : '9px', height: '9px', borderRadius: 'var(--radius-full)', border: 'none', cursor: 'pointer', padding: 0, transition: 'all 0.25s', background: i === index ? accent : 'rgba(255,255,255,0.25)' }}
             />
           ))}
         </div>
@@ -128,17 +128,17 @@ const rootStyle: React.CSSProperties = {
 };
 const closeStyle: React.CSSProperties = {
   position: 'absolute', top: '20px', right: '24px', zIndex: 10,
-  width: '44px', height: '44px', borderRadius: 0, border: '1.5px solid rgba(244,241,234,0.4)',
+  width: '44px', height: '44px', borderRadius: '50%', border: '1.5px solid rgba(244,241,234,0.4)',
   background: 'rgba(255,255,255,0.06)', color: '#f4f1ea', cursor: 'pointer',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
 };
 const arrowStyle: React.CSSProperties = {
   position: 'absolute', top: '50%', transform: 'translateY(-50%)', zIndex: 10,
-  width: '56px', height: '56px', borderRadius: 0, border: '1.5px solid rgba(244,241,234,0.3)',
+  width: '56px', height: '56px', borderRadius: '50%', border: '1.5px solid rgba(244,241,234,0.3)',
   background: 'rgba(255,255,255,0.06)', color: '#f4f1ea', cursor: 'pointer',
   display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
 };
 const pillStyle: React.CSSProperties = {
-  padding: '5px 14px', borderRadius: 0, background: 'rgba(255,255,255,0.08)',
+  padding: '5px 14px', borderRadius: 'var(--radius-full)', background: 'rgba(255,255,255,0.08)',
   color: '#e8e0d0', fontSize: '0.8rem', fontFamily: "var(--font-mono)", border: '1px solid rgba(255,255,255,0.18)',
 };

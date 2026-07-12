@@ -22,7 +22,7 @@ const PADY = 72;
 
 // Per-generation accent line (génération 0 = la plus ancienne).
 function genColor(g: number): string {
-  if (g <= 1) return '#c9a84c';   // or
+  if (g <= 1) return 'var(--accent)';   // or (thémable)
   if (g <= 3) return '#5b7fa6';   // bleu-gris
   if (g <= 5) return '#5b8a6e';   // vert-sauge
   return '#8a5b6e';               // rose-muted
@@ -467,7 +467,7 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
 
         .ft-node { position: absolute; display: flex; flex-direction: column; justify-content: center; gap: 1px;
           padding: 4px 14px 4px 20px; text-align: left; cursor: pointer; background: var(--bg-card);
-          border: 1px solid var(--border); border-radius: 0;
+          border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
           transition: border-color 160ms var(--ease-out), box-shadow 200ms var(--ease-out), transform 160ms var(--ease-out), background 160ms var(--ease-out); }
         .ft-node:hover { border-color: var(--accent); box-shadow: var(--shadow-accent); transform: translateY(-2px); z-index: 2; }
         .ft-node:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -475,7 +475,7 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         /* Focus/active node: double gold ring (2px + subtle inner) + glow + a slight
            scale-up so it clearly stands out from the dimmed parents/children. The
            gender tint (inline bg) stays visible underneath. */
-        .ft-node-focus { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent), inset 0 0 0 4px rgba(201,168,76,0.22), var(--shadow-accent); transform: scale(1.03); z-index: 3; }
+        .ft-node-focus { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent), inset 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent), var(--shadow-accent); transform: scale(1.03); z-index: 3; }
         .ft-node-focus:hover { transform: scale(1.03) translateY(-2px); }
         /* Gender bar — 6px coloured left edge, full height */
         .ft-edge { position: absolute; top: 0; bottom: 0; left: 0; width: 8px; }
@@ -497,9 +497,9 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
 
         /* Breadcrumb — solid top bar, separate clickable chips */
         .ft-crumbs { flex-shrink: 0; display: flex; align-items: center; gap: 6px; overflow-x: auto;
-          background: #1a1a24; border-bottom: 1px solid var(--border); padding: 8px 12px; }
+          background: var(--surface-3); border-bottom: 1px solid var(--border); padding: 8px 12px; }
         .ft-crumbs::-webkit-scrollbar { height: 0; }
-        .ft-crumb { background: var(--bg-card); border: 1px solid var(--border); cursor: pointer; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.08em;
+        .ft-crumb { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.08em;
           text-transform: uppercase; color: var(--text-muted); padding: 7px 10px; white-space: nowrap; transition: color 150ms, background 150ms, border-color 150ms; }
         .ft-crumb:hover { color: var(--ink); border-color: var(--accent); }
         .ft-crumb-on { background: var(--accent); color: var(--ink-on-accent); border-color: var(--accent); }
@@ -509,12 +509,12 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         /* Generation nav — full-width bars top & bottom */
         .ft-nav { flex-shrink: 0; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
           font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink);
-          background: #1a1a24; border: none; padding: 10px 16px; transition: background 160ms, color 160ms; }
+          background: var(--surface-3); border: none; padding: 10px 16px; transition: background 160ms, color 160ms; }
         .ft-nav:hover { background: var(--bg-muted); color: var(--accent-text); }
         /* Compteur de personnes de la génération — petite pastille mono discrète. */
         .ft-nav-count { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 5px;
           font-family: var(--font-mono); font-size: 9px; font-weight: 700; letter-spacing: 0; color: var(--accent-text);
-          background: var(--bg-card); border: 1px solid var(--border); }
+          background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-full); }
         .ft-nav:hover .ft-nav-count { border-color: var(--accent); }
         .ft-nav-up { border-bottom: 1px solid var(--border); }
         .ft-nav-down { border-top: 1px solid var(--border); }
@@ -526,14 +526,14 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         /* Floating recenter button (bottom-right of the canvas) */
         .ft-center-btn { position: absolute; right: 16px; bottom: 64px; z-index: 4;
           width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center;
-          background: var(--bg-card); color: var(--accent-text); border: 1px solid var(--border-strong);
+          background: var(--bg-card); color: var(--accent-text); border: 1px solid var(--border-strong); border-radius: var(--radius);
           cursor: pointer; box-shadow: var(--shadow); transition: border-color 150ms, color 150ms, background 150ms; }
         .ft-center-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--bg-muted); }
         .ft-center-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
         /* Discreet legend — bottom-left, fades out while hovering the canvas */
         .ft-legend { position: absolute; bottom: 16px; left: 16px; z-index: 4; display: flex; align-items: center; gap: 14px;
-          padding: 8px 12px; background: rgba(17,17,24,0.8); border: 1px solid var(--border); backdrop-filter: blur(2px);
+          padding: 8px 12px; background: color-mix(in srgb, var(--bg) 82%, transparent); border: 1px solid var(--border); border-radius: var(--radius-md); backdrop-filter: blur(2px);
           transition: opacity 200ms ease; }
         /* Fades out only while the pointer is over the legend itself (so it never
            blocks a node it happens to overlap); visible the rest of the time. */

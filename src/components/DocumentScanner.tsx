@@ -517,7 +517,7 @@ export default function DocumentScanner({ tree, preselectPersonId, onClose, onIm
 
 const DS_CSS = `
 .ds-overlay { position: fixed; inset: 0; z-index: var(--z-modal); background: var(--scrim, rgba(27,22,18,0.55)); display: flex; align-items: flex-start; justify-content: center; padding: 6vh 16px 40px; overflow-y: auto; }
-.ds-modal { position: relative; width: 100%; max-width: 680px; background: var(--bg-card); border: var(--bw) solid var(--border-strong); box-shadow: var(--shadow-xl, 10px 10px 0 var(--shadow-color)); border-radius: var(--radius); }
+.ds-modal { position: relative; width: 100%; max-width: 680px; background: var(--bg-card); border: var(--bw) solid var(--border-strong); box-shadow: var(--shadow-xl); border-radius: var(--radius-xl); }
 .ds-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 20px 22px 14px; border-bottom: var(--bw) solid var(--border-strong); }
 .ds-title { margin: 0 0 3px; font-size: 1.3rem; display: flex; align-items: center; gap: 9px; }
 .ds-title svg { color: var(--accent); }
@@ -543,7 +543,7 @@ const DS_CSS = `
 
 /* Scan animation — thin accent band sweeping top→bottom via transform. */
 .ds-scan-line { position: absolute; left: 0; right: 0; top: 0; height: 100%; pointer-events: none; will-change: transform;
-  background: linear-gradient(to bottom, rgba(191,75,44,0.55) 0, var(--accent) 2px, rgba(191,75,44,0.35) 5px, transparent 9px);
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--accent) 55%, transparent) 0, var(--accent) 2px, color-mix(in srgb, var(--accent) 35%, transparent) 5px, transparent 9px);
   animation: dsScan 1.8s cubic-bezier(0.45,0,0.55,1) infinite; }
 .ds-scan-grid { position: absolute; inset: 0; background-image: linear-gradient(var(--accent) 1px, transparent 1px), linear-gradient(90deg, var(--accent) 1px, transparent 1px); background-size: 28px 28px; opacity: 0.12; pointer-events: none; }
 @keyframes dsScan { from { transform: translateY(0); } to { transform: translateY(100%); } }
@@ -561,7 +561,7 @@ const DS_CSS = `
 .ds-empty { margin: 16px 0; font-size: 14px; color: var(--text-muted); text-align: center; }
 
 /* Confidence badge */
-.ds-conf { display: inline-flex; align-items: center; gap: 7px; padding: 4px 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; border: var(--bw) solid; }
+.ds-conf { display: inline-flex; align-items: center; gap: 7px; padding: 4px 11px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; border: var(--bw) solid; border-radius: var(--radius-full); }
 .ds-conf-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .ds-conf-pct { font-weight: 600; letter-spacing: 0; text-transform: none; opacity: 0.85; }
 .ds-conf-high { color: #4a9d6e; border-color: #4a9d6e; background: rgba(74,157,110,0.10); }
@@ -593,5 +593,5 @@ const DS_CSS = `
 .ds-raw-toggle { display: inline-flex; align-items: center; gap: 6px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; padding: 10px 0; min-height: 44px; }
 .ds-raw-toggle:hover { color: var(--accent); }
 .ds-raw-text { margin: 8px 0 0; padding: 12px; font-size: 11px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto; border: 1px solid var(--border-strong); background: var(--bg-muted); color: var(--text-muted); border-radius: var(--radius); }
-.ds-modal .btn-primary svg.animate-spin { color: #fff !important; }
+.ds-modal .btn-primary svg.animate-spin { color: var(--ink-on-accent) !important; }
 `;

@@ -249,7 +249,7 @@ export default function ImportExportModal({ tree, onImport, onMerge, onClose, in
                   </fieldset>
 
                   {progress !== null && (
-                    <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} aria-label={tg('tabImport')} style={{ height: '8px', background: 'var(--bg-muted)', borderRadius: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
+                    <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} aria-label={tg('tabImport')} style={{ height: '8px', background: 'var(--bg-muted)', borderRadius: 'var(--radius-full)', overflow: 'hidden', border: '1px solid var(--border)' }}>
                       <div style={{ height: '100%', width: `${progress}%`, background: 'var(--accent)', transition: 'width 200ms ease' }} />
                     </div>
                   )}

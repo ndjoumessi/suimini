@@ -36,8 +36,8 @@ interface Props {
 }
 
 /** Recessed input/select tone — sits darker than the card surface so fields read
- *  as inset wells. No exact token (between --bg and --bg-card), so a literal. */
-const RECESS = '#1a1a24';
+ *  as inset wells (between --bg and --bg-card). */
+const RECESS = 'var(--surface-3)';
 
 /** Status pill colors: pending=amber, accepted=green, declined=red — via signal tokens. */
 function statusStyle(status: MemberStatus): React.CSSProperties {
@@ -94,6 +94,7 @@ function SquareToggle({
         padding: compact ? '10px 12px' : '14px',
         background: checked ? 'var(--accent-light)' : 'var(--bg-card)',
         border: `var(--bw) solid ${checked ? 'var(--accent)' : 'var(--border)'}`,
+        borderRadius: 'var(--radius)',
         cursor: disabled ? 'wait' : 'pointer',
         transition: 'background .15s ease, border-color .15s ease',
       }}
@@ -103,6 +104,7 @@ function SquareToggle({
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         background: checked ? 'var(--accent)' : 'transparent',
         border: `2px solid ${checked ? 'var(--accent)' : 'var(--border-strong)'}`,
+        borderRadius: 'var(--radius-sm)',
         color: 'var(--ink-on-accent)', transition: 'background .15s ease, border-color .15s ease',
       }}>
         {checked && <Check size={14} strokeWidth={3} />}
@@ -386,8 +388,8 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {members.map(m => (
-                      <div key={m.email} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', border: 'var(--bw) solid var(--border)', background: 'var(--bg-card)', flexWrap: 'wrap' }}>
-                        <span aria-hidden="true" style={{ width: '34px', height: '34px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid var(--border-strong)', background: 'var(--accent-light)', color: 'var(--accent)', fontFamily: 'var(--font-mono)', fontSize: '12px', fontWeight: 700 }}>
+                      <div key={m.email} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', border: 'var(--bw) solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-card)', flexWrap: 'wrap' }}>
+                        <span aria-hidden="true" style={{ width: '34px', height: '34px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid var(--border-strong)', borderRadius: 'var(--radius-sm)', background: 'var(--accent-light)', color: 'var(--accent)', fontFamily: 'var(--font-mono)', fontSize: '12px', fontWeight: 700 }}>
                           {emailInitials(m.email)}
                         </span>
                         <div style={{ flex: '1 1 140px', minWidth: 0 }}>
@@ -456,7 +458,7 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
                 {shares.length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '10px' }}>
                     {shares.map(s => (
-                      <div key={s.email} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', padding: '7px 10px', background: 'var(--bg-card)', border: 'var(--bw) solid var(--border)' }}>
+                      <div key={s.email} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', padding: '7px 10px', background: 'var(--bg-card)', border: 'var(--bw) solid var(--border)', borderRadius: 'var(--radius)' }}>
                         <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.email}</span>
                         <span className="badge badge-accent" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>{s.permission === 'write' ? <><Pencil size={10} /> {t('write')}</> : <><Eye size={10} /> {t('read')}</>}</span>
                         <button onClick={() => removeShare(s.email)} aria-label={t('removeShare')} className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--danger)' }}><X size={14} /></button>
@@ -494,8 +496,8 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
           {/* Section 3 — Tree preview */}
           <div>
             <SectionLabel>{t('treePreview')}</SectionLabel>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', padding: '14px', background: 'var(--bg-card)', border: 'var(--bw) solid var(--border)' }}>
-              <span style={{ width: '44px', height: '44px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid var(--border-strong)', background: RECESS }}>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', padding: '14px', background: 'var(--bg-card)', border: 'var(--bw) solid var(--border)', borderRadius: 'var(--radius)' }}>
+              <span style={{ width: '44px', height: '44px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid var(--border-strong)', borderRadius: 'var(--radius-sm)', background: RECESS }}>
                 <BrandMark size={26} surface={RECESS} />
               </span>
               <div style={{ minWidth: 0 }}>
@@ -561,7 +563,7 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
           </div>
 
           {/* Tip */}
-          <div style={{ padding: '12px 14px', background: 'var(--accent-light)', border: 'var(--bw) solid color-mix(in srgb, var(--accent) 40%, transparent)', fontSize: '12px', color: 'var(--text-muted)', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+          <div style={{ padding: '12px 14px', background: 'var(--accent-light)', border: 'var(--bw) solid color-mix(in srgb, var(--accent) 40%, transparent)', borderRadius: 'var(--radius)', fontSize: '12px', color: 'var(--text-muted)', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
             <Lightbulb size={18} style={{ flexShrink: 0, color: 'var(--accent)' }} aria-hidden="true" />
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10.5px', lineHeight: 1.55 }}>
               {t.rich('familyMeetingTip', { b: (c) => <strong style={{ color: 'var(--text)' }}>{c}</strong> })}
@@ -570,12 +572,12 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
         </div>
 
         <style>{`
-          .modal .btn-primary svg.animate-spin { color: #fff !important; }
+          .modal .btn-primary svg.animate-spin { color: var(--ink-on-accent) !important; }
 
           .share-tab {
             display: inline-flex; align-items: center; gap: 6px;
             padding: 8px 14px; font-family: var(--font-body); font-size: 12px; font-weight: 700;
-            border: var(--bw) solid var(--border); background: var(--bg-card); color: var(--text-muted);
+            border: var(--bw) solid var(--border); border-radius: var(--radius); background: var(--bg-card); color: var(--text-muted);
             cursor: pointer; transition: background .15s ease, color .15s ease, border-color .15s ease;
           }
           .share-tab:hover { color: var(--text); border-color: var(--border-strong); }
@@ -583,7 +585,7 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
           .share-tab.is-active svg { color: var(--ink-on-accent); }
 
           .share-info {
-            padding: 12px; background: var(--bg-card); border: var(--bw) solid var(--border);
+            padding: 12px; background: var(--bg-card); border: var(--bw) solid var(--border); border-radius: var(--radius);
             font-size: 13px; color: var(--text-muted);
           }
 
@@ -597,7 +599,7 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
           .share-btn {
             display: inline-flex; align-items: center; justify-content: center; gap: 8px;
             padding: 11px 12px; font-family: var(--font-body); font-size: 13px; font-weight: 600;
-            background: var(--bg-card); border: var(--bw) solid var(--border); color: var(--text);
+            background: var(--bg-card); border: var(--bw) solid var(--border); border-radius: var(--radius); color: var(--text);
             cursor: pointer; text-decoration: none;
             transition: background .15s ease, border-color .15s ease;
           }

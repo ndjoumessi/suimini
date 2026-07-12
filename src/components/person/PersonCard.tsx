@@ -32,7 +32,7 @@ function dateStr(p: Person): string {
 export default function PersonCard({ person: p, onSelect, variant = 'row' }: Props) {
   const t = useTranslations('list');
   const bar = genderColor(p);
-  const inkOnAvatar = p.gender === 'male' || p.gender === 'female' ? '#12131a' : 'var(--ink)';
+  const inkOnAvatar = p.gender === 'male' || p.gender === 'female' ? 'var(--ink-on-accent)' : 'var(--ink)';
   const dates = dateStr(p);
   const city = p.birthPlace?.city;
   const firstName = (p.firstName || '').trim();

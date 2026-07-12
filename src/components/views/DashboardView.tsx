@@ -357,8 +357,8 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
         .dash-hero-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 22px; }
         .dash-date { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); }
         .dash-user { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
-        .dash-user-ava { width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: var(--ink-on-accent); font-family: var(--font-display); font-weight: 700; font-size: 12px; }
-        .dash-title { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.5rem, 6vw, 4rem); line-height: 1; letter-spacing: -0.03em; color: var(--accent); margin: 0; text-wrap: balance; overflow-wrap: break-word; }
+        .dash-user-ava { width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: var(--ink-on-accent); font-family: var(--font-display); font-weight: 700; font-size: 12px; border-radius: var(--radius-sm); }
+        .dash-title { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.5rem, 6vw, 4rem); line-height: 1; letter-spacing: -0.01em; color: var(--accent); margin: 0; text-wrap: balance; overflow-wrap: break-word; }
         .dash-rule { display: block; width: 60px; height: 2px; background: var(--accent); margin: 18px 0 0; }
         .dash-sub { font-family: var(--font-mono); font-size: 13px; color: var(--text-muted); margin: 16px 0 0; letter-spacing: 0.02em; }
         .dash-fig { color: var(--accent); font-weight: 700; }
@@ -368,20 +368,20 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
 
         /* Stats */
         .dash-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-        .dash-stat { position: relative; background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--accent);
+        .dash-stat { position: relative; background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
           padding: 20px 24px 20px; display: flex; flex-direction: column;
           transition: box-shadow var(--t-base) var(--ease-out), transform var(--t-base) var(--ease-out), background var(--t-base) var(--ease-out); }
-        .dash-stat:hover { background: #252535; box-shadow: var(--shadow-accent); transform: translateY(-2px); }
+        .dash-stat:hover { background: var(--interactive); box-shadow: var(--shadow-accent); transform: translateY(-2px); }
         .dash-stat-icon { color: var(--accent-muted); margin-bottom: 13px; }
-        .dash-stat-num { font-family: var(--font-display); font-weight: 700; line-height: 0.95; font-size: clamp(2.6rem, 5vw, 3.5rem); color: var(--accent); letter-spacing: -0.02em; }
+        .dash-stat-num { font-family: var(--font-display); font-weight: 700; line-height: 0.95; font-size: clamp(2.6rem, 5vw, 3.5rem); color: var(--accent); letter-spacing: -0.01em; }
         .dash-stat-num small { font-size: 1.1rem; color: var(--text-muted); font-weight: 600; margin-left: 5px; }
         .dash-stat-label { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-muted); margin-top: 10px; }
         .dash-stat-sub { font-family: var(--font-body); font-size: 12px; color: var(--ink); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         /* Cards */
         .dash-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
-        .dash-card { background: var(--bg-card); border: 1px solid var(--border); padding: 22px 24px; display: flex; flex-direction: column; }
-        .dash-card-warm { background: linear-gradient(150% 120% at 0% 0%, rgba(201,168,76,0.07), transparent 55%), var(--bg-card); border-color: color-mix(in srgb, var(--accent) 22%, var(--border)); }
+        .dash-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 22px 24px; display: flex; flex-direction: column; }
+        .dash-card-warm { background: linear-gradient(150% 120% at 0% 0%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 55%), var(--bg-card); border-color: color-mix(in srgb, var(--accent) 22%, var(--border)); }
         .dash-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
         .dash-eyebrow { display: flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-text); margin-bottom: 5px; }
         .dash-h { margin: 0; font-family: var(--font-display); font-size: 1.3rem; font-weight: 600; letter-spacing: -0.005em; }
@@ -390,8 +390,8 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
         .dash-note { margin: 0 0 10px; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
 
         .dash-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
-        .dash-row { width: 100%; display: flex; align-items: center; gap: 11px; padding: 8px; border: none; background: transparent; cursor: pointer; text-align: left; transition: background var(--t-fast); }
-        .dash-row:hover { background: var(--bg-muted); }
+        .dash-row { width: 100%; display: flex; align-items: center; gap: 11px; padding: 8px; border: none; border-radius: var(--radius); background: transparent; cursor: pointer; text-align: left; transition: background var(--t-fast); }
+        .dash-row:hover { background: var(--interactive); }
         .dash-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
         .dash-row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
         .dash-row-name { font-family: var(--font-body); font-size: 14px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -406,7 +406,7 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
 
         /* Quick access 3×2 */
         .dash-quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .dash-quick-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 16px 6px; min-height: 72px; cursor: pointer; background: var(--bg); border: 1px solid var(--border); color: var(--text-muted); font-family: var(--font-body); font-size: 12px; font-weight: 600; transition: transform var(--t-fast) var(--ease-out), box-shadow var(--t-fast), color var(--t-fast), border-color var(--t-fast), background var(--t-fast); }
+        .dash-quick-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 16px 6px; min-height: 72px; cursor: pointer; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-muted); font-family: var(--font-body); font-size: 12px; font-weight: 600; transition: transform var(--t-fast) var(--ease-out), box-shadow var(--t-fast), color var(--t-fast), border-color var(--t-fast), background var(--t-fast); }
         .dash-quick-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-accent); background: var(--bg-card); color: var(--accent-text); border-color: var(--accent); }
 
         /* AI — two compact cards */
@@ -414,11 +414,11 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
         .dash-ai-head { display: flex; align-items: center; gap: 9px; }
         .dash-ai-title { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink); }
         .dash-ai-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .dash-ai-card { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 5px; text-align: left; cursor: pointer; padding: 20px 22px; background: #1A1A24; border: 1px solid var(--border); transition: border-color var(--t-fast), background var(--t-fast), box-shadow var(--t-fast), transform var(--t-base) var(--ease-out); }
+        .dash-ai-card { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 5px; text-align: left; cursor: pointer; padding: 20px 22px; background: var(--surface-3); border: 1px solid var(--border); border-radius: var(--radius-lg); transition: border-color var(--t-fast), background var(--t-fast), box-shadow var(--t-fast), transform var(--t-base) var(--ease-out); }
         .dash-ai-card:hover { border-color: var(--accent); background: var(--bg-card); box-shadow: var(--shadow-accent); transform: translateY(-2px); }
         .dash-ai-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         .dash-ai-card:disabled { opacity: 0.45; cursor: not-allowed; }
-        .dash-ai-card:disabled:hover { border-color: var(--border); background: #1A1A24; box-shadow: none; transform: none; }
+        .dash-ai-card:disabled:hover { border-color: var(--border); background: var(--surface-3); box-shadow: none; transform: none; }
         .dash-ai-card-icon { display: inline-flex; color: var(--accent); margin-bottom: 4px; }
         .dash-ai-card-t { font-family: var(--font-display); font-size: 1.05rem; font-weight: 600; color: var(--ink); }
         .dash-ai-card-d { font-family: var(--font-body); font-size: 12.5px; line-height: 1.5; color: var(--text-muted); max-width: 36ch; }

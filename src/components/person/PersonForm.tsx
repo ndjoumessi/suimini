@@ -357,7 +357,7 @@ const labelStyle: React.CSSProperties = {
 
 const PF_CSS = `
 .pf-form { display: flex; flex-direction: column; gap: 0; }
-.pf-form .input { background: #1A1A24; border: 1px solid var(--border); }
+.pf-form .input { background: var(--surface-3); border: 1px solid var(--border); }
 .pf-form .input::placeholder { color: var(--text-light); }
 .pf-form .input:focus { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 .pf-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -370,7 +370,7 @@ const PF_CSS = `
 
 /* gender toggle */
 .pf-gender { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-.pf-gender-btn { height: 40px; border: 1px solid var(--border); background: #1A1A24; color: var(--text-muted); font-family: var(--font-body); font-size: 13px; font-weight: 600; letter-spacing: 0; text-transform: none; cursor: pointer; transition: border-color 150ms ease, color 150ms ease, background 150ms ease; }
+.pf-gender-btn { height: 40px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-3); color: var(--text-muted); font-family: var(--font-body); font-size: 13px; font-weight: 600; letter-spacing: 0; text-transform: none; cursor: pointer; transition: border-color 150ms ease, color 150ms ease, background 150ms ease; }
 .pf-gender-btn:hover { border-color: var(--accent); color: var(--ink); }
 .pf-gender-btn.on { color: var(--ink-on-accent); border-color: transparent; }
 .pf-gender-btn.on-male { background: #4a90d9; }

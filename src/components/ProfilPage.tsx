@@ -112,7 +112,7 @@ export default function ProfilPage() {
       </header>
 
       <div style={{ maxWidth: '760px', margin: '0 auto', padding: '32px 24px 64px' }} className="animate-fade-in">
-        <h1 className="serif" style={{ margin: '0 0 24px', fontSize: '2rem', letterSpacing: '-0.02em' }}>{t('title')}</h1>
+        <h1 className="serif" style={{ margin: '0 0 24px', fontSize: '2rem', letterSpacing: '-0.01em' }}>{t('title')}</h1>
 
         {/* 1) HEADER card */}
         <section className="card" style={{ padding: '24px', marginBottom: '20px' }}>

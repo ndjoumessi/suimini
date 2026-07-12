@@ -223,7 +223,7 @@ export default function NarrativeModal({ tree, onClose }: { tree: FamilyTree; on
                   aria-label={t('branchSearch')}
                 />
               </div>
-              <div role="listbox" aria-label={t('branchLabel')} style={{ maxHeight: '148px', overflowY: 'auto', border: '1px solid var(--border)', marginTop: '2px' }}>
+              <div role="listbox" aria-label={t('branchLabel')} style={{ maxHeight: '148px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 'var(--radius)', marginTop: '2px' }}>
                 {branchResults.length === 0 && (
                   <div style={{ padding: '10px 12px', fontSize: '13px', color: 'var(--text-muted)' }}>{t('branchNoMatch')}</div>
                 )}
@@ -240,7 +240,7 @@ export default function NarrativeModal({ tree, onClose }: { tree: FamilyTree; on
                         fontSize: '14px', cursor: 'pointer', border: 'none',
                         borderBottom: '1px solid var(--border)',
                         background: selected ? 'var(--accent)' : 'transparent',
-                        color: selected ? '#111118' : 'var(--text)',
+                        color: selected ? 'var(--ink-on-accent)' : 'var(--text)',
                       }}
                     >
                       {getDisplayName(p) || t('noName')}

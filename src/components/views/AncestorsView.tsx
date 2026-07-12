@@ -310,14 +310,14 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
         .ex-scroll { flex: 1; overflow-y: auto; }
         .ex-wrap { max-width: 880px; margin: 0 auto; padding: 0 24px 48px; }
         .ex-hero { display: flex; align-items: flex-start; gap: 14px; padding: 36px 0 24px; border-bottom: 1px solid var(--accent-light); margin-bottom: 22px; }
-        .ex-title { margin: 0; font-size: clamp(1.9rem, 4vw, 2.5rem); line-height: 1.05; color: var(--ink); letter-spacing: -0.02em; }
+        .ex-title { margin: 0; font-size: clamp(1.9rem, 4vw, 2.5rem); line-height: 1.05; color: var(--ink); letter-spacing: -0.01em; }
         .ex-subtitle { margin: 6px 0 0; font-size: 15px; color: var(--text-muted); }
 
         /* Tabs */
         .ex-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
-        .ex-tab { display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px; min-height: 40px; font-family: var(--font-body); font-size: 13.5px; font-weight: 600; cursor: pointer; background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border); transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast); }
-        .ex-tab:hover { background: #252535; color: var(--ink); border-color: var(--accent); }
-        .ex-tab.on { background: var(--accent); color: #12131a; font-weight: 700; border-color: var(--accent); }
+        .ex-tab { display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px; min-height: 40px; font-family: var(--font-body); font-size: 13.5px; font-weight: 600; cursor: pointer; background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border); border-radius: var(--radius-full); transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast); }
+        .ex-tab:hover { background: var(--interactive); color: var(--ink); border-color: var(--accent); }
+        .ex-tab.on { background: var(--accent); color: var(--ink-on-accent); font-weight: 700; border-color: var(--accent); }
         .ex-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
         /* Selectors */
@@ -327,7 +327,7 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
         .ex-swap { display: inline-flex; align-items: center; justify-content: center; color: var(--accent); flex-shrink: 0; height: 40px; }
 
         /* Result card */
-        .ex-result { background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--accent); padding: 22px 20px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
+        .ex-result { background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 22px 20px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
         .ex-party { display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; cursor: pointer; padding: 6px; min-width: 0; }
         .ex-party:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         .ex-party-name { font-size: 16px; font-weight: 700; color: var(--ink); margin-top: 4px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -340,12 +340,12 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
         .ex-nolink { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--text-muted); }
 
         /* Generic card + eyebrow */
-        .ex-card { background: var(--bg-card); border: 1px solid var(--border); padding: 16px 18px; }
+        .ex-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 16px 18px; }
         .ex-eyebrow { font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-text); margin-bottom: 12px; }
 
         /* Kinship path */
         .ex-path { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-        .ex-path-chip { display: inline-flex; align-items: center; gap: 7px; padding: 6px 11px; background: #1a1a24; border: 1px solid var(--border); cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--text); transition: border-color var(--t-fast), background var(--t-fast); }
+        .ex-path-chip { display: inline-flex; align-items: center; gap: 7px; padding: 6px 11px; background: var(--surface-3); border: 1px solid var(--border); border-radius: var(--radius-full); cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--text); transition: border-color var(--t-fast), background var(--t-fast); }
         .ex-path-chip:hover { border-color: var(--accent); background: var(--accent-light); }
         .ex-path-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         .ex-path-dot { width: 8px; height: 8px; flex-shrink: 0; background: var(--bar); }
@@ -357,15 +357,15 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
         .ex-anc-chevron { color: var(--accent-text); transition: transform var(--t-base) var(--ease-out); }
         .ex-anc-chevron.closed { transform: rotate(-90deg); }
         .ex-anc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
-        .ex-acard { display: flex; align-items: center; gap: 10px; padding: 9px 11px; background: #1a1a24; border: 1px solid var(--border); border-left: 4px solid var(--bar); cursor: pointer; text-align: left; transition: border-color var(--t-fast), background var(--t-fast); }
-        .ex-acard:hover { border-color: var(--accent); border-left-color: var(--bar); background: #20202c; }
+        .ex-acard { display: flex; align-items: center; gap: 10px; padding: 9px 11px; background: var(--surface-3); border: 1px solid var(--border); border-left: 4px solid var(--bar); border-radius: var(--radius); cursor: pointer; text-align: left; transition: border-color var(--t-fast), background var(--t-fast); }
+        .ex-acard:hover { border-color: var(--accent); border-left-color: var(--bar); background: var(--interactive); }
         .ex-acard:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         .ex-acard-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
         .ex-acard-name { font-family: var(--font-display); font-size: 13.5px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .ex-acard-dates { font-family: var(--font-mono); font-size: 10.5px; color: var(--accent-text); }
 
         /* Avatar */
-        .ex-avatar { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 700; color: #12131a; overflow: hidden; }
+        .ex-avatar { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 700; color: var(--ink-on-accent); border-radius: var(--radius-sm); overflow: hidden; }
         .ex-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
         /* Compare table */
@@ -381,7 +381,7 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
         /* DNA */
         .ex-dna-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .ex-dna-col { display: flex; flex-wrap: wrap; gap: 5px; align-content: flex-start; }
-        .ex-dna-chip { font-family: var(--font-mono); font-size: 11px; padding: 3px 8px; background: var(--bg-muted); color: var(--text-muted); border: 1px solid var(--border); }
+        .ex-dna-chip { font-family: var(--font-mono); font-size: 11px; padding: 3px 8px; background: var(--bg-muted); color: var(--text-muted); border: 1px solid var(--border); border-radius: var(--radius-sm); }
         .ex-dash { font-size: 12px; color: var(--text-light); }
 
         /* Found line */

@@ -1,16 +1,17 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Public_Sans, IBM_Plex_Mono } from "next/font/google";
+import { Playfair_Display, Figtree, IBM_Plex_Mono } from "next/font/google";
 import IntlProvider from "@/components/IntlProvider";
 import { getLocale, getTranslations } from "next-intl/server";
 import { isLocale, DEFAULT_LOCALE } from "@/i18n/config";
 import "./globals.css";
 
-// Modern Heritage type system — self-hosted via next/font (no FOUT, no render-blocking @import).
-// Display = Fraunces (titles, names, key numbers — matches the constellation landing),
-// Body/UI/labels = Public Sans (high-readability humanist sans, calm and neutral),
-// Mono = IBM Plex Mono (dates, labels, IDs).
-const display = Fraunces({ subsets: ["latin"], weight: ["400", "500", "600", "700"], style: ["normal", "italic"], variable: "--font-display", display: "swap" });
-const body = Public_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"], style: ["normal", "italic"], variable: "--font-body", display: "swap" });
+// Veillée type system — self-hosted via next/font (no FOUT, no render-blocking @import).
+// Display = Playfair Display (titles, names, key numbers — didone cousin of the
+// mobile app's DM Serif Display, with real weights for UI-sized names),
+// Body/UI/labels = Figtree (shared with the mobile "Canopée" system),
+// Mono = IBM Plex Mono (dates, labels, IDs — archival metadata).
+const display = Playfair_Display({ subsets: ["latin"], weight: ["400", "500", "600", "700"], style: ["normal", "italic"], variable: "--font-display", display: "swap" });
+const body = Figtree({ subsets: ["latin"], weight: ["400", "500", "600", "700"], style: ["normal", "italic"], variable: "--font-body", display: "swap" });
 const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500", "700"], variable: "--font-mono", display: "swap" });
 
 const SITE_URL = "https://suimini.vercel.app";
@@ -57,7 +58,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   // Littéral obligatoire : <meta name="theme-color"> ne résout pas les CSS vars.
-  themeColor: "#111118",
+  themeColor: "#171310",
   width: "device-width",
   initialScale: 1,
   // Pas de maximumScale : bloquer le zoom viole WCAG 1.4.4 (resize text).

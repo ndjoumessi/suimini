@@ -25,22 +25,22 @@ export default function DemoBanner({ onCreateAccount, onExit }: { onCreateAccoun
         </div>
       </div>
       <style>{`
-        .demo-banner { display: flex; align-items: center; gap: 9px; height: 40px; padding: 0 14px; background: #1A1A10; border-bottom: 1px solid var(--accent); }
+        .demo-banner { display: flex; align-items: center; gap: 9px; height: 40px; padding: 0 14px; margin: 8px 10px 0; background: color-mix(in srgb, var(--accent) 9%, var(--bg-card)); border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border)); border-radius: var(--radius-md); }
         .demo-banner-ico { color: var(--accent); flex-shrink: 0; }
         .demo-banner-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .demo-banner-text strong { font-family: var(--font-body); font-size: 12px; font-weight: 700; color: var(--ink); }
         .demo-banner-note { font-family: var(--font-mono); font-size: 11px; color: var(--accent-muted); }
 
         /* Quit — ghost tiny */
-        .demo-banner-exit { flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px; background: transparent; color: var(--text-muted); border: none; font-family: var(--font-body); font-size: 12px; cursor: pointer; transition: color var(--t-fast); white-space: nowrap; }
+        .demo-banner-exit { flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px; background: transparent; color: var(--text-muted); border: none; border-radius: var(--radius); font-family: var(--font-body); font-size: 12px; cursor: pointer; transition: color var(--t-fast); white-space: nowrap; }
         .demo-banner-exit:hover { color: var(--ink); }
 
         /* Create account — solid gold */
-        .demo-banner-cta { flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 16px; background: var(--accent); color: var(--ink-on-accent); border: none; font-family: var(--font-body); font-size: 12px; font-weight: 700; cursor: pointer; transition: background var(--t-fast); white-space: nowrap; }
+        .demo-banner-cta { flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 16px; background: var(--accent); color: var(--ink-on-accent); border: none; border-radius: var(--radius); font-family: var(--font-body); font-size: 12px; font-weight: 700; cursor: pointer; transition: background var(--t-fast); white-space: nowrap; }
         .demo-banner-cta:hover { background: var(--accent-hover, var(--accent-text)); }
 
         /* Dismiss */
-        .demo-banner-x { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; transition: color var(--t-fast); }
+        .demo-banner-x { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border: none; background: transparent; border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer; transition: color var(--t-fast); }
         .demo-banner-x:hover { color: var(--ink); }
 
         /* Mobile: keep both buttons, trim the quit label + note to save room */

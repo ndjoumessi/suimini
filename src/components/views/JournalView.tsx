@@ -164,7 +164,7 @@ export default function JournalView({ tree, onSelectPerson, onAdd, onUpdate, onD
                     {entry.mentionedPersonIds && entry.mentionedPersonIds.length > 0 && (
                       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '12px' }}>
                         {entry.mentionedPersonIds.map(id => (
-                          <button key={id} onClick={() => onSelectPerson(id)} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer', background: 'var(--bg-card)', color: 'var(--accent-text)', border: '1px solid var(--border)', padding: '3px 9px', fontFamily: 'var(--font-mono)', fontSize: '11px', transition: 'border-color var(--t-fast), background var(--t-fast)' }}
+                          <button key={id} onClick={() => onSelectPerson(id)} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer', background: 'var(--bg-card)', color: 'var(--accent-text)', border: '1px solid var(--border)', borderRadius: 'var(--radius-full)', padding: '3px 9px', fontFamily: 'var(--font-mono)', fontSize: '11px', transition: 'border-color var(--t-fast), background var(--t-fast)' }}
                             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = 'var(--accent-light)'; }}
                             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg-card)'; }}
                             onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = 'var(--accent-light)'; }}

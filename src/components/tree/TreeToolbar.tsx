@@ -76,7 +76,7 @@ export default function TreeToolbar({
       )}
 
       {/* View toggle: Focus (3 generations) vs Complète (full pan/zoom tree) */}
-      <div role="group" aria-label={t('displayMode')} style={{ display: 'inline-flex', border: '1px solid var(--border)', flexShrink: 0 }}>
+      <div role="group" aria-label={t('displayMode')} style={{ display: 'inline-flex', border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden', flexShrink: 0 }}>
         <button onClick={() => setTreeMode('focus')} aria-pressed={treeMode === 'focus'}
           style={{ appearance: 'none', cursor: 'pointer', border: 'none', padding: '7px 12px', minHeight: '32px', fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600,
             background: treeMode === 'focus' ? 'var(--accent)' : 'transparent', color: treeMode === 'focus' ? 'var(--ink-on-accent)' : 'var(--text-muted)' }}>
@@ -118,7 +118,7 @@ export default function TreeToolbar({
                   onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-muted)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'none'}
                 >
-                  <span style={{ width: '22px', height: '22px', flexShrink: 0, borderRadius: 0, background: 'var(--accent-light)', color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700 }}>{initials(p)}</span>
+                  <span style={{ width: '22px', height: '22px', flexShrink: 0, borderRadius: '50%', background: 'var(--accent-light)', color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700 }}>{initials(p)}</span>
                   <span style={{ flex: 1 }}>{getDisplayName(p)}</span>
                   <span style={{ color: 'var(--text-light)', fontSize: '11px' }}>{formatYear(p.birthDate)}</span>
                 </button>

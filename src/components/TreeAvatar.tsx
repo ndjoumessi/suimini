@@ -2,9 +2,9 @@
 import { FamilyTree } from '@/types';
 
 /* =====================================================================
-   TreeAvatar — square gold tile with the tree's initials in Spectral
-   (ink on gold), matching PersonAvatar's language but for trees. No
-   placeholder icons. Up to two initials from the tree name words.
+   TreeAvatar — soft-cornered gold tile with the tree's initials in the
+   display face (ink on gold), matching PersonAvatar's language but for
+   trees. No placeholder icons. Up to two initials from the tree name.
    ===================================================================== */
 
 function treeInitials(name?: string | null): string {
@@ -26,6 +26,7 @@ export default function TreeAvatar({ tree, name, size = 40, style }: {
       style={{
         width: size, height: size, flexShrink: 0,
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        borderRadius: 'var(--radius-sm)',
         background: 'var(--accent)', color: 'var(--ink-on-accent)',
         fontFamily: 'var(--font-display)', fontWeight: 700,
         fontSize: Math.round(size * 0.38), lineHeight: 1, letterSpacing: '-0.01em',
