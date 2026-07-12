@@ -48,13 +48,13 @@ const PROMPT = `Analyse cette photo de famille.
 Pour chaque visage visible :
 1. Donne sa position approximative en pourcentage de l'image (x, y = coin haut-gauche du visage ; width, height = taille du visage), valeurs 0–100.
 2. Estime la tranche d'âge : "child" (enfant), "young" (jeune adulte), "adult" (adulte), "senior".
-3. Genre apparent : "male", "female", ou "unknown".
-4. Description brève en français (ex : "homme d'environ 60 ans, cheveux gris").
+3. Genre apparent ("gender") : "male", "female", ou "unknown" — base-toi sur TOUS les indices visibles (pilosité faciale, coiffure, morphologie, vêtements…) et reste cohérent avec le reste de tes observations sur ce visage (ex : une barbe ou une pomme d'Adam nette pointe vers "male", pas "female"). En cas de doute réel, renvoie "unknown" plutôt qu'un genre qui contredit tes propres observations.
+4. "description" : UNIQUEMENT les traits physiques distinctifs visibles (coiffure, lunettes, pilosité faciale, vêtements, expression). NE RÉPÈTE PAS l'âge ni le genre — déjà capturés dans "estimatedAge" et "gender", ne commence donc jamais par "homme"/"femme"/"jeune homme"/"jeune femme" etc.
 
 Réponds UNIQUEMENT en JSON valide, sans texte autour, sans bloc de code :
 {
   "faces": [
-    { "id": 1, "x": 20, "y": 10, "width": 15, "height": 20, "estimatedAge": "adult", "gender": "male", "description": "homme d'environ 50 ans" }
+    { "id": 1, "x": 20, "y": 10, "width": 15, "height": 20, "estimatedAge": "adult", "gender": "male", "description": "cheveux gris, lunettes, sourire" }
   ],
   "photoDescription": "Photo de famille en extérieur...",
   "confidence": 0.85
