@@ -369,6 +369,12 @@ export default function SuiminiApp() {
   // no real tree yet. The store seeds a sample tree ('tree1') for everyone, so we
   // treat "only the untouched sample" as first access.
   //
+  // Admin/superadmin accounts are exempt: their role is moderating the app (approve
+  // signups, manage users), not building a personal family tree — an admin with no
+  // tree is the NORMAL state, not a "first run" to nudge through onboarding. They
+  // can still create one manually ("Créer mon premier arbre" on the dashboard) if
+  // they ever want to.
+  //
   // Debounced on purpose: on a fresh cloud login, `useFamilyStore`'s effect can
   // briefly run its GUEST branch first (if `user` resolves in React state a tick
   // before the cloud fetch has actually started/settled — see the cold-token-race
@@ -380,7 +386,7 @@ export default function SuiminiApp() {
   // opening the wizard closes that window without weakening the real first-run
   // case (an actually-empty account still shows it, just ~2s later).
   useEffect(() => {
-    if (!store.loaded || !user || isDemo) return;
+    if (!store.loaded || !user || isDemo || isAdmin) return;
     let onboarded = false;
     try { onboarded = localStorage.getItem('suimini_onboarded') === 'true'; } catch { /* ignore */ }
     if (onboarded) return;
@@ -391,7 +397,7 @@ export default function SuiminiApp() {
       if (stillOnlySample) setShowOnboarding(true);
     }, 2000);
     return () => clearTimeout(timer);
-  }, [store.loaded, store.trees, user, isDemo]);
+  }, [store.loaded, store.trees, user, isDemo, isAdmin]);
 
   const handleOnboardingComplete = useCallback((data: OnboardingData) => {
     const now = new Date().toISOString();
