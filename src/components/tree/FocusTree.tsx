@@ -467,6 +467,10 @@ export default function FocusTree({ tree, focusId, pivotId, selectedPersonId, on
         .ft-gen { position: absolute; top: 0; left: 8px; right: 0; height: 3px; }
         .ft-gen-tag { position: absolute; top: 7px; right: 9px; font-family: var(--font-mono); font-size: 8.5px; font-weight: 700; letter-spacing: 0.06em; opacity: 0.9; }
         .ft-crown { position: absolute; top: 7px; right: 46px; color: var(--accent); }
+        /* Rangée avatar + texte : l'avatar (photo) garde sa taille, le bloc texte
+           prend le reste et tronque (min-width:0 pour autoriser l'ellipsis). */
+        .ft-content { display: flex; align-items: center; gap: 10px; min-width: 0; }
+        .ft-content .ft-body { flex: 1; }
         .ft-body { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
         .ft-name { font-family: var(--font-body); font-size: 14px; font-weight: 700; color: var(--ink); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .ft-surname { font-family: var(--font-body); font-size: 13px; font-weight: 500; color: var(--text-muted); line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

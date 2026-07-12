@@ -1,14 +1,16 @@
 'use client';
 import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
+import Link from 'next/link';
 import {
   ShieldCheck, Users, Bell, CheckCircle, Check, X, Search,
   MoreVertical, UserPlus, Pause, Play, ArrowUp, ArrowDown, Clock,
+  Activity, ArrowRight,
 } from 'lucide-react';
 import type { AdminData } from '@/hooks/useAdminData';
 import type { UserProfile, UserStatus, UserRole } from '@/types';
 
-type Tab = 'pending' | 'users' | 'notifications';
+type Tab = 'pending' | 'users' | 'notifications' | 'system';
 type Toast = (msg: string, type?: 'success' | 'error' | 'info') => void;
 type T = ReturnType<typeof useTranslations>;
 
@@ -94,6 +96,7 @@ export default function AdminDashboard({ admin, role, onToast }: { admin: AdminD
     { id: 'pending', label: t('tabPending'), Icon: Clock, badge: pending.length },
     { id: 'users', label: t('tabUsers'), Icon: Users },
     { id: 'notifications', label: t('tabNotifications'), Icon: Bell, badge: admin.unreadCount },
+    { id: 'system', label: t('tabSystem'), Icon: Activity },
   ];
 
   return (
@@ -135,6 +138,7 @@ export default function AdminDashboard({ admin, role, onToast }: { admin: AdminD
         {tab === 'pending' && <PendingTab admin={admin} pending={pending} onToast={onToast} />}
         {tab === 'users' && <UsersTab admin={admin} isSuperAdmin={isSuperAdmin} onToast={onToast} />}
         {tab === 'notifications' && <NotificationsTab admin={admin} onToast={onToast} />}
+        {tab === 'system' && <SystemTab />}
       </div>
     </div>
   );
@@ -353,6 +357,42 @@ function NotificationsTab({ admin, onToast }: { admin: AdminData; onToast: Toast
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+/* ===================== TAB 4 — Système / diagnostic ===================== */
+/* Surface la page /admin/health (existante mais jusque-là non liée) : c'est le
+   « suivi du logiciel » — secrets, transport des données, migrations. On ne
+   ré-implémente pas le fetch ici : un lien Next vers la page dédiée (garde admin
+   + i18n déjà en place) suffit et reste sûr. */
+function SystemTab() {
+  const t = useTranslations('admin');
+  const items = [t('systemItemSecrets'), t('systemItemTransport'), t('systemItemMigrations')];
+  return (
+    <div style={{ maxWidth: '760px' }}>
+      <TabIntro>{t('systemHint')}</TabIntro>
+      <div className="card" style={{ padding: '18px 20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ width: '40px', height: '40px', flexShrink: 0, background: 'var(--accent-light)', color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Activity size={20} aria-hidden="true" />
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h2 className="serif" style={{ margin: 0, fontSize: '1.05rem', color: 'var(--text)' }}>{t('systemHealthTitle')}</h2>
+            <p style={{ margin: '3px 0 0', fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>{t('systemHealthDesc')}</p>
+          </div>
+        </div>
+        <ul style={{ listStyle: 'none', margin: '14px 0 0', padding: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {items.map((it, i) => (
+            <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-muted)' }}>
+              <Check size={14} aria-hidden="true" style={{ color: 'var(--success)', flexShrink: 0 }} /> {it}
+            </li>
+          ))}
+        </ul>
+        <Link href="/admin/health" className="btn btn-primary btn-sm" style={{ marginTop: '18px', gap: '7px' }}>
+          {t('systemHealthCta')} <ArrowRight size={14} aria-hidden="true" />
+        </Link>
+      </div>
     </div>
   );
 }

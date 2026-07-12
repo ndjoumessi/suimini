@@ -351,7 +351,10 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sb-logo { width: 28px; height: 28px; flex-shrink: 0; display: inline-flex; }
         .sb-brand-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.05; }
         .sb-wordmark { font-size: 14px; font-weight: 600; font-style: italic; letter-spacing: 0.01em; color: var(--ink); white-space: nowrap; }
-        .sb-tagline { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.13em; text-transform: uppercase; color: var(--accent-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* Tagline : passe sur deux lignes plutôt que d'être tronquée en plein mot
+           (« MÉMOIRE … »). Corps + interlettrage réduits pour tenir face au
+           sélecteur FR/EN dans la même rangée, jusqu'aux sidebars 180px. */
+        .sb-tagline { font-family: var(--font-mono); font-size: 8.5px; letter-spacing: 0.09em; line-height: 1.3; text-transform: uppercase; color: var(--accent-muted); margin-top: 3px; }
 
         /* Active tree block */
         .sb-tree {

@@ -18,6 +18,15 @@ function initials(p: Person): string {
   return (((p.firstName?.[0] || '') + (p.lastName?.[0] || '')).toUpperCase()) || '?';
 }
 
+const clampPct = (n: number) => Math.max(0, Math.min(100, n));
+
+/** object-position (%) de la photo — cadrage stocké dans `profilePhotoPosition`,
+ *  50/50 (centré) par défaut → rétro-compatible avec les photos existantes. */
+export function photoObjectPosition(p: Person): string {
+  const pos = p.profilePhotoPosition;
+  return pos ? `${clampPct(pos.x)}% ${clampPct(pos.y)}%` : '50% 50%';
+}
+
 export default function PersonAvatar({ person, size = 44, round = true, style }: {
   person: Person;
   size?: number;
@@ -46,7 +55,7 @@ export default function PersonAvatar({ person, size = 44, round = true, style }:
       }}
     >
       {showPhoto
-        ? <img src={person.profilePhoto} alt="" loading="lazy" decoding="async" onError={() => setBroken(true)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ? <img src={person.profilePhoto} alt="" loading="lazy" decoding="async" onError={() => setBroken(true)} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: photoObjectPosition(person) }} />
         : initials(person)}
     </span>
   );

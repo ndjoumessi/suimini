@@ -6,6 +6,7 @@ import { getParents, getChildren, getSpouses, getSiblings, getAge, formatDate, f
 import { deleteAvatarByUrl, uploadAvatar } from '@/lib/uploadImage';
 import { personEras, type HistoricalEvent } from '@/lib/history';
 import PersonAvatar from './PersonAvatar';
+import PhotoPositionControl from './PhotoPositionControl';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { fetchComments, addComment, subscribeComments, collaborationEnabled, type PersonComment, fetchPendingSuggestions, addSuggestion, resolveSuggestion, type PersonSuggestion } from '@/lib/collaboration';
 import { useAuth } from '@/hooks/useAuth';
@@ -14,7 +15,7 @@ import { useOverlay } from '@/hooks/useOverlay';
 import ReactMarkdown from 'react-markdown';
 import PersonForm from './PersonForm';
 import { PersonCombobox } from '../ui/PersonCombobox';
-import { X, Pencil, Trash2, User, Clock, Users, Calendar, StickyNote, BookOpen, Lightbulb, Link2, AlertCircle, Dna, FileText, Images, ScanFace, ScanLine, Landmark, MessageSquare, MapPin, Briefcase, Globe, GraduationCap, Church, Baby, Skull, Heart, Swords, Plane, GripVertical, CalendarDays, ArrowLeft, ChevronLeft, ChevronRight, Camera } from 'lucide-react';
+import { X, Pencil, Trash2, User, Clock, Users, Calendar, StickyNote, BookOpen, Lightbulb, Link2, AlertCircle, Dna, FileText, Images, ScanFace, ScanLine, Landmark, MessageSquare, MapPin, Briefcase, Globe, GraduationCap, Church, Baby, Skull, Heart, Swords, Plane, GripVertical, CalendarDays, ArrowLeft, ChevronLeft, ChevronRight, Camera, Move } from 'lucide-react';
 
 interface Props {
   person: Person;
@@ -123,6 +124,9 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState('');
+  // Étape « recentrer » (cadrage de la photo) — ouverte automatiquement après un
+  // upload réussi, ré-ouvrable ensuite via le bouton près de l'avatar.
+  const [reposition, setReposition] = useState(false);
   // Relations editor (edit tab): which group is adding + its search query.
   const [addRelKind, setAddRelKind] = useState<'parent' | 'spouse' | 'child' | null>(null);
   const [relQuery, setRelQuery] = useState('');
@@ -362,7 +366,9 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
     setAvatarUploading(true);
     try {
       const res = await uploadAvatar(file, person.id);
-      onUpdate({ profilePhoto: res.url });
+      // Nouvelle photo → cadrage remis au centre + on propose de la recentrer.
+      onUpdate({ profilePhoto: res.url, profilePhotoPosition: undefined });
+      setReposition(true);
     } catch {
       setAvatarError(t('photoUploadFailed'));
     } finally {
@@ -586,8 +592,29 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
               </span>
               {age!==null&&<span className="badge badge-accent">{t('ageYears', { age })}</span>}
             </div>
+            {!readOnly && person.profilePhoto && (
+              <button type="button" onClick={()=>setReposition(v=>!v)} className="btn btn-ghost btn-sm" aria-pressed={reposition}
+                style={{ marginTop:'8px', gap:'5px', padding:'3px 8px', fontSize:'11px' }}>
+                <Move size={12} aria-hidden="true" /> {t('recenter')}
+              </button>
+            )}
           </div>
         </div>
+        {!readOnly && person.profilePhoto && reposition && (
+          <div className="animate-fade-in" style={{ marginTop:'14px', paddingTop:'14px', borderTop:'1px solid var(--border)', display:'flex', gap:'14px', alignItems:'flex-start' }}>
+            <PhotoPositionControl
+              src={person.profilePhoto}
+              position={person.profilePhotoPosition}
+              onChange={(pos)=>onUpdate({ profilePhotoPosition: pos })}
+              size={96}
+            />
+            <div style={{ flex:1, minWidth:0 }}>
+              <div className="label" style={{ color:'var(--text-light)', marginBottom:'6px' }}>{t('recenterPhoto')}</div>
+              <p style={{ margin:'0 0 10px', fontSize:'12px', color:'var(--text-muted)', lineHeight:1.5 }}>{t('recenterPhotoHint')}</p>
+              <button type="button" onClick={()=>setReposition(false)} className="btn btn-secondary btn-sm">{t('recenterDone')}</button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Tabs */}

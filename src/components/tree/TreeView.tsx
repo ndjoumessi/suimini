@@ -1193,6 +1193,28 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
                     <rect x={SPINE} y={0} width={NODE_W - SPINE} height={3} fill={genColorTV(genAbs(node))} />
                   </g>
 
+                  {/* Photo (si présente) — SVG ne connaît pas object-position : on
+                      clippe un <image> dans un cercle et on approxime le cadrage
+                      `profilePhotoPosition` via preserveAspectRatio (min/mid/max ≈
+                      grille focale 3×3). Absente → rien (rendu texte d'origine). */}
+                  {p.profilePhoto && (() => {
+                    const AV_R = isMobile ? 13 : 18;
+                    const AV_CX = SPINE + (isMobile ? 5 : 8) + AV_R;
+                    const AV_CY = NODE_H / 2;
+                    const pp = p.profilePhotoPosition;
+                    const xa = !pp || (pp.x >= 34 && pp.x <= 66) ? 'xMid' : pp.x < 34 ? 'xMin' : 'xMax';
+                    const ya = !pp || (pp.y >= 34 && pp.y <= 66) ? 'YMid' : pp.y < 34 ? 'YMin' : 'YMax';
+                    return (
+                      <g>
+                        <clipPath id={`avatar-${p.id}`}><circle cx={AV_CX} cy={AV_CY} r={AV_R} /></clipPath>
+                        <circle cx={AV_CX} cy={AV_CY} r={AV_R} fill="#1c1c1c" />
+                        <image href={p.profilePhoto} x={AV_CX - AV_R} y={AV_CY - AV_R} width={AV_R * 2} height={AV_R * 2}
+                          clipPath={`url(#avatar-${p.id})`} preserveAspectRatio={`${xa}${ya} slice`} />
+                        <circle cx={AV_CX} cy={AV_CY} r={AV_R} fill="none" stroke="var(--border-strong)" strokeWidth={1} />
+                      </g>
+                    );
+                  })()}
+
                   {/* Generation tag — top-right (desktop only; mobile cards are too short) */}
                   {!isMobile && (
                     <text x={NODE_W - 9} y={14} textAnchor="end" fontFamily="var(--font-mono)" fontSize={8.5} fontWeight={700}
@@ -1211,9 +1233,15 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
                   {/* Primary name — gender-coloured, bold. Falls back to last name,
                       then "Inconnu·e" (Bug 3). Secondary line only when present. */}
                   {(() => {
-                    const tx = SPINE + (isMobile ? 9 : 14);
-                    const maxP = isMobile ? 13 : 18;
-                    const maxS = isMobile ? 15 : 20;
+                    // Décalage du texte à droite de l'avatar quand une photo est présente
+                    // (sinon rendu d'origine inchangé) ; on resserre un peu la troncature.
+                    const hasPhoto = !!p.profilePhoto;
+                    const AV_R = isMobile ? 13 : 18;
+                    const tx = hasPhoto
+                      ? SPINE + (isMobile ? 5 : 8) + AV_R * 2 + (isMobile ? 6 : 10)
+                      : SPINE + (isMobile ? 9 : 14);
+                    const maxP = (isMobile ? 13 : 18) - (hasPhoto ? (isMobile ? 4 : 5) : 0);
+                    const maxS = (isMobile ? 15 : 20) - (hasPhoto ? (isMobile ? 4 : 5) : 0);
                     const pTrunc = primary.length > maxP ? primary.slice(0, maxP - 1) + '…' : primary;
                     const sTrunc = secondary && secondary.length > maxS ? secondary.slice(0, maxS - 1) + '…' : secondary;
                     const dl = dateLine(p);

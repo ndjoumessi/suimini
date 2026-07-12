@@ -2,6 +2,7 @@
 import { Person } from '@/types';
 import { Crown } from 'lucide-react';
 import { nodeStyle, nameLines } from './nodeStyle';
+import PersonAvatar from '../person/PersonAvatar';
 
 interface Props {
   person: Person;
@@ -45,12 +46,18 @@ export default function TreeNode({
       <span className="ft-edge" style={{ background: st.bar }} aria-hidden="true" />
       <span className="ft-gen" style={{ background: genColor }} aria-hidden="true" />
       {isPivot && <Crown size={11} className="ft-crown" aria-hidden="true" />}
-      <span className="ft-body">
-        <span className="ft-name" style={{ color: st.name }}>{primary}</span>
-        {secondary && <span className="ft-surname">{secondary}</span>}
-        {p.nickName?.trim() && <span className="ft-nickname">{p.nickName.trim()}</span>}
-        {dateStr && <span className="ft-dates">{dateStr}</span>}
-        {place && <span className="ft-place">{place}</span>}
+      {/* Avatar + texte : la photo (si présente) est rendue à gauche du bloc nom via
+          le PersonAvatar partagé (cadrage `profilePhotoPosition` respecté) ; sans
+          photo, le bloc texte occupe toute la largeur (rendu d'origine inchangé). */}
+      <span className="ft-content">
+        {p.profilePhoto && <PersonAvatar person={p} size={44} style={{ border: '1px solid var(--border-strong)' }} />}
+        <span className="ft-body">
+          <span className="ft-name" style={{ color: st.name }}>{primary}</span>
+          {secondary && <span className="ft-surname">{secondary}</span>}
+          {p.nickName?.trim() && <span className="ft-nickname">{p.nickName.trim()}</span>}
+          {dateStr && <span className="ft-dates">{dateStr}</span>}
+          {place && <span className="ft-place">{place}</span>}
+        </span>
       </span>
     </button>
   );

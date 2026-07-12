@@ -6,6 +6,7 @@ import { Person, Gender } from '@/types';
 import { uploadAvatar } from '@/lib/uploadImage';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
+import PhotoPositionControl from './PhotoPositionControl';
 
 interface Props {
   initial?: Partial<Person>;
@@ -54,6 +55,7 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel, rel
     try {
       const res = await uploadAvatar(file, personId);
       set('profilePhoto', res.url);
+      set('profilePhotoPosition', undefined); // nouvelle photo → cadrage recentré
       if (res.warning) setPhotoNote(res.warning);
     } catch {
       setPhotoError(t('photoUploadFailed'));
@@ -233,11 +235,22 @@ export default function PersonForm({ initial, onSave, onCancel, submitLabel, rel
                   {photoLoading ? <LoadingSpinner size={14} /> : <ImageUp size={14} />} {t('import')}
                 </button>
                 {form.profilePhoto && (
-                  <button type="button" onClick={() => { set('profilePhoto', undefined); setPhotoNote(''); }} aria-label={t('removePhoto')} className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--danger)', flexShrink: 0 }}><X size={14} /></button>
+                  <button type="button" onClick={() => { set('profilePhoto', undefined); set('profilePhotoPosition', undefined); setPhotoNote(''); }} aria-label={t('removePhoto')} className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--danger)', flexShrink: 0 }}><X size={14} /></button>
                 )}
               </div>
               {photoError && <div style={{ textTransform: 'none', fontWeight: 400, marginTop: '6px' }}><ErrorMessage message={photoError} /></div>}
               {photoNote && <span style={{ color: 'var(--text-light)', fontSize: '11px', textTransform: 'none', fontWeight: 400 }}>{photoNote}</span>}
+              {/* Recadrage : glisser/flèches pour recentrer la photo (même {x,y} que PersonPanel). */}
+              {form.profilePhoto && (
+                <div style={{ marginTop: '10px', textTransform: 'none', fontWeight: 400 }}>
+                  <PhotoPositionControl
+                    src={form.profilePhoto}
+                    position={form.profilePhotoPosition}
+                    onChange={(pos) => set('profilePhotoPosition', pos)}
+                    size={96}
+                  />
+                </div>
+              )}
             </div>
 
             <div style={labelStyle}>
