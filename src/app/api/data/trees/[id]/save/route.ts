@@ -24,6 +24,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     await store.saveTree(tree, caller.userId, isOwner);
     return NextResponse.json({ ok: true });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : 'Échec de sauvegarde.' }, { status: 500 });
+    // Message générique au client (une erreur pg peut exposer schéma/contraintes) ;
+    // détail en logs serveur seulement.
+    console.error('[api/data/trees/save] failed', e);
+    return NextResponse.json({ error: 'Échec de sauvegarde.' }, { status: 500 });
   }
 }

@@ -99,7 +99,11 @@ async function upsertRows(c: PoolClient, table: ChildTable, rows: any[]): Promis
     .map(col => `${col} = excluded.${col}`).join(', ');
   await c.query(
     `insert into ${table} (${allCols.join(',')}) values ${tuples.join(',')}
-     on conflict (id) do update set ${setClause}`,
+     on conflict (id) do update set ${setClause}
+     -- Garde anti-hijack cross-tenant : si l'id upserté collisionne avec une
+     -- ligne existante d'un AUTRE arbre, l'UPDATE devient un no-op au lieu
+     -- d'écraser/voler son contenu (tree_id ne peut jamais être réassigné).
+     where ${table}.tree_id = excluded.tree_id`,
     values,
   );
 }
@@ -109,12 +113,15 @@ async function upsertRows(c: PoolClient, table: ChildTable, rows: any[]): Promis
  * push local (ex. nickName ajouté hors-app). Politique LOCAL PRIME. Fail-open.
  * Mute `rows[].extra` en place. (Miroir de supabaseSync.preserveRemoteExtra.)
  */
-async function preserveExtra(c: PoolClient, table: ChildTable, rows: any[]): Promise<void> {
+async function preserveExtra(c: PoolClient, table: ChildTable, rows: any[], treeId: string): Promise<void> {
   if (rows.length === 0) return;
   const ids = rows.map(r => r.id);
   let remote: { id: string; extra: any }[];
   try {
-    const res = await c.query<{ id: string; extra: any }>(`select id, extra from ${table} where id = any($1)`, [ids]);
+    // Scoped par tree_id : sans ça, un id qui collisionne avec une ligne d'un
+    // AUTRE arbre ferait fuiter son `extra` dans la ligne upsertée ici (voir
+    // aussi la garde symétrique dans upsertRows).
+    const res = await c.query<{ id: string; extra: any }>(`select id, extra from ${table} where id = any($1) and tree_id = $2`, [ids, treeId]);
     remote = res.rows;
   } catch { return; } // fail-open
   const remoteExtra = new Map<string, Record<string, unknown>>();
@@ -140,11 +147,16 @@ export class RailwayStore {
     // Sans RLS, on reconstruit EXPLICITEMENT l'ensemble visible : owner OU membre
     // accepté OU partage par email. (Les arbres publics non liés ne polluent PAS
     // « mes arbres » — comportement voulu de loadTrees.)
+    // Email vide → ne jamais matcher tree_shares dessus (un partage à email vide
+    // serait un cas de données aberrant, mais autant ne pas lui laisser de prise).
     const treeRows = await query<any>(
-      `select * from trees where owner_id = $1
-         or id in (select tree_id from tree_members where user_id = $1 and status = 'accepted')
-         or id in (select tree_id from tree_shares where lower(shared_with_email) = lower($2))`,
-      [caller.userId, caller.email],
+      caller.email
+        ? `select * from trees where owner_id = $1
+             or id in (select tree_id from tree_members where user_id = $1 and status = 'accepted')
+             or id in (select tree_id from tree_shares where lower(shared_with_email) = lower($2))`
+        : `select * from trees where owner_id = $1
+             or id in (select tree_id from tree_members where user_id = $1 and status = 'accepted')`,
+      caller.email ? [caller.userId, caller.email] : [caller.userId],
     );
     if (treeRows.length === 0) return { trees: [], shared: {} };
     const treeIds = treeRows.map(t => t.id);
@@ -209,7 +221,7 @@ export class RailwayStore {
         }
       }
       const personRows = tree.persons.map(p => personToRow(p, tree.id));
-      await preserveExtra(c, 'persons', personRows);
+      await preserveExtra(c, 'persons', personRows, tree.id);
       await upsertRows(c, 'persons', personRows);
       await upsertRows(c, 'relationships', tree.relationships.map(r => relToRow(r, tree.id)));
       await upsertRows(c, 'journal_entries', (tree.journal || []).map(e => journalToRow(e, tree.id)));
@@ -223,27 +235,33 @@ export class RailwayStore {
       else await query('delete from trees where id = $1', [treeId]);
       return {};
     } catch (e) {
-      return { error: e instanceof Error ? e.message : 'Suppression échouée.' };
+      // Message générique au client (une erreur pg peut exposer des noms de
+      // contraintes/colonnes) ; le détail reste dans les logs serveur.
+      console.error('[railwayStore] deleteTree failed', e);
+      return { error: 'Suppression échouée.' };
     }
   }
 
-  async deleteChildRows(_treeId: string, table: ChildTable, ids: string[]): Promise<boolean> {
+  async deleteChildRows(treeId: string, table: ChildTable, ids: string[]): Promise<boolean> {
     if (ids.length === 0) return true;
     if (!(table in SPECS)) return false;
     try {
-      await query(`update ${table} set deleted_at = now() where id = any($1)`, [ids]);
+      // Scopé par tree_id : sans ça, un id d'une AUTRE arborescence (ex.
+      // récupéré sur un partage public) pourrait être soft-supprimé par
+      // n'importe quel possesseur d'un arbre — voir revue de sécurité C1.
+      await query(`update ${table} set deleted_at = now() where id = any($1) and tree_id = $2`, [ids, treeId]);
       return true;
     } catch { return false; }
   }
 
   async detectDeleteConflicts(
-    _treeId: string, table: ChildTable, entities: { id: string; updatedAt?: string }[],
+    treeId: string, table: ChildTable, entities: { id: string; updatedAt?: string }[],
   ): Promise<DeleteConflict[]> {
     if (entities.length === 0 || !(table in SPECS)) return [];
     let rows: { id: string; deleted_at: string | null }[];
     try {
       rows = await query<{ id: string; deleted_at: string | null }>(
-        `select id, deleted_at from ${table} where id = any($1)`, [entities.map(e => e.id)],
+        `select id, deleted_at from ${table} where id = any($1) and tree_id = $2`, [entities.map(e => e.id), treeId],
       );
     } catch { return []; } // fail-open
     const remoteDeleted = new Map<string, string>();
@@ -356,7 +374,8 @@ export class RailwayStore {
         default: return { data: null, error: { message: `RPC ${name} non implémentée pour Railway.` } };
       }
     } catch (e) {
-      return { data: null, error: { message: e instanceof Error ? e.message : 'RPC échouée.' } };
+      console.error(`[railwayStore] rpc ${name} failed`, e);
+      return { data: null, error: { message: 'RPC échouée.' } };
     }
   }
 

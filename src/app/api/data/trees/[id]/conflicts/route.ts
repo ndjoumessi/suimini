@@ -13,7 +13,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const body = await req.json().catch(() => null);
   const table = body?.table;
   const entities = body?.entities;
-  if (!isChildTable(table) || !Array.isArray(entities)) return NextResponse.json({ error: 'Corps invalide.' }, { status: 400 });
+  if (!isChildTable(table) || !Array.isArray(entities) || !entities.every((e: unknown) =>
+    e && typeof e === 'object' && typeof (e as { id?: unknown }).id === 'string',
+  )) {
+    return NextResponse.json({ error: 'Corps invalide.' }, { status: 400 });
+  }
 
   const conflicts = await guard.store.detectDeleteConflicts(id, table, entities);
   return NextResponse.json(conflicts);

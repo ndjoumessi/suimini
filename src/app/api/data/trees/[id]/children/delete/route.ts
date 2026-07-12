@@ -13,7 +13,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const body = await req.json().catch(() => null);
   const table = body?.table;
   const ids = body?.ids;
-  if (!isChildTable(table) || !Array.isArray(ids)) return NextResponse.json({ error: 'Corps invalide.' }, { status: 400 });
+  if (!isChildTable(table) || !Array.isArray(ids) || !ids.every((v: unknown) => typeof v === 'string')) {
+    return NextResponse.json({ error: 'Corps invalide.' }, { status: 400 });
+  }
 
   const ok = await guard.store.deleteChildRows(id, table, ids as string[]);
   return NextResponse.json({ ok });

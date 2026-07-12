@@ -21,6 +21,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     await guard.store.restoreEntity(id, entityType, entity);
     return NextResponse.json({ ok: true });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : 'Échec de restauration.' }, { status: 500 });
+    console.error('[api/data/trees/restore] failed', e);
+    return NextResponse.json({ error: 'Échec de restauration.' }, { status: 500 });
   }
 }
