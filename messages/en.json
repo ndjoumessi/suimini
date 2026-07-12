@@ -1308,7 +1308,7 @@
   },
   "photoAnalyzer": {
     "title": "Face recognition",
-    "subtitle": "Identify the people in your photos",
+    "subtitle": "Detect faces, then match them to members of your tree",
     "dropZone": "Drop a photo or click to choose",
     "choosePhoto": "Choose a photo",
     "changePhoto": "Change photo",
@@ -1316,6 +1316,7 @@
     "analyzing": "Claude is analyzing your photo...",
     "analyzingSub": "Detecting faces",
     "facesFound": "{count, plural, one {# face detected} other {# faces detected}}",
+    "identifyHint": "The AI describes each face's appearance (age, gender) but doesn't know its identity — pick the right person from the list below.",
     "noFaces": "No faces detected in this photo.",
     "assignPerson": "Who is this person?",
     "unknown": "Unknown",

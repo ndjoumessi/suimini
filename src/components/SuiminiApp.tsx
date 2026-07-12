@@ -675,7 +675,7 @@ export default function SuiminiApp() {
             {view === 'list' && <ListView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} onAddPerson={() => setShowAddPerson(true)} canEdit={canEdit} />}
             {view === 'timeline' && <TimelineView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} />}
             {view === 'map' && <MapView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} />}
-            {view === 'gallery' && <GalleryView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} onUpdatePerson={(id, updates) => store.updatePerson(id, updates)} onToast={showToast} onAnalyzePhoto={() => openPhotoAnalyzer()} />}
+            {view === 'gallery' && <GalleryView tree={store.activeTree ?? emptyTree} onSelectPerson={handleSelectPerson} onUpdatePerson={(id, updates) => store.updatePerson(id, updates)} onToast={showToast} onAnalyzePhoto={(personId) => openPhotoAnalyzer(personId)} />}
             {view === 'journal' && (
               <JournalView
                 tree={store.activeTree ?? emptyTree}

@@ -1308,7 +1308,7 @@
   },
   "photoAnalyzer": {
     "title": "Reconnaissance de visages",
-    "subtitle": "Identifiez les personnes dans vos photos",
+    "subtitle": "Détectez les visages, puis associez-les aux membres de votre arbre",
     "dropZone": "Déposez une photo ou cliquez pour choisir",
     "choosePhoto": "Choisir une photo",
     "changePhoto": "Changer de photo",
@@ -1316,6 +1316,7 @@
     "analyzing": "Claude analyse votre photo...",
     "analyzingSub": "Détection des visages en cours",
     "facesFound": "{count, plural, one {# visage détecté} other {# visages détectés}}",
+    "identifyHint": "L'IA décrit l'apparence de chaque visage (âge, genre) mais ne connaît pas son identité — choisissez la bonne personne dans la liste ci-dessous.",
     "noFaces": "Aucun visage détecté sur cette photo.",
     "assignPerson": "Qui est cette personne ?",
     "unknown": "Inconnu",

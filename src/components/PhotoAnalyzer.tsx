@@ -239,6 +239,7 @@ export default function PhotoAnalyzer({ tree, preselectPersonId, onClose, onConf
                 <span className="label" style={{ color: ACCENT }}>{t('facesFound', { count: faces.length })}</span>
                 {confidence != null && <span className="label" style={{ color: 'var(--text-muted)' }}>{t('confidence', { value: Math.round(confidence * 100) })}</span>}
               </div>
+              {faces.length > 0 && <p className="pa-identify-hint">{t('identifyHint')}</p>}
 
               <div className="pa-canvas-scroll">
                 <div className="pa-canvas">
@@ -348,6 +349,7 @@ const PA_CSS = `
 
 /* Result face frames */
 .pa-result-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.pa-identify-hint { margin: -6px 0 12px; font-size: 12px; line-height: 1.5; color: var(--text-muted); }
 .pa-face { position: absolute; border: 2px solid var(--accent); box-shadow: 4px 4px 0 var(--ink); border-radius: 0; pointer-events: none; }
 .pa-face-tag { position: absolute; top: -11px; left: -2px; min-width: 20px; height: 20px; padding: 0 5px; display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: #fff; font-family: var(--font-mono); font-size: 11px; font-weight: 700; border: 1.5px solid var(--ink); }
 .pa-empty { margin: 16px 0 0; font-size: 14px; color: var(--text-muted); text-align: center; }

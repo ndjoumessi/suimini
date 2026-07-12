@@ -15,8 +15,10 @@ interface Props {
   tree: FamilyTree;
   onSelectPerson: (id: string) => void;
   onUpdatePerson?: (personId: string, updates: Partial<Person>) => void;
-  /** Open the AI face-recognition analyzer. */
-  onAnalyzePhoto?: () => void;
+  /** Open the AI face-recognition analyzer. Receives the currently filtered
+   *  person (if any) so a single-person filter pre-assigns face #1 to them
+   *  instead of always defaulting to "Inconnu". */
+  onAnalyzePhoto?: (personId?: string) => void;
   /** Toast feedback (added / deleted). */
   onToast?: (msg: string) => void;
 }
@@ -239,7 +241,7 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
               <button onClick={() => setLayout('list')} aria-pressed={layout === 'list'} aria-label={t('layoutMasonry')} title={t('layoutMasonry')} className={layout === 'list' ? 'on' : ''}><Rows3 size={15} aria-hidden="true" /></button>
             </div>
             {onAnalyzePhoto && (
-              <button onClick={onAnalyzePhoto} className="btn btn-secondary btn-sm" style={{ gap: '6px' }}>
+              <button onClick={() => onAnalyzePhoto(filterPersonId || undefined)} className="btn btn-secondary btn-sm" style={{ gap: '6px' }}>
                 <ScanFace size={14} aria-hidden="true" /> {tp('galleryButton')}
               </button>
             )}
