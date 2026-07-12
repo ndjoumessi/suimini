@@ -53,5 +53,24 @@ du track mobile.
 ## État
 
 - **Web** : derrière l'API (flag `DATA_LAYER`). ✅
-- **Mobile** : direct Supabase — inchangé, non bloquant tant que la DB est chez
-  Supabase. **À planifier avant tout cutover DB.**
+- **Mobile — MIGRÉ (2026-07-12)** : `mobile/lib/supabaseSync.ts` (nom conservé,
+  contenu réécrit) parle désormais à `/api/data/*` via `EXPO_PUBLIC_API_BASE_URL`
+  (défaut `https://suimini.vercel.app`) + `Authorization: Bearer <access_token>`,
+  exactement le plan ci-dessus (étape 1). `store.ts` mis à jour en conséquence
+  (`upsertPerson`/`removePerson`/`addRelationship`/`removeRelationship` passent
+  désormais l'arbre courant ou les ids de relations affectées, requis pour
+  l'écriture upsert-only côté API).
+  - **Déclencheur** : le cutover DB (Railway, §"Backend données — Railway" du
+    CLAUDE.md racine) a eu lieu le 2026-07-11 — AVANT ce track mobile, dans
+    l'autre ordre que celui prévu ci-dessus. Le mobile parlant encore Supabase
+    en direct, il lisait des tables qui ne recevaient plus aucune écriture web
+    → données figées côté app (constaté par l'utilisateur : « les modifications
+    récentes n'apparaissent pas »).
+  - **Étapes 2-5 (versionnage API, flag `EXPO_PUBLIC_DATA_LAYER` double-mode,
+    kill-switch OTA, observation d'adoption) volontairement NON implémentées** :
+    elles protègent une base d'installations natives déjà en production sur
+    d'anciens builds — hors de propos ici, l'app mobile n'est pas encore
+    distribuée (tests via Expo Go / builds EAS manuels uniquement, pas de store
+    review à contourner). Un cutover direct est donc sûr et suffisant en l'état.
+    Si l'app est un jour publiée en store AVANT une future migration backend,
+    revenir sur ce doc pour le plan de rollout progressif.

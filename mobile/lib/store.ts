@@ -130,12 +130,28 @@ export const useStore = create<FamilyState>()(
         }));
         if (get().isDemo) return { ok: true };
         set({ syncStatus: 'syncing' });
-        const { error } = await upsertPersonRemote(treeId, person);
+        // Post-update tree carries the metadata (name/settings/…) the remote
+        // save needs to keep the `trees` row write idempotent — see
+        // upsertPersonRemote in supabaseSync.ts.
+        const tree = get().trees.find((t) => t.id === treeId);
+        if (!tree) {
+          set({ syncStatus: 'error' });
+          return { ok: false, error: 'Arbre introuvable' };
+        }
+        const { error } = await upsertPersonRemote(tree, person);
         set({ syncStatus: error ? 'error' : 'saved' });
         return error ? { ok: false, error } : { ok: true };
       },
 
       removePerson: async (treeId, personId) => {
+        // Capture the relationships this person is part of BEFORE the local
+        // filter drops them — the remote soft-delete needs their ids.
+        const before = get().trees.find((t) => t.id === treeId);
+        const affectedRelationshipIds = before
+          ? before.relationships
+              .filter((r) => r.person1Id === personId || r.person2Id === personId)
+              .map((r) => r.id)
+          : [];
         set((s) => ({
           trees: s.trees.map((t) =>
             t.id === treeId
@@ -152,7 +168,7 @@ export const useStore = create<FamilyState>()(
         }));
         if (get().isDemo) return { ok: true };
         set({ syncStatus: 'syncing' });
-        const { error } = await deletePersonRemote(personId);
+        const { error } = await deletePersonRemote(treeId, personId, affectedRelationshipIds);
         set({ syncStatus: error ? 'error' : 'saved' });
         return error ? { ok: false, error } : { ok: true };
       },
@@ -174,7 +190,12 @@ export const useStore = create<FamilyState>()(
         }));
         if (get().isDemo) return { ok: true };
         set({ syncStatus: 'syncing' });
-        const { error } = await upsertRelationshipRemote(treeId, rel);
+        const tree = get().trees.find((t) => t.id === treeId);
+        if (!tree) {
+          set({ syncStatus: 'error' });
+          return { ok: false, error: 'Arbre introuvable' };
+        }
+        const { error } = await upsertRelationshipRemote(tree, rel);
         set({ syncStatus: error ? 'error' : 'saved' });
         return error ? { ok: false, error } : { ok: true };
       },
@@ -193,7 +214,7 @@ export const useStore = create<FamilyState>()(
         }));
         if (get().isDemo) return { ok: true };
         set({ syncStatus: 'syncing' });
-        const { error } = await deleteRelationshipRemote(relId);
+        const { error } = await deleteRelationshipRemote(treeId, relId);
         set({ syncStatus: error ? 'error' : 'saved' });
         return error ? { ok: false, error } : { ok: true };
       },

@@ -1,223 +1,159 @@
 /**
- * Supabase sync for mobile — row mappers ported from the web app's
- * src/lib/supabaseSync.ts so the column ↔ field mapping stays identical.
- * Loads trees AND writes persons (upsert / delete) under the user's RLS.
+ * Data sync for mobile — routes tree CONTENT (trees/persons/relationships) through
+ * the same /api/data/* HTTP boundary the web app uses, instead of talking to
+ * Supabase directly. Filename kept for continuity with the web's own
+ * `src/lib/supabaseSync.ts` (which the mobile mappers used to mirror line for
+ * line) and with the single call site in `store.ts` — the underlying backend
+ * has simply moved.
+ *
+ * WHY THIS CHANGED (2026-07-12): since 2026-07-11 the web's tree data plane is
+ * on Railway Postgres (`DB_BACKEND=railway`, 100% rollout — see CLAUDE.md
+ * "Backend données — Railway"). Every write from the web now lands on
+ * Railway via `/api/data/trees/[id]/save`, not Supabase. This file used to
+ * call `supabase.from('trees'|'persons'|'relationships'|'journal_entries')`
+ * directly — so mobile kept reading Supabase's `persons`/`relationships`
+ * tables, which stopped receiving new writes the moment the flip happened.
+ * Symptom: edits made on the web (or by another device routed through the
+ * API) never appeared on mobile, no matter how many times you pulled to
+ * refresh — the mobile client was reading a source that had gone stale.
+ * `/api/data/*` already supports mobile auth (`Authorization: Bearer
+ * <access_token>`, see `src/lib/apiAuth.ts`), so this file now goes through
+ * it instead — mobile and web share one backend again.
+ *
+ * Row↔app-shape mapping (personToRow/rowToPerson/etc.) is no longer needed
+ * here: the API accepts and returns `Person`/`Relationship`/`FamilyTree`
+ * objects already in app shape (camelCase) — the server-side DataStore does
+ * the DB row mapping now.
+ *
+ * Identity (GoTrue session) is untouched and still talks to Supabase directly
+ * via `./supabase` — only tree CONTENT moved behind the API boundary, mirroring
+ * the "hors périmètre" list in CLAUDE.md (auth/profiles stay direct on web too).
  */
 import { supabase } from './supabase';
-import type { FamilyTree, Person, Relationship, JournalEntry } from './types';
+import type { FamilyTree, Person, Relationship } from './types';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/** Person → DB row (mirror of the web personToRow; unmapped fields go to `extra`). */
-function personToRow(p: Person, treeId: string): any {
-  const {
-    id, firstName, lastName, gender, birthDate, birthPlace, deathDate, deathPlace,
-    isAlive, occupation, bio, profilePhoto, dnaOrigins, citations, customFields,
-    tags, privacy, createdAt, updatedAt, ...rest
-  } = p;
-  return {
-    id, tree_id: treeId, first_name: firstName, last_name: lastName, gender: gender ?? null,
-    birth_date: birthDate ?? null, birth_place: birthPlace ?? null,
-    death_date: deathDate ?? null, death_place: deathPlace ?? null,
-    is_alive: isAlive ?? true, occupation: occupation ?? null, bio: bio ?? null,
-    profile_photo: profilePhoto ?? null, dna_origins: dnaOrigins ?? null,
-    citations: citations ?? null, custom_fields: customFields ?? null,
-    tags: tags ?? null, privacy: privacy ?? null,
-    extra: Object.keys(rest).length ? rest : null,
-    created_at: createdAt, updated_at: updatedAt,
-  };
-}
-
-/** Relationship → DB row (mirror of the web relToRow; unmapped fields go to `extra`). */
-function relToRow(r: Relationship, treeId: string): any {
-  const { id, type, person1Id, person2Id, startDate, endDate, isActive, notes, ...rest } = r;
-  return {
-    id, tree_id: treeId, type, person1_id: person1Id, person2_id: person2Id,
-    start_date: startDate ?? null, end_date: endDate ?? null,
-    is_active: isActive ?? null, notes: notes ?? null,
-    extra: Object.keys(rest).length ? rest : null,
-  };
-}
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://suimini.vercel.app';
 
 export interface WriteResult { error?: string }
 
-// Soft-delete (tombstones) — même architecture UPSERT-only que le web (voir
-// src/lib/supabaseSync.ts + supabase/soft-delete.sql) : jamais de DELETE, une
-// suppression pose deleted_at = now() et les lectures filtrent la colonne.
-// Repli pré-migration : PostgREST rejette toute mention de deleted_at
-// (PGRST204/42703) → on retombe sur le comportement historique (DELETE dur).
-let softDeleteSupported = true;
-
-function isMissingDeletedAt(error: { code?: string; message?: string } | null): boolean {
-  return !!error && (error.code === 'PGRST204' || error.code === '42703')
-    && String(error.message ?? '').includes('deleted_at');
+async function authHeaders(): Promise<Record<string, string>> {
+  if (!supabase) return {};
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
 }
 
-/** Upsert a person (insert or update). RLS: caller must own/write the tree.
- * deleted_at: null — présent localement = vivant (ranime une tombstone). */
-export async function upsertPersonRemote(treeId: string, person: Person): Promise<WriteResult> {
-  if (!supabase) return { error: 'Supabase non configuré' };
-  const row = personToRow(person, treeId);
-  let { error } = await supabase
-    .from('persons')
-    .upsert({ ...row, deleted_at: null }, { onConflict: 'id' });
-  if (error && softDeleteSupported && isMissingDeletedAt(error)) {
-    softDeleteSupported = false;
-    ({ error } = await supabase.from('persons').upsert(row, { onConflict: 'id' }));
-  }
-  return error ? { error: error.message } : {};
+async function apiGet<T>(path: string): Promise<T> {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    headers: { accept: 'application/json', ...(await authHeaders()) },
+  });
+  if (!res.ok) throw new Error(`API ${res.status} sur ${path}`);
+  return res.json() as Promise<T>;
 }
 
-/** Soft-delete a person and any relationship touching it (tombstones). */
-export async function deletePersonRemote(personId: string): Promise<WriteResult> {
-  if (!supabase) return { error: 'Supabase non configuré' };
-  const orFilter = `person1_id.eq.${personId},person2_id.eq.${personId}`;
-  if (softDeleteSupported) {
-    const now = new Date().toISOString();
-    const relRes = await supabase.from('relationships').update({ deleted_at: now }).or(orFilter);
-    if (!isMissingDeletedAt(relRes.error)) {
-      const { error } = await supabase.from('persons').update({ deleted_at: now }).eq('id', personId);
-      return error ? { error: error.message } : {};
-    }
-    softDeleteSupported = false; // migration pas encore passée → DELETE dur
-  }
-  await supabase.from('relationships').delete().or(orFilter);
-  const { error } = await supabase.from('persons').delete().eq('id', personId);
-  return error ? { error: error.message } : {};
+async function apiSend<T>(path: string, method: 'POST' | 'DELETE', body?: unknown): Promise<T> {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method,
+    headers: {
+      accept: 'application/json',
+      ...(await authHeaders()),
+      ...(body !== undefined ? { 'content-type': 'application/json' } : {}),
+    },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) throw new Error(`API ${res.status} sur ${path}`);
+  return res.json() as Promise<T>;
 }
 
-/** Upsert a relationship (insert or update). RLS: caller must own/write the tree.
- * deleted_at: null — présent localement = vivant (ranime une tombstone). */
-export async function upsertRelationshipRemote(
-  treeId: string,
-  rel: Relationship,
-): Promise<WriteResult> {
-  if (!supabase) return { error: 'Supabase non configuré' };
-  const row = relToRow(rel, treeId);
-  let { error } = await supabase
-    .from('relationships')
-    .upsert({ ...row, deleted_at: null }, { onConflict: 'id' });
-  if (error && softDeleteSupported && isMissingDeletedAt(error)) {
-    softDeleteSupported = false;
-    ({ error } = await supabase.from('relationships').upsert(row, { onConflict: 'id' }));
-  }
-  return error ? { error: error.message } : {};
-}
-
-/** Soft-delete a relationship (tombstone). Repli pré-migration : DELETE dur. */
-export async function deleteRelationshipRemote(relId: string): Promise<WriteResult> {
-  if (!supabase) return { error: 'Supabase non configuré' };
-  if (softDeleteSupported) {
-    const { error } = await supabase
-      .from('relationships')
-      .update({ deleted_at: new Date().toISOString() })
-      .eq('id', relId);
-    if (!isMissingDeletedAt(error)) return error ? { error: error.message } : {};
-    softDeleteSupported = false; // migration pas encore passée → DELETE dur
-  }
-  const { error } = await supabase.from('relationships').delete().eq('id', relId);
-  return error ? { error: error.message } : {};
-}
-
-function rowToPerson(r: any): Person {
-  // `extra` étalé EN PREMIER : les colonnes canoniques priment toujours sur un
-  // `extra` pollué par une clé canonique résiduelle (même correctif que le web).
-  return {
-    ...(r.extra || {}),
-    id: r.id,
-    firstName: r.first_name || '',
-    lastName: r.last_name || '',
-    gender: r.gender || 'unknown',
-    birthDate: r.birth_date || undefined,
-    birthPlace: r.birth_place || undefined,
-    deathDate: r.death_date || undefined,
-    deathPlace: r.death_place || undefined,
-    isAlive: r.is_alive ?? true,
-    occupation: r.occupation || undefined,
-    bio: r.bio || undefined,
-    profilePhoto: r.profile_photo || undefined,
-    dnaOrigins: r.dna_origins || undefined,
-    citations: r.citations || undefined,
-    customFields: r.custom_fields || undefined,
-    tags: r.tags || undefined,
-    privacy: r.privacy || undefined,
-    createdAt: r.created_at,
-    updatedAt: r.updated_at,
-  };
-}
-
-function rowToRel(r: any): Relationship {
-  // `extra` en premier → les colonnes canoniques priment toujours (cf. rowToPerson).
-  return {
-    ...(r.extra || {}),
-    id: r.id,
-    type: r.type,
-    person1Id: r.person1_id,
-    person2Id: r.person2_id,
-    startDate: r.start_date || undefined,
-    endDate: r.end_date || undefined,
-    isActive: r.is_active ?? undefined,
-    notes: r.notes || undefined,
-  };
-}
-
-function rowToJournal(r: any): JournalEntry {
-  return {
-    id: r.id,
-    title: r.title || '',
-    date: r.date || '',
-    content: r.content || '',
-    mentionedPersonIds: r.mentioned_person_ids || undefined,
-    photos: r.photos || undefined,
-    createdAt: r.created_at,
-    updatedAt: r.updated_at || r.created_at,
-  };
-}
-
-/** Loads every tree the connected user can see, with persons/relationships/journal. */
+/** Loads every tree the connected user can see (owner + shared), with persons/
+ * relationships/journal already resolved server-side (RLS on Supabase or
+ * explicit AuthZ on Railway, whichever backend `getDataStore` picks). */
 export async function loadTreesFromSupabase(): Promise<FamilyTree[]> {
   if (!supabase) return [];
+  const result = await apiGet<{ trees?: FamilyTree[] }>('/api/data/trees');
+  return result.trees ?? [];
+}
 
-  const { data: treeRows, error } = await supabase.from('trees').select('*');
-  // Throw on a real query error so callers can tell failure (→ stay offline,
-  // keep local) from a genuine empty result (user simply has no trees).
-  if (error) throw new Error(error.message);
-  if (!treeRows) return [];
+/**
+ * Upsert-only tree save (mirrors the web's `pushTreeNow` → `saveTree`): only
+ * the rows present in `patch` are written, nothing else is touched or
+ * deleted. Tree-level metadata (name/description/settings/rootPersonId) is
+ * always resent from the current local tree so the `trees` row write stays
+ * idempotent instead of blanking fields this call didn't intend to change —
+ * the server recomputes real ownership from the authenticated caller, the
+ * `isOwner` flag in the body is not trusted (see apiAuth.ts / save/route.ts).
+ */
+async function saveTreeRemote(
+  tree: FamilyTree,
+  patch: { persons?: Person[]; relationships?: Relationship[] },
+): Promise<WriteResult> {
+  try {
+    await apiSend(`/api/data/trees/${encodeURIComponent(tree.id)}/save`, 'POST', {
+      tree: {
+        id: tree.id,
+        name: tree.name,
+        description: tree.description,
+        settings: tree.settings,
+        rootPersonId: tree.rootPersonId,
+        createdAt: tree.createdAt,
+        updatedAt: tree.updatedAt,
+        persons: patch.persons ?? [],
+        relationships: patch.relationships ?? [],
+        journal: [],
+      },
+      isOwner: true,
+    });
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Échec de sauvegarde.' };
+  }
+}
 
-  const treeIds = treeRows.map((t: any) => t.id);
-  const empty = Promise.resolve({ data: [] as any[] });
-  const [persons, rels, journal] = await Promise.all([
-    treeIds.length
-      ? supabase.from('persons').select('*').in('tree_id', treeIds)
-      : empty,
-    treeIds.length
-      ? supabase.from('relationships').select('*').in('tree_id', treeIds)
-      : empty,
-    treeIds.length
-      ? supabase.from('journal_entries').select('*').in('tree_id', treeIds)
-      : empty,
-  ]);
+/** Soft-delete specific rows in one child table (persons or relationships). */
+async function deleteChildRowsRemote(
+  treeId: string,
+  table: 'persons' | 'relationships',
+  ids: string[],
+): Promise<WriteResult> {
+  if (!ids.length) return {};
+  try {
+    await apiSend(`/api/data/trees/${encodeURIComponent(treeId)}/children/delete`, 'POST', { table, ids });
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Échec de suppression.' };
+  }
+}
 
-  // Filtre les tombstones soft-delete côté client (fonctionne avant ET après la
-  // migration : colonne absente → rien n'est filtré).
-  const live = (rows: any[] | null) => (rows || []).filter((r: any) => !r.deleted_at);
+/** Upsert a person (insert or update). `tree` supplies the tree-level fields
+ * so the save doesn't blank them (see saveTreeRemote). */
+export async function upsertPersonRemote(tree: FamilyTree, person: Person): Promise<WriteResult> {
+  if (!supabase) return { error: 'Supabase non configuré' };
+  return saveTreeRemote(tree, { persons: [person] });
+}
 
-  return treeRows.map((t: any) => ({
-    id: t.id,
-    name: t.name,
-    description: t.description || undefined,
-    settings: t.settings || undefined,
-    createdAt: t.created_at,
-    updatedAt: t.updated_at,
-    rootPersonId: t.settings?.rootPersonId,
-    persons: live(persons.data)
-      .filter((r: any) => r.tree_id === t.id)
-      .map(rowToPerson),
-    relationships: live(rels.data)
-      .filter((r: any) => r.tree_id === t.id)
-      .map(rowToRel),
-    journal: live(journal.data)
-      .filter((r: any) => r.tree_id === t.id)
-      .map(rowToJournal),
-  }));
+/** Soft-delete a person and any relationship touching it. The caller must
+ * pass the relationship ids to remove — this file no longer has direct table
+ * access to compute an `.or(person1_id.eq…,person2_id.eq…)` filter itself. */
+export async function deletePersonRemote(
+  treeId: string,
+  personId: string,
+  affectedRelationshipIds: string[],
+): Promise<WriteResult> {
+  if (!supabase) return { error: 'Supabase non configuré' };
+  if (affectedRelationshipIds.length) {
+    const relResult = await deleteChildRowsRemote(treeId, 'relationships', affectedRelationshipIds);
+    if (relResult.error) return relResult;
+  }
+  return deleteChildRowsRemote(treeId, 'persons', [personId]);
+}
+
+/** Upsert a relationship (insert or update). */
+export async function upsertRelationshipRemote(tree: FamilyTree, rel: Relationship): Promise<WriteResult> {
+  if (!supabase) return { error: 'Supabase non configuré' };
+  return saveTreeRemote(tree, { relationships: [rel] });
+}
+
+/** Soft-delete a relationship. */
+export async function deleteRelationshipRemote(treeId: string, relId: string): Promise<WriteResult> {
+  if (!supabase) return { error: 'Supabase non configuré' };
+  return deleteChildRowsRemote(treeId, 'relationships', [relId]);
 }
