@@ -69,9 +69,9 @@ function Avatar({ name, email }: { name?: string; email?: string }) {
   );
 }
 
-export default function AdminDashboard({ admin, role, onToast }: { admin: AdminData; role?: UserRole; onToast: Toast }) {
+export default function AdminDashboard({ admin, role, initialTab, onToast }: { admin: AdminData; role?: UserRole; initialTab?: Tab; onToast: Toast }) {
   const t = useTranslations('admin');
-  const [tab, setTab] = useState<Tab>('pending');
+  const [tab, setTab] = useState<Tab>(initialTab ?? 'pending');
   const isSuperAdmin = role === 'superadmin';
 
   useEffect(() => {

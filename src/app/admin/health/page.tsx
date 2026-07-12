@@ -1,8 +1,8 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { CheckCircle2, XCircle, MinusCircle, ShieldAlert, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, XCircle, MinusCircle, ShieldAlert, ArrowLeft, Activity, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 interface Check { key: string; label: string; group: string; scope: 'app' | 'server'; optional?: boolean; present: boolean }
@@ -19,14 +19,30 @@ export default function HealthPage() {
   const { isAdmin, isLoading } = useAuth();
   const [data, setData] = useState<Health | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [checkedAt, setCheckedAt] = useState<Date | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Pas de setState synchrone au niveau supérieur de cette fonction (juste des
+  // .then/.catch) : appelable telle quelle depuis l'effet de montage sans
+  // déclencher la règle react-hooks/set-state-in-effect (setRefreshing reste
+  // du ressort du seul gestionnaire de clic explicite, handleRefresh).
+  const fetchHealth = useCallback(() => {
+    return fetch('/api/health')
+      .then(async r => { if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || `HTTP ${r.status}`); return r.json(); })
+      .then(d => { setData(d); setCheckedAt(new Date()); setError(null); })
+      .catch(e => setError(e.message));
+  }, []);
 
   useEffect(() => {
     if (isLoading || !isAdmin) return;
-    fetch('/api/health')
-      .then(async r => { if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || `HTTP ${r.status}`); return r.json(); })
-      .then(setData)
-      .catch(e => setError(e.message));
+    fetchHealth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin, isLoading]);
+
+  function handleRefresh() {
+    setRefreshing(true);
+    fetchHealth().finally(() => setRefreshing(false));
+  }
 
   if (isLoading) return null;
 
@@ -46,14 +62,35 @@ export default function HealthPage() {
   const groups = data ? [...new Set(data.checks.map(c => c.group))] : [];
 
   return (
-    <main id="main-content" style={{ maxWidth: '680px', margin: '0 auto', padding: '40px 20px' }}>
+    <main id="main-content" className="hp-root" style={{ maxWidth: '860px', margin: '0 auto', padding: '40px 20px 56px' }}>
       <Link href="/app" className="btn btn-ghost btn-sm" style={{ gap: '6px', marginBottom: '16px' }}>
         <ArrowLeft size={14} aria-hidden="true" /> {t('backToApp')}
       </Link>
-      <h1 className="serif" style={{ fontSize: '26px', margin: 0 }}>{t('title')}</h1>
-      <p style={{ color: 'var(--text-muted)', margin: '6px 0 24px' }}>{t('subtitle')}</p>
 
-      {error && <p role="alert" className="card" style={{ padding: '14px', color: 'var(--danger)' }}>{error}</p>}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ width: '40px', height: '40px', flexShrink: 0, background: 'var(--accent-light)', color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Activity size={20} aria-hidden="true" />
+          </span>
+          <div>
+            <h1 className="serif" style={{ fontSize: '26px', margin: 0 }}>{t('title')}</h1>
+            <p style={{ color: 'var(--text-muted)', margin: '4px 0 0', fontSize: '13px', maxWidth: '52ch' }}>{t('subtitle')}</p>
+          </div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+          <button onClick={handleRefresh} disabled={refreshing} className="btn btn-secondary btn-sm" style={{ gap: '6px' }}>
+            <RefreshCw size={14} aria-hidden="true" style={refreshing ? { animation: 'hp-spin 0.8s linear infinite' } : undefined} /> {t('refresh')}
+          </button>
+          {checkedAt && (
+            <span className="mono" style={{ fontSize: '11px', color: 'var(--text-light)' }}>
+              {t('lastChecked', { time: checkedAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) })}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div style={{ marginTop: '24px' }}>
+        {error && <p role="alert" className="card" style={{ padding: '14px', color: 'var(--danger)' }}>{error}</p>}
 
       {data && (
         <>
@@ -96,48 +133,59 @@ export default function HealthPage() {
             </section>
           )}
 
-          {/* Secrets par groupe */}
-          {groups.map(g => (
-            <section key={g} className="card" style={{ padding: '16px', marginBottom: '14px' }}>
-              <h2 className="mono" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--accent-text)', margin: '0 0 10px' }}>{t(`group_${g}`)}</h2>
-              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {data.checks.filter(c => c.group === g).map(c => (
-                  <li key={c.key} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    {c.present
-                      ? <CheckCircle2 size={16} aria-hidden="true" style={{ color: 'var(--success)', flexShrink: 0 }} />
-                      : c.optional
-                        ? <MinusCircle size={16} aria-hidden="true" style={{ color: 'var(--text-light)', flexShrink: 0 }} />
-                        : <XCircle size={16} aria-hidden="true" style={{ color: 'var(--danger)', flexShrink: 0 }} />}
-                    <span>{c.label}</span>
-                    <code className="mono" style={{ fontSize: '11px', color: 'var(--text-light)' }}>{c.key}</code>
-                    {c.optional && <span className="mono" style={{ fontSize: '10px', color: 'var(--text-light)' }}>{t('optional')}</span>}
-                    <span style={{ marginLeft: 'auto', fontSize: '12px', color: c.present ? 'var(--success)' : c.optional ? 'var(--text-light)' : 'var(--danger)' }}>
-                      {c.present ? t('present') : t('absent')}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))}
-
-          {/* Migrations */}
-          <section className="card" style={{ padding: '16px' }}>
-            <h2 className="mono" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--accent-text)', margin: '0 0 6px' }}>{t('migrationsTitle')}</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: '0 0 10px' }}>{t('migrationsHint')}</p>
-            {data.migrations.length === 0
-              ? <p style={{ color: 'var(--text-light)' }}>{t('migrationsNone')}</p>
-              : (
-                <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {data.migrations.map(m => (
-                    <li key={m} className="mono" style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <CheckCircle2 size={13} aria-hidden="true" style={{ color: 'var(--text-light)' }} /> {m}
+          {/* Secrets par groupe + migrations — grille 2 colonnes dès 720px pour moins de scroll */}
+          <div className="hp-grid">
+            {groups.map(g => (
+              <section key={g} className="card" style={{ padding: '16px' }}>
+                <h2 className="mono" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--accent-text)', margin: '0 0 10px' }}>{t(`group_${g}`)}</h2>
+                <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {data.checks.filter(c => c.group === g).map(c => (
+                    <li key={c.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      {c.present
+                        ? <CheckCircle2 size={16} aria-hidden="true" style={{ color: 'var(--success)', flexShrink: 0 }} />
+                        : c.optional
+                          ? <MinusCircle size={16} aria-hidden="true" style={{ color: 'var(--text-light)', flexShrink: 0 }} />
+                          : <XCircle size={16} aria-hidden="true" style={{ color: 'var(--danger)', flexShrink: 0 }} />}
+                      <span>{c.label}</span>
+                      <code className="mono" style={{ fontSize: '11px', color: 'var(--text-light)' }}>{c.key}</code>
+                      {c.optional && <span className="mono" style={{ fontSize: '10px', color: 'var(--text-light)' }}>{t('optional')}</span>}
+                      <span style={{ marginLeft: 'auto', fontSize: '12px', color: c.present ? 'var(--success)' : c.optional ? 'var(--text-light)' : 'var(--danger)' }}>
+                        {c.present ? t('present') : t('absent')}
+                      </span>
                     </li>
                   ))}
                 </ul>
-              )}
-          </section>
+              </section>
+            ))}
+
+            {/* Migrations */}
+            <section className="card" style={{ padding: '16px' }}>
+              <h2 className="mono" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--accent-text)', margin: '0 0 6px' }}>{t('migrationsTitle')}</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: '0 0 10px' }}>{t('migrationsHint')}</p>
+              {data.migrations.length === 0
+                ? <p style={{ color: 'var(--text-light)' }}>{t('migrationsNone')}</p>
+                : (
+                  <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '260px', overflowY: 'auto' }}>
+                    {data.migrations.map(m => (
+                      <li key={m} className="mono" style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <CheckCircle2 size={13} aria-hidden="true" style={{ color: 'var(--text-light)' }} /> {m}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+            </section>
+          </div>
         </>
       )}
+      </div>
+
+      <style>{`
+        .hp-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+        @keyframes hp-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @media (min-width: 720px) {
+          .hp-grid { grid-template-columns: 1fr 1fr; align-items: start; }
+        }
+      `}</style>
     </main>
   );
 }

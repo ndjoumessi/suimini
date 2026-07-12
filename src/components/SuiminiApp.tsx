@@ -19,6 +19,7 @@ import BottomNav from './BottomNav';
 import AuthModal from './AuthModal';
 import DemoBanner from './DemoBanner';
 import DashboardView from './views/DashboardView';
+import AdminHomeView from './views/AdminHomeView';
 import TreeView from './tree/TreeView';
 import ListView from './views/ListView';
 import TimelineView from './views/TimelineView';
@@ -126,6 +127,10 @@ export default function SuiminiApp() {
   tToastRef.current = tToast;
 
   const [view, setView] = useState<ViewMode>('dashboard');
+  // Onglet Admin ciblé par un lien profond (ex. depuis AdminHomeView) — lu une
+  // seule fois au montage d'AdminDashboard (qui remonte à chaque bascule vers
+  // la vue 'admin', voir le rendu plus bas), donc un simple state suffit.
+  const [adminInitialTab, setAdminInitialTab] = useState<'pending' | 'users' | 'notifications' | 'system'>('pending');
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
   // One-shot request to center/pivot the tree on a person (search → node navigation).
   // TreeView consumes it (pickRoot) then calls onNavConsumed to clear it.
@@ -622,10 +627,23 @@ export default function SuiminiApp() {
         <StatusBanner />
 
         {view === 'admin' ? (
-          <AdminDashboard admin={admin} role={role} onToast={showToast} />
+          <AdminDashboard admin={admin} role={role} initialTab={adminInitialTab} onToast={showToast} />
         ) : loadFailedEmpty ? (
           // Chargement échoué + aucun arbre → panneau « Réessayer », jamais l'onboarding.
           <SyncFailedState onRetry={handleRetrySync} />
+        ) : view === 'dashboard' && isAdmin ? (
+          // Accueil dédié aux comptes admin/superadmin : leur rôle est la
+          // modération, pas la construction d'un arbre personnel — "Aucun
+          // arbre" y est permanent et normal (voir CLAUDE.md). Le dashboard
+          // orienté arbre (CTA créer un arbre, anniversaires, IA récit/photo)
+          // n'a donc rien d'utile à y montrer.
+          <AdminHomeView
+            admin={admin}
+            role={role}
+            displayName={(user?.user_metadata?.display_name as string | undefined) || null}
+            userEmail={user?.email || null}
+            onOpenAdmin={(tab) => { setAdminInitialTab(tab); setView('admin'); }}
+          />
         ) : view === 'dashboard' ? (
           <DashboardView
             trees={store.trees}

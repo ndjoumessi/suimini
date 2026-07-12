@@ -40,7 +40,9 @@
     "dataLayerPercent": "Rollout api (%)",
     "dataLayerAllowlist": "Allowlist api",
     "dataLayerEdge": "Edge Config",
-    "dataLayerFallback": "repli « direct »"
+    "dataLayerFallback": "repli « direct »",
+    "refresh": "Actualiser",
+    "lastChecked": "Vérifié à {time}"
   },
   "nav": {
     "home": "Accueil",
@@ -576,6 +578,22 @@
     "systemItemTransport": "Transport des données et flip global (Edge Config)",
     "systemItemMigrations": "Migrations SQL attendues",
     "systemHealthCta": "Ouvrir le diagnostic"
+  },
+  "adminHome": {
+    "greeting": "Bonjour, {name}",
+    "greetingGeneric": "Bonjour !",
+    "subtitle": "Espace de modération — comptes et notifications, indépendant de tout arbre familial.",
+    "pendingEyebrow": "File d'attente",
+    "notificationsEyebrow": "Activité",
+    "viewAll": "Voir tout",
+    "quickAccessEyebrow": "Navigation",
+    "quickAccess": "Accès rapide",
+    "linkPendingDesc": "Valider ou refuser les nouvelles inscriptions.",
+    "linkUsersDesc": "Annuaire complet, rôles et statuts des comptes.",
+    "linkNotificationsDesc": "Historique des inscriptions récentes.",
+    "linkSystemDesc": "Configuration, transport des données et migrations.",
+    "statusTitle": "Statut de la plateforme",
+    "statusDesc": "Page publique de disponibilité (Supabase, base, auth, stockage)."
   },
   "profile": {
     "backToApp": "Retour à l’app",

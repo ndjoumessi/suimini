@@ -40,7 +40,9 @@
     "dataLayerPercent": "api rollout (%)",
     "dataLayerAllowlist": "api allowlist",
     "dataLayerEdge": "Edge Config",
-    "dataLayerFallback": "'direct' fallback"
+    "dataLayerFallback": "'direct' fallback",
+    "refresh": "Refresh",
+    "lastChecked": "Checked at {time}"
   },
   "nav": {
     "home": "Home",
@@ -576,6 +578,22 @@
     "systemItemTransport": "Data transport and global flip (Edge Config)",
     "systemItemMigrations": "Expected SQL migrations",
     "systemHealthCta": "Open diagnostics"
+  },
+  "adminHome": {
+    "greeting": "Hello, {name}",
+    "greetingGeneric": "Hello!",
+    "subtitle": "Moderation space — accounts and notifications, independent of any family tree.",
+    "pendingEyebrow": "Queue",
+    "notificationsEyebrow": "Activity",
+    "viewAll": "View all",
+    "quickAccessEyebrow": "Navigation",
+    "quickAccess": "Quick access",
+    "linkPendingDesc": "Approve or reject new sign-ups.",
+    "linkUsersDesc": "Full directory, account roles and statuses.",
+    "linkNotificationsDesc": "History of recent sign-ups.",
+    "linkSystemDesc": "Configuration, data transport and migrations.",
+    "statusTitle": "Platform status",
+    "statusDesc": "Public availability page (Supabase, database, auth, storage)."
   },
   "profile": {
     "backToApp": "Back to app",
