@@ -11,7 +11,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
   useEffect(() => { console.error('App error boundary:', error); }, [error]);
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 18, padding: 24, textAlign: 'center', background: '#171310', color: '#f3ecdf' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 18, padding: 24, textAlign: 'center', background: '#16120e', color: '#f3ecdf' }}>
       <div style={{ width: 40, height: 40, background: '#c9a84c', borderRadius: 10 }} aria-hidden="true" />
       <h1 style={{ margin: 0, fontFamily: 'Georgia, serif', fontStyle: 'italic', fontWeight: 500, fontSize: 26 }}>
         Une erreur est survenue

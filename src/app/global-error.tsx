@@ -12,7 +12,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
   return (
     <html lang="fr">
       <body style={{ margin: 0 }}>
-        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 18, padding: 24, textAlign: 'center', background: '#171310', color: '#f3ecdf', fontFamily: 'system-ui, sans-serif' }}>
+        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 18, padding: 24, textAlign: 'center', background: '#16120e', color: '#f3ecdf', fontFamily: 'system-ui, sans-serif' }}>
           <div style={{ width: 40, height: 40, background: '#c9a84c', borderRadius: 10 }} aria-hidden="true" />
           <h1 style={{ margin: 0, fontFamily: 'Georgia, serif', fontStyle: 'italic', fontWeight: 500, fontSize: 26 }}>
             Une erreur est survenue

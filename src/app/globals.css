@@ -29,15 +29,19 @@
    ===================================================================== */
 
 :root {
-  /* Surfaces — warm ember-dark (espresso / heartwood), three tiers.
-     Warmer than black, softer than the old indigo: firelight, not void. */
-  --bg: #171310;              /* app canvas */
-  --bg-card: #221d17;         /* cards, panels, raised surfaces */
-  --bg-muted: #2b251d;        /* inert zones / hover fills */
+  /* Surfaces — warm ember-dark (espresso / heartwood), four tiers with a
+     deliberately WIDE lightness spread (not just a hue shift) so cards,
+     canvas and chrome read as distinct layers even in a compressed
+     screenshot — a flatter first pass here caused the 3 tiers to blend
+     into one indistinguishable dark mass. Depth ladder, darkest to
+     lightest: recessed chrome < canvas < raised card < hover/inert. */
+  --bg: #16120e;               /* app canvas */
+  --bg-card: #251f18;          /* cards, panels, raised surfaces — clearly lighter than canvas */
+  --bg-muted: #322a20;         /* inert zones / hover fills — clearly lighter than a card */
   --surface-1: var(--bg);
   --surface-2: var(--bg-card);
-  --surface-3: #1c1713;       /* sidebars, toolbars, recessed chrome */
-  --interactive: #2b251d;     /* hover state */
+  --surface-3: #0e0b08;        /* sidebars, toolbars — recessed BELOW canvas, not a near-twin of it */
+  --interactive: var(--bg-muted); /* hover state */
 
   /* Ink + text (warm paper on ember) */
   --ink: #f3ecdf;

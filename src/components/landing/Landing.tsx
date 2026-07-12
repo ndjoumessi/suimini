@@ -11,7 +11,7 @@ import { LOCALES, type Locale } from '@/i18n/config';
 /* =====================================================================
    Suimini — Landing publique.
    Thème « Veillée » (nuit chaude braise + accent or-chandelle), aligné
-   sur les VALEURS de la palette de l'app (--bg #171310, --accent #c9a84c).
+   sur les VALEURS de la palette de l'app (--bg #16120e, --accent #c9a84c).
    Playfair Display pour le display (cousine didone du DM Serif Display de
    l'app mobile « Canopée »), Figtree (--font-body, chargée globalement)
    pour l'UI/corps. Italique réservé aux rares moments éditoriaux (titre
@@ -417,8 +417,10 @@ export default function Landing() {
 
 const CSS = `
 .lp-root {
-  /* Palette « Veillée » (alignée sur l'app) : nuit braise chaude, encre papier, or chandelle. */
-  --sky: #171310; --sky-deep: #110d0a; --sky-rise: #1d1813; --sky-card: #221d17;
+  /* Palette « Veillée » (alignée sur l'app) : nuit braise chaude, encre papier, or chandelle.
+     Écart de clarté volontairement large entre les 4 tons (canvas < deep < rise < card) —
+     un premier jet trop resserré faisait fondre les sections/cartes en un seul bloc sombre. */
+  --sky: #16120e; --sky-deep: #0d0a07; --sky-rise: #251f18; --sky-card: #322a20;
   --star: #f3ecdf; --star-muted: #aa9e8c; --star-faint: #9c9081;
   --amber: #c9a84c; --amber-soft: #dcc06a; --amber-deep: #a98c3e;
   --ink-on-amber: #171006;
