@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { enforceRateLimit } from '@/lib/rateLimit';
+import { enforceRateLimit, releaseRateLimit } from '@/lib/rateLimit';
 import type { FamilyTree, Person } from '@/types';
 import { getParents, getChildren, getSpouses, getSiblings, getDisplayName } from '@/lib/treeUtils';
 import { eventsOverlapping } from '@/lib/history';
@@ -123,6 +123,7 @@ export async function POST(req: Request) {
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
+    await releaseRateLimit('/api/narrative-person'); // misconfiguration, pas la faute de l'utilisateur
     return NextResponse.json({ error: "Le récit IA n'est pas configuré." }, { status: 503 });
   }
 
@@ -157,13 +158,18 @@ export async function POST(req: Request) {
     });
     if (!res.ok) {
       const detail = await res.text().catch(() => '');
+      await releaseRateLimit('/api/narrative-person'); // panne/erreur Anthropic, pas la faute de l'utilisateur
       return NextResponse.json({ error: `L'API Anthropic a renvoyé une erreur (${res.status}).`, detail: detail.slice(0, 300) }, { status: 502 });
     }
     const data = (await res.json()) as AnthropicResponse;
     const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text || '').join('').trim();
-    if (!text) return NextResponse.json({ error: 'Réponse vide.' }, { status: 502 });
+    if (!text) {
+      await releaseRateLimit('/api/narrative-person');
+      return NextResponse.json({ error: 'Réponse vide.' }, { status: 502 });
+    }
     return NextResponse.json(parseReply(text));
   } catch {
+    await releaseRateLimit('/api/narrative-person');
     return NextResponse.json({ error: "Impossible de générer le récit." }, { status: 502 });
   }
 }

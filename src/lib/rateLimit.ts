@@ -107,3 +107,34 @@ export async function enforceRateLimit(req: Request, endpoint: RateLimitedEndpoi
   const verdict = anonAllowed(`${ip}:${endpoint}`, max, windowSeconds);
   return verdict.allowed ? null : deny(verdict.retryAfter);
 }
+
+/**
+ * À appeler quand une requête déjà comptée par `enforceRateLimit` échoue pour
+ * une raison qui N'EST PAS imputable à l'utilisateur (panne/erreur Anthropic,
+ * clé API absente, réponse illisible…) : redonne le crédit consommé pour que
+ * l'incident ne rogne pas le quota horaire réel de la personne. À NE PAS
+ * appeler pour une erreur imputable à l'utilisateur (image invalide, corps de
+ * requête malformé) — celles-là restent décomptées.
+ *
+ * Best-effort et fail-silent (comme enforceRateLimit) : le repli anonyme par
+ * IP n'a pas de compteur durable à libérer (accepté, ce chemin ne sert que le
+ * mode démo) ; s'il n'y a pas de session utilisateur ou que Supabase n'est
+ * pas configuré, on ne fait rien.
+ */
+export async function releaseRateLimit(endpoint: RateLimitedEndpoint): Promise<void> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return;
+  try {
+    const cookieStore = await cookies();
+    const supabase = createServerClient(url, key, {
+      cookies: { getAll: () => cookieStore.getAll(), setAll: () => { /* lecture seule ici */ } },
+    });
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { error } = await supabase.rpc('release_rate_limit', { p_endpoint: endpoint });
+    if (error) console.warn(`[rateLimit] libération impossible (${endpoint}) — ${error.message}`);
+  } catch (err) {
+    console.warn(`[rateLimit] libération impossible (${endpoint})`, err);
+  }
+}

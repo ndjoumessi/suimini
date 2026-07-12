@@ -57,5 +57,28 @@ end $$;
 revoke execute on function public.consume_rate_limit(text, int, int) from public, anon;
 grant  execute on function public.consume_rate_limit(text, int, int) to authenticated;
 
+-- Contrepartie de consume_rate_limit : redonne 1 crédit sur la fenêtre en
+-- cours (jamais sous 0), appelée par le serveur quand une requête déjà
+-- décomptée échoue pour une raison qui N'EST PAS imputable à l'utilisateur
+-- (panne/erreur Anthropic, clé API absente, réponse illisible…) — voir
+-- src/lib/rateLimit.ts:releaseRateLimit. Ne touche pas window_start : une
+-- libération ne doit jamais rouvrir/prolonger la fenêtre.
+create or replace function public.release_rate_limit(p_endpoint text)
+returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+begin
+  if uid is null then
+    return;
+  end if;
+  update api_rate_limits
+  set count = greatest(count - 1, 0)
+  where user_id = uid and endpoint = p_endpoint;
+end $$;
+
+revoke execute on function public.release_rate_limit(text) from public, anon;
+grant  execute on function public.release_rate_limit(text) to authenticated;
+
 -- Purge d'entretien (optionnelle, à lancer de temps en temps) :
 --   delete from public.api_rate_limits where window_start < now() - interval '2 days';

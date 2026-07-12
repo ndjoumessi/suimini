@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { enforceRateLimit } from '@/lib/rateLimit';
+import { enforceRateLimit, releaseRateLimit } from '@/lib/rateLimit';
 import type { FamilyTree, Person } from '@/types';
 import { buildGenerationMap } from '@/lib/treeUtils';
 import {
@@ -190,6 +190,7 @@ export async function POST(req: Request) {
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
+    await releaseRateLimit('/api/narrative'); // misconfiguration, pas la faute de l'utilisateur
     return NextResponse.json(
       { error: "Le rapport narratif n'est pas configuré : la variable serveur ANTHROPIC_API_KEY est absente." },
       { status: 503 },
@@ -257,6 +258,7 @@ export async function POST(req: Request) {
 
     if (!res.ok) {
       const detail = await res.text().catch(() => '');
+      await releaseRateLimit('/api/narrative'); // panne/erreur Anthropic, pas la faute de l'utilisateur
       return NextResponse.json(
         { error: `L'API Anthropic a renvoyé une erreur (${res.status}).`, detail: detail.slice(0, 400) },
         { status: 502 },
@@ -271,11 +273,13 @@ export async function POST(req: Request) {
       .trim();
 
     if (!narrative) {
+      await releaseRateLimit('/api/narrative');
       return NextResponse.json({ error: 'Le modèle a renvoyé une réponse vide.' }, { status: 502 });
     }
 
     return NextResponse.json({ narrative });
   } catch {
+    await releaseRateLimit('/api/narrative');
     return NextResponse.json({ error: 'Échec de la génération du rapport. Réessayez dans un instant.' }, { status: 500 });
   }
 }

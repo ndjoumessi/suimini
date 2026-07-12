@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { enforceRateLimit } from '@/lib/rateLimit';
+import { enforceRateLimit, releaseRateLimit } from '@/lib/rateLimit';
 import { normalizeOcrResult, type NormalizedPersonExtra } from '@/lib/ocrNormalization';
 
 export const runtime = 'nodejs';
@@ -173,7 +173,10 @@ export async function POST(req: Request) {
   if (limited) return limited;
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return NextResponse.json({ error: "L'OCR n'est pas configuré." }, { status: 503 });
+  if (!apiKey) {
+    await releaseRateLimit('/api/ocr-document'); // misconfiguration, pas la faute de l'utilisateur
+    return NextResponse.json({ error: "L'OCR n'est pas configuré." }, { status: 503 });
+  }
 
   let body: { imageBase64?: string; documentType?: string };
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Corps de requête invalide.' }, { status: 400 }); }
@@ -200,6 +203,7 @@ export async function POST(req: Request) {
     });
     if (!res.ok) {
       const detail = await res.text().catch(() => '');
+      await releaseRateLimit('/api/ocr-document'); // panne/erreur Anthropic, pas la faute de l'utilisateur
       return NextResponse.json({ error: `L'API Anthropic a renvoyé une erreur (${res.status}).`, detail: detail.slice(0, 300) }, { status: 502 });
     }
     const data = (await res.json()) as AnthropicResponse;
@@ -210,7 +214,10 @@ export async function POST(req: Request) {
       acteNumber?: unknown; commune?: unknown; date?: unknown; place?: unknown;
       confidence?: unknown; notes?: unknown; rawText?: unknown;
     };
-    try { parsed = extractJson(text) as typeof parsed; } catch { return NextResponse.json({ error: "Réponse de l'IA illisible." }, { status: 502 }); }
+    try { parsed = extractJson(text) as typeof parsed; } catch {
+      await releaseRateLimit('/api/ocr-document');
+      return NextResponse.json({ error: "Réponse de l'IA illisible." }, { status: 502 });
+    }
 
     const persons: OcrPerson[] = Array.isArray(parsed.persons)
       ? parsed.persons.map((p) => {
@@ -255,6 +262,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(result);
   } catch {
+    await releaseRateLimit('/api/ocr-document');
     return NextResponse.json({ error: "Impossible d'analyser ce document." }, { status: 502 });
   }
 }

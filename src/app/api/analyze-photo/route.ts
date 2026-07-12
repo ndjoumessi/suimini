@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { enforceRateLimit } from '@/lib/rateLimit';
+import { enforceRateLimit, releaseRateLimit } from '@/lib/rateLimit';
 import type { Person } from '@/types';
 
 // Runs server-side only: ANTHROPIC_API_KEY is never exposed to the browser.
@@ -84,6 +84,7 @@ export async function POST(req: Request) {
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
+    await releaseRateLimit('/api/analyze-photo'); // misconfiguration, pas la faute de l'utilisateur
     return NextResponse.json({ error: "La reconnaissance IA n'est pas configurée." }, { status: 503 });
   }
 
@@ -124,6 +125,7 @@ export async function POST(req: Request) {
 
     if (!res.ok) {
       const detail = await res.text().catch(() => '');
+      await releaseRateLimit('/api/analyze-photo'); // panne/erreur Anthropic, pas la faute de l'utilisateur
       return NextResponse.json(
         { error: `L'API Anthropic a renvoyé une erreur (${res.status}).`, detail: detail.slice(0, 400) },
         { status: 502 },
@@ -137,6 +139,7 @@ export async function POST(req: Request) {
     try {
       parsed = extractJson(text) as typeof parsed;
     } catch {
+      await releaseRateLimit('/api/analyze-photo');
       return NextResponse.json({ error: "Réponse de l'IA illisible." }, { status: 502 });
     }
 
@@ -162,6 +165,7 @@ export async function POST(req: Request) {
       confidence: typeof parsed.confidence === 'number' ? parsed.confidence : null,
     });
   } catch {
+    await releaseRateLimit('/api/analyze-photo');
     return NextResponse.json({ error: "Impossible d'analyser cette photo." }, { status: 502 });
   }
 }

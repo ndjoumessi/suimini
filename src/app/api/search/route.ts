@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { enforceRateLimit } from '@/lib/rateLimit';
+import { enforceRateLimit, releaseRateLimit } from '@/lib/rateLimit';
 import type { Person } from '@/types';
 
 export const runtime = 'nodejs';
@@ -46,6 +46,7 @@ export async function POST(req: Request) {
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
+    await releaseRateLimit('/api/search'); // misconfiguration, pas la faute de l'utilisateur
     return NextResponse.json({ error: "La recherche IA n'est pas configurée." }, { status: 503 });
   }
 
@@ -82,13 +83,17 @@ export async function POST(req: Request) {
     });
     if (!res.ok) {
       const detail = await res.text().catch(() => '');
+      await releaseRateLimit('/api/search'); // panne/erreur Anthropic, pas la faute de l'utilisateur
       return NextResponse.json({ error: `L'API Anthropic a renvoyé une erreur (${res.status}).`, detail: detail.slice(0, 300) }, { status: 502 });
     }
     const data = (await res.json()) as AnthropicResponse;
     const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text || '').join('').trim();
 
     let parsed: unknown;
-    try { parsed = extractJsonArray(text); } catch { return NextResponse.json({ error: "Réponse illisible." }, { status: 502 }); }
+    try { parsed = extractJsonArray(text); } catch {
+      await releaseRateLimit('/api/search');
+      return NextResponse.json({ error: "Réponse illisible." }, { status: 502 });
+    }
 
     const valid = new Set(persons.map(p => p.id));
     const results = (Array.isArray(parsed) ? parsed : [])
@@ -104,6 +109,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ results });
   } catch {
+    await releaseRateLimit('/api/search');
     return NextResponse.json({ error: 'Recherche impossible.' }, { status: 502 });
   }
 }
