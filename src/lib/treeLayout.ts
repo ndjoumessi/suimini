@@ -84,7 +84,17 @@ export function buildTreeLayout(tree: FamilyTree, rootId: string | null): TreeLa
   const genMemo = new Map<string, number>();
   const effGen = new Map<string, number>();
   for (const p of persons) effGen.set(p.id, getGeneration(p.id, rels, persons, genMemo));
-  for (let pass = 0; pass < 4; pass++) {
+  // Un plafond fixe de 4 passes ne propage qu'un nombre limité de "sauts" à
+  // travers le graphe d'unions (un conjoint sans parent aligné sur un autre
+  // conjoint lui-même aligné sur un troisième, etc.) — sur un arbre à 7+
+  // générations avec beaucoup de remariages, 4 passes peuvent ne pas suffire
+  // à tout propager, laissant certains conjoints bloqués à une génération
+  // intermédiaire fausse → connecteur parent→enfant qui retraverse plusieurs
+  // rangées et un rendu "spaghetti" (constaté sur un arbre de 70 personnes).
+  // Boucle jusqu'à stabilité (point fixe), avec un plafond de sécurité large
+  // pour ne jamais tourner indéfiniment sur des données cycliques/corrompues.
+  const maxPasses = Math.max(4, Math.min(persons.length, 200));
+  for (let pass = 0; pass < maxPasses; pass++) {
     let changed = false;
     for (const r of rels) {
       if (r.type !== 'spouse' && r.type !== 'partner') continue;
