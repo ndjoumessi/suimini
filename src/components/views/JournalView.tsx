@@ -3,6 +3,7 @@ import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { BookOpen, Plus, Pencil, Trash2, Check } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
+import { PersonCombobox } from '../ui/PersonCombobox';
 import { FamilyTree, JournalEntry } from '@/types';
 import { getDisplayName, formatDate, safeHttpUrl } from '@/lib/treeUtils';
 
@@ -97,10 +98,18 @@ export default function JournalView({ tree, onSelectPerson, onAdd, onUpdate, onD
       {/* Header */}
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: '120px' }} />{/* title lives in ContentHeader (no double header) */}
-        <select value={filterPersonId} onChange={e => setFilterPersonId(e.target.value)} aria-label={t('filterAria')} className="input" style={{ width: 'auto' }}>
-          <option value="">{t('allPersons')}</option>
-          {tree.persons.map(p => <option key={p.id} value={p.id}>{getDisplayName(p)}</option>)}
-        </select>
+        <div style={{ width: '230px', maxWidth: '100%' }}>
+          <PersonCombobox
+            id="journal-filter"
+            persons={tree.persons}
+            selectedId={filterPersonId}
+            onSelect={setFilterPersonId}
+            placeholder={t('allPersons')}
+            emptyOption={{ label: t('allPersons') }}
+            emptySearchLabel={t('noPersonFound')}
+            ariaLabel={t('filterAria')}
+          />
+        </div>
         <button onClick={startAdd} className="btn btn-primary btn-sm" style={{ gap: '6px' }}><Plus size={14} aria-hidden="true" /> {t('newEntry')}</button>
       </div>
 
@@ -204,6 +213,16 @@ function EntryEditor({ tree, draft, setDraft, toggleMention, onSave, onCancel, t
   title: string;
 }) {
   const t = useTranslations('journal');
+  const [mentionQuery, setMentionQuery] = useState('');
+  const sortedPersons = useMemo(
+    () => [...tree.persons].sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b), 'fr', { sensitivity: 'base' })),
+    [tree.persons],
+  );
+  const filteredMentions = useMemo(() => {
+    const q = mentionQuery.trim().toLowerCase();
+    if (!q) return sortedPersons;
+    return sortedPersons.filter(p => getDisplayName(p).toLowerCase().includes(q));
+  }, [sortedPersons, mentionQuery]);
   return (
     <div className="card animate-fade-in" style={{ padding: '16px' }}>
       <h3 className="serif" style={{ margin: '0 0 12px', fontSize: '1.1rem' }}>{title}</h3>
@@ -215,8 +234,21 @@ function EntryEditor({ tree, draft, setDraft, toggleMention, onSave, onCancel, t
 
       <div style={{ marginBottom: '8px' }}>
         <div className="label" id="journal-mentions-label" style={{ marginBottom: '6px' }}>{t('mentionedPersons')}</div>
+        {tree.persons.length > 8 && (
+          <input
+            type="search"
+            value={mentionQuery}
+            onChange={e => setMentionQuery(e.target.value)}
+            className="input"
+            aria-label={t('mentionSearchAria')}
+            placeholder={t('mentionSearchPlaceholder')}
+            style={{ marginBottom: '8px' }}
+          />
+        )}
         <div role="group" aria-labelledby="journal-mentions-label" style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', maxHeight: '110px', overflowY: 'auto' }}>
-          {tree.persons.map(p => {
+          {filteredMentions.length === 0 ? (
+            <span style={{ fontSize: '13px', color: 'var(--text-muted)', padding: '4px 0' }}>{t('noPersonFound')}</span>
+          ) : filteredMentions.map(p => {
             const on = draft.mentionedPersonIds.includes(p.id);
             return (
               <button key={p.id} type="button" onClick={() => toggleMention(p.id)} aria-pressed={on}
