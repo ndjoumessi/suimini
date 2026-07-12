@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { Card } from '@/components/ui/Card';
 import { Avatar } from '@/components/ui/Avatar';
-import { fonts, fontSize, spacing } from '@/lib/theme';
+import { fonts, fontSize, spacing, radius } from '@/lib/theme';
 import { useTheme } from '@/hooks/useTheme';
 import type { Person } from '@/lib/types';
 import { getDisplayName, formatYear, getAge, formatAge } from '@/lib/treeUtils';
@@ -9,10 +9,11 @@ import { getDisplayName, formatYear, getAge, formatAge } from '@/lib/treeUtils';
 interface PersonCardProps {
   person: Person;
   onPress?: () => void;
-  /** Optional generation index shown as a mono tag. */
+  /** Indice de génération, affiché en pastille tonale. */
   generation?: number;
 }
 
+/** Rangée-carte d'une personne — avatar, nom gras, métier, dates en mono. */
 export function PersonCard({ person, onPress, generation }: PersonCardProps) {
   const { colors } = useTheme();
   const birth = formatYear(person.birthDate);
@@ -44,7 +45,7 @@ export function PersonCard({ person, onPress, generation }: PersonCardProps) {
           </Text>
         </View>
         {generation != null ? (
-          <View style={[styles.genTag, { borderColor: colors.border }]}>
+          <View style={[styles.genTag, { backgroundColor: colors.bgMuted }]}>
             <Text style={[styles.genText, { color: colors.textMuted }]}>
               G{generation}
             </Text>
@@ -59,13 +60,13 @@ const styles = StyleSheet.create({
   card: { marginBottom: spacing.sm },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   info: { flex: 1, gap: 1 },
-  name: { fontFamily: fonts.display, fontSize: fontSize.md },
+  name: { fontFamily: fonts.bodyBold, fontSize: fontSize.base },
   meta: { fontFamily: fonts.body, fontSize: fontSize.sm },
-  dates: { fontFamily: fonts.mono, fontSize: fontSize.xs },
+  dates: { fontFamily: fonts.mono, fontSize: fontSize.xs, marginTop: 1 },
   genTag: {
-    borderWidth: 1,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 3,
   },
-  genText: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 0.5 },
+  genText: { fontFamily: fonts.bodyMedium, fontSize: fontSize.xs, letterSpacing: 0.4 },
 });

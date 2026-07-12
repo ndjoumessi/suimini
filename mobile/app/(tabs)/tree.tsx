@@ -6,7 +6,7 @@ import { TreePine } from 'lucide-react-native';
 import { Header } from '@/components/layout/Header';
 import { TreeView } from '@/components/tree/TreeView';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { fonts, fontSize, spacing } from '@/lib/theme';
+import { fonts, fontSize, spacing, radius, shadows } from '@/lib/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { useFamilyStore } from '@/hooks/useFamilyStore';
 import type { Person } from '@/lib/types';
@@ -42,7 +42,7 @@ export default function TreeScreen() {
             rootPersonId={activeTree?.rootPersonId}
             onSelect={onSelect}
           />
-          <View style={[styles.hint, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+          <View style={[styles.hint, shadows.mid, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
             <Text style={[styles.hintText, { color: colors.textMuted }]}>
               {t('tree.hint')}
             </Text>
@@ -61,8 +61,9 @@ const styles = StyleSheet.create({
     left: spacing.lg,
     right: spacing.lg,
     borderWidth: 1,
+    borderRadius: radius.full,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
   },
-  hintText: { fontFamily: fonts.mono, fontSize: fontSize.xs, textAlign: 'center', letterSpacing: 0.5 },
+  hintText: { fontFamily: fonts.body, fontSize: fontSize.sm, textAlign: 'center' },
 });

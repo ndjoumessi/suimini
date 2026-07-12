@@ -1,4 +1,4 @@
-import { G, Rect, Text as SvgText } from 'react-native-svg';
+import { G, Rect, Circle, Text as SvgText } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import type { Person } from '@/lib/types';
 import { getRoleColor } from '@/lib/theme';
@@ -10,7 +10,7 @@ interface PersonNodeProps {
   y: number;
   isRoot?: boolean;
   onPress?: (person: Person) => void;
-  /** Surface + ink colors so the node honors the active theme. */
+  /** Couleurs de surface + d'encre pour honorer le thème actif. */
   surface: string;
   ink: string;
   muted: string;
@@ -18,7 +18,10 @@ interface PersonNodeProps {
   accent: string;
 }
 
-/** A single family-tree node rendered as SVG (tappable). */
+/**
+ * Nœud d'arbre Canopée (SVG, tappable) — carte arrondie, pastille-signal de
+ * genre/statut à gauche du prénom, racine soulignée à l'accent (double trait).
+ */
 export function PersonNode({
   person,
   x,
@@ -33,7 +36,6 @@ export function PersonNode({
 }: PersonNodeProps) {
   const { t } = useTranslation();
   const spine = getRoleColor(person);
-  const stroke = isRoot ? accent : ink;
 
   return (
     <G onPress={() => onPress?.(person)}>
@@ -42,27 +44,29 @@ export function PersonNode({
         y={y}
         width={NODE_W}
         height={NODE_H}
+        rx={12}
         fill={surface}
-        stroke={stroke}
-        strokeWidth={isRoot ? 2.5 : 1.25}
+        stroke={isRoot ? accent : faint}
+        strokeWidth={isRoot ? 2 : 1}
+        strokeOpacity={isRoot ? 1 : 0.55}
       />
-      {/* Left spine — gender / status signal */}
-      <Rect x={x} y={y} width={5} height={NODE_H} fill={spine} />
+      {/* Pastille-signal — genre / statut */}
+      <Circle cx={x + 15} cy={y + 20} r={4.5} fill={spine} />
 
       <SvgText
-        x={x + 16}
+        x={x + 26}
         y={y + 24}
         fontSize={12}
         fontWeight="700"
         fill={ink}
       >
-        {truncate(person.firstName, 14)}
+        {truncate(person.firstName, 12)}
       </SvgText>
-      <SvgText x={x + 16} y={y + 40} fontSize={11} fill={muted}>
+      <SvgText x={x + 15} y={y + 40} fontSize={11} fill={muted}>
         {truncate(person.lastName, 16)}
       </SvgText>
       {person.birthDate ? (
-        <SvgText x={x + 16} y={y + 56} fontSize={9} fill={faint}>
+        <SvgText x={x + 15} y={y + 56} fontSize={9} fill={faint}>
           {person.isAlive ? `${t('tree.born')} ` : '✝ '}
           {person.birthDate.slice(0, 4)}
           {!person.isAlive && person.deathDate

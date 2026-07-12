@@ -15,7 +15,7 @@ import { Header } from '@/components/layout/Header';
 import { Card } from '@/components/ui/Card';
 import { Avatar } from '@/components/ui/Avatar';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { fonts, fontSize, spacing, shadows, borderWidth } from '@/lib/theme';
+import { fonts, fontSize, spacing, radius, shadows } from '@/lib/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
 import { useFamilyStore } from '@/hooks/useFamilyStore';
@@ -84,9 +84,9 @@ export default function HomeScreen() {
         subtitle={activeTree.name}
       />
 
-      {/* Active tree card */}
+      {/* Carte de l'arbre actif */}
       <View style={styles.block}>
-        <Card elevated>
+        <Card elevated style={{ borderRadius: radius.lg }}>
           <Text style={[styles.label, { color: colors.accent }]}>{t('home.activeTree')}</Text>
           <Text style={[styles.treeName, { color: colors.text }]}>{activeTree.name}</Text>
           {activeTree.description ? (
@@ -111,9 +111,9 @@ export default function HomeScreen() {
       <View style={styles.block}>
         <Text style={[styles.sectionTitle, { color: colors.accent }]}>{t('home.quickAccess')}</Text>
         <View style={styles.quickRow}>
-          <Quick icon={<TreePine size={22} color={colors.text} />} label={t('nav.tree')} onPress={() => router.push('/(tabs)/tree')} colors={colors} />
-          <Quick icon={<Users size={22} color={colors.text} />} label={t('nav.people')} onPress={() => router.push('/(tabs)/people')} colors={colors} />
-          <Quick icon={<Clock size={22} color={colors.text} />} label={t('nav.timeline')} onPress={() => router.push('/(tabs)/timeline')} colors={colors} />
+          <Quick icon={<TreePine size={22} color={colors.accent} />} label={t('nav.tree')} onPress={() => router.push('/(tabs)/tree')} colors={colors} />
+          <Quick icon={<Users size={22} color={colors.accent} />} label={t('nav.people')} onPress={() => router.push('/(tabs)/people')} colors={colors} />
+          <Quick icon={<Clock size={22} color={colors.accent} />} label={t('nav.timeline')} onPress={() => router.push('/(tabs)/timeline')} colors={colors} />
         </View>
       </View>
 
@@ -177,9 +177,9 @@ function Stat({
   // state would get.
   const isZero = value === 0;
   return (
-    <View style={[styles.stat, { backgroundColor: colors.bgCard, borderColor: colors.borderStrong }, shadows.hardSm]}>
+    <View style={[styles.stat, { backgroundColor: colors.bgCard, borderColor: colors.border }, shadows.low]}>
       <Text style={[styles.statValue, { color: isZero ? colors.textLight : colors.accent }]}>{value}</Text>
-      <Text style={[styles.statLabel, { color: colors.textMuted }]}>{label.toUpperCase()}</Text>
+      <Text style={[styles.statLabel, { color: colors.textMuted }]}>{label}</Text>
     </View>
   );
 }
@@ -197,8 +197,8 @@ function Quick({
 }) {
   return (
     <TouchableOpacity
-      style={[styles.quick, { backgroundColor: colors.bgCard, borderColor: colors.borderStrong }]}
-      activeOpacity={0.8}
+      style={[styles.quick, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
+      activeOpacity={0.7}
       onPress={onPress}
     >
       {icon}
@@ -210,7 +210,7 @@ function Quick({
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   block: { paddingHorizontal: spacing.lg, marginTop: spacing.lg, gap: spacing.sm },
-  label: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 1.5 },
+  label: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm, letterSpacing: 0.5 },
   treeName: { fontFamily: fonts.display, fontSize: fontSize.lg, marginTop: 2 },
   treeDesc: { fontFamily: fonts.body, fontSize: fontSize.sm, marginTop: spacing.xs, lineHeight: 20 },
   statsGrid: {
@@ -223,25 +223,25 @@ const styles = StyleSheet.create({
   stat: {
     flexGrow: 1,
     flexBasis: '47%',
-    borderWidth,
-    // Tighter than the old spacing.md: the display font's own line metrics
-    // already carry a lot of visual weight, so generous padding on top of
-    // that made these cards balloon into mostly-empty rectangles.
-    paddingVertical: spacing.sm + 2,
+    borderWidth: 1,
+    borderRadius: radius.md,
+    paddingVertical: spacing.smd,
     paddingHorizontal: spacing.md,
   },
-  statValue: { fontFamily: fonts.display, fontSize: fontSize.xxl, lineHeight: fontSize.xxl + 3 },
-  statLabel: { fontFamily: fonts.mono, fontSize: fontSize.micro, letterSpacing: 1, marginTop: 3 },
-  sectionTitle: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 1.5 },
+  statValue: { fontFamily: fonts.display, fontSize: fontSize.xxl, lineHeight: fontSize.xxl + 4 },
+  statLabel: { fontFamily: fonts.bodyMedium, fontSize: fontSize.xs, letterSpacing: 0.4, marginTop: 3 },
+  sectionTitle: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm, letterSpacing: 0.5 },
   quickRow: { flexDirection: 'row', gap: spacing.sm },
   quick: {
     flex: 1,
-    borderWidth,
+    borderWidth: 1,
+    borderRadius: radius.md,
     paddingVertical: spacing.md,
     alignItems: 'center',
     gap: spacing.xs,
+    minHeight: 72,
   },
-  quickLabel: { fontFamily: fonts.bodyBold, fontSize: fontSize.sm },
+  quickLabel: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm },
   bdayCard: { marginTop: spacing.xs },
   bdayRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   bdayName: { fontFamily: fonts.body, fontSize: fontSize.base, flex: 1 },
@@ -251,6 +251,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     paddingVertical: spacing.sm,
+    minHeight: 56,
     borderBottomWidth: 1,
   },
   recentName: { fontFamily: fonts.body, fontSize: fontSize.base, flex: 1 },

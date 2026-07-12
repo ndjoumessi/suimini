@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { fonts, fontSize, spacing, borderWidth } from '@/lib/theme';
+import { fonts, fontSize, spacing, radius } from '@/lib/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { Button } from './Button';
 
@@ -11,6 +11,7 @@ interface EmptyStateProps {
   onCta?: () => void;
 }
 
+/** État vide Canopée — pastille tonale, titre serif, description apaisée. */
 export function EmptyState({
   icon,
   title,
@@ -22,12 +23,7 @@ export function EmptyState({
   return (
     <View style={styles.wrap}>
       {icon ? (
-        <View
-          style={[
-            styles.iconBox,
-            { borderColor: colors.borderStrong, backgroundColor: colors.bgMuted },
-          ]}
-        >
+        <View style={[styles.iconBox, { backgroundColor: colors.accentLight }]}>
           {icon}
         </View>
       ) : null}
@@ -57,7 +53,7 @@ const styles = StyleSheet.create({
     height: 72,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth,
+    borderRadius: radius.xl,
     marginBottom: spacing.sm,
   },
   title: {

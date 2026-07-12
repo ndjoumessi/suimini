@@ -1,10 +1,10 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { fonts, fontSize, spacing } from '@/lib/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { StatusBanner } from '@/components/StatusBanner';
 
 interface HeaderProps {
-  /** Small mono uppercase eyebrow above the title. */
+  /** Petit surtitre (overline) au-dessus du titre. */
   eyebrow?: string;
   title: string;
   subtitle?: string;
@@ -12,7 +12,10 @@ interface HeaderProps {
   onRightPress?: () => void;
 }
 
-/** Editorial screen header — mono eyebrow, display title, optional right slot. */
+/**
+ * En-tête d'écran Canopée — overline accent en Figtree Medium, grand titre
+ * serif, sous-titre apaisé, slot droit optionnel (cible ≥ 44 pt via hitSlop).
+ */
 export function Header({ eyebrow, title, subtitle, right, onRightPress }: HeaderProps) {
   const { colors } = useTheme();
   return (
@@ -21,7 +24,7 @@ export function Header({ eyebrow, title, subtitle, right, onRightPress }: Header
         <View style={styles.textCol}>
           {eyebrow ? (
             <Text style={[styles.eyebrow, { color: colors.accent }]}>
-              {eyebrow.toUpperCase()}
+              {eyebrow}
             </Text>
           ) : null}
           <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
@@ -35,15 +38,19 @@ export function Header({ eyebrow, title, subtitle, right, onRightPress }: Header
         </View>
         {right ? (
           onRightPress ? (
-            <TouchableOpacity onPress={onRightPress} activeOpacity={0.8}>
+            <Pressable
+              onPress={onRightPress}
+              hitSlop={10}
+              style={({ pressed }) => [pressed && { opacity: 0.6 }]}
+            >
               {right}
-            </TouchableOpacity>
+            </Pressable>
           ) : (
             <View>{right}</View>
           )
         ) : null}
       </View>
-      {/* Supabase incident banner — renders only during an active incident. */}
+      {/* Bannière d'incident Supabase — ne rend rien hors incident. */}
       <StatusBanner />
     </>
   );
@@ -61,15 +68,15 @@ const styles = StyleSheet.create({
   },
   textCol: { flex: 1 },
   eyebrow: {
-    fontFamily: fonts.mono,
-    fontSize: fontSize.xs,
-    letterSpacing: 1.5,
+    fontFamily: fonts.bodyMedium,
+    fontSize: fontSize.sm,
+    letterSpacing: 0.6,
     marginBottom: 2,
   },
   title: {
     fontFamily: fonts.display,
     fontSize: fontSize.xxl,
-    lineHeight: fontSize.xxl + 4,
+    lineHeight: fontSize.xxl + 6,
   },
   subtitle: {
     fontFamily: fonts.body,

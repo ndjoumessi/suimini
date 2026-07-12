@@ -20,7 +20,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { PhotoPickerSheet } from '@/components/person/PhotoPickerSheet';
-import { fonts, fontSize, spacing, borderWidth } from '@/lib/theme';
+import { fonts, fontSize, spacing, radius, borderWidth } from '@/lib/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
 import { useFamilyStore } from '@/hooks/useFamilyStore';
@@ -206,17 +206,29 @@ export default function PersonEditScreen() {
       <View
         style={[
           styles.topbar,
-          { paddingTop: insets.top + spacing.xs, borderBottomColor: colors.borderStrong },
+          { paddingTop: insets.top + spacing.xs, borderBottomColor: colors.border },
         ]}
       >
-        <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
+        <TouchableOpacity
+          style={styles.iconBtn}
+          onPress={() => router.back()}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.back')}
+        >
           <ChevronLeft size={22} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.topTitle, { color: colors.textMuted }]}>
           {isEdit ? t('person.edit') : t('person.newSheet')}
         </Text>
         {isEdit ? (
-          <TouchableOpacity style={styles.iconBtn} onPress={onDelete}>
+          <TouchableOpacity
+            style={styles.iconBtn}
+            onPress={onDelete}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={t('person.deleteSheet')}
+          >
             <Trash2 size={18} color={colors.danger} />
           </TouchableOpacity>
         ) : (
@@ -277,10 +289,12 @@ export default function PersonEditScreen() {
                   key={g.key}
                   onPress={() => setGender(g.key)}
                   activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
                   style={[
                     styles.genderBtn,
                     {
-                      borderColor: colors.borderStrong,
+                      borderColor: active ? colors.accent : colors.border,
                       backgroundColor: active ? colors.accent : colors.bgCard,
                     },
                   ]}
@@ -288,7 +302,7 @@ export default function PersonEditScreen() {
                   <Text
                     style={[
                       styles.genderLabel,
-                      { color: active ? colors.bg : colors.text },
+                      { color: active ? colors.onAccent : colors.text },
                     ]}
                   >
                     {g.label}
@@ -305,7 +319,7 @@ export default function PersonEditScreen() {
           <TouchableOpacity
             onPress={() => setPicker('birth')}
             activeOpacity={0.8}
-            style={[styles.dateBtn, { borderColor: colors.borderStrong, backgroundColor: colors.bgCard }]}
+            style={[styles.dateBtn, { borderColor: colors.border, backgroundColor: colors.bgCard }]}
           >
             <Text style={[styles.dateValue, { color: birthDate ? colors.text : colors.textLight }]}>
               {birthDate ? formatFR(birthDate) : t('person.notSet')}
@@ -323,7 +337,7 @@ export default function PersonEditScreen() {
             <TouchableOpacity
               onPress={() => setPicker('death')}
               activeOpacity={0.8}
-              style={[styles.dateBtn, styles.dateGrow, { borderColor: colors.borderStrong, backgroundColor: colors.bgCard }]}
+              style={[styles.dateBtn, styles.dateGrow, { borderColor: colors.border, backgroundColor: colors.bgCard }]}
             >
               <Text style={[styles.dateValue, { color: deathDate ? colors.text : colors.textLight }]}>
                 {deathDate ? formatFR(deathDate) : t('person.notSet')}
@@ -333,7 +347,8 @@ export default function PersonEditScreen() {
             {deathDate ? (
               <TouchableOpacity
                 onPress={() => setDeathDate('')}
-                style={[styles.clearBtn, { borderColor: colors.borderStrong }]}
+                style={[styles.clearBtn, { borderColor: colors.border }]}
+                accessibilityRole="button"
               >
                 <Text style={[styles.clearText, { color: colors.danger }]}>{t('common.clear')}</Text>
               </TouchableOpacity>
@@ -413,40 +428,53 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm,
     borderBottomWidth: borderWidth,
   },
-  iconBtn: { padding: spacing.xs, minWidth: 36 },
-  topTitle: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 2 },
+  iconBtn: {
+    padding: spacing.sm,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  topTitle: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm, letterSpacing: 0.4 },
   body: { padding: spacing.lg, gap: spacing.md },
   photoRow: { alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
-  photoHint: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 1 },
-  demoBanner: { borderWidth, padding: spacing.sm },
-  demoText: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 0.5 },
-  field: { gap: spacing.xs },
-  label: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 1 },
+  photoHint: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm },
+  demoBanner: { borderWidth, borderRadius: radius.sm, padding: spacing.smd },
+  demoText: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm },
+  field: { gap: spacing.xs + 2 },
+  label: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm, letterSpacing: 0.2 },
   genderRow: { flexDirection: 'row', gap: spacing.sm },
   genderBtn: {
     flex: 1,
     borderWidth,
-    paddingVertical: spacing.md - 2,
+    borderRadius: radius.full,
+    paddingVertical: spacing.smd,
+    minHeight: 48,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  genderLabel: { fontFamily: fonts.bodyBold, fontSize: fontSize.base },
+  genderLabel: { fontFamily: fonts.bodyMedium, fontSize: fontSize.base },
   dateRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'stretch' },
   dateBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth,
-    paddingVertical: spacing.md - 2,
+    borderRadius: radius.sm,
+    paddingVertical: spacing.smd,
     paddingHorizontal: spacing.md,
+    minHeight: 48,
   },
   dateGrow: { flex: 1 },
   dateValue: { fontFamily: fonts.body, fontSize: fontSize.base },
   clearBtn: {
     borderWidth,
+    borderRadius: radius.sm,
     paddingHorizontal: spacing.md,
     justifyContent: 'center',
+    minHeight: 48,
   },
-  clearText: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 0.5 },
+  clearText: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm },
   bioInput: { minHeight: 100, textAlignVertical: 'top' },
-  error: { fontFamily: fonts.mono, fontSize: fontSize.sm },
+  error: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm },
 });

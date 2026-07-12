@@ -1,12 +1,13 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { fonts, fontSize, spacing, borderWidth } from '@/lib/theme';
+import { fonts, fontSize, spacing, radius, borderWidth } from '@/lib/theme';
 import { useTheme } from '@/hooks/useTheme';
 
 /**
- * Custom Atelier bottom tab bar — top ink rule, mono uppercase labels, the
- * active tab marked with a terracotta accent bar. Passed to <Tabs tabBar={…}>.
+ * Barre d'onglets Canopée — surface carte, bordure hairline, l'onglet actif
+ * porte une pastille tonale derrière son icône (couleur + forme, jamais la
+ * couleur seule). Passée à <Tabs tabBar={…}>. Cibles ≥ 44 pt.
  */
 export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const { colors } = useTheme();
@@ -18,7 +19,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
         styles.bar,
         {
           backgroundColor: colors.bgCard,
-          borderTopColor: colors.borderStrong,
+          borderTopColor: colors.border,
           paddingBottom: insets.bottom || spacing.sm,
         },
       ]}
@@ -30,7 +31,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
             ? options.tabBarLabel
             : options.title ?? route.name;
         const focused = state.index === index;
-        const color = focused ? colors.accent : colors.textMuted;
+        const color = focused ? colors.accent : colors.textLight;
 
         const onPress = () => {
           const event = navigation.emit({
@@ -42,25 +43,31 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
         };
 
         return (
-          <TouchableOpacity
+          <Pressable
             key={route.key}
             accessibilityRole="button"
             accessibilityState={focused ? { selected: true } : {}}
             onPress={onPress}
-            style={styles.tab}
-            activeOpacity={0.7}
+            style={({ pressed }) => [styles.tab, pressed && { opacity: 0.65 }]}
           >
             <View
               style={[
-                styles.marker,
-                { backgroundColor: focused ? colors.accent : 'transparent' },
+                styles.iconPill,
+                { backgroundColor: focused ? colors.accentLight : 'transparent' },
               ]}
-            />
-            {options.tabBarIcon?.({ focused, color, size: 22 })}
-            <Text style={[styles.label, { color }]} numberOfLines={1}>
-              {label.toUpperCase()}
+            >
+              {options.tabBarIcon?.({ focused, color, size: 22 })}
+            </View>
+            <Text
+              style={[
+                styles.label,
+                { color, fontFamily: focused ? fonts.bodyMedium : fonts.body },
+              ]}
+              numberOfLines={1}
+            >
+              {label}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         );
       })}
     </View>
@@ -76,16 +83,16 @@ const styles = StyleSheet.create({
   tab: {
     flex: 1,
     alignItems: 'center',
-    gap: 3,
+    gap: 2,
+    minHeight: 48,
   },
-  marker: {
-    width: 22,
-    height: 3,
-    marginBottom: 2,
+  iconPill: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 3,
+    borderRadius: radius.full,
   },
   label: {
-    fontFamily: fonts.mono,
     fontSize: fontSize.micro,
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
 });

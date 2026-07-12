@@ -17,7 +17,7 @@ import { Header } from '@/components/layout/Header';
 import { Input } from '@/components/ui/Input';
 import { PersonCard } from '@/components/person/PersonCard';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { fonts, fontSize, spacing, shadows, borderWidth } from '@/lib/theme';
+import { fonts, fontSize, spacing, radius, shadows } from '@/lib/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { useFamilyStore } from '@/hooks/useFamilyStore';
 import { searchPersons, getGeneration } from '@/lib/treeUtils';
@@ -132,6 +132,8 @@ export default function PeopleScreen() {
               key={key}
               onPress={() => setSort(key)}
               hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
               style={[
                 styles.sortChip,
                 {
@@ -143,10 +145,13 @@ export default function PeopleScreen() {
               <Text
                 style={[
                   styles.sortText,
-                  { color: active ? colors.accent : colors.textMuted },
+                  {
+                    color: active ? colors.accent : colors.textMuted,
+                    fontFamily: active ? fonts.bodyMedium : fonts.body,
+                  },
                 ]}
               >
-                {label.toUpperCase()}
+                {label}
               </Text>
             </TouchableOpacity>
           );
@@ -180,8 +185,8 @@ export default function PeopleScreen() {
         pointerEvents={keyboardVisible ? 'none' : 'auto'}
         style={[
           styles.fab,
-          { backgroundColor: colors.accent, borderColor: colors.borderStrong, bottom: spacing.lg },
-          shadows.hard,
+          { backgroundColor: colors.accent, bottom: spacing.lg },
+          shadows.mid,
           { opacity: fabOpacity, transform: [{ scale: fabOpacity }] },
         ]}
       >
@@ -189,8 +194,10 @@ export default function PeopleScreen() {
           activeOpacity={0.85}
           onPress={() => router.push('/person/edit')}
           style={styles.fabTouch}
+          accessibilityRole="button"
+          accessibilityLabel={t('people.addPerson')}
         >
-          <Plus size={26} color={colors.bg} />
+          <Plus size={26} color={colors.onAccent} />
         </TouchableOpacity>
       </Animated.View>
     </View>
@@ -200,22 +207,27 @@ export default function PeopleScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   controls: { paddingHorizontal: spacing.lg, justifyContent: 'center' },
-  searchIcon: { position: 'absolute', left: spacing.lg + spacing.md, top: 14 },
+  searchIcon: { position: 'absolute', left: spacing.lg + spacing.md, top: 15 },
   sortRow: {
     flexDirection: 'row',
     gap: spacing.sm,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },
-  sortChip: { borderWidth: 1, paddingHorizontal: spacing.sm, paddingVertical: 5 },
-  sortText: { fontFamily: fonts.mono, fontSize: fontSize.xs - 1, letterSpacing: 0.5 },
+  sortChip: {
+    borderWidth: 1,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.smd,
+    paddingVertical: 6,
+  },
+  sortText: { fontSize: fontSize.sm },
   list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl + 56 },
   fab: {
     position: 'absolute',
     right: spacing.lg,
     width: 56,
     height: 56,
-    borderWidth,
+    borderRadius: radius.full,
   },
   fabTouch: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });

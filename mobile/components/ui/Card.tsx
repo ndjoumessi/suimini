@@ -1,21 +1,25 @@
 import {
   View,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
   type ViewStyle,
 } from 'react-native';
-import { spacing, shadows, borderWidth, radius } from '@/lib/theme';
+import { spacing, shadows, radius, borderWidth } from '@/lib/theme';
 import { useTheme } from '@/hooks/useTheme';
 
 interface CardProps {
   children: React.ReactNode;
-  /** Hard ink offset shadow (Atelier signature). */
+  /** Ombre diffuse `low` (cartes mises en avant). */
   elevated?: boolean;
   onPress?: () => void;
   padded?: boolean;
   style?: ViewStyle;
 }
 
+/**
+ * Carte Canopée — surface arrondie (radius.md), bordure hairline, ombre
+ * diffuse optionnelle. Pressée : la surface glisse vers bgMuted.
+ */
 export function Card({
   children,
   elevated,
@@ -24,37 +28,34 @@ export function Card({
   style,
 }: CardProps) {
   const { colors } = useTheme();
-  const content = (
-    <View
-      style={[
-        styles.base,
-        {
-          backgroundColor: colors.bgCard,
-          borderColor: colors.borderStrong,
-        },
-        padded && styles.padded,
-        elevated && shadows.hard,
-        style,
-      ]}
-    >
-      {children}
-    </View>
-  );
+
+  const shell = (pressed: boolean): ViewStyle[] =>
+    [
+      styles.base,
+      {
+        backgroundColor: pressed ? colors.bgMuted : colors.bgCard,
+        borderColor: colors.border,
+      },
+      padded ? styles.padded : null,
+      elevated ? shadows.low : null,
+      style,
+    ].filter(Boolean) as ViewStyle[];
 
   if (onPress) {
     return (
-      <TouchableOpacity activeOpacity={0.85} onPress={onPress}>
-        {content}
-      </TouchableOpacity>
+      <Pressable onPress={onPress} style={({ pressed }) => shell(pressed)}>
+        {children}
+      </Pressable>
     );
   }
-  return content;
+  return <View style={shell(false)}>{children}</View>;
 }
 
 const styles = StyleSheet.create({
   base: {
     borderWidth,
-    borderRadius: radius.sm,
+    borderRadius: radius.md,
+    overflow: 'hidden',
   },
   padded: { padding: spacing.md },
 });

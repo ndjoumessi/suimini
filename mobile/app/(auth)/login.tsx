@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { fonts, fontSize, spacing } from '@/lib/theme';
+import { fonts, fontSize, spacing, radius, shadows } from '@/lib/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -71,7 +71,7 @@ export default function LoginScreen() {
       >
         {/* Wordmark */}
         <View style={styles.brand}>
-          <View style={[styles.mark, { borderColor: colors.borderStrong }]}>
+          <View style={[styles.mark, shadows.low, { backgroundColor: colors.accentLight }]}>
             <Text style={[styles.markText, { color: colors.accent }]}>S</Text>
           </View>
           <Text style={[styles.wordmark, { color: colors.text }]}>Suimini</Text>
@@ -115,7 +115,12 @@ export default function LoginScreen() {
             style={{ marginTop: spacing.sm }}
           />
 
-          <TouchableOpacity onPress={() => setMagic((m) => !m)} style={styles.switch}>
+          <TouchableOpacity
+            onPress={() => setMagic((m) => !m)}
+            style={styles.switch}
+            hitSlop={8}
+            accessibilityRole="button"
+          >
             <Text style={[styles.switchText, { color: colors.accent }]}>
               {magic ? t('auth.usePassword') : t('auth.useMagic')}
             </Text>
@@ -151,22 +156,22 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: spacing.lg, gap: spacing.lg },
   brand: { alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
   mark: {
-    width: 56,
-    height: 56,
-    borderWidth: 1.5,
+    width: 64,
+    height: 64,
+    borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  markText: { fontFamily: fonts.display, fontSize: 32 },
+  markText: { fontFamily: fonts.display, fontSize: 36 },
   wordmark: { fontFamily: fonts.display, fontSize: fontSize.xxl, marginTop: spacing.xs },
-  tagline: { fontFamily: fonts.body, fontSize: fontSize.sm, textAlign: 'center' },
+  tagline: { fontFamily: fonts.body, fontSize: fontSize.base, textAlign: 'center' },
   form: { gap: spacing.md },
-  error: { fontFamily: fonts.mono, fontSize: fontSize.sm },
-  notice: { fontFamily: fonts.mono, fontSize: fontSize.sm },
-  switch: { alignItems: 'center', paddingVertical: spacing.xs },
-  switchText: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 0.5 },
-  divider: { height: 1.5, marginVertical: spacing.sm },
-  hint: { fontFamily: fonts.mono, fontSize: fontSize.xs, textAlign: 'center' },
-  registerLink: { alignItems: 'center', paddingVertical: spacing.md },
+  error: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm },
+  notice: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm },
+  switch: { alignItems: 'center', paddingVertical: spacing.sm, minHeight: 40, justifyContent: 'center' },
+  switchText: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm },
+  divider: { height: 1, marginVertical: spacing.sm },
+  hint: { fontFamily: fonts.body, fontSize: fontSize.sm, textAlign: 'center' },
+  registerLink: { alignItems: 'center', paddingVertical: spacing.md, minHeight: 48, justifyContent: 'center' },
   registerText: { fontFamily: fonts.body, fontSize: fontSize.base },
 });

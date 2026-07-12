@@ -1,16 +1,17 @@
 /**
- * Theme hook — resolves the active Atelier palette from the user's preference
+ * Theme hook — resolves the active Canopée palette from the user's preference
  * (system / light / dark) and exposes a font loader for the root layout.
  */
 import { useColorScheme } from 'react-native';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { useFonts } from 'expo-font';
-import { BricolageGrotesque_700Bold } from '@expo-google-fonts/bricolage-grotesque';
+import { DMSerifDisplay_400Regular } from '@expo-google-fonts/dm-serif-display';
 import {
-  HankenGrotesk_400Regular,
-  HankenGrotesk_700Bold,
-} from '@expo-google-fonts/hanken-grotesk';
+  Figtree_400Regular,
+  Figtree_500Medium,
+  Figtree_700Bold,
+} from '@expo-google-fonts/figtree';
 import {
   IBMPlexMono_400Regular,
   IBMPlexMono_600SemiBold,
@@ -57,12 +58,13 @@ export function useTheme(): ThemeValue {
   return { scheme, colors: palette(scheme), preference, setPreference };
 }
 
-/** Loads the Atelier font families. Keys MUST match `fonts` in lib/theme.ts. */
+/** Loads the Canopée font families. Keys MUST match `fonts` in lib/theme.ts. */
 export function useAppFonts(): boolean {
   const [loaded] = useFonts({
-    BricolageGrotesque: BricolageGrotesque_700Bold,
-    HankenGrotesk: HankenGrotesk_400Regular,
-    HankenGroteskBold: HankenGrotesk_700Bold,
+    DMSerifDisplay: DMSerifDisplay_400Regular,
+    Figtree: Figtree_400Regular,
+    FigtreeMedium: Figtree_500Medium,
+    FigtreeBold: Figtree_700Bold,
     IBMPlexMono: IBMPlexMono_400Regular,
     IBMPlexMonoBold: IBMPlexMono_600SemiBold,
   });

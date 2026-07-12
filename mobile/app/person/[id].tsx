@@ -29,7 +29,13 @@ export default function PersonScreen() {
           { paddingTop: insets.top + spacing.xs, borderBottomColor: colors.border },
         ]}
       >
-        <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
+        <TouchableOpacity
+          style={styles.iconBtn}
+          onPress={() => router.back()}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.back')}
+        >
           <ChevronLeft size={22} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.topTitle, { color: colors.textMuted }]}>{t('person.sheet')}</Text>
@@ -39,6 +45,9 @@ export default function PersonScreen() {
             person && router.push({ pathname: '/person/edit', params: { id: person.id } })
           }
           disabled={!person}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={t('person.edit')}
         >
           <Pencil size={18} color={person ? colors.accent : colors.textLight} />
         </TouchableOpacity>
@@ -80,7 +89,13 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm,
     borderBottomWidth: borderWidth,
   },
-  iconBtn: { padding: spacing.xs, minWidth: 36 },
-  topTitle: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 2 },
+  iconBtn: {
+    padding: spacing.sm,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  topTitle: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm, letterSpacing: 0.4 },
   relations: { paddingHorizontal: spacing.lg, paddingTop: 0 },
 });

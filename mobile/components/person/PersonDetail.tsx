@@ -182,8 +182,8 @@ function Section({
 }) {
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: colors.accent }]}>
-        {title.toUpperCase()}
+      <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
+        {title}
       </Text>
       <Card elevated>{children}</Card>
     </View>
@@ -250,28 +250,34 @@ const styles = StyleSheet.create({
   },
   badges: { flexDirection: 'row', gap: spacing.sm },
   section: { gap: spacing.sm },
-  sectionTitle: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 1.5 },
+  sectionTitle: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm, letterSpacing: 0.5 },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 6,
     gap: spacing.md,
   },
-  infoLabel: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 0.5 },
+  infoLabel: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm },
   infoValue: { fontFamily: fonts.body, fontSize: fontSize.base, flexShrink: 1, textAlign: 'right' },
   bio: { fontFamily: fonts.body, fontSize: fontSize.base, lineHeight: 24 },
   completeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  completeLabel: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 1 },
+  completeLabel: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm },
   completePct: { fontFamily: fonts.bodyBold, fontSize: fontSize.sm },
-  bar: { flex: 1, height: 8, overflow: 'hidden' },
-  barFill: { height: '100%' },
+  bar: { flex: 1, height: 8, overflow: 'hidden', borderRadius: 4 },
+  barFill: { height: '100%', borderRadius: 4 },
   dnaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 5 },
   dnaLabel: { fontFamily: fonts.body, fontSize: fontSize.sm, width: 130 },
   dnaBar: { flex: 1 },
   dnaPct: { fontFamily: fonts.mono, fontSize: fontSize.xs, width: 40, textAlign: 'right' },
   relGroup: { gap: spacing.xs, marginBottom: spacing.sm },
-  relTitle: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 0.5, marginTop: spacing.xs },
-  relRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 4 },
+  relTitle: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm, marginTop: spacing.xs },
+  relRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+    minHeight: 44,
+  },
   relName: { fontFamily: fonts.body, fontSize: fontSize.base },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
 });

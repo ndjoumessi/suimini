@@ -150,8 +150,8 @@ function EventDot({
     return <View style={[styles.dot, { backgroundColor: colors.accent, borderColor: colors.bg }]} />;
   }
   return (
-    <View style={[styles.dotIcon, { backgroundColor: colors.bgCard, borderColor: colors.accent }]}>
-      <Icon size={11} color={colors.accent} strokeWidth={2.25} />
+    <View style={[styles.dotIcon, { backgroundColor: colors.accentLight, borderColor: colors.accent }]}>
+      <Icon size={12} color={colors.accent} strokeWidth={2.25} />
     </View>
   );
 }
@@ -160,19 +160,19 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
   decadeWrap: { paddingVertical: spacing.sm },
-  decade: { fontFamily: fonts.mono, fontSize: fontSize.sm, letterSpacing: 1.5 },
+  decade: { fontFamily: fonts.display, fontSize: fontSize.md, letterSpacing: 0.3 },
   row: { flexDirection: 'row', gap: spacing.md },
-  spineCol: { alignItems: 'center', width: 22 },
-  dot: { width: 12, height: 12, borderRadius: 6, borderWidth: 2, marginTop: 4 },
+  spineCol: { alignItems: 'center', width: 24 },
+  dot: { width: 12, height: 12, borderRadius: 6, borderWidth: 2, marginTop: 5 },
   dotIcon: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 1.5,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  spine: { width: 2, flex: 1, marginTop: 2 },
+  spine: { width: 2, borderRadius: 1, flex: 1, marginTop: 4 },
   content: { flex: 1, paddingBottom: spacing.md },
   date: { fontFamily: fonts.mono, fontSize: fontSize.xs },
   label: { fontFamily: fonts.body, fontSize: fontSize.base, marginTop: 2, lineHeight: 22 },

@@ -18,7 +18,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { fonts, fontSize, spacing, borderWidth } from '@/lib/theme';
+import { fonts, fontSize, spacing, radius, shadows, borderWidth } from '@/lib/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { useFamilyStore } from '@/hooks/useFamilyStore';
 import {
@@ -108,8 +108,8 @@ export function RelationsSection({ person }: RelationsSectionProps) {
 
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: colors.accent }]}>
-        {t('relations.title').toUpperCase()}
+      <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
+        {t('relations.title')}
       </Text>
       <Card elevated padded={false}>
         {rows.length === 0 ? (
@@ -221,7 +221,7 @@ function RelationRow({
         {other ? <Avatar person={other} size={36} /> : null}
         <View style={styles.relText}>
           <Text style={[styles.relKind, { color: colors.textLight }]}>
-            {kindLabel.toUpperCase()}
+            {kindLabel}
           </Text>
           <Text style={[styles.relName, { color: colors.text }]} numberOfLines={1}>
             {other ? getDisplayName(other) : '—'}
@@ -306,16 +306,18 @@ function AddRelationshipSheet({
         <View
           style={[
             styles.sheet,
+            shadows.high,
             {
               backgroundColor: colors.bg,
-              borderColor: colors.borderStrong,
               paddingBottom: insets.bottom + spacing.lg,
             },
           ]}
         >
+          {/* Poignée de sheet */}
+          <View style={[styles.grabber, { backgroundColor: colors.borderStrong }]} />
           {/* Sheet header */}
           <View style={styles.sheetHeader}>
-            <Text style={[styles.sheetTitle, { color: colors.textMuted }]}>
+            <Text style={[styles.sheetTitle, { color: colors.text }]}>
               {t('relations.addTitle')}
             </Text>
             <TouchableOpacity
@@ -340,16 +342,21 @@ function AddRelationshipSheet({
                   key={k.key}
                   onPress={() => selectKind(k.key)}
                   activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
                   style={[
                     styles.kindBtn,
                     {
-                      borderColor: colors.borderStrong,
+                      borderColor: active ? colors.accent : colors.border,
                       backgroundColor: active ? colors.accent : colors.bgCard,
                     },
                   ]}
                 >
                   <Text
-                    style={[styles.kindLabel, { color: active ? colors.bg : colors.text }]}
+                    style={[
+                      styles.kindLabel,
+                      { color: active ? colors.onAccent : colors.text },
+                    ]}
                   >
                     {k.label}
                   </Text>
@@ -358,7 +365,7 @@ function AddRelationshipSheet({
             })}
           </View>
 
-          {/* Target person */}
+          {/* Personne cible */}
           <Text style={[styles.label, { color: colors.textMuted }]}>
             {t('relations.withLabel')}
           </Text>
@@ -371,7 +378,7 @@ function AddRelationshipSheet({
           <FlatList
             data={candidates}
             keyExtractor={(p) => p.id}
-            style={[styles.list, { borderColor: colors.borderStrong }]}
+            style={[styles.list, { borderColor: colors.border }]}
             keyboardShouldPersistTaps="handled"
             ListEmptyComponent={
               <Text style={[styles.empty, { color: colors.textLight }]}>
@@ -422,22 +429,23 @@ function AddRelationshipSheet({
 
 const styles = StyleSheet.create({
   section: { gap: spacing.sm },
-  sectionTitle: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 1.5 },
+  sectionTitle: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm, letterSpacing: 0.5 },
   empty: {
     fontFamily: fonts.body,
     fontSize: fontSize.sm,
     padding: spacing.md,
   },
-  hint: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 0.3 },
+  hint: { fontFamily: fonts.body, fontSize: fontSize.sm },
   relRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
+    minHeight: 56,
   },
   relText: { flex: 1, gap: 2 },
-  relKind: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 0.5 },
+  relKind: { fontFamily: fonts.bodyMedium, fontSize: fontSize.xs, letterSpacing: 0.3 },
   relName: { fontFamily: fonts.body, fontSize: fontSize.base },
   deleteAction: {
     alignItems: 'center',
@@ -445,13 +453,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     gap: 2,
   },
-  deleteActionText: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 0.5 },
+  deleteActionText: { fontFamily: fonts.bodyMedium, fontSize: fontSize.xs, letterSpacing: 0.3 },
   scrim: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
-    borderTopWidth: borderWidth,
-    padding: spacing.lg,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
     gap: spacing.sm,
     maxHeight: '85%',
+  },
+  grabber: {
+    alignSelf: 'center',
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    marginBottom: spacing.xs,
   },
   sheetHeader: {
     flexDirection: 'row',
@@ -459,24 +476,28 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: spacing.xs,
   },
-  sheetTitle: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 2 },
-  closeBtn: { padding: spacing.xs },
-  label: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 1 },
+  sheetTitle: { fontFamily: fonts.display, fontSize: fontSize.md },
+  closeBtn: { padding: spacing.sm },
+  label: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm, letterSpacing: 0.2 },
   kindRow: { flexDirection: 'row', gap: spacing.sm },
   kindBtn: {
     flex: 1,
     borderWidth,
-    paddingVertical: spacing.md - 4,
+    borderRadius: radius.full,
+    paddingVertical: spacing.smd,
+    minHeight: 44,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  kindLabel: { fontFamily: fonts.bodyBold, fontSize: fontSize.sm },
-  list: { borderWidth, minHeight: 120, maxHeight: 260 },
+  kindLabel: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm },
+  list: { borderWidth, borderRadius: radius.sm, minHeight: 120, maxHeight: 260, overflow: 'hidden' },
   candidateRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
+    minHeight: 48,
   },
   candidateName: { flex: 1 },
 });

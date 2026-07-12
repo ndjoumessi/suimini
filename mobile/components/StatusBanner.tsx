@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, AlertOctagon, X } from 'lucide-react-native';
-import { fonts, fontSize, spacing, borderWidth, colors as tokens } from '@/lib/theme';
+import { fonts, fontSize, spacing, radius, borderWidth, colors as tokens } from '@/lib/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { useSupabaseStatus, bannerLevel, dismissKey } from '@/hooks/useSupabaseStatus';
 
@@ -61,7 +61,7 @@ export function StatusBanner() {
         onPress={dismiss}
         accessibilityRole="button"
         accessibilityLabel={t('status.dismiss')}
-        hitSlop={8}
+        hitSlop={14}
       >
         <X size={16} color={colors.textMuted} />
       </TouchableOpacity>
@@ -74,12 +74,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderTopWidth: borderWidth,
-    borderBottomWidth: borderWidth,
+    borderWidth,
+    borderRadius: radius.sm,
   },
   textCol: { flex: 1 },
-  title: { fontFamily: fonts.mono, fontSize: fontSize.xs },
-  link: { fontFamily: fonts.monoBold, fontSize: fontSize.xs, marginTop: 2 },
+  title: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm },
+  link: { fontFamily: fonts.bodyBold, fontSize: fontSize.sm, marginTop: 2 },
 });

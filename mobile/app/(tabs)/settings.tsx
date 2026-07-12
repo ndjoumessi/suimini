@@ -14,7 +14,7 @@ import { Sun, Moon, Smartphone, LogOut, Check, RefreshCw, Bell, Globe } from 'lu
 import { Header } from '@/components/layout/Header';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { fonts, fontSize, spacing, borderWidth } from '@/lib/theme';
+import { fonts, fontSize, spacing, radius } from '@/lib/theme';
 import { useTheme, type ThemePreference } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
 import { useFamilyStore } from '@/hooks/useFamilyStore';
@@ -140,10 +140,12 @@ export default function SettingsScreen() {
                 key={opt.key}
                 onPress={() => setPreference(opt.key)}
                 activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
                 style={[
                   styles.chip,
                   {
-                    borderColor: active ? colors.accent : colors.borderStrong,
+                    borderColor: active ? colors.accent : colors.border,
                     backgroundColor: active ? colors.accentLight : colors.bgCard,
                   },
                 ]}
@@ -167,10 +169,12 @@ export default function SettingsScreen() {
                 key={opt.key}
                 onPress={() => onLanguage(opt.key)}
                 activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
                 style={[
                   styles.chip,
                   {
-                    borderColor: active ? colors.accent : colors.borderStrong,
+                    borderColor: active ? colors.accent : colors.border,
                     backgroundColor: active ? colors.accentLight : colors.bgCard,
                   },
                 ]}
@@ -213,7 +217,13 @@ export default function SettingsScreen() {
             <Text style={[styles.value, { color: colors.text }]}>
               {t(`settings.syncStatus.${syncStatus}`, { defaultValue: syncStatus })}
             </Text>
-            <TouchableOpacity onPress={() => refreshFromRemote()} disabled={!configured}>
+            <TouchableOpacity
+              onPress={() => refreshFromRemote()}
+              disabled={!configured}
+              hitSlop={14}
+              accessibilityRole="button"
+              accessibilityLabel={t('settings.sync')}
+            >
               <RefreshCw size={18} color={configured ? colors.accent : colors.textLight} />
             </TouchableOpacity>
           </View>
@@ -271,7 +281,7 @@ function Section({
 }) {
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: colors.accent }]}>{title.toUpperCase()}</Text>
+      <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>{title}</Text>
       {children}
     </View>
   );
@@ -279,18 +289,21 @@ function Section({
 
 const styles = StyleSheet.create({
   section: { paddingHorizontal: spacing.lg, marginTop: spacing.lg, gap: spacing.sm },
-  sectionTitle: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 1.5 },
+  sectionTitle: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm, letterSpacing: 0.5 },
   value: { fontFamily: fonts.bodyBold, fontSize: fontSize.base },
   meta: { fontFamily: fonts.body, fontSize: fontSize.sm, marginTop: 2 },
   chipRow: { flexDirection: 'row', gap: spacing.sm },
   chip: {
     flex: 1,
-    borderWidth,
+    borderWidth: 1,
+    borderRadius: radius.md,
     paddingVertical: spacing.md,
     alignItems: 'center',
     gap: spacing.xs,
+    minHeight: 72,
+    justifyContent: 'center',
   },
-  chipLabel: { fontFamily: fonts.body, fontSize: fontSize.sm },
+  chipLabel: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm },
   treeItem: { marginBottom: spacing.xs },
   treeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   syncRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

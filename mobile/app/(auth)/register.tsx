@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { fonts, fontSize, spacing } from '@/lib/theme';
+import { fonts, fontSize, spacing, radius, shadows } from '@/lib/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -57,7 +57,12 @@ export default function RegisterScreen() {
         ]}
         keyboardShouldPersistTaps="handled"
       >
-        <TouchableOpacity style={styles.back} onPress={() => router.back()}>
+        <TouchableOpacity
+          style={styles.back}
+          onPress={() => router.back()}
+          hitSlop={8}
+          accessibilityRole="button"
+        >
           <ChevronLeft size={20} color={colors.text} />
           <Text style={[styles.backText, { color: colors.text }]}>{t('common.back')}</Text>
         </TouchableOpacity>
@@ -68,7 +73,7 @@ export default function RegisterScreen() {
         </Text>
 
         {done ? (
-          <View style={[styles.doneBox, { borderColor: colors.borderStrong, backgroundColor: colors.bgCard }]}>
+          <View style={[styles.doneBox, shadows.low, { borderColor: colors.border, backgroundColor: colors.bgCard }]}>
             <Text style={[styles.doneTitle, { color: colors.accent }]}>
               {t('auth.register.sentTitle')}
             </Text>
@@ -125,13 +130,13 @@ export default function RegisterScreen() {
 
 const styles = StyleSheet.create({
   scroll: { paddingHorizontal: spacing.lg, gap: spacing.md },
-  back: { flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: spacing.sm },
+  back: { flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: spacing.sm, minHeight: 44 },
   backText: { fontFamily: fonts.body, fontSize: fontSize.base },
   title: { fontFamily: fonts.display, fontSize: fontSize.xxl },
   sub: { fontFamily: fonts.body, fontSize: fontSize.base, lineHeight: 22, marginBottom: spacing.sm },
   form: { gap: spacing.md },
-  error: { fontFamily: fonts.mono, fontSize: fontSize.sm },
-  doneBox: { borderWidth: 1.5, padding: spacing.lg, gap: spacing.sm },
-  doneTitle: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 1.5 },
+  error: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm },
+  doneBox: { borderWidth: 1, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.sm },
+  doneTitle: { fontFamily: fonts.display, fontSize: fontSize.md },
   doneText: { fontFamily: fonts.body, fontSize: fontSize.base, lineHeight: 24 },
 });

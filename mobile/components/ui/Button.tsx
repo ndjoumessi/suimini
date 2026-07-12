@@ -1,12 +1,12 @@
 import {
-  TouchableOpacity,
+  Pressable,
   Text,
   ActivityIndicator,
   StyleSheet,
   View,
   type ViewStyle,
 } from 'react-native';
-import { fonts, fontSize, spacing, shadows, borderWidth } from '@/lib/theme';
+import { fonts, fontSize, spacing, radius, shadows } from '@/lib/theme';
 import { useTheme } from '@/hooks/useTheme';
 
 interface ButtonProps {
@@ -19,6 +19,11 @@ interface ButtonProps {
   style?: ViewStyle;
 }
 
+/**
+ * Bouton Canopée — pilule pleine (primary), tonale (secondary) ou texte
+ * (ghost). L'état pressé assombrit/opacifie la surface (pas de scale brutal),
+ * l'état disabled descend à 45 % d'opacité. Hauteur ≥ 48 pt (cible tactile).
+ */
 export function Button({
   label,
   onPress,
@@ -32,20 +37,25 @@ export function Button({
   const isPrimary = variant === 'primary';
   const isGhost = variant === 'ghost';
 
-  const bg = isPrimary ? colors.accent : 'transparent';
-  const border = isGhost ? 'transparent' : colors.borderStrong;
-  const fg = isPrimary ? colors.bg : isGhost ? colors.accent : colors.text;
+  const fg = isPrimary ? colors.onAccent : colors.accent;
 
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={onPress}
       disabled={disabled || loading}
-      activeOpacity={0.85}
-      style={[
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !!(disabled || loading), busy: !!loading }}
+      hitSlop={isGhost ? 6 : undefined}
+      style={({ pressed }) => [
         styles.base,
-        { backgroundColor: bg, borderColor: border },
-        isGhost && styles.ghost,
-        isPrimary && shadows.hard,
+        isPrimary && [
+          { backgroundColor: pressed ? colors.accentPressed : colors.accent },
+          !disabled && !loading && shadows.low,
+        ],
+        variant === 'secondary' && {
+          backgroundColor: pressed ? colors.bgMuted : colors.accentLight,
+        },
+        isGhost && [styles.ghost, pressed && { opacity: 0.6 }],
         (disabled || loading) && styles.disabled,
         style,
       ]}
@@ -58,25 +68,26 @@ export function Button({
           <Text style={[styles.label, { color: fg }]}>{label}</Text>
         </View>
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   base: {
-    paddingVertical: spacing.md,
+    minHeight: 48,
+    paddingVertical: spacing.smd,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth,
+    borderRadius: radius.full,
   },
-  ghost: { borderWidth: 0, paddingVertical: spacing.sm },
+  ghost: { paddingVertical: spacing.sm, minHeight: 40 },
   disabled: { opacity: 0.45 },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   label: {
     fontFamily: fonts.bodyBold,
     fontSize: fontSize.base,
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
 });
 

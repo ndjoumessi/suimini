@@ -5,9 +5,9 @@
  * handled gracefully (Alert). While the picked photo is compressed + uploaded an
  * ActivityIndicator shows; on success the before→after size is surfaced.
  *
- * Atelier styling: theme scrim, hard border, ZERO border-radius (the round
- * source-icon discs are a deliberate "real circle" exception). All copy via
- * i18next (`photo.*`).
+ * Style Canopée : sheet arrondie (radius.xl) + poignée, scrim du thème,
+ * boutons-source en cartes arrondies avec disque tonal. Tout le texte passe
+ * par i18next (`photo.*`).
  */
 import { useState } from 'react';
 import {
@@ -23,7 +23,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Camera, Images, X } from 'lucide-react-native';
-import { fonts, fontSize, spacing, borderWidth } from '@/lib/theme';
+import { fonts, fontSize, spacing, radius, shadows, borderWidth } from '@/lib/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { currentLanguage } from '@/lib/i18n';
 import { uploadAvatarMobile } from '@/lib/uploadImage';
@@ -154,15 +154,16 @@ export function PhotoPickerSheet({
         <View
           style={[
             styles.sheet,
+            shadows.high,
             {
               backgroundColor: colors.bg,
-              borderColor: colors.borderStrong,
               paddingBottom: insets.bottom + spacing.lg,
             },
           ]}
         >
+          <View style={[styles.grabber, { backgroundColor: colors.borderStrong }]} />
           <View style={styles.header}>
-            <Text style={[styles.title, { color: colors.textMuted }]}>
+            <Text style={[styles.title, { color: colors.text }]}>
               {t('photo.title')}
             </Text>
             <TouchableOpacity
@@ -194,9 +195,9 @@ export function PhotoPickerSheet({
                 onPress={close}
                 accessibilityRole="button"
                 accessibilityLabel={t('common.done')}
-                style={[styles.doneBtn, { borderColor: colors.borderStrong, backgroundColor: colors.accent }]}
+                style={[styles.doneBtn, { backgroundColor: colors.accent }]}
               >
-                <Text style={[styles.doneBtnText, { color: colors.bg }]}>
+                <Text style={[styles.doneBtnText, { color: colors.onAccent }]}>
                   {t('common.done')}
                 </Text>
               </TouchableOpacity>
@@ -204,13 +205,13 @@ export function PhotoPickerSheet({
           ) : (
             <View style={styles.options}>
               <SourceButton
-                icon={<Camera size={22} color={colors.text} />}
+                icon={<Camera size={22} color={colors.accent} />}
                 label={t('photo.takePhoto')}
                 onPress={() => pick('camera')}
                 colors={colors}
               />
               <SourceButton
-                icon={<Images size={22} color={colors.text} />}
+                icon={<Images size={22} color={colors.accent} />}
                 label={t('photo.chooseFromGallery')}
                 onPress={() => pick('gallery')}
                 colors={colors}
@@ -240,9 +241,9 @@ function SourceButton({
       activeOpacity={0.8}
       accessibilityRole="button"
       accessibilityLabel={label}
-      style={[styles.sourceBtn, { borderColor: colors.borderStrong, backgroundColor: colors.bgCard }]}
+      style={[styles.sourceBtn, { borderColor: colors.border, backgroundColor: colors.bgCard }]}
     >
-      <View style={[styles.iconDisc, { borderColor: colors.borderStrong }]}>{icon}</View>
+      <View style={[styles.iconDisc, { backgroundColor: colors.accentLight }]}>{icon}</View>
       <Text style={[styles.sourceLabel, { color: colors.text }]}>{label}</Text>
     </TouchableOpacity>
   );
@@ -251,9 +252,18 @@ function SourceButton({
 const styles = StyleSheet.create({
   scrim: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
-    borderTopWidth: borderWidth,
-    padding: spacing.lg,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
     gap: spacing.md,
+  },
+  grabber: {
+    alignSelf: 'center',
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    marginBottom: spacing.xs,
   },
   header: {
     flexDirection: 'row',
@@ -261,35 +271,38 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: spacing.xs,
   },
-  title: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 2 },
-  closeBtn: { padding: spacing.xs },
+  title: { fontFamily: fonts.display, fontSize: fontSize.md },
+  closeBtn: { padding: spacing.sm },
   options: { gap: spacing.sm },
   sourceBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
     borderWidth,
+    borderRadius: radius.md,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
+    minHeight: 56,
   },
   iconDisc: {
     width: 40,
     height: 40,
-    borderRadius: 20, // deliberate "real circle" exception
-    borderWidth,
+    borderRadius: 20, // vrai cercle assumé
     alignItems: 'center',
     justifyContent: 'center',
   },
   sourceLabel: { fontFamily: fonts.bodyBold, fontSize: fontSize.base },
   center: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md },
-  status: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 0.5 },
-  doneLabel: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 1.5 },
+  status: { fontFamily: fonts.body, fontSize: fontSize.sm },
+  doneLabel: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm, letterSpacing: 0.4 },
   sizeText: { fontFamily: fonts.mono, fontSize: fontSize.sm, letterSpacing: 0.3 },
   doneBtn: {
-    borderWidth,
-    paddingVertical: spacing.sm,
+    borderRadius: radius.full,
+    paddingVertical: spacing.smd,
     paddingHorizontal: spacing.xl,
     marginTop: spacing.xs,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   doneBtnText: { fontFamily: fonts.bodyBold, fontSize: fontSize.base },
 });

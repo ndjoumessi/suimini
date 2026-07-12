@@ -88,10 +88,11 @@ export function TreeView({
                 <Path
                   key={`edge-${i}`}
                   d={d}
-                  stroke={colors.border}
-                  strokeWidth={1.5}
-                  strokeOpacity={0.7}
+                  stroke={colors.borderStrong}
+                  strokeWidth={1.25}
+                  strokeOpacity={0.8}
                   strokeLinecap="round"
+                  strokeLinejoin="round"
                   fill="none"
                 />
               );

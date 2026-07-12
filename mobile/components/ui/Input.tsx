@@ -6,14 +6,17 @@ import {
   StyleSheet,
   type TextInputProps,
 } from 'react-native';
-import { fonts, fontSize, spacing, borderWidth } from '@/lib/theme';
+import { fonts, fontSize, spacing, radius, borderWidth } from '@/lib/theme';
 import { useTheme } from '@/hooks/useTheme';
 
 interface InputProps extends TextInputProps {
   label?: string;
 }
 
-/** Atelier text field — mono label, ink border, accent focus ring. */
+/**
+ * Champ Canopée — surface remplie arrondie (radius.sm), bordure hairline qui
+ * passe à l'accent (2 px) au focus. Label en Figtree Medium, casse normale.
+ */
 export function Input({ label, style, onFocus, onBlur, ...rest }: InputProps) {
   const { colors } = useTheme();
   const [focused, setFocused] = useState(false);
@@ -21,9 +24,7 @@ export function Input({ label, style, onFocus, onBlur, ...rest }: InputProps) {
   return (
     <View style={styles.wrap}>
       {label ? (
-        <Text style={[styles.label, { color: colors.textMuted }]}>
-          {label.toUpperCase()}
-        </Text>
+        <Text style={[styles.label, { color: colors.textMuted }]}>{label}</Text>
       ) : null}
       <TextInput
         placeholderTextColor={colors.textLight}
@@ -41,7 +42,11 @@ export function Input({ label, style, onFocus, onBlur, ...rest }: InputProps) {
           {
             backgroundColor: colors.bgCard,
             color: colors.text,
-            borderColor: focused ? colors.accent : colors.borderStrong,
+            borderColor: focused ? colors.accent : colors.border,
+            borderWidth: focused ? 2 : borderWidth,
+            // Compense l'épaississement du focus pour éviter le "saut" du texte.
+            paddingVertical: focused ? spacing.smd - 1 : spacing.smd,
+            paddingHorizontal: focused ? spacing.md - 1 : spacing.md,
           },
           style,
         ]}
@@ -51,17 +56,16 @@ export function Input({ label, style, onFocus, onBlur, ...rest }: InputProps) {
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: spacing.xs },
+  wrap: { gap: spacing.xs + 2 },
   label: {
-    fontFamily: fonts.mono,
-    fontSize: fontSize.xs,
-    letterSpacing: 1,
+    fontFamily: fonts.bodyMedium,
+    fontSize: fontSize.sm,
+    letterSpacing: 0.2,
   },
   input: {
     fontFamily: fonts.body,
     fontSize: fontSize.base,
-    paddingVertical: spacing.md - 2,
-    paddingHorizontal: spacing.md,
-    borderWidth,
+    borderRadius: radius.sm,
+    minHeight: 48,
   },
 });

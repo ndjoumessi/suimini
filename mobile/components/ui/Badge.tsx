@@ -1,37 +1,36 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { fonts, fontSize, spacing, borderWidth } from '@/lib/theme';
+import { fonts, fontSize, spacing, radius } from '@/lib/theme';
 import { useTheme } from '@/hooks/useTheme';
 
 interface BadgeProps {
   label: string;
-  /** Optional explicit color (border + text). Defaults to ink. */
+  /** Couleur explicite (texte + teinte). Défaut : encre. */
   color?: string;
-  /** Filled variant: solid background, bone text. */
+  /** Variante pleine : fond plein, texte papier. */
   filled?: boolean;
 }
 
-/** Mono, uppercase, hairline-bordered chip — the Atelier `.label` made physical. */
+/** Convertit une couleur hex en teinte translucide pour le fond du chip. */
+function tint(hex: string, alpha: string): string {
+  return /^#([0-9a-f]{6})$/i.test(hex) ? `${hex}${alpha}` : hex;
+}
+
+/** Chip Canopée — pilule tonale (fond teinté 14 %), texte medium. */
 export function Badge({ label, color, filled }: BadgeProps) {
   const { colors } = useTheme();
-  const c = color ?? colors.text;
+  const c = color ?? colors.textMuted;
   return (
     <View
       style={[
         styles.base,
-        {
-          borderColor: c,
-          backgroundColor: filled ? c : 'transparent',
-        },
+        { backgroundColor: filled ? c : tint(c, '24') },
       ]}
     >
       <Text
-        style={[
-          styles.label,
-          { color: filled ? colors.bgCard : c },
-        ]}
+        style={[styles.label, { color: filled ? colors.bone : c }]}
         numberOfLines={1}
       >
-        {label.toUpperCase()}
+        {label}
       </Text>
     </View>
   );
@@ -40,13 +39,13 @@ export function Badge({ label, color, filled }: BadgeProps) {
 const styles = StyleSheet.create({
   base: {
     alignSelf: 'flex-start',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-    borderWidth,
+    paddingHorizontal: spacing.smd,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.full,
   },
   label: {
-    fontFamily: fonts.mono,
+    fontFamily: fonts.bodyMedium,
     fontSize: fontSize.xs,
-    letterSpacing: 1,
+    letterSpacing: 0.4,
   },
 });

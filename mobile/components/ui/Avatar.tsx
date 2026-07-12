@@ -8,14 +8,14 @@ import { getRoleColor } from '@/lib/theme';
 interface AvatarProps {
   person: Person;
   size?: number;
-  /** Ring uses the person's gender/status color. */
+  /** Anneau à la couleur-signal (genre / statut) de la personne. */
   ring?: boolean;
 }
 
 /**
- * Round avatar — photo if present, otherwise initials on a tinted disc.
- * The DiceBear SVG seeds used by the demo data are skipped (RN <Image> can't
- * render remote SVG) in favour of clean initials.
+ * Avatar rond — photo si présente, sinon initiales serif sur disque teinté à
+ * la couleur-signal. Les seeds DiceBear SVG de la démo sont ignorées (RN
+ * <Image> ne rend pas les SVG distants) au profit d'initiales propres.
  */
 export function Avatar({ person, size = 48, ring = true }: AvatarProps) {
   const { colors } = useTheme();
@@ -28,7 +28,7 @@ export function Avatar({ person, size = 48, ring = true }: AvatarProps) {
     width: size,
     height: size,
     borderRadius: size / 2,
-    borderColor: ring ? tint : colors.borderStrong,
+    borderColor: ring ? tint : colors.border,
     borderWidth: ring ? 2 : borderWidth,
   };
 
@@ -47,7 +47,12 @@ export function Avatar({ person, size = 48, ring = true }: AvatarProps) {
       style={[
         styles.base,
         box,
-        { backgroundColor: colors.bgMuted, alignItems: 'center', justifyContent: 'center' },
+        {
+          // Disque teinté ~12 % de la couleur-signal (fallback : surface muette).
+          backgroundColor: /^#([0-9a-f]{6})$/i.test(tint) ? `${tint}1F` : colors.bgMuted,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
       ]}
     >
       <Text
