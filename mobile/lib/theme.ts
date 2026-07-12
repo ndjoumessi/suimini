@@ -106,15 +106,24 @@ export const radius = {
   sm: 2, // light exception
 } as const;
 
+/**
+ * Type scale — deliberate ~1.15-1.3 step progression anchored on `base` (body
+ * copy) and `xs` (mono eyebrows/labels), rounded to whole pixels. `micro` is
+ * the floor (tab bar labels, stat sub-labels) — nothing in the app should go
+ * below it. Replaces the old ad-hoc `fontSize.xs - 1` / `fontSize.xs - 2`
+ * literals scattered across screens (a token system with inline arithmetic
+ * escape hatches isn't really a token system).
+ */
 export const fontSize = {
+  micro: 10,
   xs: 11,
   sm: 13,
   base: 15,
   md: 17,
-  lg: 20,
-  xl: 26,
-  xxl: 34,
-  display: 44,
+  lg: 21,
+  xl: 25,
+  xxl: 33,
+  display: 40,
 } as const;
 
 export const shadows = {

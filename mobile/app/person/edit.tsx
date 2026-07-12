@@ -419,9 +419,9 @@ const styles = StyleSheet.create({
   photoRow: { alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
   photoHint: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 1 },
   demoBanner: { borderWidth, padding: spacing.sm },
-  demoText: { fontFamily: fonts.mono, fontSize: fontSize.xs - 1, letterSpacing: 0.5 },
+  demoText: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 0.5 },
   field: { gap: spacing.xs },
-  label: { fontFamily: fonts.mono, fontSize: fontSize.xs - 1, letterSpacing: 1 },
+  label: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 1 },
   genderRow: { flexDirection: 'row', gap: spacing.sm },
   genderBtn: {
     flex: 1,

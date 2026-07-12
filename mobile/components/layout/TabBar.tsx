@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: fonts.mono,
-    fontSize: fontSize.xs - 2,
+    fontSize: fontSize.micro,
     letterSpacing: 0.5,
   },
 });

@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: fonts.mono,
-    fontSize: fontSize.xs - 1,
+    fontSize: fontSize.xs,
     letterSpacing: 1,
   },
 });

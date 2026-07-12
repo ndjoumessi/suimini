@@ -67,5 +67,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
-  genText: { fontFamily: fonts.mono, fontSize: fontSize.xs - 1, letterSpacing: 0.5 },
+  genText: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 0.5 },
 });

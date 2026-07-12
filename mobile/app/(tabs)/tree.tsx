@@ -64,5 +64,5 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
   },
-  hintText: { fontFamily: fonts.mono, fontSize: fontSize.xs - 1, textAlign: 'center', letterSpacing: 0.5 },
+  hintText: { fontFamily: fonts.mono, fontSize: fontSize.xs, textAlign: 'center', letterSpacing: 0.5 },
 });

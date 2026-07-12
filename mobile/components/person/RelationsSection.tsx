@@ -428,7 +428,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     padding: spacing.md,
   },
-  hint: { fontFamily: fonts.mono, fontSize: fontSize.xs - 1, letterSpacing: 0.3 },
+  hint: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 0.3 },
   relRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   relText: { flex: 1, gap: 2 },
-  relKind: { fontFamily: fonts.mono, fontSize: fontSize.xs - 1, letterSpacing: 0.5 },
+  relKind: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 0.5 },
   relName: { fontFamily: fonts.body, fontSize: fontSize.base },
   deleteAction: {
     alignItems: 'center',
@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     gap: 2,
   },
-  deleteActionText: { fontFamily: fonts.mono, fontSize: fontSize.xs - 1, letterSpacing: 0.5 },
+  deleteActionText: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 0.5 },
   scrim: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
     borderTopWidth: borderWidth,
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
   },
   sheetTitle: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 2 },
   closeBtn: { padding: spacing.xs },
-  label: { fontFamily: fonts.mono, fontSize: fontSize.xs - 1, letterSpacing: 1 },
+  label: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 1 },
   kindRow: { flexDirection: 'row', gap: spacing.sm },
   kindBtn: {
     flex: 1,

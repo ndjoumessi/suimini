@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   View,
@@ -7,6 +7,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   RefreshControl,
+  Keyboard,
+  Animated,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -35,6 +37,31 @@ export default function PeopleScreen() {
   const [sort, setSort] = useState<SortKey>('name');
   const [limit, setLimit] = useState(PAGE);
   const [refreshing, setRefreshing] = useState(false);
+
+  // The FAB is `position: absolute; bottom: …` inside the screen's flex:1
+  // root. On Android, focusing the search input resizes that root (default
+  // `adjustResize` soft-input mode) — its bottom edge jumps up to make room
+  // for the keyboard, and an absolute-bottom child follows it, landing mid-list
+  // instead of staying pinned near the tab bar. Fading the FAB out for the
+  // duration the keyboard is up sidesteps the jump entirely (the search field
+  // is the relevant action while typing anyway).
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const fabOpacity = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardVisible(true);
+      Animated.timing(fabOpacity, { toValue: 0, duration: 150, useNativeDriver: true }).start();
+    });
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardVisible(false);
+      Animated.timing(fabOpacity, { toValue: 1, duration: 150, useNativeDriver: true }).start();
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [fabOpacity]);
 
   const genMap = useMemo(() => {
     const memo = new Map<string, number>();
@@ -104,6 +131,7 @@ export default function PeopleScreen() {
             <TouchableOpacity
               key={key}
               onPress={() => setSort(key)}
+              hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
               style={[
                 styles.sortChip,
                 {
@@ -147,18 +175,24 @@ export default function PeopleScreen() {
         }
       />
 
-      {/* FAB — nouvelle fiche */}
-      <TouchableOpacity
-        activeOpacity={0.85}
-        onPress={() => router.push('/person/edit')}
+      {/* FAB — nouvelle fiche (masqué pendant la saisie, voir keyboardVisible ci-dessus) */}
+      <Animated.View
+        pointerEvents={keyboardVisible ? 'none' : 'auto'}
         style={[
           styles.fab,
           { backgroundColor: colors.accent, borderColor: colors.borderStrong, bottom: spacing.lg },
           shadows.hard,
+          { opacity: fabOpacity, transform: [{ scale: fabOpacity }] },
         ]}
       >
-        <Plus size={26} color={colors.bg} />
-      </TouchableOpacity>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => router.push('/person/edit')}
+          style={styles.fabTouch}
+        >
+          <Plus size={26} color={colors.bg} />
+        </TouchableOpacity>
+      </Animated.View>
     </View>
   );
 }
@@ -181,8 +215,7 @@ const styles = StyleSheet.create({
     right: spacing.lg,
     width: 56,
     height: 56,
-    alignItems: 'center',
-    justifyContent: 'center',
     borderWidth,
   },
+  fabTouch: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });

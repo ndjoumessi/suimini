@@ -84,6 +84,8 @@ export function TreeView({
                 y2={e.y2}
                 stroke={colors.border}
                 strokeWidth={1.5}
+                strokeOpacity={0.65}
+                strokeLinecap="round"
               />
             ))}
             {layout.nodes.map((n) => (

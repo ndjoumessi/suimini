@@ -61,13 +61,47 @@ export function computeLayout(
 
   gens.forEach((g, rowIndex) => {
     const row = rows.get(g)!;
-    // Keep couples/siblings together by sorting on birth date then name.
-    row.sort((a, b) => {
-      const da = a.birthDate ?? '';
-      const db = b.birthDate ?? '';
-      if (da && db) return da.localeCompare(db);
-      return a.firstName.localeCompare(b.firstName);
-    });
+    if (rowIndex === 0) {
+      // Eldest row has no placed parents yet — order the founders themselves
+      // by birth date then name.
+      row.sort((a, b) => {
+        const da = a.birthDate ?? '';
+        const db = b.birthDate ?? '';
+        if (da && db) return da.localeCompare(db);
+        return a.firstName.localeCompare(b.firstName);
+      });
+    } else {
+      // Barycenter heuristic (classic layered-graph technique): order each
+      // row by the average x of the person's already-placed parents, instead
+      // of raw birth date/name. A pure birth-date sort scatters siblings
+      // across a wide generation independently of which parent they belong
+      // to, so parent→child edges end up as long crossing diagonals — a
+      // "spaghetti" tree on any generation with more than a handful of
+      // people. Anchoring children near their parents' column collapses most
+      // of that crossing into short, mostly-vertical connectors. People with
+      // no parent placed yet (e.g. a spouse marrying into the tree) fall back
+      // to birth date/name and sort after lineage-anchored siblings.
+      const barycenterOf = (p: Person): number => {
+        const parentXs = relationships
+          .filter((r) => r.type === 'parent' && r.person2Id === p.id)
+          .map((r) => pos.get(r.person1Id)?.x)
+          .filter((x): x is number => x != null);
+        if (!parentXs.length) return Number.POSITIVE_INFINITY;
+        return parentXs.reduce((sum, x) => sum + x, 0) / parentXs.length;
+      };
+      row.sort((a, b) => {
+        const ba = barycenterOf(a);
+        const bb = barycenterOf(b);
+        const finiteA = Number.isFinite(ba);
+        const finiteB = Number.isFinite(bb);
+        if (finiteA && finiteB && ba !== bb) return ba - bb;
+        if (finiteA !== finiteB) return finiteA ? -1 : 1; // anchored siblings before floaters
+        const da = a.birthDate ?? '';
+        const db = b.birthDate ?? '';
+        if (da && db) return da.localeCompare(db);
+        return a.firstName.localeCompare(b.firstName);
+      });
+    }
     const rowWidth = row.length * NODE_W + (row.length - 1) * COL_GAP;
     const startX = (canvasWidth - rowWidth) / 2;
     const y = PADDING + rowIndex * (NODE_H + ROW_GAP);

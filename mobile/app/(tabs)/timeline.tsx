@@ -3,7 +3,17 @@ import { useTranslation } from 'react-i18next';
 import { View, Text, SectionList, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Clock } from 'lucide-react-native';
+import {
+  Clock,
+  Cake,
+  Flower2,
+  Heart,
+  HeartCrack,
+  GraduationCap,
+  Shield,
+  Plane,
+  Droplet,
+} from 'lucide-react-native';
 import { Header } from '@/components/layout/Header';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { fonts, fontSize, spacing } from '@/lib/theme';
@@ -17,8 +27,27 @@ interface TimelineItem {
   date: string;
   year: string;
   label: string;
+  type: string;
   person: Person;
 }
+
+/**
+ * Event-type → icon, drawn inside the timeline dot instead of a flat colored
+ * circle. Distinguishing "Naissance" from "Décès" or "Mariage" by shape (not
+ * just an identical accent-colored dot) makes a long timeline scannable at a
+ * glance rather than requiring the label text to be read for every row.
+ * Types without a mapping (e.g. "other") fall back to the plain dot.
+ */
+const EVENT_ICONS: Partial<Record<string, typeof Cake>> = {
+  birth: Cake,
+  death: Flower2,
+  marriage: Heart,
+  divorce: HeartCrack,
+  baptism: Droplet,
+  graduation: GraduationCap,
+  military: Shield,
+  immigration: Plane,
+};
 
 export default function TimelineScreen() {
   const { t } = useTranslation();
@@ -47,6 +76,7 @@ export default function TimelineScreen() {
           label:
             e.description ||
             t(`timeline.events.${e.type}`, { defaultValue: t('timeline.events.other') }),
+          type: e.type,
           person: p,
         });
       });
@@ -83,7 +113,7 @@ export default function TimelineScreen() {
             onPress={() => router.push({ pathname: '/person/[id]', params: { id: item.person.id } })}
           >
             <View style={styles.spineCol}>
-              <View style={[styles.dot, { backgroundColor: colors.accent, borderColor: colors.bg }]} />
+              <EventDot type={item.type} colors={colors} />
               <View style={[styles.spine, { backgroundColor: colors.border }]} />
             </View>
             <View style={styles.content}>
@@ -108,14 +138,40 @@ export default function TimelineScreen() {
   );
 }
 
+function EventDot({
+  type,
+  colors,
+}: {
+  type: string;
+  colors: ReturnType<typeof useTheme>['colors'];
+}) {
+  const Icon = EVENT_ICONS[type];
+  if (!Icon) {
+    return <View style={[styles.dot, { backgroundColor: colors.accent, borderColor: colors.bg }]} />;
+  }
+  return (
+    <View style={[styles.dotIcon, { backgroundColor: colors.bgCard, borderColor: colors.accent }]}>
+      <Icon size={11} color={colors.accent} strokeWidth={2.25} />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
   decadeWrap: { paddingVertical: spacing.sm },
   decade: { fontFamily: fonts.mono, fontSize: fontSize.sm, letterSpacing: 1.5 },
   row: { flexDirection: 'row', gap: spacing.md },
-  spineCol: { alignItems: 'center', width: 16 },
+  spineCol: { alignItems: 'center', width: 22 },
   dot: { width: 12, height: 12, borderRadius: 6, borderWidth: 2, marginTop: 4 },
+  dotIcon: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   spine: { width: 2, flex: 1, marginTop: 2 },
   content: { flex: 1, paddingBottom: spacing.md },
   date: { fontFamily: fonts.mono, fontSize: fontSize.xs },

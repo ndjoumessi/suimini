@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
   wrap: { gap: spacing.xs },
   label: {
     fontFamily: fonts.mono,
-    fontSize: fontSize.xs - 1,
+    fontSize: fontSize.xs,
     letterSpacing: 1,
   },
   input: {

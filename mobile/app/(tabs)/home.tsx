@@ -172,9 +172,13 @@ function Stat({
   label: string;
   colors: ReturnType<typeof useTheme>['colors'];
 }) {
+  // A real "0" isn't worth shouting in accent orange — it reads as a false
+  // alarm next to genuine counts. Mute it instead, same treatment an empty
+  // state would get.
+  const isZero = value === 0;
   return (
     <View style={[styles.stat, { backgroundColor: colors.bgCard, borderColor: colors.borderStrong }, shadows.hardSm]}>
-      <Text style={[styles.statValue, { color: colors.accent }]}>{value}</Text>
+      <Text style={[styles.statValue, { color: isZero ? colors.textLight : colors.accent }]}>{value}</Text>
       <Text style={[styles.statLabel, { color: colors.textMuted }]}>{label.toUpperCase()}</Text>
     </View>
   );
@@ -206,7 +210,7 @@ function Quick({
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   block: { paddingHorizontal: spacing.lg, marginTop: spacing.lg, gap: spacing.sm },
-  label: { fontFamily: fonts.mono, fontSize: fontSize.xs - 1, letterSpacing: 1.5 },
+  label: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 1.5 },
   treeName: { fontFamily: fonts.display, fontSize: fontSize.lg, marginTop: 2 },
   treeDesc: { fontFamily: fonts.body, fontSize: fontSize.sm, marginTop: spacing.xs, lineHeight: 20 },
   statsGrid: {
@@ -220,11 +224,14 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     flexBasis: '47%',
     borderWidth,
-    paddingVertical: spacing.md,
+    // Tighter than the old spacing.md: the display font's own line metrics
+    // already carry a lot of visual weight, so generous padding on top of
+    // that made these cards balloon into mostly-empty rectangles.
+    paddingVertical: spacing.sm + 2,
     paddingHorizontal: spacing.md,
   },
-  statValue: { fontFamily: fonts.display, fontSize: fontSize.xxl },
-  statLabel: { fontFamily: fonts.mono, fontSize: fontSize.xs - 2, letterSpacing: 1, marginTop: 2 },
+  statValue: { fontFamily: fonts.display, fontSize: fontSize.xxl, lineHeight: fontSize.xxl + 3 },
+  statLabel: { fontFamily: fonts.mono, fontSize: fontSize.micro, letterSpacing: 1, marginTop: 3 },
   sectionTitle: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 1.5 },
   quickRow: { flexDirection: 'row', gap: spacing.sm },
   quick: {

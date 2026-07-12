@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
   textCol: { flex: 1 },
   eyebrow: {
     fontFamily: fonts.mono,
-    fontSize: fontSize.xs - 1,
+    fontSize: fontSize.xs,
     letterSpacing: 1.5,
     marginBottom: 2,
   },
