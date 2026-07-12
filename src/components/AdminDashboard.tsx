@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo, type ReactNode } from 'react';
+import { useState, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import {
@@ -226,12 +226,19 @@ function UsersTab({ admin, isSuperAdmin, onToast }: { admin: AdminData; isSuperA
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<UserStatus | 'all'>('all');
   const [menuId, setMenuId] = useState<string | null>(null);
+  const [hoverId, setHoverId] = useState<string | null>(null);
+  const menuBtnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const rows = useMemo(() => admin.users.filter(u => {
     if (filter !== 'all' && u.status !== filter) return false;
     if (q && !(`${u.display_name || ''} ${u.email}`.toLowerCase().includes(q.toLowerCase()))) return false;
     return true;
   }), [admin.users, q, filter]);
+
+  function closeMenu(returnFocusTo?: string) {
+    setMenuId(null);
+    if (returnFocusTo) menuBtnRefs.current[returnFocusTo]?.focus();
+  }
 
   async function act(fn: Promise<{ error?: string }>, okMsg: string, onOk?: () => void) {
     setMenuId(null);
@@ -243,7 +250,7 @@ function UsersTab({ admin, isSuperAdmin, onToast }: { admin: AdminData; isSuperA
   return (
     <div style={{ maxWidth: '960px' }}>
       <TabIntro>{t('usersHint')}</TabIntro>
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '14px' }}>
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '10px' }}>
         <div style={{ position: 'relative', flex: 1, minWidth: '180px' }}>
           <Search size={15} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} aria-hidden="true" />
           <input value={q} onChange={e => setQ(e.target.value)} placeholder={t('searchPlaceholder')} aria-label={t('searchPlaceholder')} className="input" style={{ width: '100%', paddingLeft: '32px' }} />
@@ -256,11 +263,17 @@ function UsersTab({ admin, isSuperAdmin, onToast }: { admin: AdminData; isSuperA
           <option value="suspended">{t('statusSuspended')}</option>
         </select>
       </div>
+      <p className="mono" style={{ fontSize: '11px', color: 'var(--text-light)', margin: '0 0 10px' }}>
+        {rows.length === admin.users.length ? t('resultCount', { count: rows.length }) : t('resultCountFiltered', { count: rows.length, total: admin.users.length })}
+      </p>
 
       <div className="card" style={{ overflow: 'visible' }}>
         {rows.length === 0 && <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>{t('noUsers')}</div>}
         {rows.map((u, i) => (
-          <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '13px 16px', borderTop: i > 0 ? '1px solid var(--border)' : 'none' }}>
+          <div key={u.id}
+            onMouseEnter={() => setHoverId(u.id)}
+            onMouseLeave={() => setHoverId(id => id === u.id ? null : id)}
+            style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '13px 16px', borderTop: i > 0 ? '1px solid var(--border)' : 'none', background: hoverId === u.id || menuId === u.id ? 'var(--bg-muted)' : 'transparent', transition: 'background var(--t-fast)' }}>
             <Avatar name={u.display_name} email={u.email} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -275,11 +288,22 @@ function UsersTab({ admin, isSuperAdmin, onToast }: { admin: AdminData; isSuperA
               <span className="hide-sm" style={{ fontSize: '11px', color: 'var(--text-light)', fontFamily: 'var(--font-mono)' }}>{fmtDate(u.created_at)}</span>
             </div>
             <div style={{ position: 'relative', flexShrink: 0 }}>
-              <button onClick={() => setMenuId(menuId === u.id ? null : u.id)} className="btn btn-ghost btn-icon btn-sm" aria-label={t('actions')}><MoreVertical size={16} aria-hidden="true" /></button>
+              <button
+                ref={el => { menuBtnRefs.current[u.id] = el; }}
+                onClick={() => setMenuId(menuId === u.id ? null : u.id)}
+                onKeyDown={e => { if (e.key === 'Escape' && menuId === u.id) { e.preventDefault(); closeMenu(u.id); } }}
+                className="btn btn-ghost btn-icon btn-sm"
+                aria-label={t('actions')}
+                aria-haspopup="menu"
+                aria-expanded={menuId === u.id}
+              >
+                <MoreVertical size={16} aria-hidden="true" />
+              </button>
               {menuId === u.id && (
                 <>
-                  <div onClick={() => setMenuId(null)} aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 'calc(var(--z-dropdown) - 1)' }} />
-                  <div style={{ position: 'absolute', right: 0, top: '100%', zIndex: 'var(--z-dropdown)', marginTop: '4px', minWidth: '190px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow-lg)', padding: '4px', display: 'flex', flexDirection: 'column' }}>
+                  <div onClick={() => closeMenu()} aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 'calc(var(--z-dropdown) - 1)' }} />
+                  <div role="menu" aria-label={t('actions')} onKeyDown={e => { if (e.key === 'Escape') { e.preventDefault(); closeMenu(u.id); } }}
+                    style={{ position: 'absolute', right: 0, top: '100%', zIndex: 'var(--z-dropdown)', marginTop: '4px', minWidth: '190px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow-lg)', padding: '4px', display: 'flex', flexDirection: 'column' }}>
                     {(u.status === 'pending' || u.status === 'rejected') && (
                       <MenuItem Icon={Check} label={t('approve')} onClick={() => act(admin.approveUser(u.id), t('toastApproved'), () => notifyApproval(u.email, u.display_name))} />
                     )}
@@ -309,7 +333,7 @@ function UsersTab({ admin, isSuperAdmin, onToast }: { admin: AdminData; isSuperA
 
 function MenuItem({ Icon, label, onClick }: { Icon: typeof Check; label: string; onClick: () => void }) {
   return (
-    <button onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px 12px', minHeight: '44px', border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '13px', color: 'var(--text)', borderRadius: 'var(--radius-sm)', fontFamily: 'var(--font-body)' }}
+    <button role="menuitem" onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px 12px', minHeight: '44px', border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '13px', color: 'var(--text)', borderRadius: 'var(--radius-sm)', fontFamily: 'var(--font-body)' }}
       onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-muted)'}
       onMouseLeave={e => e.currentTarget.style.background = 'none'}>
       <Icon size={14} aria-hidden="true" /> {label}

@@ -534,6 +534,8 @@
     "statUnread": "Non lues",
     "pendingHint": "File d'attente des nouvelles inscriptions à valider avant l'accès à l'application.",
     "usersHint": "Annuaire complet des comptes. Recherchez, filtrez par statut et gérez les rôles.",
+    "resultCount": "{count} compte(s)",
+    "resultCountFiltered": "{count} sur {total} compte(s)",
     "notificationsHint": "Activité récente : nouvelles inscriptions en attente de validation.",
     "statusPending": "En attente",
     "statusApproved": "Actif",

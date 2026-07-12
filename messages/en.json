@@ -534,6 +534,8 @@
     "statUnread": "Unread",
     "pendingHint": "Queue of new sign-ups to review before they can access the app.",
     "usersHint": "Full account directory. Search, filter by status and manage roles.",
+    "resultCount": "{count} account(s)",
+    "resultCountFiltered": "{count} of {total} account(s)",
     "notificationsHint": "Recent activity: new sign-ups awaiting approval.",
     "statusPending": "Pending",
     "statusApproved": "Active",
