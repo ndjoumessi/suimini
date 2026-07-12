@@ -560,7 +560,7 @@ export default function SuiminiApp() {
         onExportPdf={store.activeTree ? () => setShowExportPdf(true) : undefined}
       />
 
-      <main id="main-content" className="app-main" style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', minWidth: 0 }}>
+      <main id="main-content" className="app-main" style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', minWidth: 0, isolation: 'isolate' }}>
         {!isOnline && (
           <div role="status" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 16px', background: 'color-mix(in srgb, var(--accent) 12%, var(--bg-card))', borderBottom: 'var(--bw) solid var(--accent)', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--ink)', letterSpacing: '0.02em' }}>
             <WifiOff size={14} aria-hidden="true" style={{ flexShrink: 0, color: 'var(--accent)' }} />
