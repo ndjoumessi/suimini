@@ -40,7 +40,42 @@ const MAX_BYTES = 8 * 1024 * 1024;
 
 const ACCENT = 'var(--accent)';
 
-/** Downscale to a bounded JPEG data URL for the vision request (keeps payload small, faces legible). */
+/** Overlays a 10%-spaced coordinate grid (magenta lines + edge percentage labels) on the
+ *  analysis image. Claude's own free-eyeballed bounding-box percentages are unreliable on
+ *  cluttered photos (a real face got placed over background foliage in testing) — a labelled
+ *  grid gives the model concrete tick marks to read the face edges off instead of guessing,
+ *  the standard grounding aid for VLM spatial-coordinate tasks. Never shown to the user: only
+ *  `preview` (the untouched original) renders in the UI, this canvas only feeds the API. */
+function drawAnalysisGrid(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  const STEP = 10;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255, 0, 200, 0.5)';
+  ctx.lineWidth = 1;
+  for (let pct = STEP; pct < 100; pct += STEP) {
+    const x = (pct / 100) * w;
+    const y = (pct / 100) * h;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+  }
+  ctx.font = 'bold 13px monospace';
+  const chip = (text: string, x: number, y: number) => {
+    const tw = ctx.measureText(text).width;
+    const cx = Math.max(0, Math.min(x, w - tw - 4));
+    const cy = Math.max(0, Math.min(y, h - 16));
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(cx, cy, tw + 4, 16);
+    ctx.fillStyle = '#fff';
+    ctx.fillText(text, cx + 2, cy + 13);
+  };
+  for (let pct = 0; pct <= 100; pct += STEP) {
+    chip(String(pct), (pct / 100) * w, 0); // top edge = x%
+    chip(String(pct), 0, (pct / 100) * h - 8); // left edge = y%
+  }
+  ctx.restore();
+}
+
+/** Downscale to a bounded JPEG data URL for the vision request (keeps payload small, faces
+ *  legible), with the reference grid burned in — see `drawAnalysisGrid`. */
 function resizeForAnalysis(file: File, maxDim = 1280, quality = 0.85): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -57,6 +92,7 @@ function resizeForAnalysis(file: File, maxDim = 1280, quality = 0.85): Promise<s
         const ctx = canvas.getContext('2d');
         if (!ctx) return resolve(reader.result as string);
         ctx.drawImage(img, 0, 0, w, h);
+        drawAnalysisGrid(ctx, w, h);
         resolve(canvas.toDataURL('image/jpeg', quality));
       };
       img.src = reader.result as string;

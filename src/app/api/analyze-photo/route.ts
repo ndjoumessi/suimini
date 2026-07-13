@@ -45,8 +45,11 @@ function parseImage(imageBase64: string): { media: MediaType; data: string } | n
 }
 
 const PROMPT = `Analyse cette photo de famille.
+
+Une grille de repère est superposée à l'image : des lignes magenta tous les 10% de la largeur/hauteur, avec des étiquettes numérotées (0, 10, 20… 100) le long du bord haut (position horizontale, x) et du bord gauche (position verticale, y). Pour chaque visage, LIS ses coordonnées sur cette grille (repère les lignes les plus proches de chaque bord du visage et interpole entre elles si besoin) — NE LES ESTIME PAS à l'œil sans t'appuyer dessus, c'est ce qui produit des positions fausses (ex : une boîte qui tombe sur un arrière-plan ou une décoration au lieu du visage).
+
 Pour chaque visage visible :
-1. Donne sa position approximative en pourcentage de l'image (x, y = coin haut-gauche du visage ; width, height = taille du visage), valeurs 0–100.
+1. Donne sa position en pourcentage de l'image, lue sur la grille ci-dessus (x, y = coin haut-gauche du visage ; width, height = taille du visage), valeurs 0–100.
 2. Estime la tranche d'âge : "child" (enfant), "young" (jeune adulte), "adult" (adulte), "senior".
 3. Genre apparent ("gender") : "male", "female", ou "unknown" — base-toi sur TOUS les indices visibles (pilosité faciale, coiffure, morphologie, vêtements…) et reste cohérent avec le reste de tes observations sur ce visage (ex : une barbe ou une pomme d'Adam nette pointe vers "male", pas "female"). En cas de doute réel, renvoie "unknown" plutôt qu'un genre qui contredit tes propres observations.
 4. "description" : UNIQUEMENT les traits physiques distinctifs visibles (coiffure, lunettes, pilosité faciale, vêtements, expression). NE RÉPÈTE PAS l'âge ni le genre — déjà capturés dans "estimatedAge" et "gender", ne commence donc jamais par "homme"/"femme"/"jeune homme"/"jeune femme" etc.
