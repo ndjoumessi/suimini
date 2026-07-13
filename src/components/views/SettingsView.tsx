@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useEffect, type ReactNode } from 'react';
+import { useState, useRef, useEffect, type ReactNode, type CSSProperties } from 'react';
 import { useTranslations } from 'next-intl';
 import { ColorThemeId, FamilyTree } from '@/types';
 import { COLOR_THEMES } from '@/lib/themes';
@@ -9,7 +9,11 @@ import { markSigningOut } from '@/hooks/useAuth';
 import { relativeSyncParts } from '@/lib/relativeTime';
 import { LOCALES, type Locale } from '@/i18n/config';
 import { useLocaleSwitch } from '@/components/IntlProvider';
-import { Settings2, Check, KeyRound, LogOut, Download, Trash2, RefreshCw, Cloud, CloudOff, X, Pencil } from 'lucide-react';
+import {
+  Settings2, Check, KeyRound, LogOut, Download, Trash2, RefreshCw, Cloud, CloudOff, X, Pencil,
+  User, Palette, Globe2, BellRing, Database, ShieldAlert, Info,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface Props {
   themeId: ColorThemeId;
@@ -41,10 +45,17 @@ function initials(name?: string | null, email?: string | null): string {
   return ((parts[0]?.[0] || '?') + (parts[1]?.[0] || '')).toUpperCase().slice(0, 2);
 }
 
-/** Mono tiny uppercase section eyebrow (gold-muted, or red for the danger zone). */
-function Eyebrow({ children, danger }: { children: ReactNode; danger?: boolean }) {
+/** Section header: small icon chip + mono uppercase eyebrow (gold, or red for
+ *  the danger zone) — gives each block of Settings a scannable anchor instead
+ *  of six visually-identical text labels in a row. */
+function Eyebrow({ children, danger, Icon }: { children: ReactNode; danger?: boolean; Icon?: LucideIcon }) {
   return (
-    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: danger ? 'var(--danger)' : 'var(--accent-text)', marginBottom: '8px' }}>
+    <div className="set-eyebrow" style={danger ? { color: 'var(--danger)' } : undefined}>
+      {Icon && (
+        <span className="set-eyebrow-icon" style={danger ? { color: 'var(--danger)', background: 'color-mix(in srgb, var(--danger) 14%, transparent)' } : undefined}>
+          <Icon size={13} aria-hidden="true" />
+        </span>
+      )}
       {children}
     </div>
   );
@@ -167,7 +178,7 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
         {/* SECTION 1 — Profile */}
         {userEmail && (
           <section className="set-section">
-            <Eyebrow>{t('account')}</Eyebrow>
+            <Eyebrow Icon={User}>{t('account')}</Eyebrow>
             <div className="set-card">
               <div className="set-profile-head">
                 <span className="set-avatar" aria-hidden="true">{initials(name, userEmail)}</span>
@@ -205,7 +216,7 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
 
         {/* SECTION 2 — Accent colour */}
         <section className="set-section">
-          <Eyebrow>{t('appearance')}</Eyebrow>
+          <Eyebrow Icon={Palette}>{t('appearance')}</Eyebrow>
           <p className="set-section-sub">{t('colorThemeHint')}</p>
           <div className="set-themes" onMouseLeave={onCancelPreview}>
             {COLOR_THEMES.map(theme => {
@@ -217,16 +228,19 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
                   onMouseEnter={() => onPreviewTheme(theme.id)}
                   className={`set-theme-card ${active ? 'on' : ''}`}
                   aria-pressed={active}
-                  style={active ? { borderColor: 'var(--accent)' } : undefined}
+                  style={{ '--set-theme-accent': theme.accent } as CSSProperties}
                 >
-                  <div className="set-theme-top">
-                    <span className="set-theme-name">{theme.name}</span>
-                    {active && <span className="set-theme-badge"><Check size={10} aria-hidden="true" /> {t('active')}</span>}
-                  </div>
-                  <div className="set-theme-pastilles">
-                    {[theme.accent, theme.male, theme.female].map((c, i) => (
-                      <span key={i} style={{ background: c }} aria-hidden="true" />
-                    ))}
+                  <span className="set-theme-strip" aria-hidden="true" />
+                  <div className="set-theme-body">
+                    <div className="set-theme-top">
+                      <span className="set-theme-name">{theme.name}</span>
+                      {active && <span className="set-theme-badge"><Check size={10} aria-hidden="true" /> {t('active')}</span>}
+                    </div>
+                    <div className="set-theme-pastilles">
+                      {[theme.accent, theme.male, theme.female].map((c, i) => (
+                        <span key={i} style={{ background: c }} aria-hidden="true" />
+                      ))}
+                    </div>
                   </div>
                 </button>
               );
@@ -234,46 +248,51 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
           </div>
         </section>
 
-        {/* SECTION 3 — Language */}
-        <section className="set-section">
-          <Eyebrow>{t('language')}</Eyebrow>
-          <div className="set-lang" role="group" aria-label={t('language')}>
-            {LOCALES.map(l => {
-              const on = l === locale;
-              return (
-                <button key={l} type="button" onClick={() => chooseLocale(l)} aria-pressed={on}
-                  className={`set-lang-btn ${on ? 'on' : ''}`}>
-                  {l === 'fr' ? 'Français' : 'English'}
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* SECTION 3bis — Notification language (per-recipient, independent of UI locale) */}
-        {userEmail && notifAvailable && (
-          <section className="set-section">
-            <Eyebrow>{t('notifLanguage')}</Eyebrow>
-            <p className="set-section-sub">{t('notifLanguageHint')}</p>
-            <div className="set-field" style={{ maxWidth: '280px' }}>
-              <label className="set-flabel" htmlFor="settings-notif-locale">{t('notifLanguage')}</label>
-              <select
-                id="settings-notif-locale"
-                className="set-input"
-                value={notifLocale}
-                disabled={savingNotifLocale}
-                onChange={e => chooseNotifLocale(e.target.value as Locale)}
-              >
-                <option value="fr">Français</option>
-                <option value="en">English</option>
-              </select>
+        {/* SECTION 3 — Language + notification language, paired side by side on
+            wide screens: both are short, single-choice blocks, so giving them
+            their own full-width sections (like Account/Appearance) wasted
+            vertical rhythm without adding legibility. */}
+        <div className={`set-pair ${userEmail && notifAvailable ? '' : 'set-pair-single'}`}>
+          <section className="set-section set-section-half">
+            <Eyebrow Icon={Globe2}>{t('language')}</Eyebrow>
+            <div className="set-lang" role="group" aria-label={t('language')}>
+              {LOCALES.map(l => {
+                const on = l === locale;
+                return (
+                  <button key={l} type="button" onClick={() => chooseLocale(l)} aria-pressed={on}
+                    className={`set-lang-btn ${on ? 'on' : ''}`}>
+                    {l === 'fr' ? 'Français' : 'English'}
+                  </button>
+                );
+              })}
             </div>
           </section>
-        )}
+
+          {/* Notification language (per-recipient, independent of UI locale) */}
+          {userEmail && notifAvailable && (
+            <section className="set-section set-section-half">
+              <Eyebrow Icon={BellRing}>{t('notifLanguage')}</Eyebrow>
+              <p className="set-section-sub">{t('notifLanguageHint')}</p>
+              <div className="set-field" style={{ maxWidth: '280px' }}>
+                <label className="set-flabel" htmlFor="settings-notif-locale">{t('notifLanguage')}</label>
+                <select
+                  id="settings-notif-locale"
+                  className="set-input"
+                  value={notifLocale}
+                  disabled={savingNotifLocale}
+                  onChange={e => chooseNotifLocale(e.target.value as Locale)}
+                >
+                  <option value="fr">Français</option>
+                  <option value="en">English</option>
+                </select>
+              </div>
+            </section>
+          )}
+        </div>
 
         {/* SECTION 4 — Data & sync */}
         <section className="set-section">
-          <Eyebrow>{t('data')}</Eyebrow>
+          <Eyebrow Icon={Database}>{t('data')}</Eyebrow>
           <p className="set-section-sub">{t('dataHint')}</p>
           <div className="set-card">
             <ul className="set-data-info">
@@ -314,7 +333,7 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
         {/* SECTION 5 — Danger zone */}
         {userEmail && (
           <section className="set-section">
-            <Eyebrow danger>{t('dangerZone')}</Eyebrow>
+            <Eyebrow danger Icon={ShieldAlert}>{t('dangerZone')}</Eyebrow>
             <div className="set-danger-card">
               <p className="set-danger-text">{t('dangerHint')}</p>
               <button className="btn btn-sm set-danger-btn" style={{ gap: '6px' }} onClick={() => { setDeleteOpen(true); setConfirmText(''); }}>
@@ -326,7 +345,7 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
 
         {/* SECTION 6 — About */}
         <section className="set-section set-section-last">
-          <Eyebrow>{t('about')}</Eyebrow>
+          <Eyebrow Icon={Info}>{t('about')}</Eyebrow>
           <div className="set-card set-about">
             <div className="set-about-version">Suimini v1.5</div>
             <p className="set-about-tagline">{t('aboutTagline')}</p>
@@ -389,7 +408,7 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
       )}
 
       <style>{`
-        .set-wrap { max-width: 760px; margin: 0 auto; padding: 0 24px; }
+        .set-wrap { max-width: 880px; margin: 0 auto; padding: 0 24px; }
         .set-hero { display: flex; align-items: flex-start; gap: 14px; padding: 40px 0 28px; border-bottom: 1px solid var(--accent-light); }
         .set-title { margin: 0; font-size: clamp(2rem, 4vw, 2.5rem); line-height: 1.05; color: var(--ink); letter-spacing: -0.01em; }
         .set-subtitle { margin: 6px 0 0; font-size: 15px; color: var(--text-muted); }
@@ -397,6 +416,18 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
         .set-section { padding: 36px 0; border-bottom: 1px solid var(--border); }
         .set-section-last { border-bottom: none; }
         .set-section-sub { margin: 0 0 16px; font-size: 13px; color: var(--text-muted); }
+
+        /* Section header: icon chip + mono eyebrow, replaces plain text labels
+           so the six blocks read as distinct, scannable zones instead of a
+           uniform scroll of identical small-caps text. */
+        .set-eyebrow { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent-text); margin-bottom: 14px; }
+        .set-eyebrow-icon { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex-shrink: 0; background: var(--accent-light); color: var(--accent); border-radius: var(--radius-sm); }
+
+        /* Language + notification-language: two short single-choice blocks
+           paired side by side instead of stacking as two full-width sections. */
+        .set-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; padding: 36px 0; border-bottom: 1px solid var(--border); }
+        .set-pair-single { grid-template-columns: 1fr; }
+        .set-section-half { padding: 0; border-bottom: none; }
 
         .set-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 18px; display: flex; flex-direction: column; gap: 18px; }
 
@@ -415,17 +446,21 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
         .set-account-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
         .set-vrule { width: 1px; height: 18px; background: var(--border-strong); flex-shrink: 0; }
 
-        /* Themes — compact 3×2 */
-        .set-themes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-        .set-theme-card { min-height: 80px; text-align: left; cursor: pointer; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card); display: flex; flex-direction: column; justify-content: space-between; gap: 10px; transition: border-color var(--t-fast) var(--ease-out), box-shadow var(--t-base) var(--ease-out), background var(--t-fast); }
-        .set-theme-card:hover { background: var(--interactive); border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-light), var(--shadow-accent); }
+        /* Themes — compact 3×2. Each card carries its own accent as a CSS var
+           (--set-theme-accent) so the top strip + selected ring are always
+           the THEME's colour, not the currently-applied one. */
+        .set-themes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+        .set-theme-card { min-height: 96px; text-align: left; cursor: pointer; padding: 0; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-card); display: flex; flex-direction: column; transition: border-color var(--t-fast) var(--ease-out), box-shadow var(--t-base) var(--ease-out), background var(--t-fast), transform var(--t-fast) var(--ease-out); }
+        .set-theme-card:hover { background: var(--interactive); border-color: var(--set-theme-accent); box-shadow: var(--shadow-accent); transform: translateY(-2px); }
         .set-theme-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-        .set-theme-card.on { border-width: 2px; background: var(--interactive); }
+        .set-theme-card.on { border-color: var(--set-theme-accent); box-shadow: 0 0 0 1px var(--set-theme-accent); background: var(--interactive); }
+        .set-theme-strip { display: block; height: 5px; width: 100%; flex-shrink: 0; background: var(--set-theme-accent); }
+        .set-theme-body { flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 12px; padding: 12px 14px 14px; }
         .set-theme-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
         .set-theme-name { font-family: var(--font-body); font-size: 14px; font-weight: 700; color: var(--ink); }
-        .set-theme-badge { font-family: var(--font-mono); font-size: 8.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent-text); display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; }
-        .set-theme-pastilles { display: flex; gap: 6px; }
-        .set-theme-pastilles span { flex: 1; height: 16px; border: 1px solid rgba(0,0,0,0.25); border-radius: var(--radius-sm); }
+        .set-theme-badge { font-family: var(--font-mono); font-size: 8.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--set-theme-accent); display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; }
+        .set-theme-pastilles { display: flex; gap: 7px; }
+        .set-theme-pastilles span { width: 18px; height: 18px; flex-shrink: 0; border-radius: var(--radius-full); border: 1px solid rgba(0,0,0,0.25); }
 
         /* Language toggle */
         .set-lang { display: inline-flex; gap: 8px; }
@@ -454,6 +489,9 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
         .set-about-links a { color: var(--text-muted); text-decoration: none; transition: color var(--t-fast); }
         .set-about-links a:hover { color: var(--accent-text); }
 
+        @media (max-width: 640px) {
+          .set-pair { grid-template-columns: 1fr; gap: 28px; }
+        }
         @media (max-width: 560px) {
           .set-themes { grid-template-columns: repeat(2, 1fr); }
           .set-lang { display: flex; }
