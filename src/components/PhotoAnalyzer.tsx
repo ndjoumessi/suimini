@@ -8,6 +8,7 @@ import { uploadAvatar } from '@/lib/uploadImage';
 import { useOverlay } from '@/hooks/useOverlay';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
+import { PersonCombobox } from '@/components/ui/PersonCombobox';
 
 /** One detected face plus the user's assignment. */
 export interface FaceAssignment {
@@ -89,6 +90,14 @@ export default function PhotoAnalyzer({ tree, preselectPersonId, onClose, onConf
   const people = useMemo(
     () => [...tree.persons].sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b))),
     [tree.persons],
+  );
+
+  // Two fixed, non-person entries pinned above the tree members in each face's
+  // picker (was previously an <optgroup>-less pair of <option>s before the
+  // native <select>'s "Membres de l'arbre" optgroup).
+  const faceExtraOptions = useMemo(
+    () => [{ id: 'unknown', label: t('unknown') }, { id: 'new', label: t('newMember') }],
+    [t],
   );
 
   const pickFile = useCallback((f: File | undefined | null) => {
@@ -278,19 +287,17 @@ export default function PhotoAnalyzer({ tree, preselectPersonId, onClose, onConf
                         </div>
                         {f.description && <p className="pa-row-desc">{f.description}</p>}
                         <label htmlFor={`pa-face-select-${f.id}`} className="pa-assign-label label">{t('assignPerson')} #{i + 1}</label>
-                        <select
+                        <PersonCombobox
                           id={`pa-face-select-${f.id}`}
-                          aria-label={`${t('assignPerson')} ${f.description || i + 1}`}
-                          className="input pa-select"
-                          value={assignments[f.id] ?? 'unknown'}
-                          onChange={e => setAssignments(a => ({ ...a, [f.id]: e.target.value }))}
-                        >
-                          <option value="unknown">{t('unknown')}</option>
-                          <option value="new">{t('newMember')}</option>
-                          <optgroup label={t('treeMembers')}>
-                            {people.map(p => <option key={p.id} value={p.id}>{getDisplayName(p)}</option>)}
-                          </optgroup>
-                        </select>
+                          persons={people}
+                          selectedId={assignments[f.id] ?? 'unknown'}
+                          onSelect={val => setAssignments(a => ({ ...a, [f.id]: val }))}
+                          placeholder={t('searchPlaceholder')}
+                          ariaLabel={`${t('assignPerson')} ${f.description || i + 1}`}
+                          emptySearchLabel={t('noPersonFound')}
+                          extraOptions={faceExtraOptions}
+                          className="pa-select"
+                        />
                       </div>
                     </li>
                   ))}

@@ -37,6 +37,11 @@ interface Props {
   excludeIds?: string[];
   /** Optional "all / none" entry pinned at the top (selecting it calls onSelect('')). */
   emptyOption?: { label: string };
+  /** Optional extra non-person entries pinned above the persons list (e.g. "Unknown" /
+   *  "New member" in PhotoAnalyzer) — arbitrary ids, resolved via onSelect like any other
+   *  option. Same visibility rule as `emptyOption`: hidden once the user starts typing a
+   *  search (they're not names to search against). */
+  extraOptions?: { id: string; label: string }[];
   /** Base id — the input gets `id`, the listbox `${id}-listbox`. */
   id: string;
   /** id of an external <label> element (preferred). */
@@ -49,7 +54,7 @@ interface Props {
 
 export function PersonCombobox({
   persons, selectedId, onSelect, placeholder, emptySearchLabel,
-  excludeIds, emptyOption, id, ariaLabelledBy, ariaLabel, className,
+  excludeIds, emptyOption, extraOptions, id, ariaLabelledBy, ariaLabel, className,
 }: Props) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
@@ -76,14 +81,17 @@ export function PersonCombobox({
   const options = useMemo<{ id: string; label: string; person?: Person }[]>(() => {
     const opts: { id: string; label: string; person?: Person }[] = [];
     if (emptyOption && !query.trim()) opts.push({ id: '', label: emptyOption.label });
+    if (extraOptions && !query.trim()) extraOptions.forEach(o => opts.push({ id: o.id, label: o.label }));
     filtered.forEach(p => opts.push({ id: p.id, label: getDisplayName(p), person: p }));
     return opts;
-  }, [emptyOption, query, filtered]);
+  }, [emptyOption, extraOptions, query, filtered]);
 
   const selectedPerson = selectedId ? persons.find(p => p.id === selectedId) : undefined;
+  const selectedExtra = extraOptions?.find(o => o.id === selectedId);
   const displayValue = open
     ? query
     : selectedPerson ? getDisplayName(selectedPerson)
+    : selectedExtra ? selectedExtra.label
     : (selectedId === '' && emptyOption) ? emptyOption.label
     : '';
 

@@ -1347,7 +1347,9 @@
     "analyzeAPhoto": "Analyser une photo →",
     "galleryButton": "Analyser avec l'IA",
     "photoAlt": "Photo analysée",
-    "treeMembers": "Membres de l'arbre"
+    "treeMembers": "Membres de l'arbre",
+    "searchPlaceholder": "Rechercher une personne…",
+    "noPersonFound": "Aucune personne trouvée"
   },
   "narrative": {
     "tab": "Récit",
