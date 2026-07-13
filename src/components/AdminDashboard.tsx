@@ -5,8 +5,9 @@ import Link from 'next/link';
 import {
   ShieldCheck, Users, Bell, CheckCircle, Check, X, Search,
   MoreVertical, UserPlus, Pause, Play, ArrowUp, ArrowDown, Clock,
-  Activity, ArrowRight,
+  Activity, ArrowRight, Filter, ChevronDown,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { AdminData } from '@/hooks/useAdminData';
 import type { UserProfile, UserStatus, UserRole } from '@/types';
 
@@ -85,11 +86,11 @@ export default function AdminDashboard({ admin, role, initialTab, onToast }: { a
 
   // At-a-glance summary — surfaces the total-users count that the tab badges
   // don't show, so it's complementary rather than redundant with them.
-  const stats: { key: Tab | 'active'; label: string; value: number; tone: string }[] = [
-    { key: 'users', label: t('statTotalUsers'), value: admin.users.length, tone: 'var(--accent)' },
-    { key: 'active', label: t('statActive'), value: activeCount, tone: 'var(--success)' },
-    { key: 'pending', label: t('statPending'), value: pending.length, tone: pending.length ? 'var(--warning)' : 'var(--text-muted)' },
-    { key: 'notifications', label: t('statUnread'), value: admin.unreadCount, tone: admin.unreadCount ? 'var(--danger)' : 'var(--text-muted)' },
+  const stats: { key: Tab | 'active'; label: string; value: number; tone: string; Icon: LucideIcon }[] = [
+    { key: 'users', label: t('statTotalUsers'), value: admin.users.length, tone: 'var(--accent)', Icon: Users },
+    { key: 'active', label: t('statActive'), value: activeCount, tone: 'var(--success)', Icon: CheckCircle },
+    { key: 'pending', label: t('statPending'), value: pending.length, tone: pending.length ? 'var(--warning)' : 'var(--text-muted)', Icon: Clock },
+    { key: 'notifications', label: t('statUnread'), value: admin.unreadCount, tone: admin.unreadCount ? 'var(--danger)' : 'var(--text-muted)', Icon: Bell },
   ];
 
   const TABS: { id: Tab; label: string; Icon: typeof Users; badge?: number }[] = [
@@ -111,9 +112,12 @@ export default function AdminDashboard({ admin, role, initialTab, onToast }: { a
         {/* At-a-glance summary strip */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 0, marginTop: '16px', border: 'var(--bw) solid var(--border-strong)', borderRadius: 'var(--radius-md)', overflow: 'hidden', background: 'var(--bg)', maxWidth: '640px' }}>
           {stats.map((s, i) => (
-            <div key={s.key} style={{ flex: '1 1 120px', minWidth: '96px', padding: '10px 14px', borderLeft: i > 0 ? '1px solid var(--border)' : 'none' }}>
-              <div className="serif" style={{ fontSize: '1.5rem', lineHeight: 1.05, fontWeight: 600, color: s.tone }}>{s.value}</div>
-              <div className="label" style={{ fontSize: '9px', letterSpacing: '0.12em', marginTop: '3px' }}>{s.label}</div>
+            <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: '1 1 130px', minWidth: '104px', padding: '10px 14px', borderLeft: i > 0 ? '1px solid var(--border)' : 'none' }}>
+              <s.Icon size={16} aria-hidden="true" style={{ color: s.tone, flexShrink: 0 }} />
+              <div style={{ minWidth: 0 }}>
+                <div className="serif" style={{ fontSize: '1.5rem', lineHeight: 1.05, fontWeight: 600, color: s.tone }}>{s.value}</div>
+                <div className="label" style={{ fontSize: '9px', letterSpacing: '0.12em', marginTop: '3px' }}>{s.label}</div>
+              </div>
             </div>
           ))}
         </div>
@@ -225,9 +229,20 @@ function UsersTab({ admin, isSuperAdmin, onToast }: { admin: AdminData; isSuperA
   const t = useTranslations('admin');
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<UserStatus | 'all'>('all');
+  const [filterOpen, setFilterOpen] = useState(false);
   const [menuId, setMenuId] = useState<string | null>(null);
   const [hoverId, setHoverId] = useState<string | null>(null);
   const menuBtnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const filterBtnRef = useRef<HTMLButtonElement | null>(null);
+
+  const FILTERS: { id: UserStatus | 'all'; label: string }[] = [
+    { id: 'all', label: t('allStatuses') },
+    { id: 'pending', label: t('statusPending') },
+    { id: 'approved', label: t('statusApproved') },
+    { id: 'rejected', label: t('statusRejected') },
+    { id: 'suspended', label: t('statusSuspended') },
+  ];
+  const filterLabel = FILTERS.find(f => f.id === filter)?.label ?? FILTERS[0].label;
 
   const rows = useMemo(() => admin.users.filter(u => {
     if (filter !== 'all' && u.status !== filter) return false;
@@ -255,13 +270,49 @@ function UsersTab({ admin, isSuperAdmin, onToast }: { admin: AdminData; isSuperA
           <Search size={15} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} aria-hidden="true" />
           <input value={q} onChange={e => setQ(e.target.value)} placeholder={t('searchPlaceholder')} aria-label={t('searchPlaceholder')} className="input" style={{ width: '100%', paddingLeft: '32px' }} />
         </div>
-        <select value={filter} onChange={e => setFilter(e.target.value as UserStatus | 'all')} className="input" style={{ width: 'auto' }}>
-          <option value="all">{t('allStatuses')}</option>
-          <option value="pending">{t('statusPending')}</option>
-          <option value="approved">{t('statusApproved')}</option>
-          <option value="rejected">{t('statusRejected')}</option>
-          <option value="suspended">{t('statusSuspended')}</option>
-        </select>
+        {/* Custom dropdown instead of a native <select>: the OS-rendered popup
+            (see screenshot feedback) breaks from the app's own theming —
+            wrong font, no accent hover, plain surface. Reuses the exact
+            popover pattern already used for the row actions menu below. */}
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <button
+            ref={filterBtnRef}
+            onClick={() => setFilterOpen(o => !o)}
+            onKeyDown={e => { if (e.key === 'Escape' && filterOpen) { e.preventDefault(); setFilterOpen(false); } }}
+            className="btn btn-secondary btn-sm"
+            aria-haspopup="listbox"
+            aria-expanded={filterOpen}
+            style={{ gap: '8px', minWidth: '176px', justifyContent: 'space-between' }}
+          >
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <Filter size={13} aria-hidden="true" style={{ flexShrink: 0 }} /> {filterLabel}
+            </span>
+            <ChevronDown size={14} aria-hidden="true" style={{ flexShrink: 0, transition: 'transform var(--t-fast)', transform: filterOpen ? 'rotate(180deg)' : 'none' }} />
+          </button>
+          {filterOpen && (
+            <>
+              <div onClick={() => setFilterOpen(false)} aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 'calc(var(--z-dropdown) - 1)' }} />
+              <div role="listbox" aria-label={t('allStatuses')}
+                onKeyDown={e => { if (e.key === 'Escape') { e.preventDefault(); setFilterOpen(false); filterBtnRef.current?.focus(); } }}
+                style={{ position: 'absolute', left: 0, top: '100%', zIndex: 'var(--z-dropdown)', marginTop: '4px', minWidth: '190px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)', padding: '4px', display: 'flex', flexDirection: 'column' }}>
+                {FILTERS.map(f => {
+                  const on = f.id === filter;
+                  return (
+                    <button key={f.id} role="option" aria-selected={on}
+                      onClick={() => { setFilter(f.id); setFilterOpen(false); filterBtnRef.current?.focus(); }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '9px 12px', minHeight: '40px', border: 'none', background: on ? 'var(--bg-muted)' : 'none', cursor: 'pointer', textAlign: 'left', fontSize: '13px', fontFamily: 'var(--font-body)', color: on ? 'var(--accent-text)' : 'var(--text)', fontWeight: on ? 700 : 400, borderRadius: 'var(--radius-sm)' }}
+                      onMouseEnter={e => { if (!on) e.currentTarget.style.background = 'var(--bg-muted)'; }}
+                      onMouseLeave={e => { if (!on) e.currentTarget.style.background = 'none'; }}
+                    >
+                      <span style={{ width: '14px', display: 'inline-flex', flexShrink: 0 }}>{on && <Check size={14} aria-hidden="true" />}</span>
+                      {f.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
       </div>
       <p className="mono" style={{ fontSize: '11px', color: 'var(--text-light)', margin: '0 0 10px' }}>
         {rows.length === admin.users.length ? t('resultCount', { count: rows.length }) : t('resultCountFiltered', { count: rows.length, total: admin.users.length })}
