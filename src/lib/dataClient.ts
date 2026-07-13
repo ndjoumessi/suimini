@@ -50,11 +50,23 @@ async function apiGet<T>(url: string): Promise<T> {
   if (!res.ok) throw new Error(`API ${res.status} sur ${url}`);
   return res.json() as Promise<T>;
 }
+// Browsers reject (throw synchronously) a `keepalive` fetch whose body exceeds ~64 KiB
+// combined across all in-flight keepalive requests — stay well under that so a large
+// tree save can never hit the error path, it just falls back to a normal fetch below.
+const KEEPALIVE_MAX_BYTES = 60_000;
+
 async function apiSend<T>(url: string, method: 'POST' | 'DELETE', body?: unknown): Promise<T> {
+  const bodyStr = body !== undefined ? JSON.stringify(body) : undefined;
+  // keepalive lets the browser finish sending a SMALL pending write even if the tab is
+  // reloaded/closed mid-request — closes the race where an edit's cloud push is already
+  // in flight when the user hits F5 (the debounce-flush in useFamilyStore's beforeunload
+  // handler only catches a save that hasn't started yet; this covers the next window).
+  const useKeepalive = bodyStr !== undefined && bodyStr.length < KEEPALIVE_MAX_BYTES;
   const res = await fetch(url, {
     method, credentials: 'same-origin',
-    headers: { accept: 'application/json', ...(body !== undefined ? { 'content-type': 'application/json' } : {}) },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    headers: { accept: 'application/json', ...(bodyStr !== undefined ? { 'content-type': 'application/json' } : {}) },
+    body: bodyStr,
+    ...(useKeepalive ? { keepalive: true } : {}),
   });
   if (!res.ok) throw new Error(`API ${res.status} sur ${url}`);
   return res.json() as Promise<T>;

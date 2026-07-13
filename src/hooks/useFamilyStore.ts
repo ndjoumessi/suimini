@@ -172,6 +172,13 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
   //    par le listener beforeunload/pagehide pour vider un save en attente avant F5.
   const immediateSyncRef = useRef(false);
   const pendingPushRef = useRef<null | (() => void)>(null);
+  // True from the moment doPush's actual network call starts until it settles.
+  // pendingPushRef is nulled as soon as the request FIRES (see doPush), so the
+  // beforeunload/pagehide flush below can't do anything once a push is genuinely
+  // in flight — this ref is what lets beforeunload additionally show the browser's
+  // native "leave site?" confirmation in that specific window, buying the async
+  // write real wall-clock time to land before the reload actually happens.
+  const pushInFlightRef = useRef(false);
   const localCacheRef = useRef<FamilyTree[]>([]);
   // Timestamp of the last cloud push made by THIS client. Realtime echoes our own
   // writes back; the app uses this to ignore them (see SuiminiApp) so we don't
@@ -511,13 +518,14 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
     const doPush = () => {
       if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null; }
       pendingPushRef.current = null;         // nothing left pending once we fire
+      pushInFlightRef.current = true;        // …but the write itself is now genuinely in flight
       setSyncStatus('syncing');
       // Mark before AND after the write: the realtime echo of our own push can
       // arrive either side of the REST response, so we bracket the whole window.
       lastLocalWriteRef.current = Date.now();
       return pushTreeNowRef.current(treeSnapshot)
-        .then(() => { lastLocalWriteRef.current = Date.now(); syncErrorKindRef.current = null; setSyncStatus('saved'); setLastSyncAt(Date.now()); })
-        .catch((err) => { console.error('[store] Sauvegarde cloud échouée:', err?.message ?? err); syncErrorKindRef.current = 'save'; setSyncStatus('error'); });
+        .then(() => { pushInFlightRef.current = false; lastLocalWriteRef.current = Date.now(); syncErrorKindRef.current = null; setSyncStatus('saved'); setLastSyncAt(Date.now()); })
+        .catch((err) => { pushInFlightRef.current = false; console.error('[store] Sauvegarde cloud échouée:', err?.message ?? err); syncErrorKindRef.current = 'save'; setSyncStatus('error'); });
     };
     pendingPushRef.current = doPush;          // beforeunload can flush the latest tree
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -530,15 +538,32 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
 
   // Flush a still-pending debounced save before the tab is hidden/unloaded, so a
   // fast F5 right after an edit can't lose it (the reload hard-replace would other-
-  // wise overwrite the un-pushed local edit). Best-effort: a browser may cut a long
-  // request short on unload, but a small Supabase write usually lands — and the 0 ms
-  // flush on explicit CRUD above already makes this the rare fallback, not the norm.
+  // wise overwrite the un-pushed local edit).
+  //
+  // Two DIFFERENT race windows, two different remedies:
+  //  1. The debounce timer hasn't fired yet (0–700 ms) → pendingPushRef still holds
+  //     the push function → calling it here starts the request right away instead
+  //     of losing it to the timer never getting a chance to run. This is what the
+  //     old comment here meant by "best-effort" and covers the common case (the 0 ms
+  //     flush on explicit CRUD already shrinks this window to almost nothing).
+  //  2. The request is already IN FLIGHT (pendingPushRef was nulled the instant
+  //     doPush fired — see doPush) → there is nothing left to "flush", and a
+  //     network call already underway can't be force-completed synchronously.
+  //     The only real lever left is `beforeunload`'s native confirmation dialog:
+  //     returning a value makes the browser ask the user before actually leaving,
+  //     which buys the async write the wall-clock time (typically well under a
+  //     second) it needs to land. `pagehide` has no such mechanism (unload is
+  //     already decided by the time it fires) — it stays a plain best-effort flush.
   useEffect(() => {
     if (!cloud) return;
-    const flush = () => { pendingPushRef.current?.(); };
-    window.addEventListener('beforeunload', flush);
-    window.addEventListener('pagehide', flush);
-    return () => { window.removeEventListener('beforeunload', flush); window.removeEventListener('pagehide', flush); };
+    const flushOnHide = () => { pendingPushRef.current?.(); };
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      pendingPushRef.current?.();
+      if (pushInFlightRef.current) { e.preventDefault(); e.returnValue = ''; }
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    window.addEventListener('pagehide', flushOnHide);
+    return () => { window.removeEventListener('beforeunload', onBeforeUnload); window.removeEventListener('pagehide', flushOnHide); };
   }, [cloud]);
 
   // Reload one tree from the cloud (used by realtime collaborator updates).
