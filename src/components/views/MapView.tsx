@@ -72,6 +72,16 @@ export default function MapView({ tree, onSelectPerson }: Props) {
   // Rendered client-only (loaded via next/dynamic with ssr:false), so leaflet is safe to use directly.
   const t = useTranslations('mapView');
   const [filter, setFilter] = useState<'all' | Kind>('all');
+  // Basemap follows the active theme. Read once off <html data-theme> (same
+  // pattern as tree/nodeStyle.ts's currentNodeMode) rather than a live
+  // subscription: the Carte view is conditionally rendered in SuiminiApp
+  // (`view === 'map' && <MapView .../>`), so switching theme from Settings —
+  // a separate view — unmounts this component; it always remounts fresh
+  // with the current attribute by the time it's shown again.
+  const isLightTheme = document.documentElement.getAttribute('data-theme') === 'light';
+  const tileUrl = isLightTheme
+    ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
 
   const allPoints = useMemo<GeoPoint[]>(() => {
     const pts: GeoPoint[] = [];
@@ -132,8 +142,9 @@ export default function MapView({ tree, onSelectPerson }: Props) {
               scrollWheelZoom
             >
               <TileLayer
+                key={isLightTheme ? 'light' : 'dark'}
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                url={tileUrl}
                 subdomains="abcd"
                 maxZoom={20}
               />
