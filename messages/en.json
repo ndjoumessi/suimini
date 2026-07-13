@@ -1349,7 +1349,8 @@
     "photoAlt": "Analyzed photo",
     "treeMembers": "Tree members",
     "searchPlaceholder": "Search for a person…",
-    "noPersonFound": "No person found"
+    "noPersonFound": "No person found",
+    "cropInstruction": "Adjust the frame to crop the photo before analyzing"
   },
   "narrative": {
     "tab": "Story",

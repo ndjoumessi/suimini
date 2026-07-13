@@ -8,6 +8,7 @@ import { FamilyTree, Person } from '@/types';
 import { getDisplayName, formatYear } from '@/lib/treeUtils';
 import { uploadAvatar, deleteAvatarByUrl } from '@/lib/uploadImage';
 import { formatBytes } from '@/lib/imageCompression';
+import { cropToCanvas, cropToFile } from '@/lib/imageCrop';
 import { GENDER_BAR } from '../tree/nodeStyle';
 import { useOverlay } from '@/hooks/useOverlay';
 
@@ -138,25 +139,10 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
     setCompletedCrop(convertToPixelCrop(c, width, height));
   };
 
-  // Render the selected region from the natural-resolution image to a canvas.
-  const cropToCanvasEl = (canvas: HTMLCanvasElement, image: HTMLImageElement, c: PixelCrop, outSize?: number) => {
-    const scaleX = image.naturalWidth / image.width;
-    const scaleY = image.naturalHeight / image.height;
-    const srcW = c.width * scaleX;
-    const srcH = c.height * scaleY;
-    canvas.width = outSize ?? Math.max(1, Math.round(srcW));
-    canvas.height = outSize ?? Math.max(1, Math.round(srcH));
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return false;
-    ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(image, c.x * scaleX, c.y * scaleY, srcW, srcH, 0, 0, canvas.width, canvas.height);
-    return true;
-  };
-
   // Live square preview of the current crop.
   useEffect(() => {
     if (!completedCrop || !completedCrop.width || !imgRef.current || !previewCanvasRef.current) return;
-    cropToCanvasEl(previewCanvasRef.current, imgRef.current, completedCrop, 120);
+    cropToCanvas(previewCanvasRef.current, imgRef.current, completedCrop, 120);
   }, [completedCrop]);
 
   const handleSave = async () => {
@@ -166,14 +152,8 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
       // Crop via canvas → JPEG 0.85; fall back to the original on any failure.
       let fileToUpload = pendingFile;
       if (imgRef.current && completedCrop?.width && completedCrop.height) {
-        const canvas = document.createElement('canvas');
-        if (cropToCanvasEl(canvas, imgRef.current, completedCrop)) {
-          const blob = await new Promise<Blob | null>(res => canvas.toBlob(res, 'image/jpeg', 0.85));
-          if (blob) {
-            const base = pendingFile.name.replace(/\.[^.]+$/, '') || 'photo';
-            fileToUpload = new File([blob], `${base}.jpg`, { type: 'image/jpeg' });
-          }
-        }
+        const cropped = await cropToFile(imgRef.current, completedCrop, pendingFile.name);
+        if (cropped) fileToUpload = cropped;
       }
       const res = await uploadAvatar(fileToUpload, addPersonId);
       const person = tree.persons.find(p => p.id === addPersonId);

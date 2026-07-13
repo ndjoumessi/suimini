@@ -1349,7 +1349,8 @@
     "photoAlt": "Photo analysée",
     "treeMembers": "Membres de l'arbre",
     "searchPlaceholder": "Rechercher une personne…",
-    "noPersonFound": "Aucune personne trouvée"
+    "noPersonFound": "Aucune personne trouvée",
+    "cropInstruction": "Ajustez le cadre pour recadrer la photo avant l'analyse"
   },
   "narrative": {
     "tab": "Récit",

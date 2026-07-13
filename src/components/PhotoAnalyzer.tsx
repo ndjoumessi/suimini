@@ -2,9 +2,12 @@
 import { useState, useRef, useMemo, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { Sparkles, Upload, X as XIcon, ScanFace, ImageIcon, Check, ArrowRight } from 'lucide-react';
+import ReactCrop, { convertToPixelCrop, type Crop, type PixelCrop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
 import type { FamilyTree, Gender } from '@/types';
 import { getDisplayName } from '@/lib/treeUtils';
 import { uploadAvatar } from '@/lib/uploadImage';
+import { cropToFile, isFullFrameCrop } from '@/lib/imageCrop';
 import { useOverlay } from '@/hooks/useOverlay';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
@@ -44,8 +47,9 @@ const ACCENT = 'var(--accent)';
  *  analysis image. Claude's own free-eyeballed bounding-box percentages are unreliable on
  *  cluttered photos (a real face got placed over background foliage in testing) — a labelled
  *  grid gives the model concrete tick marks to read the face edges off instead of guessing,
- *  the standard grounding aid for VLM spatial-coordinate tasks. Never shown to the user: only
- *  `preview` (the untouched original) renders in the UI, this canvas only feeds the API. */
+ *  the standard grounding aid for VLM spatial-coordinate tasks. Never shown to the user: `preview`
+ *  (possibly the user's cropped framing, but never grid-marked) is the only thing rendered in the
+ *  UI — this canvas only feeds the API. */
 function drawAnalysisGrid(ctx: CanvasRenderingContext2D, w: number, h: number) {
   const STEP = 10;
   ctx.save();
@@ -111,6 +115,7 @@ export default function PhotoAnalyzer({ tree, preselectPersonId, onClose, onConf
   const t = useTranslations('photoAnalyzer');
   const overlayRef = useOverlay<HTMLDivElement>(onClose);
   const fileRef = useRef<HTMLInputElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   const [step, setStep] = useState<Step>('upload');
   const [file, setFile] = useState<File | null>(null);
@@ -122,6 +127,12 @@ export default function PhotoAnalyzer({ tree, preselectPersonId, onClose, onConf
   const [photoDescription, setPhotoDescription] = useState('');
   const [assignments, setAssignments] = useState<Record<number, string>>({});
   const [saving, setSaving] = useState(false);
+  // Free-form crop (no forced aspect — unlike GalleryView's 1:1 avatar crop, a family
+  // photo can hold any number of faces in any composition). Defaults to the full frame
+  // on load (see `onPreviewImageLoad`), so anyone who doesn't touch it gets the exact
+  // previous behaviour (whole photo analyzed, original file uploaded untouched).
+  const [crop, setCrop] = useState<Crop>();
+  const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
 
   const people = useMemo(
     () => [...tree.persons].sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b))),
@@ -142,17 +153,44 @@ export default function PhotoAnalyzer({ tree, preselectPersonId, onClose, onConf
     if (!f.type.startsWith('image/')) { setError(t('notImage')); return; }
     if (f.size > MAX_BYTES) { setError(t('tooLarge')); return; }
     setFile(f);
+    setCrop(undefined);
+    setCompletedCrop(undefined);
     const reader = new FileReader();
     reader.onload = () => setPreview(reader.result as string);
     reader.readAsDataURL(f);
   }, [t]);
+
+  // Seed a full-frame crop once the image's rendered dimensions are known — the crop
+  // starts as a no-op (whole photo selected) and the user narrows it from there.
+  const onPreviewImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    const { width, height } = e.currentTarget;
+    const full: Crop = { unit: '%', x: 0, y: 0, width: 100, height: 100 };
+    setCrop(full);
+    setCompletedCrop(convertToPixelCrop(full, width, height));
+  }, []);
 
   const analyze = useCallback(async () => {
     if (!file) return;
     setStep('analyzing');
     setError('');
     try {
-      const imageBase64 = await resizeForAnalysis(file);
+      // Apply the user's crop (if they narrowed it past the full-frame default) before
+      // analyzing — the cropped image becomes BOTH what's analyzed and what's finally
+      // saved/tagged in `confirm()`, so the face-box overlays (percentages relative to
+      // whatever was analyzed) always line up with what's shown afterwards.
+      let effectiveFile = file;
+      if (imgRef.current && completedCrop?.width && completedCrop.height
+          && !isFullFrameCrop(completedCrop, imgRef.current.width, imgRef.current.height)) {
+        const cropped = await cropToFile(imgRef.current, completedCrop, file.name);
+        if (cropped) {
+          effectiveFile = cropped;
+          setFile(cropped);
+          const reader = new FileReader();
+          reader.onload = () => setPreview(reader.result as string);
+          reader.readAsDataURL(cropped);
+        }
+      }
+      const imageBase64 = await resizeForAnalysis(effectiveFile);
       const res = await fetch('/api/analyze-photo', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -183,7 +221,7 @@ export default function PhotoAnalyzer({ tree, preselectPersonId, onClose, onConf
       setError(e instanceof Error ? e.message : t('error'));
       setStep('upload');
     }
-  }, [file, preselectPersonId, t]);
+  }, [file, completedCrop, preselectPersonId, t]);
 
   const confirm = useCallback(async () => {
     if (!file) return;
@@ -246,12 +284,19 @@ export default function PhotoAnalyzer({ tree, preselectPersonId, onClose, onConf
                 </div>
               ) : (
                 <div className="animate-fade-in">
-                  <div className="pa-preview-wrap">
+                  <ReactCrop
+                    crop={crop}
+                    onChange={(_, percent) => setCrop(percent)}
+                    onComplete={c => setCompletedCrop(c)}
+                    keepSelection
+                    className="pa-reactcrop"
+                  >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={preview} alt={t('photoAlt')} className="pa-preview-img" />
-                  </div>
+                    <img ref={imgRef} src={preview} alt={t('photoAlt')} onLoad={onPreviewImageLoad} className="pa-preview-img" />
+                  </ReactCrop>
+                  <p className="pa-cropinstr">{t('cropInstruction')}</p>
                   <div className="pa-actions">
-                    <button onClick={() => { setFile(null); setPreview(''); }} className="btn btn-secondary btn-sm">{t('changePhoto')}</button>
+                    <button onClick={() => { setFile(null); setPreview(''); setCrop(undefined); setCompletedCrop(undefined); }} className="btn btn-secondary btn-sm">{t('changePhoto')}</button>
                     <button onClick={analyze} className="btn btn-primary"><Sparkles size={16} aria-hidden="true" /> {t('analyzeButton')}</button>
                   </div>
                 </div>
@@ -371,11 +416,29 @@ const PA_CSS = `
 .pa-drop:hover, .pa-drop-over { border-color: var(--accent); background: var(--accent-light); transform: translate(-2px,-2px); box-shadow: var(--shadow); }
 .pa-drop-text { margin: 0; font-size: 14px; color: var(--text); max-width: 280px; }
 
-.pa-preview-wrap, .pa-scan-wrap, .pa-canvas-scroll { position: relative; border: var(--bw) solid var(--border-strong); border-radius: var(--radius); overflow: hidden; background: var(--bg-muted); max-height: 60vh; }
-.pa-canvas-scroll { overflow: auto; }
+.pa-scan-wrap, .pa-canvas-scroll { position: relative; border: var(--bw) solid var(--border-strong); border-radius: var(--radius); overflow: auto; background: var(--bg-muted); max-height: 60vh; }
 /* The canvas sizes itself to the rendered image so face overlays map 1:1 (no object-fit letterbox). */
 .pa-canvas { position: relative; line-height: 0; }
 .pa-preview-img { display: block; width: 100%; height: auto; }
+
+/* Crop UI (step 1 only) — free-form, no forced aspect (unlike GalleryView's 1:1 avatar
+   crop): a family photo can hold any composition/number of faces. Same gold-handle theming. */
+.pa-reactcrop { display: block; width: 100%; background: var(--ink-on-accent); border: var(--bw) solid var(--border-strong); border-radius: var(--radius);
+  --rc-drag-handle-size: 14px; --rc-drag-handle-bg-colour: var(--accent); --rc-border-color: var(--accent); --rc-focus-color: var(--accent); }
+.pa-reactcrop .ReactCrop__child-wrapper { max-height: 60vh; overflow: hidden; }
+/* width:auto (NOT 100%) is the point: a forced 100% width on a portrait photo computes a
+   height that overflows 60vh, and the wrapper's overflow:hidden silently clips the bottom of
+   the photo before the user ever gets to adjust anything — the exact bug being fixed here.
+   max-width + max-height with auto width/height instead shrinks the image to fit BOTH bounds
+   (no forced box for object-fit to act on, so it's not used — this is the plain "letterbox,
+   never crop" sizing that a forced width defeats). */
+.pa-reactcrop img.pa-preview-img { display: block; width: auto; height: auto; max-width: 100%; max-height: 60vh; margin: 0 auto; }
+.pa-reactcrop .ReactCrop__crop-selection { box-shadow: 0 0 0 9999px rgba(13,13,13,0.64); }
+.pa-reactcrop .ReactCrop__drag-handle { background-color: var(--accent); border-color: var(--ink-on-accent); }
+.pa-cropinstr { margin: 8px 0 0; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.04em; color: var(--text-muted); }
+@media (prefers-reduced-motion: reduce) {
+  .pa-reactcrop .ReactCrop__crop-selection { animation: none; }
+}
 .pa-actions { display: flex; gap: 10px; align-items: center; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap; }
 .pa-actions-end { justify-content: space-between; }
 .pa-error { margin: 12px 0 0; font-size: 13px; font-weight: 600; color: var(--danger); }
