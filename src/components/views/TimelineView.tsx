@@ -3,6 +3,7 @@ import { useMemo, useState, useRef, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { CalendarDays, MapPin, Sparkles, Moon, Heart, Star } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
+import { PersonCombobox } from '../ui/PersonCombobox';
 import { FamilyTree, EventType, Person } from '@/types';
 import { getDisplayName, formatDate, getChildren, getParents } from '@/lib/treeUtils';
 import { eventsOverlapping, type HistoricalEvent } from '@/lib/history';
@@ -325,19 +326,23 @@ export default function TimelineView({ tree, onSelectPerson }: Props) {
           </button>
         </div>
 
+        {/* Searchable picker instead of a native <select> — with 70 people in a
+            tree, scrolling an unstyled, unsearchable OS list to find one name
+            (see screenshot feedback) doesn't scale. Same PersonCombobox
+            already used by Journal/Ancestors/PersonPanel for this exact job. */}
         {scope === 'individual' && (
-          <select
-            className="input"
-            aria-label={t('choosePerson')}
-            value={focusId}
-            onChange={e => setFocusId(e.target.value)}
-            style={{ fontSize: '12px', padding: '5px 8px', maxWidth: '220px' }}
-          >
-            <option value="">{t('choosePerson')}</option>
-            {selectablePersons.map(p => (
-              <option key={p.id} value={p.id}>{getDisplayName(p)}</option>
-            ))}
-          </select>
+          <div style={{ width: '220px', maxWidth: '100%' }}>
+            <PersonCombobox
+              id="timeline-person-filter"
+              persons={selectablePersons}
+              selectedId={focusId}
+              onSelect={setFocusId}
+              placeholder={t('choosePerson')}
+              emptyOption={{ label: t('choosePerson') }}
+              emptySearchLabel={t('noPersonFound')}
+              ariaLabel={t('choosePerson')}
+            />
+          </div>
         )}
 
         <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{t('eventCount', { count: visibleEntries.length })}</span>
