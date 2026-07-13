@@ -43,26 +43,44 @@ function shade(hex: string, percent: number): string {
 /**
  * Apply a color theme by overriding accent/male/female CSS variables on <html>.
  *
- * Editorial Heritage is light-only: the raw theme accent is the brand
- * FILL/RULE/CTA colour (kept as picked, e.g. gold #a36b1e), while `--accent-text`
- * is a DEEPER sibling used wherever the accent is small TEXT (eyebrows, links,
- * key numbers) so it clears WCAG AA on the cream/white paper. Gender signal
- * colours are used as picked (already tuned for light).
+ * The raw theme accent is the brand FILL/RULE/CTA colour (kept as picked,
+ * e.g. gold #c9a84c) — it doesn't change with light/dark, so switching mode
+ * never changes WHICH accent is active, only how its derivatives are tuned.
+ * `--accent-hover`/`--accent-text` DO depend on the canvas: on the dark
+ * "Veillée" canvas the accent is brightened (a mid-tone pastel needs to lift
+ * off near-black) ; on the light canvas it's darkened instead (the same
+ * pastel would all but vanish as small text on cream paper — verified
+ * computationally: the dark-mode accent-text derivative for "Or" sits at a
+ * 1.8:1 contrast ratio against the light canvas, nowhere near WCAG AA).
+ * `-40%` was chosen as the darkening amount because it's the smallest shift
+ * that keeps every one of the 6 themes (including the lightest, "Ardoise")
+ * at ≥4.5:1 against both the light canvas and light card surfaces.
+ *
+ * Gender colours (`--male`/`--female`) are intentionally left mode-INDEPENDENT
+ * (not darkened for light mode) so they stay pixel-identical to the tree's
+ * hardcoded GENDER_BAR (`tree/nodeStyle.ts`, itself mode-independent) — a
+ * documented invariant this function must not break. This does mean gender
+ * badges/legend text sit a little under the 4.5:1 AA text bar in light mode
+ * (they were tuned as vivid FILLS against dark card surfaces) — a known,
+ * deliberate trade-off pending a dedicated pass on GENDER_BAR itself, not a
+ * regression introduced silently.
  */
-export function applyColorTheme(id: ColorThemeId) {
+export function applyColorTheme(id: ColorThemeId, mode?: 'light' | 'dark') {
   if (typeof document === 'undefined') return;
   const theme = getTheme(id);
   const root = document.documentElement;
+  const resolvedMode = mode ?? (root.getAttribute('data-theme') === 'light' ? 'light' : 'dark');
+  const light = resolvedMode === 'light';
 
-  const accent = theme.accent;                 // brand fill / rule / CTA
-  const accentHover = shade(theme.accent, 14); // brighter on hover (dark canvas)
-  const accentText = shade(theme.accent, 12);  // brighter for AA text contrast on dark
+  const accent = theme.accent;                                  // brand fill / rule / CTA — same in both modes
+  const accentHover = shade(theme.accent, light ? -14 : 14);     // dark: brighten to lift off near-black · light: darken (pressed/hover deepens on paper)
+  const accentText = shade(theme.accent, light ? -40 : 12);      // dark: brighten for AA on near-black · light: darken for AA on paper
   const [r, g, b] = hexToRgb(accent);
 
   root.style.setProperty('--accent', accent);
   root.style.setProperty('--accent-hover', accentHover);
   root.style.setProperty('--accent-text', accentText);
-  root.style.setProperty('--accent-light', `rgba(${r}, ${g}, ${b}, 0.14)`);
+  root.style.setProperty('--accent-light', `rgba(${r}, ${g}, ${b}, ${light ? 0.18 : 0.14})`);
   root.style.setProperty('--male', theme.male);
   root.style.setProperty('--female', theme.female);
 }

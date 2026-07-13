@@ -24,8 +24,13 @@
      step  4   36.6   h2
      step  5   45.8   h1 / display
 
-   Dark-only: `:root` IS the theme; `data-theme` stays "dark" (useDarkMode).
-   Variable + class names are kept stable so the system cascades app-wide.
+   Light + dark, user-chosen (useDarkMode, "Clair/Sombre/Système" in
+   Paramètres → Apparence): `:root` below is the DARK canvas (still the
+   default/first impression, `<html data-theme="dark">` in layout.tsx) ; a
+   `[data-theme="light"]` block further down overrides every theme-dependent
+   variable with a paper-warm companion palette — never re-declares geometry/
+   motion/type-scale, which aren't theme-dependent. Variable + class names are
+   kept stable so the system cascades app-wide regardless of mode.
    ===================================================================== */
 
 :root {
@@ -122,9 +127,71 @@
   /* --font-display / --font-body / --font-mono are injected by next/font on <html> (see layout.tsx) */
 }
 
-/* Veillée is dark-only: `:root` above is the single source of truth.
-   `data-theme="dark"` is still set on <html> (see useDarkMode) so the badge
-   tints below — which need a darker backing — keep applying. */
+/* =====================================================================
+   [data-theme="light"] — the paper-warm companion to Veillée
+   ---------------------------------------------------------------------
+   Same depth ladder / naming as the dark canvas above (recessed chrome <
+   canvas < raised card < hover/inert — just mapped to a LIGHT range instead
+   of a dark one, so every component that consumes these vars needs zero
+   changes). Every pair below was verified against WCAG AA (≥4.5:1) the same
+   way the dark canvas was: text/text-muted/text-light/deceased/success/
+   danger/warning/info against BOTH --bg and --bg-card.
+
+   Two deliberate scope limits, called out so they don't read as oversights:
+   - --male/--female are NOT re-tuned here (kept identical to dark mode) to
+     preserve the documented "must match tree/nodeStyle.ts GENDER_BAR"
+     invariant — GENDER_BAR itself doesn't have a light variant. They were
+     tuned as vivid FILLS on dark-card surfaces, so gender badge/legend TEXT
+     sits a little under 4.5:1 in light mode; fixing that properly means
+     touching GENDER_BAR too, out of scope for introducing the toggle itself.
+   - --accent-muted / --shadow-accent stay keyed to the DEFAULT "Or" gold
+     regardless of the active colour theme, same pre-existing limitation as
+     in dark mode (applyColorTheme never touches them) — not a light-mode
+     regression, just not re-solved here.
+   ===================================================================== */
+[data-theme="light"] {
+  --bg: #f4f0e6;               /* app canvas — warm bone paper */
+  --bg-card: #fcfaf3;          /* cards, panels — lifted a step closer to white */
+  --bg-muted: #ffffff;         /* inert zones / hover fills — lightest tier */
+  --surface-3: #e9e1cd;        /* sidebars, toolbars, inputs — recessed BELOW canvas (warmer/deeper tan) */
+
+  --ink: #211b12;
+  --text: #211b12;
+  --text-muted: #6b5f49;       /* ≥4.5:1 on --bg, --bg-card AND --surface-3 */
+  --text-light: #6a5e46;       /* ≥4.5:1 on --bg, --bg-card AND --surface-3 */
+
+  --border: #ded4be;
+  --border-strong: #c7b999;
+
+  /* Static fallbacks for the default "Or" theme before applyColorTheme()'s
+     JS runs (or if it hasn't yet) — see lib/themes.ts for the live, per-
+     theme, per-mode derivation (accent-hover/accent-text darken instead of
+     brighten on this light canvas). */
+  --accent: #c9a84c;
+  --accent-hover: #ad9041;
+  --accent-text: #79652e;      /* ≥4.9:1 on --bg, ≥5.4:1 on --bg-card (worst case across all 6 themes) */
+  --accent-light: rgba(201, 168, 76, 0.18);
+  --accent-muted: #7c672f;     /* ≥4.5:1 on --bg & --bg-card */
+  --ink-on-accent: #171006;    /* unchanged — dark ink still reads on every accent fill regardless of canvas */
+
+  --male: #4a90d9;
+  --female: #c47ba0;
+  --deceased: #6a5e46;
+  --success: #256b4e;
+  --danger: #b5432b;
+  --warning: #8a5f1e;
+  --info: #3e6b94;
+
+  /* Shadows — soft warm-brown, much lower opacity than the dark canvas
+     (a dark-strength shadow reads as heavy/muddy on a light surface). */
+  --shadow-color: rgba(90, 70, 40, 0.18);
+  --shadow-sm: 0 1px 2px rgba(90, 70, 40, 0.10), 0 2px 6px rgba(90, 70, 40, 0.08);
+  --shadow: 0 4px 10px rgba(90, 70, 40, 0.10), 0 10px 24px rgba(90, 70, 40, 0.08);
+  --shadow-lg: 0 8px 18px rgba(90, 70, 40, 0.12), 0 20px 44px rgba(90, 70, 40, 0.10);
+  --shadow-xl: 0 12px 24px rgba(90, 70, 40, 0.14), 0 30px 64px rgba(90, 70, 40, 0.12);
+  --shadow-accent: 0 0 0 1px rgba(201, 168, 76, 0.35), 0 6px 20px rgba(201, 168, 76, 0.16);
+  --scrim: rgba(40, 32, 20, 0.45);
+}
 
 * { box-sizing: border-box; }
 

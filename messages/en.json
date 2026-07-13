@@ -466,6 +466,10 @@
   "settings": {
     "title": "Settings",
     "subtitle": "Appearance, account and data for Suimini. Your display preferences are saved on this device.",
+    "themeMode": "Display mode",
+    "themeModeLight": "Light",
+    "themeModeDark": "Dark",
+    "themeModeSystem": "System",
     "colorTheme": "Accent colour",
     "colorThemeHint": "Hover a theme for a live preview, click to apply it.",
     "active": "Active",

@@ -89,9 +89,9 @@ export default function SuiminiApp() {
   const storeUser = useMemo(() => (user ? { id: user.id, email: user.email } : null), [user?.id, user?.email]);
   // authReady = auth resolved → the store won't seed the demo sample for logged-in users.
   const store = useFamilyStore(storeUser, !isLoading);
-  // Dark-only app: useDarkMode locks data-theme + applies the colour theme (side
-  // effects only). No light/dark toggle is exposed any more.
-  useDarkMode();
+  // useDarkMode owns the light/dark/system preference (persisted) + re-derives
+  // the active colour theme's accent shading for whichever canvas is showing.
+  const { mode: themeMode, setMode: setThemeMode } = useDarkMode();
   const { themeId, setTheme, previewTheme, cancelPreview } = useTheme();
   const birthdayAlertCount = useBirthdayNotifications(store.activeTree);
 
@@ -693,6 +693,8 @@ export default function SuiminiApp() {
               <SettingsView
                 themeId={themeId}
                 onSelectTheme={(id) => { setTheme(id); showToast(tToast('themeApplied')); }}
+                themeMode={themeMode}
+                onSelectThemeMode={setThemeMode}
                 onPreviewTheme={previewTheme}
                 onCancelPreview={cancelPreview}
                 userEmail={user?.email || null}

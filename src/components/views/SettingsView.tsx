@@ -11,15 +11,20 @@ import { LOCALES, type Locale } from '@/i18n/config';
 import { useLocaleSwitch } from '@/components/IntlProvider';
 import {
   Settings2, Check, KeyRound, LogOut, Download, Trash2, RefreshCw, Cloud, CloudOff, X, Pencil,
-  User, Palette, Globe2, BellRing, Database, ShieldAlert, Info,
+  User, Palette, Globe2, BellRing, Database, ShieldAlert, Info, Sun, Moon, MonitorSmartphone,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import type { ThemeMode } from '@/hooks/useDarkMode';
 
 interface Props {
   themeId: ColorThemeId;
   onSelectTheme: (id: ColorThemeId) => void;
   onPreviewTheme: (id: ColorThemeId) => void;
   onCancelPreview: () => void;
+  /** Light/dark/system — see useDarkMode. Optional only so a hypothetical
+   *  future caller without it still compiles; SuiminiApp always passes it. */
+  themeMode?: ThemeMode;
+  onSelectThemeMode?: (mode: ThemeMode) => void;
   userEmail?: string | null;
   displayName?: string | null;
   cloud?: boolean;
@@ -61,7 +66,7 @@ function Eyebrow({ children, danger, Icon }: { children: ReactNode; danger?: boo
   );
 }
 
-export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, onCancelPreview, userEmail, displayName, cloud, trees = [], onToast, onResync, lastSyncAt, onOpenBulkData }: Props) {
+export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, onCancelPreview, themeMode, onSelectThemeMode, userEmail, displayName, cloud, trees = [], onToast, onResync, lastSyncAt, onOpenBulkData }: Props) {
   const [name, setName] = useState(displayName || '');
   const [resyncing, setResyncing] = useState(false);
   const [savingName, setSavingName] = useState(false);
@@ -214,9 +219,31 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
           </section>
         )}
 
-        {/* SECTION 2 — Accent colour */}
+        {/* SECTION 2 — Appearance: light/dark/system + accent colour */}
         <section className="set-section">
           <Eyebrow Icon={Palette}>{t('appearance')}</Eyebrow>
+
+          {onSelectThemeMode && (
+            <div className="set-field" style={{ marginBottom: '22px' }}>
+              <label className="set-flabel" id="settings-theme-mode-label">{t('themeMode')}</label>
+              <div className="set-mode" role="group" aria-labelledby="settings-theme-mode-label">
+                {([
+                  { id: 'light' as ThemeMode, label: t('themeModeLight'), Icon: Sun },
+                  { id: 'dark' as ThemeMode, label: t('themeModeDark'), Icon: Moon },
+                  { id: 'system' as ThemeMode, label: t('themeModeSystem'), Icon: MonitorSmartphone },
+                ]).map(m => {
+                  const on = themeMode === m.id;
+                  return (
+                    <button key={m.id} type="button" onClick={() => onSelectThemeMode(m.id)} aria-pressed={on}
+                      className={`set-mode-btn ${on ? 'on' : ''}`}>
+                      <m.Icon size={14} aria-hidden="true" /> {m.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <p className="set-section-sub">{t('colorThemeHint')}</p>
           <div className="set-themes" onMouseLeave={onCancelPreview}>
             {COLOR_THEMES.map(theme => {
@@ -461,6 +488,14 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
         .set-theme-badge { font-family: var(--font-mono); font-size: 8.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--set-theme-accent); display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; }
         .set-theme-pastilles { display: flex; gap: 7px; }
         .set-theme-pastilles span { width: 18px; height: 18px; flex-shrink: 0; border-radius: var(--radius-full); border: 1px solid rgba(0,0,0,0.25); }
+
+        /* Light/dark/system toggle — same visual language as the language
+           toggle below (segmented buttons), plus an icon per option. */
+        .set-mode { display: inline-flex; gap: 8px; flex-wrap: wrap; }
+        .set-mode-btn { display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px; font-family: var(--font-body); font-size: 13px; font-weight: 600; cursor: pointer; background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border); border-radius: var(--radius); transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast); }
+        .set-mode-btn:hover { border-color: var(--accent); color: var(--accent-text); }
+        .set-mode-btn.on { background: var(--accent); color: var(--ink-on-accent); font-weight: 700; border-color: var(--accent); }
+        .set-mode-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
         /* Language toggle */
         .set-lang { display: inline-flex; gap: 8px; }
