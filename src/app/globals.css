@@ -43,7 +43,7 @@
   --bg-muted: #372e22;         /* inert zones / hover fills — clearly lighter still than a card */
   --surface-1: var(--bg);
   --surface-2: var(--bg-card);
-  --surface-3: #070504;        /* sidebars, toolbars — recessed near-black, clearly BELOW canvas */
+  --surface-3: #201a13;        /* sidebars, toolbars, inputs — distinct from canvas without going near-black */
   --interactive: var(--bg-muted); /* hover state */
 
   /* Ink + text (warm paper on ember) */
