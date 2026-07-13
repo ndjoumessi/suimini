@@ -284,16 +284,18 @@ export default function PhotoAnalyzer({ tree, preselectPersonId, onClose, onConf
                 </div>
               ) : (
                 <div className="animate-fade-in">
-                  <ReactCrop
-                    crop={crop}
-                    onChange={(_, percent) => setCrop(percent)}
-                    onComplete={c => setCompletedCrop(c)}
-                    keepSelection
-                    className="pa-reactcrop"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img ref={imgRef} src={preview} alt={t('photoAlt')} onLoad={onPreviewImageLoad} className="pa-preview-img" />
-                  </ReactCrop>
+                  <div className="pa-cropwrap">
+                    <ReactCrop
+                      crop={crop}
+                      onChange={(_, percent) => setCrop(percent)}
+                      onComplete={c => setCompletedCrop(c)}
+                      keepSelection
+                      className="pa-reactcrop"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img ref={imgRef} src={preview} alt={t('photoAlt')} onLoad={onPreviewImageLoad} className="pa-preview-img" />
+                    </ReactCrop>
+                  </div>
                   <p className="pa-cropinstr">{t('cropInstruction')}</p>
                   <div className="pa-actions">
                     <button onClick={() => { setFile(null); setPreview(''); setCrop(undefined); setCompletedCrop(undefined); }} className="btn btn-secondary btn-sm">{t('changePhoto')}</button>
@@ -422,8 +424,17 @@ const PA_CSS = `
 .pa-preview-img { display: block; width: 100%; height: auto; }
 
 /* Crop UI (step 1 only) — free-form, no forced aspect (unlike GalleryView's 1:1 avatar
-   crop): a family photo can hold any composition/number of faces. Same gold-handle theming. */
-.pa-reactcrop { display: block; width: 100%; background: var(--ink-on-accent); border: var(--bw) solid var(--border-strong); border-radius: var(--radius);
+   crop): a family photo can hold any composition/number of faces. Same gold-handle theming.
+   Unlike .gv-reactcrop, this does NOT force width:100% on the crop component: ReactCrop
+   measures its percentage-based selection against ITS OWN rendered box, not the (possibly
+   narrower, centered) img inside it. A portrait photo styled width:auto inside a
+   full-width container left empty "letterbox" space on each side that the crop selection
+   still covered — dashed border and handles sitting on bare background instead of hugging the
+   photo. Left un-sized (the library's own default display:inline-block), the box shrinks to
+   the image's actual rendered size, so 100%/100% really means "the whole photo" with nothing
+   left over; .pa-cropwrap (flex, centered) positions the now shrink-wrapped tool in the modal. */
+.pa-cropwrap { display: flex; justify-content: center; }
+.pa-reactcrop { background: var(--bg-muted); border: var(--bw) solid var(--border-strong); border-radius: var(--radius); max-width: 100%;
   --rc-drag-handle-size: 14px; --rc-drag-handle-bg-colour: var(--accent); --rc-border-color: var(--accent); --rc-focus-color: var(--accent); }
 .pa-reactcrop .ReactCrop__child-wrapper { max-height: 60vh; overflow: hidden; }
 /* width:auto (NOT 100%) is the point: a forced 100% width on a portrait photo computes a
@@ -432,7 +443,7 @@ const PA_CSS = `
    max-width + max-height with auto width/height instead shrinks the image to fit BOTH bounds
    (no forced box for object-fit to act on, so it's not used — this is the plain "letterbox,
    never crop" sizing that a forced width defeats). */
-.pa-reactcrop img.pa-preview-img { display: block; width: auto; height: auto; max-width: 100%; max-height: 60vh; margin: 0 auto; }
+.pa-reactcrop img.pa-preview-img { display: block; width: auto; height: auto; max-width: 100%; max-height: 60vh; }
 .pa-reactcrop .ReactCrop__crop-selection { box-shadow: 0 0 0 9999px rgba(13,13,13,0.64); }
 .pa-reactcrop .ReactCrop__drag-handle { background-color: var(--accent); border-color: var(--ink-on-accent); }
 .pa-cropinstr { margin: 8px 0 0; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.04em; color: var(--text-muted); }
