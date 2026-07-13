@@ -16,9 +16,14 @@ interface Props {
   onRename: (id: string, meta: { name?: string; description?: string }) => void;
   onDuplicate: (id: string, newName: string) => void;
   onClose: () => void;
+  /** Admin/superadmin accounts moderate the app and aren't meant to build a
+   *  personal family tree — hides the "create a new tree" entry point while
+   *  still letting them browse/switch trees they're a member of. Defaults to
+   *  true so every other caller keeps the normal behaviour unchanged. */
+  canCreate?: boolean;
 }
 
-export default function TreeSelectorModal({ trees, activeTreeId, shared = {}, onSelect, onCreate, onDelete, onRename, onDuplicate, onClose }: Props) {
+export default function TreeSelectorModal({ trees, activeTreeId, shared = {}, onSelect, onCreate, onDelete, onRename, onDuplicate, onClose, canCreate = true }: Props) {
   const t = useTranslations('treeSelector');
   const [showCreate, setShowCreate] = useState(false);
   const [name, setName] = useState('');
@@ -51,7 +56,7 @@ export default function TreeSelectorModal({ trees, activeTreeId, shared = {}, on
         <div style={{ padding: '16px 24px', maxHeight: '60vh', overflowY: 'auto' }}>
           {trees.length === 0 && !showCreate && (
             <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '20px' }}>
-              {t('empty')}
+              {t(canCreate ? 'empty' : 'emptyAdmin')}
             </p>
           )}
 
@@ -144,7 +149,7 @@ export default function TreeSelectorModal({ trees, activeTreeId, shared = {}, on
             ))}
           </div>
 
-          {showCreate ? (
+          {canCreate && (showCreate ? (
             <div style={{ padding: '16px', background: 'var(--bg-muted)', borderRadius: 'var(--radius)' }} className="animate-fade-in">
               <h3 style={{ margin: '0 0 12px', fontSize: '1rem' }}>{t('newTree')}</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -185,7 +190,7 @@ export default function TreeSelectorModal({ trees, activeTreeId, shared = {}, on
             <button onClick={() => setShowCreate(true)} className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
               ＋ {t('createNew')}
             </button>
-          )}
+          ))}
         </div>
       </div>
     </div>

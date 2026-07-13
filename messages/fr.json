@@ -1676,6 +1676,7 @@
     "title": "Mes arbres",
     "close": "Fermer",
     "empty": "Aucun arbre. Créez-en un ci-dessous.",
+    "emptyAdmin": "Aucun arbre familial — ce compte sert uniquement à la modération (comptes, notifications), pas à construire un arbre.",
     "treeNamePlaceholder": "Nom de l'arbre",
     "descPlaceholder": "Description (optionnel)",
     "save": "Enregistrer",

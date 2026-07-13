@@ -376,9 +376,10 @@ export default function SuiminiApp() {
   //
   // Admin/superadmin accounts are exempt: their role is moderating the app (approve
   // signups, manage users), not building a personal family tree — an admin with no
-  // tree is the NORMAL state, not a "first run" to nudge through onboarding. They
-  // can still create one manually ("Créer mon premier arbre" on the dashboard) if
-  // they ever want to.
+  // tree is the NORMAL state, not a "first run" to nudge through onboarding.
+  // TreeSelectorModal also hides its "create a new tree" entry point for these
+  // accounts (canCreate={!isAdmin} below) — they can still SWITCH to a tree
+  // they're a member of, just not spin up their own.
   //
   // Debounced on purpose: on a fresh cloud login, `useFamilyStore`'s effect can
   // briefly run its GUEST branch first (if `user` resolves in React state a tick
@@ -827,6 +828,7 @@ export default function SuiminiApp() {
           onRename={(id, meta) => { store.updateTreeMeta(id, meta); showToast(tToast('treeRenamed')); }}
           onDuplicate={(id, newName) => { store.duplicateTree(id, newName); showToast(tToast('treeDuplicated', { name: newName })); }}
           onClose={() => setShowTreeSelector(false)}
+          canCreate={!isAdmin}
         />
       )}
 

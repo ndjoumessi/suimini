@@ -1676,6 +1676,7 @@
     "title": "My trees",
     "close": "Close",
     "empty": "No trees yet. Create one below.",
+    "emptyAdmin": "No family tree — this account is for moderation only (accounts, notifications), not for building a tree.",
     "treeNamePlaceholder": "Tree name",
     "descPlaceholder": "Description (optional)",
     "save": "Save",
