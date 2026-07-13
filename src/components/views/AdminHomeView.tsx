@@ -233,8 +233,10 @@ export default function AdminHomeView({ admin, role, displayName, userEmail, onO
         .adh-empty p { margin: 0; font-size: 13px; color: var(--text-muted); }
 
         .adh-quick { display: flex; flex-direction: column; gap: 8px; }
-        .adh-quick-btn { position: relative; display: flex; align-items: center; gap: 14px; text-align: left; padding: 14px 16px; cursor: pointer; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-muted); font-family: inherit; transition: transform var(--t-fast) var(--ease-out), box-shadow var(--t-fast), border-color var(--t-fast), background var(--t-fast); }
-        .adh-quick-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-accent); background: var(--bg-card); border-color: var(--accent); }
+        /* NB: .adh-quick sits INSIDE a .adh-card (--bg-card) — the tiles need a step
+           further, not the same fill as their own parent, or they'd blend into it. */
+        .adh-quick-btn { position: relative; display: flex; align-items: center; gap: 14px; text-align: left; padding: 14px 16px; cursor: pointer; background: var(--bg-muted); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-muted); font-family: inherit; transition: transform var(--t-fast) var(--ease-out), box-shadow var(--t-fast), border-color var(--t-fast), background var(--t-fast); }
+        .adh-quick-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-accent); background: color-mix(in srgb, var(--accent) 10%, var(--bg-muted)); border-color: var(--accent); }
         .adh-quick-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         .adh-quick-icon { position: relative; flex-shrink: 0; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; background: var(--accent-light); color: var(--accent); border-radius: var(--radius-sm); }
         .adh-quick-badge { position: absolute; top: -6px; right: -6px; background: var(--danger); color: #1c0c07; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: var(--radius-full); }
