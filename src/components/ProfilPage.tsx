@@ -35,6 +35,12 @@ export default function ProfilPage() {
   const t = useTranslations('profile');
   const { user, signOut, role } = useAuth();
   const roleLabel = role === 'superadmin' ? t('roleSuperadmin') : role === 'admin' ? t('roleAdmin') : t('roleMember');
+  // Admin/superadmin accounts are moderation-only and never own a tree (see
+  // CLAUDE.md — creation blocked, "Arbre actif" hidden from the sidebar). The
+  // profile page must follow the same rule: no "Mes arbres" card, no
+  // persons/trees stat — otherwise it dangles a permanently-empty "Aucun arbre
+  // pour le moment" that doesn't apply to this account type at all.
+  const isAdmin = role === 'admin' || role === 'superadmin';
   const storeUser = useMemo(() => (user ? { id: user.id, email: user.email } : null), [user?.id, user?.email]);
   const store = useFamilyStore(storeUser);
 
@@ -150,7 +156,8 @@ export default function ProfilPage() {
           </div>
         </section>
 
-        {/* 2) MES ARBRES */}
+        {/* 2) MES ARBRES — masqué pour les comptes admin/superadmin (jamais de tree). */}
+        {!isAdmin && (
         <section className="card" style={{ padding: '24px', marginBottom: '20px' }}>
           <div className="label" style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>{t('myTrees')}</div>
           {!store.loaded ? (
@@ -212,16 +219,20 @@ export default function ProfilPage() {
             </div>
           )}
         </section>
+        )}
 
         {/* 3) STATISTIQUES */}
         <section className="card" style={{ padding: '24px', marginBottom: '20px' }}>
           <div className="label" style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>{t('statistics')}</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
-            {[
-              { value: String(totalPersons), label: t('statPersons') },
-              { value: String(store.trees.length), label: t('statTrees') },
-              { value: fmtMonthYear(user.created_at), label: t('statMemberSince') },
-            ].map(stat => (
+            {(isAdmin
+              ? [{ value: fmtMonthYear(user.created_at), label: t('statMemberSince') }]
+              : [
+                  { value: String(totalPersons), label: t('statPersons') },
+                  { value: String(store.trees.length), label: t('statTrees') },
+                  { value: fmtMonthYear(user.created_at), label: t('statMemberSince') },
+                ]
+            ).map(stat => (
               <div
                 key={stat.label}
                 style={{
