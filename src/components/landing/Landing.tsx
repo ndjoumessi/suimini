@@ -417,11 +417,17 @@ export default function Landing() {
 
 const CSS = `
 .lp-root {
-  /* Palette « Veillée » (alignée sur l'app) : nuit braise chaude, encre papier, or chandelle.
-     Écart de clarté franchement large entre les 4 tons (canvas < deep < rise < card) —
-     un premier jet (~2-3 unités RVB d'écart) restait indiscernable à l'œil ; celui-ci
-     double quasiment la luminosité perçue du canvas à la carte. */
-  --sky: #16120e; --sky-deep: #070504; --sky-rise: #2a231a; --sky-card: #372e22;
+  /* Palette « Veillée » : nuit braise chaude, encre papier, or chandelle.
+     Éclaircie (2026-07-14, retour "trop sombre dans l'ensemble" sur le rendu quasi
+     noir des sections pleine largeur — manifeste/tarifs/pied de page tournaient sur
+     --sky-deep, à l'origine un quasi-noir #070504 bien plus sombre que tout ce
+     qu'utilise l'app elle-même) : les 4 tons remontent ensemble d'un cran net (pas
+     un ajustement de 2-3 unités RVB, insuffisant la première fois sur ce même
+     genre de retour côté app) en gardant l'ordre deep < sky < rise < card et le
+     contraste texte/or (vérifié ≥4,5:1 pour le texte courant sur les 4 tons, sauf
+     --star-faint sur --sky-card qui reste ~4:1 — déjà le cas avant, label
+     secondaire barré uniquement). */
+  --sky: #221b12; --sky-deep: #170f0a; --sky-rise: #392e1d; --sky-card: #3d3120;
   --star: #f3ecdf; --star-muted: #aa9e8c; --star-faint: #9c9081;
   --amber: #c9a84c; --amber-soft: #dcc06a; --amber-deep: #a98c3e;
   --ink-on-amber: #171006;
@@ -475,7 +481,7 @@ const CSS = `
 @media (max-width: 720px) { .lp-nav-link { display: none; } }
 
 /* HERO */
-.lp-hero { position: relative; min-height: 100vh; min-height: 100dvh; display: flex; align-items: center; justify-content: center; overflow: hidden; background: radial-gradient(130% 90% at 50% -10%, #241c12 0%, var(--sky) 48%, var(--sky-deep) 100%); }
+.lp-hero { position: relative; min-height: 100vh; min-height: 100dvh; display: flex; align-items: center; justify-content: center; overflow: hidden; background: radial-gradient(130% 90% at 50% -10%, #362b1a 0%, var(--sky) 48%, var(--sky-deep) 100%); }
 .lp-sky { position: absolute; inset: -6%; opacity: 0.9; }
 .lp-sky-svg { width: 100%; height: 100%; }
 .lp-hero-veil { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(58% 50% at 50% 46%, rgba(23,19,16,0.92) 0%, rgba(23,19,16,0.72) 40%, rgba(23,19,16,0.28) 66%, transparent 86%); }
@@ -539,7 +545,7 @@ const CSS = `
 .lp-fig-note { margin: clamp(30px, 4vw, 44px) 0 0; font-family: var(--font-body); font-size: 1.02rem; color: var(--star-faint); }
 
 /* FINAL CTA */
-.lp-final { position: relative; padding: clamp(112px, 15vw, 190px) 24px clamp(96px, 12vw, 160px); text-align: center; background: radial-gradient(80% 120% at 50% 120%, #292012 0%, #1c1610 44%, var(--sky) 74%); overflow: hidden; }
+.lp-final { position: relative; padding: clamp(112px, 15vw, 190px) 24px clamp(96px, 12vw, 160px); text-align: center; background: radial-gradient(80% 120% at 50% 120%, #3a2f1c 0%, #2b2318 44%, var(--sky) 74%); overflow: hidden; }
 .lp-final::before { content: ''; position: absolute; left: 50%; top: 0; width: 1px; height: clamp(80px, 12vw, 160px); transform: translateX(-50%); background: linear-gradient(transparent, rgba(201,168,76,0.4)); pointer-events: none; }
 .lp-final-body { position: relative; z-index: 1; }
 .lp-final-fine { margin: 26px 0 0; font-family: var(--font-body); font-size: 0.86rem; color: var(--star-faint); letter-spacing: 0.01em; }
@@ -566,7 +572,7 @@ const CSS = `
 .lp-plans { max-width: 1100px; margin: clamp(60px, 7vw, 92px) auto 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(20px, 2.2vw, 26px); align-items: stretch; }
 .lp-plan { position: relative; display: flex; flex-direction: column; background: var(--sky-card); border: 1px solid var(--hair); border-radius: 20px; padding: clamp(32px, 3.2vw, 44px) clamp(26px, 2.6vw, 36px); transition: transform 0.3s var(--ease), border-color 0.3s var(--ease), box-shadow 0.3s var(--ease); }
 .lp-plan:not(.lp-plan-pop):hover { transform: translateY(-4px); border-color: var(--hair-2); }
-.lp-plan-pop { background: #282017; border-color: var(--amber); transform: translateY(-12px); box-shadow: 0 24px 60px rgba(10,6,3,0.45), 0 0 0 1px var(--amber); }
+.lp-plan-pop { background: #423422; border-color: var(--amber); transform: translateY(-12px); box-shadow: 0 24px 60px rgba(10,6,3,0.45), 0 0 0 1px var(--amber); }
 .lp-plan-badge { position: absolute; top: 0; right: clamp(26px, 2.6vw, 36px); transform: translateY(-50%); background: var(--amber); color: var(--ink-on-amber); font-family: var(--font-body); font-weight: 600; font-size: 0.78rem; letter-spacing: 0.04em; padding: 4px 14px; border-radius: 999px; }
 .lp-plan-name { font-family: var(--font-body); font-weight: 600; font-size: 0.85rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--star-muted); }
 .lp-plan-pop .lp-plan-name { color: var(--amber); }
