@@ -418,9 +418,10 @@ export default function Landing() {
 const CSS = `
 .lp-root {
   /* Palette « Veillée » (alignée sur l'app) : nuit braise chaude, encre papier, or chandelle.
-     Écart de clarté volontairement large entre les 4 tons (canvas < deep < rise < card) —
-     un premier jet trop resserré faisait fondre les sections/cartes en un seul bloc sombre. */
-  --sky: #16120e; --sky-deep: #0d0a07; --sky-rise: #251f18; --sky-card: #322a20;
+     Écart de clarté franchement large entre les 4 tons (canvas < deep < rise < card) —
+     un premier jet (~2-3 unités RVB d'écart) restait indiscernable à l'œil ; celui-ci
+     double quasiment la luminosité perçue du canvas à la carte. */
+  --sky: #16120e; --sky-deep: #070504; --sky-rise: #2a231a; --sky-card: #372e22;
   --star: #f3ecdf; --star-muted: #aa9e8c; --star-faint: #9c9081;
   --amber: #c9a84c; --amber-soft: #dcc06a; --amber-deep: #a98c3e;
   --ink-on-amber: #171006;

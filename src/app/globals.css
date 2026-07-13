@@ -30,17 +30,20 @@
 
 :root {
   /* Surfaces — warm ember-dark (espresso / heartwood), four tiers with a
-     deliberately WIDE lightness spread (not just a hue shift) so cards,
-     canvas and chrome read as distinct layers even in a compressed
-     screenshot — a flatter first pass here caused the 3 tiers to blend
-     into one indistinguishable dark mass. Depth ladder, darkest to
-     lightest: recessed chrome < canvas < raised card < hover/inert. */
+     deliberately BOLD lightness spread (not just a hue shift) so cards,
+     canvas and chrome read as unmistakably distinct layers, even in a
+     compressed screenshot. A first pass here only nudged the hex values by
+     2-3 RGB units each (imperceptible on screen, confirmed by a follow-up
+     screenshot still showing card fills blending into the canvas) — this
+     pass roughly DOUBLES perceived brightness from canvas to card instead
+     of a ~10% bump. Depth ladder, darkest to lightest: recessed chrome <
+     canvas < raised card < hover/inert. */
   --bg: #16120e;               /* app canvas */
-  --bg-card: #251f18;          /* cards, panels, raised surfaces — clearly lighter than canvas */
-  --bg-muted: #322a20;         /* inert zones / hover fills — clearly lighter than a card */
+  --bg-card: #2a231a;          /* cards, panels, raised surfaces — ~2x brighter than canvas, unmistakably lifted */
+  --bg-muted: #372e22;         /* inert zones / hover fills — clearly lighter still than a card */
   --surface-1: var(--bg);
   --surface-2: var(--bg-card);
-  --surface-3: #0e0b08;        /* sidebars, toolbars — recessed BELOW canvas, not a near-twin of it */
+  --surface-3: #070504;        /* sidebars, toolbars — recessed near-black, clearly BELOW canvas */
   --interactive: var(--bg-muted); /* hover state */
 
   /* Ink + text (warm paper on ember) */

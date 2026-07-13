@@ -85,7 +85,7 @@ export default function InvitePage() {
     padding: '32px 16px', fontFamily: 'var(--font-body, Figtree, sans-serif)',
   };
   const cardStyle: React.CSSProperties = {
-    maxWidth: '460px', width: '100%', backgroundColor: 'var(--bg-card, #251f18)',
+    maxWidth: '460px', width: '100%', backgroundColor: 'var(--bg-card, #2a231a)',
     border: '1.5px solid var(--border-strong, #4a4033)',
     boxShadow: 'var(--shadow-lg, 0 8px 20px rgba(12, 8, 4, 0.4))',
     borderRadius: 'var(--radius-lg, 16px)', overflow: 'hidden',
@@ -147,7 +147,7 @@ export default function InvitePage() {
     return (
       <Shell>
         <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
-          <span style={{ ...iconCircle, background: 'color-mix(in srgb, var(--danger, #e07862) 14%, var(--bg-card, #251f18))', color: 'var(--danger, #e07862)' }} aria-hidden="true"><Clock size={24} /></span>
+          <span style={{ ...iconCircle, background: 'color-mix(in srgb, var(--danger, #e07862) 14%, var(--bg-card, #2a231a))', color: 'var(--danger, #e07862)' }} aria-hidden="true"><Clock size={24} /></span>
           <div>
             <h1 style={h1Style}>{t('joinExpired')}</h1>
             <p style={{ margin: '0 0 20px', ...mutedStyle }}>
@@ -193,7 +193,7 @@ export default function InvitePage() {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '22px' }}>
         <span className="badge badge-accent">{t('role')} : {roleLabel(invite.role)}</span>
         {expiry && (
-          <span className="badge" style={{ background: 'var(--bg-muted, #322a20)', color: 'var(--text-muted, #aa9e8c)', borderColor: 'var(--border, #362f26)' }}>
+          <span className="badge" style={{ background: 'var(--bg-muted, #372e22)', color: 'var(--text-muted, #aa9e8c)', borderColor: 'var(--border, #362f26)' }}>
             <Clock size={10} aria-hidden="true" style={{ marginRight: '4px' }} /> {ti('expiresOn')} {expiry}
           </span>
         )}
