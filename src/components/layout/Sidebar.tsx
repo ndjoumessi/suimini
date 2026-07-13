@@ -196,25 +196,29 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
           <LanguageSwitcher tone="app" />
         </div>
 
-        {/* Active tree */}
-        <button onClick={onShowTreeSelector} aria-label={ts('changeTreeAria')} className="sb-tree">
-          <span className="sb-tree-head">
-            <span className="sb-tree-eyebrow">{ts('activeTreeLabel')}</span>
-            {pendingSuggestions > 0 && <span className="sb-pending" title={ts('pendingSuggestions', { count: pendingSuggestions })}>{pendingSuggestions}</span>}
-            <ChevronRight size={14} className="sb-tree-chev" aria-hidden="true" />
-          </span>
-          <span className="sb-tree-name">{activeTree?.name || ts('noTree')}</span>
-          {activeTree && (
-            <span className="sb-tree-meta">
-              {ts('treeStats', { persons: activeTree.persons.length, generations })}
+        {/* Active tree — admin/superadmin accounts are moderation-only (see
+            SuiminiApp.tsx / TreeSelectorModal canCreate) and never have a tree,
+            so the whole "Active tree" entry point is just dead weight for them. */}
+        {!isAdmin && (
+          <button onClick={onShowTreeSelector} aria-label={ts('changeTreeAria')} className="sb-tree">
+            <span className="sb-tree-head">
+              <span className="sb-tree-eyebrow">{ts('activeTreeLabel')}</span>
+              {pendingSuggestions > 0 && <span className="sb-pending" title={ts('pendingSuggestions', { count: pendingSuggestions })}>{pendingSuggestions}</span>}
+              <ChevronRight size={14} className="sb-tree-chev" aria-hidden="true" />
             </span>
-          )}
-          {activeTree && (
-            <span className={`sb-tree-badge ${ownershipKey === 'owner' ? 'sb-badge-owner' : 'sb-badge-guest'}`}>
-              {ts(ownershipKey === 'owner' ? 'badgeOwner' : 'badgeGuest')}
-            </span>
-          )}
-        </button>
+            <span className="sb-tree-name">{activeTree?.name || ts('noTree')}</span>
+            {activeTree && (
+              <span className="sb-tree-meta">
+                {ts('treeStats', { persons: activeTree.persons.length, generations })}
+              </span>
+            )}
+            {activeTree && (
+              <span className={`sb-tree-badge ${ownershipKey === 'owner' ? 'sb-badge-owner' : 'sb-badge-guest'}`}>
+                {ts(ownershipKey === 'owner' ? 'badgeOwner' : 'badgeGuest')}
+              </span>
+            )}
+          </button>
+        )}
         </div>{/* /sb-top — fixed header + active tree */}
 
         {/* Navigation — the only scrollable zone (header & footer stay fixed) */}
