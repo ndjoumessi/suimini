@@ -9,7 +9,7 @@ import { useIsMobile } from '@/hooks/useMediaQuery';
 import { Plus, Sprout, Camera, CheckCircle2, FileText, MapPin, Crown } from 'lucide-react';
 import FocusTree from './FocusTree';
 import TreeToolbar from './TreeToolbar';
-import { nodeStyle, nameLines, GENDER_BAR, unionTint } from './nodeStyle';
+import { nodeStyle, nameLines, GENDER_BAR, unionTint, currentNodeMode } from './nodeStyle';
 
 /** Runtime node-layout dimensions. On desktop these are EXACTLY the historical
  *  module constants (so desktop rendering is byte-for-byte unchanged); on phones
@@ -116,6 +116,8 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
   // Libellés des types d'événements (réutilise personPanel.event_* — pas de doublon i18n).
   const tp = useTranslations('personPanel');
   const { user } = useAuth();
+  // Read once per render (not once per node — see nodeStyle.ts's comment).
+  const nodeMode = currentNodeMode();
   // Responsive node-layout dims (desktop = historical constants, byte-for-byte).
   const isMobile = useIsMobile();
   // « Focus centré » (3 générations) by default; « complète » = the full pan/zoom tree.
@@ -1081,7 +1083,9 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
               const dimmed = !inFocus(p.id);
               // Gender-tinted style (pivot=gold); spouses stay gender-coloured here
               // so gender reads across the whole tree. Robust name lines (Bug 3).
-              const st = nodeStyle(p, isRoot, false);
+              // Mode passed in (computed once above the map) so each node skips its
+              // own <html data-theme> read.
+              const st = nodeStyle(p, isRoot, false, nodeMode);
               const { primary, secondary } = nameLines(p, t('unknownNode'));
               // Le genre est aussi DIT (pas seulement la couleur de la barre — 1.4.1),
               // et il l'est même sans date de naissance.

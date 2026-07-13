@@ -2,11 +2,25 @@ import { Person } from '@/types';
 
 /* Shared node palette so FocusTree, TreeNode and TreeView render persons
  * identically. Gender is carried by the tinted face + bright left bar; the name
- * itself stays paper-ink (#F3ECDF) for maximum legibility on the dark tint — the
+ * itself stays high-contrast ink for maximum legibility on the tint — the
  * coloured-name variant failed the contrast bar. The pivot/founder reads gold;
  * a spouse in the Focus couple reads gold (conjugal link, paired with the
  * diamond connector). Surname is muted, dates gold — set by the
- * rendering components, not here. Faces sit on the warm « Veillée » base. */
+ * rendering components, not here.
+ *
+ * Two face palettes, DARK (the original "Veillée" tints) and LIGHT — picked
+ * at call time via `currentNodeMode()`, which reads `<html data-theme>`
+ * directly rather than threading a prop through FocusTree/TreeView/TreeNode
+ * (nodeStyle() runs once per rendered PERSON, often dozens of times, so a
+ * cheap synchronous attribute read beats plumbing new props down 2-3
+ * component layers for something that only changes on a full view remount
+ * anyway — switching theme happens on the separate Settings view, so the
+ * tree always remounts fresh with the current attribute by the time it's
+ * shown again). `bar` intentionally does NOT get a light variant: it must
+ * keep matching `GENDER_BAR` (used unchanged, mode-independent, across
+ * PersonAvatar/PersonCard/legends/etc. — see globals.css's light-theme
+ * comment for the same invariant applied to the CSS `--male`/`--female`
+ * vars). */
 
 export interface NodeStyle {
   /** Node face background. */
@@ -24,7 +38,7 @@ export const GENDER_BAR = {
   pivot: '#C9A84C',
 } as const;
 
-const STYLES = {
+const DARK_STYLES = {
   male:    { bg: '#1D2430', bar: GENDER_BAR.male,    name: '#F3ECDF' },
   female:  { bg: '#291D26', bar: GENDER_BAR.female,  name: '#F3ECDF' },
   unknown: { bg: '#221D17', bar: GENDER_BAR.unknown, name: '#F3ECDF' },
@@ -32,9 +46,29 @@ const STYLES = {
   pivot:   { bg: '#2C2210', bar: '#C9A84C',          name: '#F3ECDF' },
 } as const satisfies Record<string, NodeStyle>;
 
+// Same hues as DARK_STYLES, tinted light instead of dark; ink text instead of
+// paper-cream. Contrast checked (ink #211B12 on every face): ≥13.8:1.
+const LIGHT_STYLES = {
+  male:    { bg: '#E3EDF8', bar: GENDER_BAR.male,    name: '#211B12' },
+  female:  { bg: '#F7E8EF', bar: GENDER_BAR.female,  name: '#211B12' },
+  unknown: { bg: '#EFE7D3', bar: GENDER_BAR.unknown, name: '#211B12' },
+  spouse:  { bg: '#EFE7D3', bar: '#C9A84C',          name: '#211B12' },
+  pivot:   { bg: '#F6E8C4', bar: '#C9A84C',          name: '#211B12' },
+} as const satisfies Record<string, NodeStyle>;
+
+/** Reads the active theme straight off <html> — see the module comment for
+ *  why this beats prop-drilling here. SSR-safe (no `document` → 'dark'). */
+export function currentNodeMode(): 'light' | 'dark' {
+  if (typeof document === 'undefined') return 'dark';
+  return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+}
+
 /** Resolve a person's node style. `isPivot` wins (founder); then `isSpouse`
- * (Focus couple partner); otherwise gender. */
-export function nodeStyle(p: Person, isPivot: boolean, isSpouse = false): NodeStyle {
+ * (Focus couple partner); otherwise gender. Reads the current light/dark
+ * mode itself unless the caller already knows it (pass `mode` to skip the
+ * DOM read when rendering many nodes in the same pass — see TreeView.tsx). */
+export function nodeStyle(p: Person, isPivot: boolean, isSpouse = false, mode?: 'light' | 'dark'): NodeStyle {
+  const STYLES = (mode ?? currentNodeMode()) === 'light' ? LIGHT_STYLES : DARK_STYLES;
   if (isPivot) return STYLES.pivot;
   if (isSpouse) return STYLES.spouse;
   return p.gender === 'male' ? STYLES.male : p.gender === 'female' ? STYLES.female : STYLES.unknown;
