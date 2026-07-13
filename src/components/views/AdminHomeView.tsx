@@ -99,7 +99,11 @@ export default function AdminHomeView({ admin, role, displayName, userEmail, onO
           {stats.map((s, i) => (
             <button key={i} className="adh-stat" onClick={() => onOpenAdmin(s.tab)}>
               <s.Icon className="adh-stat-icon" size={17} aria-hidden="true" style={{ color: s.tone }} />
-              <div className="adh-stat-num" style={{ color: s.tone }}>{s.value}</div>
+              {admin.initialLoading ? (
+                <span className="skeleton adh-stat-skel" aria-hidden="true" />
+              ) : (
+                <div className="adh-stat-num" style={{ color: s.tone }}>{s.value}</div>
+              )}
               <div className="adh-stat-label">{s.label}</div>
             </button>
           ))}
@@ -209,6 +213,7 @@ export default function AdminHomeView({ admin, role, displayName, userEmail, onO
         .adh-stat:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         .adh-stat-icon { margin-bottom: 11px; }
         .adh-stat-num { font-family: var(--font-display); font-weight: 700; line-height: 0.95; font-size: clamp(2rem, 4vw, 2.6rem); letter-spacing: -0.01em; }
+        .adh-stat-skel { display: block; width: 2.4rem; height: clamp(2rem, 4vw, 2.6rem); }
         .adh-stat-label { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); margin-top: 8px; }
 
         .adh-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }

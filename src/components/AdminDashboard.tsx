@@ -115,7 +115,11 @@ export default function AdminDashboard({ admin, role, initialTab, onToast }: { a
             <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: '1 1 130px', minWidth: '104px', padding: '10px 14px', borderLeft: i > 0 ? '1px solid var(--border)' : 'none' }}>
               <s.Icon size={16} aria-hidden="true" style={{ color: s.tone, flexShrink: 0 }} />
               <div style={{ minWidth: 0 }}>
-                <div className="serif" style={{ fontSize: '1.5rem', lineHeight: 1.05, fontWeight: 600, color: s.tone }}>{s.value}</div>
+                {admin.initialLoading ? (
+                  <span className="skeleton" aria-hidden="true" style={{ display: 'block', width: '1.8rem', height: '1.5rem' }} />
+                ) : (
+                  <div className="serif" style={{ fontSize: '1.5rem', lineHeight: 1.05, fontWeight: 600, color: s.tone }}>{s.value}</div>
+                )}
                 <div className="label" style={{ fontSize: '9px', letterSpacing: '0.12em', marginTop: '3px' }}>{s.label}</div>
               </div>
             </div>

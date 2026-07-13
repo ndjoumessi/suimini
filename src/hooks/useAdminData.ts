@@ -18,6 +18,12 @@ export function useAdminData({ enabled }: { enabled: boolean }) {
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  // True only until the FIRST users+notifications fetch settles — unlike `loading`
+  // (which flips true/false around every fetchUsers call, including routine
+  // approve/reject refreshes), this never turns true again afterwards. Consumers
+  // use it to show a loading skeleton instead of a misleading "0" on first paint,
+  // without that skeleton flashing back on every subsequent admin action.
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const fetchUsers = useCallback(async () => {
     if (!supabase) return;
@@ -77,10 +83,18 @@ export function useAdminData({ enabled }: { enabled: boolean }) {
   //   • new admin_notifications (INSERT) → bump the badge + prepend the row,
   //   • new pending profiles (INSERT)    → re-fetch (a fresh sign-up awaits review).
   // When not an admin we don't subscribe; the badge/dashboard are hidden anyway.
+  //
+  // ⚠️ fetchUsers() belongs HERE, not just in AdminDashboard's own mount effect:
+  // an admin landing on "Accueil" (AdminHomeView) never mounts AdminDashboard, so
+  // `users` stayed [] (Comptes/Actifs/En attente all showing 0) until the admin
+  // happened to open the Admin tab — which populated the shared `admin` state and
+  // made Accueil look "fixed" only in hindsight. Both consumers read the same
+  // lifted useAdminData() instance (see SuiminiApp), so fetching both here once
+  // covers every entry point.
   useEffect(() => {
-    if (!enabled || !supabase) return;
+    if (!enabled || !supabase) { setInitialLoading(false); return; }
     const sb = supabase;
-    fetchNotifications();
+    Promise.all([fetchUsers(), fetchNotifications()]).finally(() => setInitialLoading(false));
 
     const notifChannel = sb
       .channel('admin-notifs')
@@ -101,7 +115,7 @@ export function useAdminData({ enabled }: { enabled: boolean }) {
       sb.removeChannel(notifChannel);
       sb.removeChannel(pendingChannel);
     };
-  }, [enabled, fetchNotifications]);
+  }, [enabled, fetchUsers, fetchNotifications]);
 
   // Reflect pending-approval count in the PWA app badge.
   useEffect(() => {
@@ -118,7 +132,7 @@ export function useAdminData({ enabled }: { enabled: boolean }) {
   }, [unreadCount]);
 
   return {
-    users, notifications, unreadCount, loading,
+    users, notifications, unreadCount, loading, initialLoading,
     fetchUsers, fetchNotifications,
     approveUser, rejectUser, setStatus, setRole, markAllNotificationsRead,
   };

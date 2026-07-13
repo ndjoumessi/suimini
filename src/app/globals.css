@@ -611,6 +611,7 @@ body.modal-open { overflow: hidden; }
   background-size: 800px 100%; animation: shimmer 1.4s ease-in-out infinite;
   border-radius: var(--radius);
 }
+@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; opacity: 0.7; } }
 
 /* ===== Tree node interactions ===== */
 .tree-svg { will-change: transform; }
