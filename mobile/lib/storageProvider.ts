@@ -50,12 +50,76 @@ export class SupabaseStorageProvider implements StorageProvider {
   }
 }
 
+// Base API (même défaut que supabaseSync.ts) et domaine de lecture publique R2.
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://suimini.vercel.app';
+
 /**
- * Frontière UNIQUE côté mobile. Aujourd'hui : passe-plat Supabase quand configuré,
- * sinon `null` (mode démo → le caller garde l'uri locale). Comportement identique
- * à avant l'extraction. Demain : point d'insertion pour un backend objet-store.
+ * Implémentation STOCKAGE OBJET (Cloudflare R2) — Phase A, miroir mobile du web.
+ *
+ * Le mobile n'a pas de cookie de session → on authentifie l'appel de signature
+ * avec un `Authorization: Bearer <access_token>` (même patron que supabaseSync.ts /
+ * notifications.ts). On demande une URL présignée à `POST /api/storage/sign-upload`,
+ * puis on `PUT` l'`ArrayBuffer` DIRECTEMENT vers R2. La lecture publique se
+ * construit depuis `EXPO_PUBLIC_R2_PUBLIC_BASE_URL` (domaine public, pas un secret).
+ */
+export class ObjectStoreProvider implements StorageProvider {
+  readonly backend = 'object-store' as const;
+  private publicBase: string;
+  constructor(private client: SupabaseClient, publicBase: string) {
+    this.publicBase = publicBase.replace(/\/$/, '');
+  }
+
+  private async authHeaders(): Promise<Record<string, string>> {
+    const { data: { session } } = await this.client.auth.getSession();
+    return session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
+  }
+
+  async upload(path: string, body: ArrayBuffer, opts: StorageUploadOptions): Promise<{ error: string | null }> {
+    try {
+      const signRes = await fetch(`${API_BASE_URL}/api/storage/sign-upload`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', ...(await this.authHeaders()) },
+        body: JSON.stringify({ path, contentType: opts.contentType }),
+      });
+      if (!signRes.ok) {
+        const data = await signRes.json().catch(() => null);
+        return { error: (data as { error?: string } | null)?.error ?? `sign-upload ${signRes.status}` };
+      }
+      const { uploadUrl } = (await signRes.json()) as { uploadUrl?: string };
+      if (!uploadUrl) return { error: 'URL de signature absente.' };
+
+      const putRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        body,
+        headers: { 'Content-Type': opts.contentType },
+      });
+      if (!putRes.ok) return { error: `PUT R2 ${putRes.status}` };
+      return { error: null };
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : 'upload-failed' };
+    }
+  }
+
+  getPublicUrl(path: string): string | null {
+    if (!this.publicBase) return null;
+    return `${this.publicBase}/${path}`;
+  }
+}
+
+/**
+ * Frontière UNIQUE côté mobile. Aujourd'hui (défaut/rollback) : passe-plat Supabase
+ * quand configuré, sinon `null` (mode démo → le caller garde l'uri locale) —
+ * comportement identique à avant l'extraction TANT QUE le flag n'est pas posé.
+ *
+ * Flip Phase A : si `EXPO_PUBLIC_STORAGE_BACKEND === 'r2'` (flag client, build-time)
+ * ET un domaine public R2 est configuré, on renvoie `ObjectStoreProvider`. Sinon on
+ * garde le passe-plat Supabase. Voir `docs/railway-auth-storage-migration.md`.
  */
 export function getStorageProvider(bucket = 'avatars'): StorageProvider | null {
   if (!supabase) return null;
+  if (process.env.EXPO_PUBLIC_STORAGE_BACKEND === 'r2') {
+    const publicBase = process.env.EXPO_PUBLIC_R2_PUBLIC_BASE_URL;
+    if (publicBase) return new ObjectStoreProvider(supabase, publicBase);
+  }
   return new SupabaseStorageProvider(supabase, bucket);
 }

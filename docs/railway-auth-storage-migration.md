@@ -134,15 +134,43 @@ transite PAS par `/api/data/*`). Deux conséquences :
 ### 4.4 Plan d'exécution Phase A (ordonné)
 
 1. **Compte R2 + bucket** (`suimini-avatars`), accès public en lecture (ou domaine
-   public R2). — *user only (credentials).*
+   public R2). — *user only (credentials).* ✅ **FAIT** (bucket créé, clé S3 générée,
+   secrets posés dans Vercel par le user).
 2. **Route serveur `POST /api/storage/sign-upload`** : sous l'identité de l'appelant
    (`getServerAuth`), vérifie et **impose** le préfixe `{userId}/…` (miroir exact de
    la policy `avatar_upload`), renvoie une URL d'upload signée R2. → remplace la
    policy RLS write par une **AuthZ applicative** (comme `authz.ts` l'a fait pour la
-   RLS data). — *agent peut écrire le code ; activation = credentials user.*
+   RLS data). ✅ **FAIT (code écrit)** — `src/app/api/storage/sign-upload/route.ts`
+   (+ helper server-only `src/lib/r2.ts`, + `src/app/api/storage/delete/route.ts`
+   pour la suppression signée). URLs présignées PUT, TTL **5 min**, secrets R2
+   jamais renvoyés au client. Dépendances ajoutées : `@aws-sdk/client-s3` +
+   `@aws-sdk/s3-request-presigner`.
 3. **`ObjectStoreProvider`** (web + mobile) : `upload` via l'URL signée, `getPublicUrl`
    via le domaine public R2, `remove` via une route serveur signée. Se branche dans
-   `getStorageProvider()` derrière `NEXT_PUBLIC_STORAGE_BACKEND=r2`.
+   `getStorageProvider()` derrière `NEXT_PUBLIC_STORAGE_BACKEND=r2`. ✅ **FAIT (code
+   écrit)** — ajouté dans `src/lib/storageProvider.ts` **et**
+   `mobile/lib/storageProvider.ts` ; wiring via `NEXT_PUBLIC_STORAGE_BACKEND` (web) /
+   `EXPO_PUBLIC_STORAGE_BACKEND` (mobile). **INERTE par défaut** : sans le flag, le
+   passe-plat Supabase reste actif à l'identique (zéro changement de comportement).
+   Le mobile authentifie la signature via `Authorization: Bearer` (miroir de
+   `supabaseSync.ts`).
+
+   **Variables d'environnement à poser dans Vercel** (le user — jamais l'agent) :
+   | Env | Portée | Contenu |
+   |---|---|---|
+   | `R2_ACCOUNT_ID` | serveur (secret*) | ID de compte Cloudflare (préfixe de l'endpoint `<id>.r2.cloudflarestorage.com`) |
+   | `R2_ACCESS_KEY_ID` | serveur **secret** | Access Key ID de la clé S3 R2 |
+   | `R2_SECRET_ACCESS_KEY` | serveur **secret** | Secret Access Key de la clé S3 R2 |
+   | `R2_BUCKET_NAME` | serveur | Nom du bucket (défaut `suimini-avatars`) |
+   | `R2_PUBLIC_BASE_URL` | serveur | Domaine de lecture publique R2, ex. `https://cdn.suimini.app` (utilisé pour renvoyer `publicUrl` depuis sign-upload) |
+   | `NEXT_PUBLIC_R2_PUBLIC_BASE_URL` | client (build) | **même** domaine public que ci-dessus (le web construit l'URL d'image côté client — domaine public, pas un secret) |
+   | `NEXT_PUBLIC_STORAGE_BACKEND` | client (build) | **flag de flip** : `r2` active R2 ; absent/`supabase` = rollback |
+   | `EXPO_PUBLIC_R2_PUBLIC_BASE_URL` | mobile (build) | domaine public R2 (miroir mobile) |
+   | `EXPO_PUBLIC_STORAGE_BACKEND` | mobile (build) | flag de flip mobile (`r2`) |
+
+   *`R2_ACCOUNT_ID` n'est pas un secret cryptographique mais reste server-only par
+   propreté. **NE PAS** poser `NEXT_PUBLIC_STORAGE_BACKEND=r2` tant que la checklist
+   §4.5 n'est pas verte (étapes 4-6 = user).
 4. **Dual-write optionnel (shadow)** : pendant N jours, uploader vers R2 **et**
    Supabase (ou juste R2 en écrivant l'URL R2, Supabase restant lisible pour
    l'existant). Valider que les nouvelles photos s'affichent partout (web + mobile +
@@ -263,8 +291,15 @@ plusieurs semaines ET que le provider n'a pas été tranché (§5.1).
 
 | | Data (Phase 1) | Storage (Phase A) | Auth (Phase B) |
 |---|---|---|---|
-| Frontière/seam | `DataStore` ✅ | `StorageProvider` ✅ **(ce commit)** | à concevoir |
-| Impl neuve | `RailwayStore` ✅ live 100% | `ObjectStoreProvider` ⏳ (pas commencée) | ⏳ (préparation seulement) |
-| Backend cible | Railway PG | Cloudflare R2 (proposé) | GoTrue self-host (proposé) |
-| Prêt à démarrer ? | fait | **oui, prudemment** | **non — attendre le soak** |
-| Rollback | Edge Config une-ligne | env + redeploy | repointage GoTrue (fragile) |
+| Frontière/seam | `DataStore` ✅ | `StorageProvider` ✅ | à concevoir |
+| Impl neuve | `RailwayStore` ✅ live 100% | `ObjectStoreProvider` ✅ **code écrit, INERTE** (routes `sign-upload`/`delete` + `lib/r2.ts` + web/mobile) | ⏳ (préparation seulement) |
+| Backend cible | Railway PG | Cloudflare R2 | GoTrue self-host (proposé) |
+| Prêt à démarrer ? | fait | **code prêt — flip = user (poser les env R2 + `NEXT_PUBLIC_STORAGE_BACKEND=r2` après checklist §4.5)** | **non — attendre le soak** |
+| Rollback | Edge Config une-ligne | flag client absent/`supabase` + redeploy | repointage GoTrue (fragile) |
+
+> **Storage — état 2026-07-14** : le code Phase A est écrit et **inerte par défaut**
+> (comme `RailwayStore`/`ObjectStoreProvider` l'étaient avant leur flip). Fichiers :
+> `src/app/api/storage/sign-upload/route.ts`, `src/app/api/storage/delete/route.ts`,
+> `src/lib/r2.ts`, `ObjectStoreProvider` dans `src/lib/storageProvider.ts` **et**
+> `mobile/lib/storageProvider.ts`. Env à poser (liste faisant autorité) → §4.4 étape 3.
+> Restant côté user : copie des blobs (§4.4 étape 5) puis flip (étape 6).
