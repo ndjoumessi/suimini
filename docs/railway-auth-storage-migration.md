@@ -171,6 +171,30 @@ transite PAS par `/api/data/*`). Deux conséquences :
    *`R2_ACCOUNT_ID` n'est pas un secret cryptographique mais reste server-only par
    propreté. **NE PAS** poser `NEXT_PUBLIC_STORAGE_BACKEND=r2` tant que la checklist
    §4.5 n'est pas verte (étapes 4-6 = user).
+
+   ⚠️ **Trou du plan initial, découvert à la validation (2026-07-14) : CORS bucket
+   requis.** Un upload PUT direct navigateur→R2 via URL présignée est une requête
+   **cross-origin** (`suimini.vercel.app` → `*.r2.cloudflarestorage.com`) → sans
+   policy CORS sur le bucket, le preflight `OPTIONS` échoue et le PUT ne part jamais
+   (`ERR_FAILED`, pas d'`Access-Control-Allow-Origin`). **Configuré manuellement par
+   le user** dans R2 → `suimini-avatars` → Settings → CORS Policy :
+   ```json
+   [{ "AllowedOrigins": ["https://suimini.vercel.app", "http://localhost:3000"],
+      "AllowedMethods": ["PUT", "GET", "HEAD"], "AllowedHeaders": ["*"],
+      "MaxAgeSeconds": 3600 }]
+   ```
+   N'affecte QUE le web (upload navigateur) — le mobile (fetch natif, pas de CORS)
+   n'en a pas besoin. ⚠️ Si un jour un domaine personnalisé ou un déploiement Preview
+   doit aussi uploader vers R2, il faudra l'ajouter à `AllowedOrigins`.
+
+   ✅ **VALIDÉ EN PROD (2026-07-14)**, cycle complet réel : `sign-upload` authentifié
+   → **200** avec URL présignée ; PUT direct navigateur→R2 → **200** ; lecture via
+   `NEXT_PUBLIC_R2_PUBLIC_BASE_URL` (domaine `pub-*.r2.dev`, Public Development URL) →
+   **200**, contenu correct. Confirme : credentials R2 valides, AuthZ préfixe userId
+   opérationnelle, `ObjectStoreProvider` web fonctionnel de bout en bout. **Objet de
+   test (`{userId}/test.webp`) à purger du bucket avant d'aller plus loin** (pas un
+   avatar réel). Reste à valider avant flip (voir §4.5) : test négatif (path hors
+   préfixe → 403), chemin mobile, et la copie des blobs existants.
 4. **Dual-write optionnel (shadow)** : pendant N jours, uploader vers R2 **et**
    Supabase (ou juste R2 en écrivant l'URL R2, Supabase restant lisible pour
    l'existant). Valider que les nouvelles photos s'affichent partout (web + mobile +
@@ -182,14 +206,26 @@ transite PAS par `/api/data/*`). Deux conséquences :
 
 ### 4.5 « Definition of ready » — Storage (avant flip)
 
-- [ ] Bucket R2 créé, lecture publique vérifiée sur une URL de test.
-- [ ] Route `sign-upload` : refuse un path hors `{caller.userId}/…` (test négatif).
+- [x] Bucket R2 créé, lecture publique vérifiée sur une URL de test. **(2026-07-14,
+      cycle complet réel : sign-upload 200 → PUT navigateur 200 → lecture publique
+      200, contenu correct — voir §4.4.)**
+- [ ] Route `sign-upload` : refuse un path hors `{caller.userId}/…` (test négatif) —
+      logique en place (`isPathOwnedBy` dans `src/lib/r2.ts`), pas encore testé
+      manuellement en prod.
 - [ ] Upload web **et** mobile via R2 → l'image s'affiche (fiche, galerie, arbre,
-      PDF, `/arbre/[slug]` public).
+      PDF, `/arbre/[slug]` public) — web validé en brut (PUT + lecture), pas encore
+      via un vrai composant d'upload (`AddPersonModal`/`PhotoAnalyzer`/…) ; mobile pas
+      testé.
 - [ ] Compte des objets Supabase == compte des objets R2 après copie (réconciliation,
-      façon 71/122 de la data).
-- [ ] Les **anciennes** URLs Supabase résolvent toujours (aucune photo cassée).
-- [ ] Rollback testé (voir §4.6).
+      façon 71/122 de la data) — copie pas encore lancée.
+- [ ] Les **anciennes** URLs Supabase résolvent toujours (aucune photo cassée) —
+      trivialement vrai tant que la copie n'a pas eu lieu (Supabase Storage intact).
+- [ ] Rollback testé (voir §4.6) — trivial par construction (flag jamais posé), pas
+      testé activement.
+
+⚠️ **Objet de test `{userId}/test.webp` à purger du bucket** (R2 dashboard → Objects
+→ supprimer, ou via `DELETE /api/storage/delete`) avant de considérer la checklist
+avancée — ce n'est pas un avatar réel, juste la validation ci-dessus.
 
 ### 4.6 Rollback Storage (barre « une ligne »)
 
@@ -302,4 +338,12 @@ plusieurs semaines ET que le provider n'a pas été tranché (§5.1).
 > `src/app/api/storage/sign-upload/route.ts`, `src/app/api/storage/delete/route.ts`,
 > `src/lib/r2.ts`, `ObjectStoreProvider` dans `src/lib/storageProvider.ts` **et**
 > `mobile/lib/storageProvider.ts`. Env à poser (liste faisant autorité) → §4.4 étape 3.
-> Restant côté user : copie des blobs (§4.4 étape 5) puis flip (étape 6).
+>
+> **Bucket + credentials posés, cycle web validé en prod** (voir §4.4/§4.5) : compte
+> R2 créé, bucket `suimini-avatars` (Western Europe, Standard), Public Development
+> URL activée (`pub-*.r2.dev`), clé S3 dédiée (Object Read & Write, scopée au
+> bucket), 6 env Vercel posées, redeploy fait, **CORS bucket configuré** (trou du
+> plan initial, corrigé — voir §4.4). `sign-upload` → 200, PUT navigateur → 200,
+> lecture publique → 200. Restant côté user : purger l'objet de test, copie des
+> blobs existants (§4.4 étape 5) puis flip (étape 6, après checklist §4.5 complète —
+> test négatif AuthZ, mobile, et upload via un vrai composant de l'app encore dus).
