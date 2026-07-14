@@ -179,13 +179,20 @@ transite PAS par `/api/data/*`). Deux conséquences :
    (`ERR_FAILED`, pas d'`Access-Control-Allow-Origin`). **Configuré manuellement par
    le user** dans R2 → `suimini-avatars` → Settings → CORS Policy :
    ```json
-   [{ "AllowedOrigins": ["https://suimini.vercel.app", "http://localhost:3000"],
+   [{ "AllowedOrigins": [
+        "https://suimini.vercel.app",
+        "https://suimini-*-ndjoumessis-projects.vercel.app",
+        "http://localhost:3000"
+      ],
       "AllowedMethods": ["PUT", "GET", "HEAD"], "AllowedHeaders": ["*"],
       "MaxAgeSeconds": 3600 }]
    ```
    N'affecte QUE le web (upload navigateur) — le mobile (fetch natif, pas de CORS)
-   n'en a pas besoin. ⚠️ Si un jour un domaine personnalisé ou un déploiement Preview
-   doit aussi uploader vers R2, il faudra l'ajouter à `AllowedOrigins`.
+   n'en a pas besoin. **(2026-07-15, confirmé en pratique)** : chaque déploiement
+   **Preview** Vercel a sa PROPRE origine unique (`suimini-<hash>-ndjoumessis-
+   projects.vercel.app`) → le motif générique `suimini-*-ndjoumessis-projects.
+   vercel.app` ci-dessus les couvre tous sans réédition de la policy à chaque
+   déploiement. Si un domaine personnalisé est ajouté un jour, l'ajouter aussi ici.
 
    ✅ **VALIDÉ EN PROD (2026-07-14)**, cycle complet réel : `sign-upload` authentifié
    → **200** avec URL présignée ; PUT direct navigateur→R2 → **200** ; lecture via
@@ -212,10 +219,15 @@ transite PAS par `/api/data/*`). Deux conséquences :
 - [x] Route `sign-upload` : refuse un path hors `{caller.userId}/…` (test négatif).
       **(2026-07-14, testé en prod : path `quelquun-dautre/x.webp` → 403 `{error:
       "Chemin interdit : le premier segment doit être votre identifiant."}`.)**
-- [ ] Upload web **et** mobile via R2 → l'image s'affiche (fiche, galerie, arbre,
-      PDF, `/arbre/[slug]` public) — web validé en brut (PUT + lecture), pas encore
-      via un vrai composant d'upload (`AddPersonModal`/`PhotoAnalyzer`/…) ; mobile pas
-      testé.
+- [x] Upload **web** via R2 → l'image s'affiche via un vrai composant. **(2026-07-15,
+      Preview isolée `NEXT_PUBLIC_STORAGE_BACKEND=r2` scopé Preview uniquement, prod
+      intacte : upload réel depuis la Galerie (photo de DJOUMESSI Romel Nelson,
+      arbre TEDA) → `sign-upload` 200 → PUT navigateur→R2 200 → photo affichée →
+      URL `https://pub-294a3e5b78874be9a57f9627498a4c81.r2.dev/a8d07d13-.../
+      teda-p69-*.jpg` confirmée. Trou CORS supplémentaire découvert et corrigé :
+      chaque déploiement Preview Vercel a sa PROPRE origine unique → ajout du motif
+      `https://suimini-*-ndjoumessis-projects.vercel.app` aux `AllowedOrigins` R2, en
+      plus du domaine de prod fixe.)** Mobile pas testé (EXPO_PUBLIC_* non posées).
 - [x] Compte des objets Supabase == compte des objets R2 après copie (réconciliation,
       façon 71/122 de la data). **(2026-07-15, via `scripts/copy-avatars-to-r2.sh
       DRY_RUN=0` : 11 objets Supabase → 11 transférés → 11 côté R2, comptes égaux.
