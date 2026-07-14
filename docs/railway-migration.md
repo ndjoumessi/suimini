@@ -258,3 +258,12 @@ monde dehors).
 **Prérequis avant même d'y penser** : laisser le **cutover data actuel tourner stable plusieurs
 jours/semaines en conditions réelles** d'abord. Tant que ce n'est pas validé dans la durée, on
 ne planifie pas la phase Auth/Storage.
+
+> **Mise à jour (2026-07-14) — plan écrit + 1er seam posé.** Le plan concret de cette phase
+> (inventaire code réel, arbitrages provider, checklists « ready », rollback par phase) vit
+> désormais dans **`docs/railway-auth-storage-migration.md`**. Un **seam `StorageProvider`**
+> (`src/lib/storageProvider.ts` + `mobile/lib/storageProvider.ts`, passe-plat Supabase, ZÉRO
+> changement de comportement) est en place, miroir de ce que `DataStore` a fait pour les données.
+> **Recommandation** : Phase A (Storage, risque faible) commençable prudemment ; **Phase B (Auth)
+> à NE PAS cutover** avant plusieurs semaines de soak data (3 jours = trop court pour empiler
+> l'auth).

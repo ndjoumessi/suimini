@@ -21,6 +21,7 @@
  */
 import { supabase } from './supabase';
 import { compressImageAsync } from './imageCompression';
+import { getStorageProvider } from './storageProvider';
 
 const AVATAR_BUCKET = 'avatars';
 
@@ -86,20 +87,23 @@ export async function uploadAvatarMobile(
   const beforeBytes =
     compressed.uri === localUri ? afterBytes : await byteLength(localUri);
 
+  // Storage via the StorageProvider seam (behaviour-identical passthrough today;
+  // future object-store backend slots in there — see storageProvider.ts). Auth
+  // (getUser above) stays on Supabase: identity is out of scope for this seam.
+  const storage = getStorageProvider(AVATAR_BUCKET);
+  if (!storage) return {};
   try {
     const path = `${userId}/${safeId(personId)}-${Date.now()}.webp`;
-    const { error } = await supabase.storage
-      .from(AVATAR_BUCKET)
-      .upload(path, arrayBuffer, {
-        contentType: 'image/webp',
-        upsert: true,
-        cacheControl: '3600',
-      });
-    if (error) return { error: error.message, beforeBytes, afterBytes };
+    const { error } = await storage.upload(path, arrayBuffer, {
+      contentType: 'image/webp',
+      upsert: true,
+      cacheControl: '3600',
+    });
+    if (error) return { error, beforeBytes, afterBytes };
 
-    const { data } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(path);
-    if (!data?.publicUrl) return { error: 'no-public-url', beforeBytes, afterBytes };
-    return { url: data.publicUrl, beforeBytes, afterBytes };
+    const publicUrl = storage.getPublicUrl(path);
+    if (!publicUrl) return { error: 'no-public-url', beforeBytes, afterBytes };
+    return { url: publicUrl, beforeBytes, afterBytes };
   } catch (e) {
     const message = e instanceof Error ? e.message : 'upload-failed';
     return { error: message, beforeBytes, afterBytes };

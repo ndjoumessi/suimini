@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { compressImage } from './imageCompression';
+import { getStorageProvider } from './storageProvider';
 
 export interface UploadResult {
   url: string;
@@ -45,18 +46,21 @@ export async function uploadAvatar(file: File, personId: string): Promise<Upload
   const { file: blob, beforeBytes, afterBytes } = await compressImage(file);
   const contentType = blob.type || 'image/jpeg';
 
-  if (supabase) {
+  // Storage goes through the StorageProvider seam (behaviour-identical passthrough
+  // to Supabase Storage today; a future object-store backend slots in here — see
+  // storageProvider.ts + docs/railway-auth-storage-migration.md). Auth (getUser)
+  // stays on Supabase: identity is out of scope for the storage seam.
+  const storage = getStorageProvider(AVATAR_BUCKET);
+  if (storage && supabase) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const safeId = (personId || 'new').replace(/[^a-zA-Z0-9_-]/g, '');
         const path = `${user.id}/${safeId}-${Date.now()}.${extFor(contentType)}`;
-        const { error } = await supabase.storage
-          .from(AVATAR_BUCKET)
-          .upload(path, blob, { upsert: true, contentType, cacheControl: '3600' });
+        const { error } = await storage.upload(path, blob, { upsert: true, contentType, cacheControl: '3600' });
         if (!error) {
-          const { data } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(path);
-          if (data?.publicUrl) return { url: data.publicUrl, base64: false, beforeBytes, afterBytes };
+          const publicUrl = storage.getPublicUrl(path);
+          if (publicUrl) return { url: publicUrl, base64: false, beforeBytes, afterBytes };
         }
         // error (e.g. bucket missing / policy) → fall through to base64
       }
@@ -83,11 +87,10 @@ export async function uploadAvatar(file: File, personId: string): Promise<Upload
  * storage object is cleaned up opportunistically when a real session exists.
  */
 export async function deleteAvatarByUrl(url: string): Promise<void> {
-  if (!supabase || !url || url.startsWith('data:')) return;
-  const marker = `/object/public/${AVATAR_BUCKET}/`;
-  const idx = url.indexOf(marker);
-  if (idx === -1) return;
-  const path = decodeURIComponent(url.slice(idx + marker.length).split('?')[0]);
+  if (!url || url.startsWith('data:')) return;
+  const storage = getStorageProvider(AVATAR_BUCKET);
+  if (!storage) return;
+  const path = storage.pathFromPublicUrl(url);
   if (!path) return;
-  try { await supabase.storage.from(AVATAR_BUCKET).remove([path]); } catch { /* best-effort */ }
+  await storage.remove(path);
 }
