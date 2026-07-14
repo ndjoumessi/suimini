@@ -60,6 +60,26 @@ jobs:
           E2E_BASE_URL: http://localhost:3000
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      - name: Run design-review screenshot captures
+        # Not assertion-heavy (the point is the screenshots, uploaded below for
+        # review) — but every wait is a real `expect(...).toBeVisible()`, no
+        # longer gated behind `test.skip(!!process.env.CI)`. A genuine break
+        # still fails the job instead of silently passing.
+        run: npx playwright test e2e/dashboard-screenshot.spec.ts e2e/feature-screenshots.spec.ts e2e/feature-screenshots-2.spec.ts
+        env:
+          E2E_BASE_URL: http://localhost:3000
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      - name: Upload design-review screenshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: design-review-screenshots
+          path: |
+            dashboard.png
+            shot-*.png
+          retention-days: 30
+          if-no-files-found: warn
       - name: Upload Playwright Report
         uses: actions/upload-artifact@v4
         if: always()
