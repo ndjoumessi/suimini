@@ -82,8 +82,19 @@ export RCLONE_CONFIG_R2STORAGE_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY}"
 export RCLONE_CONFIG_R2STORAGE_REGION=auto
 
 echo "--- Comptage AVANT copie -----------------------------------------------"
-SRC_COUNT_BEFORE=$(rclone lsf --s3-list-version 2 "sbstorage:${SUPABASE_BUCKET}" -R --files-only 2>/dev/null | wc -l | tr -d ' ')
-DST_COUNT_BEFORE=$(rclone lsf "r2storage:${R2_BUCKET}" -R --files-only 2>/dev/null | wc -l | tr -d ' ')
+# ⚠️ stderr n'est PLUS masqué ici (contrairement à une version précédente) :
+# une erreur rclone (creds, région, bucket introuvable…) doit s'afficher en
+# clair au lieu de disparaître silencieusement avec un comptage à 0.
+set +e
+SRC_COUNT_BEFORE=$(rclone lsf --s3-list-version 2 "sbstorage:${SUPABASE_BUCKET}" -R --files-only | wc -l | tr -d ' ')
+SRC_RC=$?
+DST_COUNT_BEFORE=$(rclone lsf "r2storage:${R2_BUCKET}" -R --files-only | wc -l | tr -d ' ')
+DST_RC=$?
+set -e
+if [ "${SRC_RC}" -ne 0 ] || [ "${DST_RC}" -ne 0 ]; then
+  echo "❌ Échec du listing rclone (voir le message rclone ci-dessus) — arrêt avant toute copie."
+  exit 1
+fi
 echo "Supabase (${SUPABASE_BUCKET})      : ${SRC_COUNT_BEFORE} objets"
 echo "R2 (${R2_BUCKET})            : ${DST_COUNT_BEFORE} objets"
 echo
@@ -98,8 +109,8 @@ echo "--- Comptage APRÈS copie ------------------------------------------------
 if [ "${DRY_RUN}" = "1" ]; then
   echo "(dry-run : rien n'a été écrit, comptage inchangé côté R2)"
 else
-  SRC_COUNT_AFTER=$(rclone lsf --s3-list-version 2 "sbstorage:${SUPABASE_BUCKET}" -R --files-only 2>/dev/null | wc -l | tr -d ' ')
-  DST_COUNT_AFTER=$(rclone lsf "r2storage:${R2_BUCKET}" -R --files-only 2>/dev/null | wc -l | tr -d ' ')
+  SRC_COUNT_AFTER=$(rclone lsf --s3-list-version 2 "sbstorage:${SUPABASE_BUCKET}" -R --files-only | wc -l | tr -d ' ')
+  DST_COUNT_AFTER=$(rclone lsf "r2storage:${R2_BUCKET}" -R --files-only | wc -l | tr -d ' ')
   echo "Supabase (${SUPABASE_BUCKET})      : ${SRC_COUNT_AFTER} objets"
   echo "R2 (${R2_BUCKET})            : ${DST_COUNT_AFTER} objets"
   if [ "${SRC_COUNT_AFTER}" = "${DST_COUNT_AFTER}" ]; then
