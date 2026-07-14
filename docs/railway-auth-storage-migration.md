@@ -1,17 +1,24 @@
 # Migration Auth + Storage hors Supabase — plan & prérequis (Phase 2)
 
-> État : **PLANIFICATION + ÉCHAFAUDAGE SÛR (2026-07-14).** Aucune bascule, aucune
-> écriture prod, aucun cutover. Le user a dit « commencer maintenant » (risque
-> assumé) ; ce document + le seam `StorageProvider` sont le maximum de progrès
-> RÉEL réalisable **sans credentials de production** et **sans risquer le login de
-> qui que ce soit**. Il reproduit exactement la méthode de la migration DONNÉES
-> (`docs/railway-migration.md`) : **abstraction additive + flag + rollback une-ligne
-> + validation en shadow avant tout cutover**, l'exécution créditée revenant au user.
+> État : **Phase A (Storage) LIVE EN PRODUCTION (2026-07-15).**
+> `NEXT_PUBLIC_STORAGE_BACKEND=r2` posé en Production (+ Preview), `vercel --prod`
+> déployé, upload réel confirmé sur `suimini.vercel.app` (PUT 200, CORS OK, photo
+> affichée via `pub-294a3e5b78874be9a57f9627498a4c81.r2.dev`). Tout l'historique de
+> validation (dry-run, prod brut, Preview isolée, prod réelle) est détaillé en §4.
+> **Phase B (Auth) reste non commencée, sans plan ni feu vert** — voir §5.
 >
-> ⚠️ **Supabase reste une dépendance ACTIVE et CRITIQUE.** Tant que ce chantier
-> n'est pas terminé ET soaké, fermer/supprimer le compte Supabase casse le login de
-> **tous** les users + l'affichage des photos. Ne JAMAIS le couper (cf. §8 de
-> `docs/railway-migration.md`).
+> ⚠️ **Supabase reste une dépendance ACTIVE et CRITIQUE malgré le flip Storage.**
+> Le bucket Supabase Storage n'a jamais été vidé (seule une COPIE a été faite vers
+> R2) — sert de filet de rollback. **Auth (GoTrue/`profiles`) reste entièrement sur
+> Supabase** : fermer/supprimer le compte casserait le login de **tous** les users.
+> Ne JAMAIS le couper (cf. §8 de `docs/railway-migration.md`).
+>
+> **Rollback Storage (une ligne, si besoin)** : retirer `NEXT_PUBLIC_STORAGE_BACKEND`
+> (ou le remettre à `supabase`) + `vercel --prod` → `getStorageProvider()` revient au
+> passe-plat Supabase. Les photos déjà uploadées vers R2 depuis le flip resteraient
+> sur R2 (leurs URLs sont stockées telles quelles dans les fiches personnes) — un
+> rollback ne fait pas disparaître ces photos, il arrête juste les NOUVEAUX uploads
+> d'aller vers R2.
 
 ## 0. TL;DR — recommandation professionnelle
 
@@ -342,22 +349,30 @@ plusieurs semaines ET que le provider n'a pas été tranché (§5.1).
 | | Data (Phase 1) | Storage (Phase A) | Auth (Phase B) |
 |---|---|---|---|
 | Frontière/seam | `DataStore` ✅ | `StorageProvider` ✅ | à concevoir |
-| Impl neuve | `RailwayStore` ✅ live 100% | `ObjectStoreProvider` ✅ **code écrit, INERTE** (routes `sign-upload`/`delete` + `lib/r2.ts` + web/mobile) | ⏳ (préparation seulement) |
+| Impl neuve | `RailwayStore` ✅ live 100% | `ObjectStoreProvider` ✅ **LIVE 100% (web)** | ⏳ (préparation seulement) |
 | Backend cible | Railway PG | Cloudflare R2 | GoTrue self-host (proposé) |
-| Prêt à démarrer ? | fait | **code prêt — flip = user (poser les env R2 + `NEXT_PUBLIC_STORAGE_BACKEND=r2` après checklist §4.5)** | **non — attendre le soak** |
+| Prêt à démarrer ? | fait | **web fait — mobile pas encore flippé (EXPO_PUBLIC_* non posées)** | **non — attendre le soak** |
 | Rollback | Edge Config une-ligne | flag client absent/`supabase` + redeploy | repointage GoTrue (fragile) |
 
-> **Storage — état 2026-07-14** : le code Phase A est écrit et **inerte par défaut**
-> (comme `RailwayStore`/`ObjectStoreProvider` l'étaient avant leur flip). Fichiers :
+> **Storage — LIVE EN PRODUCTION (2026-07-15).** `NEXT_PUBLIC_STORAGE_BACKEND=r2`
+> posé en Production + Preview dans Vercel, `vercel --prod` déployé. Fichiers :
 > `src/app/api/storage/sign-upload/route.ts`, `src/app/api/storage/delete/route.ts`,
 > `src/lib/r2.ts`, `ObjectStoreProvider` dans `src/lib/storageProvider.ts` **et**
-> `mobile/lib/storageProvider.ts`. Env à poser (liste faisant autorité) → §4.4 étape 3.
+> `mobile/lib/storageProvider.ts` (mobile écrit mais pas encore flippé).
 >
-> **Bucket + credentials posés, cycle web validé en prod** (voir §4.4/§4.5) : compte
-> R2 créé, bucket `suimini-avatars` (Western Europe, Standard), Public Development
-> URL activée (`pub-*.r2.dev`), clé S3 dédiée (Object Read & Write, scopée au
-> bucket), 6 env Vercel posées, redeploy fait, **CORS bucket configuré** (trou du
-> plan initial, corrigé — voir §4.4). `sign-upload` → 200, PUT navigateur → 200,
-> lecture publique → 200. Restant côté user : purger l'objet de test, copie des
-> blobs existants (§4.4 étape 5) puis flip (étape 6, après checklist §4.5 complète —
-> test négatif AuthZ, mobile, et upload via un vrai composant de l'app encore dus).
+> **Parcours de validation complet** (le plus rigoureux mené cette session — voir
+> §4.4/§4.5 pour le détail horodaté) : bucket R2 créé (Western Europe, Standard,
+> Public Development URL `pub-294a3e5b78874be9a57f9627498a4c81.r2.dev`) → clé S3
+> dédiée (Object Read & Write, scopée au bucket) → 6 env Vercel posées → CORS
+> configuré (**2 trous découverts et corrigés en pratique** : origine de prod
+> d'abord, puis origine Preview unique par déploiement via un motif générique) →
+> sign-upload/PUT/lecture validés en brut → test négatif AuthZ (403 confirmé) →
+> purge objet de test → **copie réelle des 11 avatars existants** (`scripts/
+> copy-avatars-to-r2.sh`, comptes réconciliés 11=11) → **upload réel via l'UI en
+> Preview isolée** (photo affichée, URL R2 confirmée) → **flip Production** →
+> **upload réel via l'UI en prod confirmé** (PUT 200, CORS OK, URL R2 confirmée).
+>
+> Restant : **mobile** (code écrit, jamais flippé — poser `EXPO_PUBLIC_STORAGE_
+> BACKEND=r2` + `EXPO_PUBLIC_R2_PUBLIC_BASE_URL` dans `mobile/.env` et tester un
+> upload réel avant un build) ; rollback jamais déclenché en conditions réelles
+> (trivial par construction, voir §4.6 et la note de tête de document).
