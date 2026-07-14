@@ -209,9 +209,9 @@ transite PAS par `/api/data/*`). Deux conséquences :
 - [x] Bucket R2 créé, lecture publique vérifiée sur une URL de test. **(2026-07-14,
       cycle complet réel : sign-upload 200 → PUT navigateur 200 → lecture publique
       200, contenu correct — voir §4.4.)**
-- [ ] Route `sign-upload` : refuse un path hors `{caller.userId}/…` (test négatif) —
-      logique en place (`isPathOwnedBy` dans `src/lib/r2.ts`), pas encore testé
-      manuellement en prod.
+- [x] Route `sign-upload` : refuse un path hors `{caller.userId}/…` (test négatif).
+      **(2026-07-14, testé en prod : path `quelquun-dautre/x.webp` → 403 `{error:
+      "Chemin interdit : le premier segment doit être votre identifiant."}`.)**
 - [ ] Upload web **et** mobile via R2 → l'image s'affiche (fiche, galerie, arbre,
       PDF, `/arbre/[slug]` public) — web validé en brut (PUT + lecture), pas encore
       via un vrai composant d'upload (`AddPersonModal`/`PhotoAnalyzer`/…) ; mobile pas
@@ -223,9 +223,8 @@ transite PAS par `/api/data/*`). Deux conséquences :
 - [ ] Rollback testé (voir §4.6) — trivial par construction (flag jamais posé), pas
       testé activement.
 
-⚠️ **Objet de test `{userId}/test.webp` à purger du bucket** (R2 dashboard → Objects
-→ supprimer, ou via `DELETE /api/storage/delete`) avant de considérer la checklist
-avancée — ce n'est pas un avatar réel, juste la validation ci-dessus.
+✅ **Objet de test purgé** `{userId}/test.webp` **(2026-07-14, via `DELETE
+/api/storage/delete` → 200 `{ok:true}`).**
 
 ### 4.6 Rollback Storage (barre « une ligne »)
 
