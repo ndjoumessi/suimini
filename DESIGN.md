@@ -203,7 +203,7 @@ Light mode carries the same vocabulary at lower opacity and a warm-brown tint (`
 - **Name:** kept in full-contrast ink regardless of the tinted face — an earlier colored-name variant failed the contrast bar and was reverted.
 
 ### Brand Mark
-- **Current shape:** a hard-edged bordered square (no corner radius, 2.6px stroke) enclosing a minimal branching glyph (one parent node, two children) — `src/components/Brand.tsx`. This predates the Veillée geometry pass and is the one component in the system that still uses sharp corners; flagged here as a known inconsistency, not (yet) part of this document's prescriptions.
+- **Shape:** a bordered square (2.6px stroke) softened to a 6px-equivalent corner radius (`--radius-sm`), enclosing a minimal branching glyph (one parent node, two children), also lightly rounded — `src/components/Brand.tsx`. Connectors use round line caps rather than square, matching the soft-geometry rule everywhere else in the system.
 
 ## 6. Do's and Don'ts
 

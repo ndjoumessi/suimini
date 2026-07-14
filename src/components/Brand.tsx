@@ -1,8 +1,11 @@
 import type { CSSProperties } from 'react';
 
 /**
- * Atelier brand mark — a bordered square enclosing a minimal family-tree glyph
- * (one parent node branching to two children). Replaces the legacy 🌿 emoji.
+ * Veillée brand mark — a bordered, softly rounded square enclosing a minimal
+ * family-tree glyph (one parent node branching to two children). Replaces
+ * the legacy 🌿 emoji. Corner radii follow the app's soft-geometry scale
+ * (frame ≈ --radius-sm, node squares rounded to match) instead of the sharp
+ * zero-radius corners of the old "Atelier" system this mark predates.
  *
  * - `currentColor` drives the frame + connectors, so the mark inherits text
  *   colour (set `color` on a parent, or pass `color`).
@@ -31,19 +34,19 @@ export function BrandMark({
       style={{ color, display: 'block', flexShrink: 0, ...style }}
     >
       {/* frame */}
-      <rect x="1.4" y="1.4" width="29.2" height="29.2" fill={surface} stroke="currentColor" strokeWidth="2.6" />
+      <rect x="1.4" y="1.4" width="29.2" height="29.2" rx="6" ry="6" fill={surface} stroke="currentColor" strokeWidth="2.6" />
       {/* connectors */}
-      <g stroke="currentColor" strokeWidth="2" strokeLinecap="square">
+      <g stroke="currentColor" strokeWidth="2" strokeLinecap="round">
         <path d="M16 10 V16" />
         <path d="M9 16 H23" />
         <path d="M9 16 V21" />
         <path d="M23 16 V21" />
       </g>
       {/* parent node */}
-      <rect x="13" y="6.5" width="6" height="6" fill={accent} stroke="currentColor" strokeWidth="1.4" />
+      <rect x="13" y="6.5" width="6" height="6" rx="1.6" ry="1.6" fill={accent} stroke="currentColor" strokeWidth="1.4" />
       {/* child nodes */}
-      <rect x="6.2" y="20.5" width="5.6" height="5.6" fill="currentColor" />
-      <rect x="20.2" y="20.5" width="5.6" height="5.6" fill="currentColor" />
+      <rect x="6.2" y="20.5" width="5.6" height="5.6" rx="1.6" ry="1.6" fill="currentColor" />
+      <rect x="20.2" y="20.5" width="5.6" height="5.6" rx="1.6" ry="1.6" fill="currentColor" />
     </svg>
   );
 }
