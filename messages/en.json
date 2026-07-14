@@ -147,8 +147,8 @@
     },
     "hero": {
       "title1": "Your family",
-      "title2": "is a <em>constellation.</em>",
-      "sub": "Every name, a star. Every bond, a line of light. Suimini brings your people together and keeps their story alive.",
+      "title2": "is a <em>living manuscript.</em>",
+      "sub": "Every name, a line. Every bond, a thread of ink. Suimini brings your people together and keeps their story alive.",
       "ctaOpen": "Open my tree",
       "ctaStart": "Start my tree",
       "ctaDemo": "See the demo",
@@ -175,7 +175,7 @@
       }
     ],
     "features": {
-      "heading": "Three gestures for a memory",
+      "heading": "Three pages for a memory",
       "gather": {
         "k": "Gather",
         "t": "Connect the generations",
@@ -188,14 +188,14 @@
       },
       "pass": {
         "k": "Pass on",
-        "t": "Bequeath the light",
+        "t": "Bequeath the page",
         "d": "Invite the family to contribute, export a booklet, share a link. A story made to pass from hand to hand."
       }
     },
     "figures": {
       "l1": "<em>Seven</em> generations.",
       "l2": "<em>Fifty-eight</em> lives linked.",
-      "l3": "<em>A hundred and fifty</em> years of light.",
+      "l3": "<em>A hundred and fifty</em> years of memory.",
       "note": "Real lives. True bonds. A living memory."
     },
     "pricing": {
@@ -249,8 +249,8 @@
     },
     "cta": {
       "title1": "Begin your",
-      "title2": "constellation.",
-      "sub": "Add a first star tonight. The rest of your story will follow, generation after generation.",
+      "title2": "manuscript.",
+      "sub": "Write the first page tonight. The rest of your story will follow, generation after generation.",
       "fine": "Free. No credit card. Data in Europe."
     },
     "footer": {

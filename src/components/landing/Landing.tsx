@@ -10,13 +10,22 @@ import { LOCALES, type Locale } from '@/i18n/config';
 
 /* =====================================================================
    Suimini — Landing publique.
-   Thème « Veillée » (nuit chaude braise + accent or-chandelle), aligné
-   sur les VALEURS de la palette de l'app (--bg #16120e, --accent #c9a84c).
-   Playfair Display pour le display (cousine didone du DM Serif Display de
-   l'app mobile « Canopée »), Figtree (--font-body, chargée globalement)
-   pour l'UI/corps. Italique réservé aux rares moments éditoriaux (titre
-   hero, manifeste, CTA final). Géométrie douce : CTA en pilule, cartes à
-   grands arrondis. Scopée à la landing (aucun token global modifié).
+   Redesign 2026-07-14 : « Manuscrit enluminé / registre de famille » —
+   la même palette Marine Deep que l'app connectée (--sky* / --star*
+   repris ici sur les valeurs de --bg/--bg-card/--bg-muted/--surface-3/
+   --text-muted/--text-light, --amber inchangé = --accent #c9a84c), mais
+   une scène différente : plus de ciel étoilé, l'arbre généalogique du
+   hero se lit comme un tracé à l'encre or sur un registre relié (nœuds
+   en losanges façon sceau/marque de génération, pas des étoiles ; pas
+   de halo radial ; un filigrane de lignes réglées façon page de carnet
+   derrière le hero). Deux fleurons ornementaux (marque de chapitre)
+   ponctuent le manifeste et le CTA final. Playfair Display pour le
+   display (cousine didone du DM Serif Display de l'app mobile
+   « Canopée »), Figtree (--font-body, chargée globalement) pour l'UI/
+   corps — identité déjà engagée, non remise en cause par ce redesign.
+   Italique réservé aux rares moments éditoriaux (titre hero, manifeste,
+   CTA final). Géométrie douce : CTA en pilule, cartes à grands
+   arrondis. Scopée à la landing (aucun token global modifié).
    ===================================================================== */
 
 const serif = Playfair_Display({
@@ -124,8 +133,8 @@ function LangToggle() {
   );
 }
 
-/* ---------- Constellation data (hero backdrop) ---------- */
-// Named family stars (viewBox 0 0 1000 660). bright = root couple.
+/* ---------- Lineage mark data (hero backdrop) ---------- */
+// Generation marks (viewBox 0 0 1000 660). bright = root couple.
 const KIN = [
   { x: 392, y: 150, bright: true },
   { x: 548, y: 124, bright: true },
@@ -143,30 +152,46 @@ const PATHS = [
   'M478 312 L478 420 M318 420 L658 420 M318 420 L318 510 M486 420 L486 528 M658 420 L658 506',
 ];
 
-/* Faint, static family constellation — the single decorative touch (no star
-   field, no parallax, no per-star twinkle). */
-function Constellation() {
+/* Faint, static family tree traced like ink on a register page — the single
+   decorative touch (no star field, no halo, no parallax). Each generation
+   reads as a small diamond mark (a seal, not a star); the root couple gets a
+   fine surrounding ring instead of a glow. */
+function LineageMark() {
   return (
     <svg className="lp-sky-svg" viewBox="0 0 1000 660" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-      <defs>
-        <radialGradient id="lp-halo" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#c9a84c" stopOpacity="0.5" />
-          <stop offset="60%" stopColor="#c9a84c" stopOpacity="0.1" />
-          <stop offset="100%" stopColor="#c9a84c" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-      <g className="lp-links" fill="none" stroke="#c9a84c" strokeWidth="1" strokeLinecap="round" opacity="0.22">
+      <g className="lp-links" fill="none" stroke="#c9a84c" strokeWidth="1" strokeLinecap="round" opacity="0.26">
         {PATHS.map((d, i) => (
           <path key={i} className="lp-link" d={d} pathLength={1} style={{ animationDelay: `${0.3 + i * 0.2}s` }} />
         ))}
       </g>
       <g className="lp-kin-g">
         {KIN.map((k, i) => (
-          <g key={i}>
-            {k.bright && <circle cx={k.x} cy={k.y} r="26" fill="url(#lp-halo)" />}
-            <circle cx={k.x} cy={k.y} r={k.bright ? 4 : 2.6} fill={k.bright ? '#dcc06a' : '#8a7f6c'} />
+          <g key={i} transform={`rotate(45 ${k.x} ${k.y})`}>
+            {k.bright && (
+              <rect x={k.x - 11} y={k.y - 11} width="22" height="22" fill="none" stroke="#dcc06a" strokeWidth="1" opacity="0.5" />
+            )}
+            <rect
+              x={k.x - (k.bright ? 4.4 : 3)}
+              y={k.y - (k.bright ? 4.4 : 3)}
+              width={k.bright ? 8.8 : 6}
+              height={k.bright ? 8.8 : 6}
+              fill={k.bright ? '#dcc06a' : '#7c8a99'}
+            />
           </g>
         ))}
+      </g>
+    </svg>
+  );
+}
+
+/* ---------- Fleuron (chapter-mark ornament, used once per major passage) ---------- */
+function Fleuron() {
+  return (
+    <svg className="lp-fleuron" viewBox="0 0 120 24" aria-hidden="true">
+      <path d="M0 12 H46" stroke="var(--hair-2)" strokeWidth="1" />
+      <path d="M74 12 H120" stroke="var(--hair-2)" strokeWidth="1" />
+      <g transform="rotate(45 60 12)">
+        <rect x="55" y="7" width="10" height="10" fill="none" stroke="#c9a84c" strokeWidth="1.1" />
       </g>
     </svg>
   );
@@ -184,21 +209,21 @@ function Motif({ kind }: { kind: 'gather' | 'tell' | 'pass' }) {
       {kind === 'gather' && (
         <>
           <circle cx="100" cy="40" r="5" fill="#dcc06a" />
-          {[[58, 112], [142, 112], [40, 172], [92, 172]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r="3.2" fill="#d0c7b4" />)}
+          {[[58, 112], [142, 112], [40, 172], [92, 172]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r="3.2" fill="#96a3b0" />)}
         </>
       )}
       {kind === 'tell' && (
         <>
           <circle cx="100" cy="48" r="4.6" fill="#dcc06a" />
           {[[58, 92, 2.4], [142, 92, 2.4], [44, 132, 1.8], [156, 132, 1.8], [78, 60, 1.6], [122, 60, 1.6]].map(([x, y, r], i) => (
-            <circle key={i} cx={x} cy={y} r={r} fill="#d0c7b4" />
+            <circle key={i} cx={x} cy={y} r={r} fill="#96a3b0" />
           ))}
         </>
       )}
       {kind === 'pass' && (
         <g>
           {[28, 64, 100, 136, 172].map((x, i) => (
-            <circle key={i} cx={x} cy={100} r={i === 0 || i === 4 ? 5 : 3.4} fill={i === 0 ? '#dcc06a' : '#d0c7b4'} />
+            <circle key={i} cx={x} cy={100} r={i === 0 || i === 4 ? 5 : 3.4} fill={i === 0 ? '#dcc06a' : '#96a3b0'} />
           ))}
         </g>
       )}
@@ -249,7 +274,8 @@ export default function Landing() {
       <main id="main-content">
       {/* ===== HERO ===== */}
       <header id="top" className="lp-hero">
-        <div className="lp-sky"><Constellation /></div>
+        <div className="lp-ruled" aria-hidden="true" />
+        <div className="lp-sky"><LineageMark /></div>
         <div className="lp-hero-veil" aria-hidden="true" />
         <div className="lp-hero-inner">
           <h1 className="lp-h1">
@@ -274,6 +300,7 @@ export default function Landing() {
       {/* ===== MANIFESTO ===== */}
       <section className="lp-manifesto">
         <Reveal variant="fade">
+          <Fleuron />
           <p className="lp-manifesto-q">
             <span className="lp-mani-lead">{t('manifesto.lead')}</span>
             <em>{t('manifesto.em1')}<br />{t('manifesto.em2')}</em>
@@ -366,6 +393,7 @@ export default function Landing() {
       {/* ===== FINAL CTA ===== */}
       <section className="lp-final">
         <Reveal className="lp-final-body">
+          <Fleuron />
           <h2 className="lp-final-h">{t('cta.title1')} <em>{t('cta.title2')}</em></h2>
           <p className="lp-final-sub">{t('cta.sub')}</p>
           <div className="lp-hero-cta lp-final-cta">
@@ -417,21 +445,22 @@ export default function Landing() {
 
 const CSS = `
 .lp-root {
-  /* Palette « Veillée » : nuit braise chaude, encre papier, or chandelle.
-     Éclaircie (2026-07-14, retour "trop sombre dans l'ensemble" sur le rendu quasi
-     noir des sections pleine largeur — manifeste/tarifs/pied de page tournaient sur
-     --sky-deep, à l'origine un quasi-noir #070504 bien plus sombre que tout ce
-     qu'utilise l'app elle-même) : les 4 tons remontent ensemble d'un cran net (pas
-     un ajustement de 2-3 unités RVB, insuffisant la première fois sur ce même
-     genre de retour côté app) en gardant l'ordre deep < sky < rise < card et le
-     contraste texte/or (vérifié ≥4,5:1 pour le texte courant sur les 4 tons, sauf
-     --star-faint sur --sky-card qui reste ~4:1 — déjà le cas avant, label
-     secondaire barré uniquement). */
-  --sky: #221b12; --sky-deep: #170f0a; --sky-rise: #392e1d; --sky-card: #3d3120;
-  --star: #f3ecdf; --star-muted: #aa9e8c; --star-faint: #9c9081;
+  /* Palette « Marine Deep » — reprise à l'identique des tokens navy de l'app
+     connectée (globals.css, bloc sombre) : --sky-deep = --bg #0f1a24 (canvas),
+     --sky = --surface-3 #141f2a (ambiance/chrome), --sky-rise = --bg-card
+     #1e3040 (surface relevée), --sky-card = --bg-muted #2a3d4f (la plus
+     claire — cartes tarifs). Même ordre de profondeur que l'app
+     (deep < sky < rise < card). L'encre (--star) et l'or (--amber) ne
+     bougent PAS : c'était déjà le canvas qui était trop sombre, pas l'accent
+     ni le texte — voir la même règle côté app ("l'accent survit au canvas").
+     --star-muted/--star-faint reprennent --text-muted/--text-light (gris-bleu
+     froid) au lieu de l'ancien gris-brun chaud, pour rester cohérents avec le
+     nouveau canvas. Tout re-vérifié ≥4,5:1 texte/fond. */
+  --sky: #141f2a; --sky-deep: #0f1a24; --sky-rise: #1e3040; --sky-card: #2a3d4f;
+  --star: #f3ecdf; --star-muted: #9aacba; --star-faint: #8fa2b1;
   --amber: #c9a84c; --amber-soft: #dcc06a; --amber-deep: #a98c3e;
   --ink-on-amber: #171006;
-  --hair: rgba(243,236,223,0.08); --hair-2: rgba(243,236,223,0.16);
+  --hair: rgba(224,232,240,0.07); --hair-2: rgba(224,232,240,0.15);
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
   background: var(--sky); color: var(--star);
   font-family: var(--font-body), system-ui, sans-serif; font-weight: 400;
@@ -484,7 +513,10 @@ const CSS = `
 .lp-hero { position: relative; min-height: 100vh; min-height: 100dvh; display: flex; align-items: center; justify-content: center; overflow: hidden; background: radial-gradient(130% 90% at 50% -10%, #362b1a 0%, var(--sky) 48%, var(--sky-deep) 100%); }
 .lp-sky { position: absolute; inset: -6%; opacity: 0.9; }
 .lp-sky-svg { width: 100%; height: 100%; }
-.lp-hero-veil { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(58% 50% at 50% 46%, rgba(23,19,16,0.92) 0%, rgba(23,19,16,0.72) 40%, rgba(23,19,16,0.28) 66%, transparent 86%); }
+/* Faint ruled-page texture behind the hero (ledger/manuscript lines) — sits
+   under the veil so it never fights text legibility. */
+.lp-ruled { position: absolute; inset: 0; pointer-events: none; opacity: 0.6; background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 34px, rgba(220,192,106,0.05) 35px); }
+.lp-hero-veil { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(58% 50% at 50% 46%, rgba(15,26,36,0.92) 0%, rgba(15,26,36,0.72) 40%, rgba(15,26,36,0.28) 66%, transparent 86%); }
 .lp-hero-inner { position: relative; z-index: 3; text-align: center; padding: 96px 24px; max-width: 1000px; }
 .lp-h1 { margin: 0; font-family: var(--lp-serif); font-weight: 500; letter-spacing: -0.01em; line-height: 1.04; text-wrap: balance; }
 .lp-h1-a, .lp-h1-b { display: block; font-size: clamp(3rem, 8vw, 5.6rem); color: var(--star); }
@@ -499,10 +531,13 @@ const CSS = `
 .lp-cue span { position: absolute; inset: 0; background: var(--amber); animation: lp-cue 2.4s var(--ease) infinite; }
 @keyframes lp-cue { 0% { transform: translateY(-100%); } 60%, 100% { transform: translateY(100%); } }
 
-/* Sky (static constellation, gentle draw-in only) */
+/* Lineage mark (static ink tree, gentle draw-in only) */
 .lp-link { stroke-dasharray: 1; stroke-dashoffset: 1; animation: lp-draw 1.4s var(--ease) forwards; }
 @keyframes lp-draw { to { stroke-dashoffset: 0; } }
 @media (prefers-reduced-motion: reduce) { .lp-link { stroke-dashoffset: 0; animation: none; } .lp-cue span { animation: none; } }
+
+/* Fleuron (chapter-mark ornament) */
+.lp-fleuron { display: block; width: 120px; height: 24px; margin: 0 auto clamp(28px, 3.4vw, 40px); }
 
 /* MANIFESTO */
 .lp-manifesto { padding: clamp(110px, 18vw, 220px) 24px; background: linear-gradient(var(--sky-deep), var(--sky)); text-align: center; }
@@ -572,7 +607,7 @@ const CSS = `
 .lp-plans { max-width: 1100px; margin: clamp(60px, 7vw, 92px) auto 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(20px, 2.2vw, 26px); align-items: stretch; }
 .lp-plan { position: relative; display: flex; flex-direction: column; background: var(--sky-card); border: 1px solid var(--hair); border-radius: 20px; padding: clamp(32px, 3.2vw, 44px) clamp(26px, 2.6vw, 36px); transition: transform 0.3s var(--ease), border-color 0.3s var(--ease), box-shadow 0.3s var(--ease); }
 .lp-plan:not(.lp-plan-pop):hover { transform: translateY(-4px); border-color: var(--hair-2); }
-.lp-plan-pop { background: #423422; border-color: var(--amber); transform: translateY(-12px); box-shadow: 0 24px 60px rgba(10,6,3,0.45), 0 0 0 1px var(--amber); }
+.lp-plan-pop { background: #33405a; border-color: var(--amber); transform: translateY(-12px); box-shadow: 0 24px 60px rgba(6,10,15,0.45), 0 0 0 1px var(--amber); }
 .lp-plan-badge { position: absolute; top: 0; right: clamp(26px, 2.6vw, 36px); transform: translateY(-50%); background: var(--amber); color: var(--ink-on-amber); font-family: var(--font-body); font-weight: 600; font-size: 0.78rem; letter-spacing: 0.04em; padding: 4px 14px; border-radius: 999px; }
 .lp-plan-name { font-family: var(--font-body); font-weight: 600; font-size: 0.85rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--star-muted); }
 .lp-plan-pop .lp-plan-name { color: var(--amber); }

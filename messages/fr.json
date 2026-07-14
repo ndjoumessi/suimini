@@ -147,8 +147,8 @@
     },
     "hero": {
       "title1": "Votre famille",
-      "title2": "est une <em>constellation.</em>",
-      "sub": "Chaque nom, une étoile. Chaque lien, une ligne de lumière. Suimini réunit les vôtres et garde leur histoire vivante.",
+      "title2": "est un <em>manuscrit vivant.</em>",
+      "sub": "Chaque nom, une ligne. Chaque lien, un trait d’encre. Suimini réunit les vôtres et garde leur histoire vivante.",
       "ctaOpen": "Ouvrir mon arbre",
       "ctaStart": "Commencer mon arbre",
       "ctaDemo": "Voir la démo",
@@ -158,7 +158,7 @@
     "manifesto": {
       "lead": "Tant qu’une histoire se raconte,",
       "em1": "ceux qu’on aime",
-      "em2": "ne s’éteignent jamais."
+      "em2": "ne s’effacent jamais."
     },
     "testimonials": [
       {
@@ -175,7 +175,7 @@
       }
     ],
     "features": {
-      "heading": "Trois gestes pour une mémoire",
+      "heading": "Trois pages pour une mémoire",
       "gather": {
         "k": "Réunir",
         "t": "Reliez les générations",
@@ -188,14 +188,14 @@
       },
       "pass": {
         "k": "Transmettre",
-        "t": "Léguez la lumière",
+        "t": "Léguez la page",
         "d": "Invitez la famille à contribuer, exportez un livret, partagez un lien. Une histoire faite pour passer de main en main."
       }
     },
     "figures": {
       "l1": "<em>Sept</em> générations.",
       "l2": "<em>Cinquante-huit</em> vies reliées.",
-      "l3": "<em>Cent cinquante</em> ans de lumière.",
+      "l3": "<em>Cent cinquante</em> ans de mémoire.",
       "note": "Des vies réelles. Des liens vrais. Une mémoire vivante."
     },
     "pricing": {
@@ -249,8 +249,8 @@
     },
     "cta": {
       "title1": "Commencez votre",
-      "title2": "constellation.",
-      "sub": "Ajoutez une première étoile ce soir. Le reste de votre histoire suivra, génération après génération.",
+      "title2": "manuscrit.",
+      "sub": "Écrivez la première page ce soir. Le reste de votre histoire suivra, génération après génération.",
       "fine": "Gratuit. Sans carte bancaire. Données en Europe."
     },
     "footer": {
