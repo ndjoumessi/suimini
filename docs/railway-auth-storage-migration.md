@@ -216,10 +216,13 @@ transite PAS par `/api/data/*`). Deux conséquences :
       PDF, `/arbre/[slug]` public) — web validé en brut (PUT + lecture), pas encore
       via un vrai composant d'upload (`AddPersonModal`/`PhotoAnalyzer`/…) ; mobile pas
       testé.
-- [ ] Compte des objets Supabase == compte des objets R2 après copie (réconciliation,
-      façon 71/122 de la data) — copie pas encore lancée.
-- [ ] Les **anciennes** URLs Supabase résolvent toujours (aucune photo cassée) —
-      trivialement vrai tant que la copie n'a pas eu lieu (Supabase Storage intact).
+- [x] Compte des objets Supabase == compte des objets R2 après copie (réconciliation,
+      façon 71/122 de la data). **(2026-07-15, via `scripts/copy-avatars-to-r2.sh
+      DRY_RUN=0` : 11 objets Supabase → 11 transférés → 11 côté R2, comptes égaux.
+      Tous dans `a8d07d13-f795-41ec-824f-5453cce02c0e/` — photos TEDA.)**
+- [x] Les **anciennes** URLs Supabase résolvent toujours (aucune photo cassée) —
+      trivialement vrai : `rclone copy` (jamais `sync`), Supabase Storage jamais
+      touché, seule une copie a été écrite côté R2.
 - [ ] Rollback testé (voir §4.6) — trivial par construction (flag jamais posé), pas
       testé activement.
 
