@@ -34,32 +34,34 @@
    ===================================================================== */
 
 :root {
-  /* Surfaces — warm ember-dark (espresso / heartwood), four tiers with a
+  /* Surfaces — Marine Deep (dark navy dusk), four tiers with a
      deliberately BOLD lightness spread (not just a hue shift) so cards,
      canvas and chrome read as unmistakably distinct layers, even in a
-     compressed screenshot. A first pass here only nudged the hex values by
-     2-3 RGB units each (imperceptible on screen, confirmed by a follow-up
-     screenshot still showing card fills blending into the canvas) — this
-     pass roughly DOUBLES perceived brightness from canvas to card instead
-     of a ~10% bump. Depth ladder, darkest to lightest: recessed chrome <
-     canvas < raised card < hover/inert. */
-  --bg: #16120e;               /* app canvas */
-  --bg-card: #2a231a;          /* cards, panels, raised surfaces — ~2x brighter than canvas, unmistakably lifted */
-  --bg-muted: #372e22;         /* inert zones / hover fills — clearly lighter still than a card */
+     compressed screenshot. Depth ladder, darkest to lightest: canvas <
+     recessed chrome < raised card < hover/inert. Retuned from the original
+     warm ember hue to a cool navy on request ("trop sombre" + wanted a
+     blue direction) — accent (gold) and ink (paper-cream) stay unchanged,
+     so the candle-on-a-dark-surface feel survives; only the canvas mood
+     shifted from firelight to moonlight. All pairings re-verified ≥4.5:1. */
+  --bg: #0f1a24;               /* app canvas — Marine Deep */
+  --bg-card: #1e3040;          /* cards, panels, raised surfaces — ~2.8x brighter than canvas, unmistakably lifted */
+  --bg-muted: #2a3d4f;         /* inert zones / hover fills — clearly lighter still than a card */
   --surface-1: var(--bg);
   --surface-2: var(--bg-card);
-  --surface-3: #201a13;        /* sidebars, toolbars, inputs — distinct from canvas without going near-black */
+  --surface-3: #141f2a;        /* sidebars, toolbars, inputs — distinct from canvas without going near-black */
   --interactive: var(--bg-muted); /* hover state */
 
-  /* Ink + text (warm paper on ember) */
+  /* Ink + text (warm paper on navy — unchanged from the ember palette so
+     the accent + typography keep their signature warmth even as the
+     canvas mood shifts) */
   --ink: #f3ecdf;
   --text: #f3ecdf;
-  --text-muted: #aa9e8c;      /* secondary — warm grey, ≥4.5:1 on --bg & --bg-card */
-  --text-light: #9c9081;      /* tertiary — ≥4.5:1 on --bg AND --bg-card (WCAG AA small text) */
+  --text-muted: #9aacba;      /* secondary — cool blue-grey, ≥4.5:1 on --bg & --bg-card */
+  --text-light: #8fa2b1;      /* tertiary — ≥4.5:1 on --bg AND --bg-card (WCAG AA small text) */
 
   /* Rules */
-  --border: #362f26;          /* hairline dividers + card outlines */
-  --border-strong: #4a4033;   /* interactive outlines (inputs/buttons) */
+  --border: #243646;          /* hairline dividers + card outlines */
+  --border-strong: #3a5568;   /* interactive outlines (inputs/buttons) */
   --bw: 1px;                  /* structural border width */
 
   /* Accent — candle gold (default). applyColorTheme() in lib/themes.ts
@@ -70,7 +72,7 @@
   --accent-hover: #dcbb5e;
   --accent-text: #d4b257;     /* accent as text on dark, ≥4.5:1 */
   --accent-light: rgba(201, 168, 76, 0.14);
-  --accent-muted: #a98f4e;    /* subdued accent — metadata, ≥4.5:1 on --bg & --bg-card */
+  --accent-muted: #ae9350;    /* subdued accent — metadata, ≥4.5:1 on --bg & --bg-card (retuned for the Marine Deep bg-card) */
   --ink-on-accent: #171006;   /* text ON the accent fill (≥8:1) — never white on gold */
 
   /* Signals (information, not decoration) — tuned for the warm dark canvas.
@@ -84,14 +86,14 @@
   --warning: #d8a555;
   --info: #8aa8cc;            /* ≥4.5:1 on --bg-card */
 
-  /* Shadows — deep, warm, diffuse (candlelight, not studio strobe) */
-  --shadow-color: rgba(12, 8, 4, 0.6);
-  --shadow-sm: 0 1px 2px rgba(12, 8, 4, 0.35), 0 2px 8px rgba(12, 8, 4, 0.25);
-  --shadow: 0 4px 12px rgba(12, 8, 4, 0.35), 0 12px 32px rgba(12, 8, 4, 0.35);
-  --shadow-lg: 0 8px 20px rgba(12, 8, 4, 0.4), 0 24px 56px rgba(12, 8, 4, 0.45);
-  --shadow-xl: 0 12px 28px rgba(12, 8, 4, 0.45), 0 36px 80px rgba(12, 8, 4, 0.5);
+  /* Shadows — deep, diffuse (moonlit navy, not studio strobe) */
+  --shadow-color: rgba(6, 10, 15, 0.6);
+  --shadow-sm: 0 1px 2px rgba(6, 10, 15, 0.35), 0 2px 8px rgba(6, 10, 15, 0.25);
+  --shadow: 0 4px 12px rgba(6, 10, 15, 0.35), 0 12px 32px rgba(6, 10, 15, 0.35);
+  --shadow-lg: 0 8px 20px rgba(6, 10, 15, 0.4), 0 24px 56px rgba(6, 10, 15, 0.45);
+  --shadow-xl: 0 12px 28px rgba(6, 10, 15, 0.45), 0 36px 80px rgba(6, 10, 15, 0.5);
   --shadow-accent: 0 0 0 1px rgba(201, 168, 76, 0.35), 0 8px 28px rgba(201, 168, 76, 0.18);
-  --scrim: rgba(10, 7, 4, 0.68);   /* modal / overlay backdrop */
+  --scrim: rgba(5, 9, 13, 0.68);   /* modal / overlay backdrop */
 
   /* Radii — soft and generous (Veillée breaks with the old zero-radius) */
   --radius-sm: 6px;           /* chips, small controls, thumbnails */

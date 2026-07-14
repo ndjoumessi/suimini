@@ -7,7 +7,7 @@ export type ThemeMode = 'light' | 'dark' | 'system';
 
 const MODE_STORAGE_KEY = 'suimini_theme_mode';
 // Littéraux obligatoires : <meta name="theme-color"> ne résout pas les CSS vars.
-const THEME_COLOR: Record<'light' | 'dark', string> = { dark: '#16120e', light: '#F4F0E6' };
+const THEME_COLOR: Record<'light' | 'dark', string> = { dark: '#0f1a24', light: '#F4F0E6' };
 
 function resolveSystemPref(): 'light' | 'dark' {
   if (typeof window === 'undefined' || !window.matchMedia) return 'dark';

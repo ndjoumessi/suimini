@@ -58,7 +58,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   // Littéral obligatoire : <meta name="theme-color"> ne résout pas les CSS vars.
-  themeColor: "#16120e",
+  themeColor: "#0f1a24",
   width: "device-width",
   initialScale: 1,
   // Pas de maximumScale : bloquer le zoom viole WCAG 1.4.4 (resize text).

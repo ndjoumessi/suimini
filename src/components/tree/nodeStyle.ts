@@ -38,12 +38,18 @@ export const GENDER_BAR = {
   pivot: '#C9A84C',
 } as const;
 
+// Retuned for the Marine Deep dark canvas (--bg #0f1a24): the old fills sat
+// ~2-2.7x brighter than the old ember --bg, but the tree renders directly on
+// --bg (TreeView's own background), so once --bg itself turned navy the old
+// male fill (#1D2430, already blue-tinted) nearly vanished into the new
+// canvas. New fills keep the same per-gender hue intent and are re-verified
+// at an equal-or-better brightness multiple over the new --bg.
 const DARK_STYLES = {
-  male:    { bg: '#1D2430', bar: GENDER_BAR.male,    name: '#F3ECDF' },
-  female:  { bg: '#291D26', bar: GENDER_BAR.female,  name: '#F3ECDF' },
-  unknown: { bg: '#221D17', bar: GENDER_BAR.unknown, name: '#F3ECDF' },
-  spouse:  { bg: '#221D17', bar: '#C9A84C',          name: '#F3ECDF' },
-  pivot:   { bg: '#2C2210', bar: '#C9A84C',          name: '#F3ECDF' },
+  male:    { bg: '#243A52', bar: GENDER_BAR.male,    name: '#F3ECDF' },
+  female:  { bg: '#3A2534', bar: GENDER_BAR.female,  name: '#F3ECDF' },
+  unknown: { bg: '#332C22', bar: GENDER_BAR.unknown, name: '#F3ECDF' },
+  spouse:  { bg: '#332C22', bar: '#C9A84C',          name: '#F3ECDF' },
+  pivot:   { bg: '#3D3218', bar: '#C9A84C',          name: '#F3ECDF' },
 } as const satisfies Record<string, NodeStyle>;
 
 // Same hues as DARK_STYLES, tinted light instead of dark; ink text instead of

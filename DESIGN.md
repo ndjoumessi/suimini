@@ -2,19 +2,19 @@
 name: Suimini
 description: Arbre généalogique familial — "Veillée", l'heure du soir où l'on raconte les histoires de famille
 colors:
-  bg: "#16120e"
-  bg-card: "#2a231a"
-  bg-muted: "#372e22"
-  surface-3: "#201a13"
+  bg: "#0f1a24"
+  bg-card: "#1e3040"
+  bg-muted: "#2a3d4f"
+  surface-3: "#141f2a"
   ink: "#f3ecdf"
-  text-muted: "#aa9e8c"
-  text-light: "#9c9081"
-  border: "#362f26"
-  border-strong: "#4a4033"
+  text-muted: "#9aacba"
+  text-light: "#8fa2b1"
+  border: "#243646"
+  border-strong: "#3a5568"
   accent: "#c9a84c"
   accent-hover: "#dcbb5e"
   accent-text: "#d4b257"
-  accent-muted: "#a98f4e"
+  accent-muted: "#ae9350"
   ink-on-accent: "#171006"
   male: "#4a90d9"
   female: "#c47ba0"
@@ -94,42 +94,43 @@ components:
 
 **Creative North Star: "Veillée — the fireside hour"**
 
-Suimini is read the way a family gathers in the evening to tell its stories: a warm ember-dark canvas, paper-cream ink, soft rounded geometry, and a single candle-gold accent that carries every action and every link. It is the nocturnal sibling of the mobile app's "Canopée" (warm paper, forest daylight) — where Canopée is the album read by daylight, Veillée is the hour the stories get told. The system exists to make documenting a family feel like an evening ritual, never an archivist's chore: names, dates and relationships are handled the way you'd handle a photograph, not a database row.
+Suimini is read the way a family gathers in the evening to tell its stories: a dark canvas, paper-cream ink, soft rounded geometry, and a single candle-gold accent that carries every action and every link. It is the nocturnal sibling of the mobile app's "Canopée" (warm paper, forest daylight) — where Canopée is the album read by daylight, Veillée is the hour the stories get told. The system exists to make documenting a family feel like an evening ritual, never an archivist's chore: names, dates and relationships are handled the way you'd handle a photograph, not a database row.
 
-It explicitly rejects cold generic SaaS (corporate blues, sterile dashboards, tech gradients, interchangeable cards — a genealogy app is not a CRM), the cluttered dated look of old genealogy software, playful social-network gamification, and ostentatious luxury (no shiny gold-as-decoration, no showy premium). Warmth comes from precision, not embellishment.
+It explicitly rejects cold generic SaaS (corporate blues, sterile dashboards, tech gradients, interchangeable cards — a genealogy app is not a CRM), the cluttered dated look of old genealogy software, playful social-network gamification, and ostentatious luxury (no shiny gold-as-decoration, no showy premium). Warmth comes from precision, not embellishment — which is also why, when the canvas itself moved from a warm ember-dark to a cool navy ("Marine Deep", by explicit request — the original ember read as too dark), the accent and ink stayed exactly as warm as before: gold and paper-cream now sit on moonlight instead of firelight, but the candle itself didn't change.
 
 **Key Characteristics:**
-- Warm ember-dark canvas (`#16120e`) with paper-cream ink (`#f3ecdf`); a real, switchable light companion palette exists (`data-theme="light"`), never just an afterthought filter.
-- One candle-gold accent (`#c9a84c`), user-themable at runtime across 6 named palettes, always rare (≤10% of a screen).
+- Dark navy canvas ("Marine Deep", `#0f1a24`) with paper-cream ink (`#f3ecdf`); a real, switchable light companion palette exists (`data-theme="light"`), never just an afterthought filter.
+- One candle-gold accent (`#c9a84c`), user-themable at runtime across 6 named palettes, always rare (≤10% of a screen), deliberately unchanged by the canvas hue swap.
 - Soft geometry chosen **by role**, not flattened to zero: 6px chips, 10px buttons/inputs, 16px cards, 22px modals, full pills.
-- Warm diffuse shadows (`rgba(12, 8, 4, …)` on dark, `rgba(90, 70, 40, …)` on light) — never hard offset, never floating glow without purpose.
+- Diffuse shadows (`rgba(6, 10, 15, …)` on dark, `rgba(90, 70, 40, …)` on light) — never hard offset, never floating glow without purpose.
 - Flat at rest; elevation is a response to hover/focus/selection, not a permanent decoration.
 
 ## 2. Colors
 
-Warm neutrals (heartwood dark or bone-paper light) carry the canvas; one gold accent carries action and links; gender and status stay legible information, never decoration.
+Cool navy neutrals (or bone-paper light) carry the canvas; one gold accent carries action and links; gender and status stay legible information, never decoration.
 
 ### Primary
-- **Candle Gold** (`#c9a84c`, hover `#dcbb5e`, text-safe `#d4b257`): the one accent. Buttons, active tabs, links, focus rings, timeline dots, the founder/pivot node in the family tree. User-themable at runtime — 5 alternate palettes exist (Bordeaux `#c06b78`, Forêt `#6fae8a`, Ardoise `#8aa2b4`, Marine `#5b8fc0`, Terracotta `#d3845a`) — but whichever is active, it stays this rare.
+- **Candle Gold** (`#c9a84c`, hover `#dcbb5e`, text-safe `#d4b257`): the one accent. Buttons, active tabs, links, focus rings, timeline dots, the founder/pivot node in the family tree. User-themable at runtime — 5 alternate palettes exist (Bordeaux `#c06b78`, Forêt `#6fae8a`, Ardoise `#8aa2b4`, Marine `#5b8fc0`, Terracotta `#d3845a`) — but whichever is active, it stays this rare. Kept identical across the ember→navy canvas swap.
 
 ### Tertiary (signal, not decoration)
-- **Filiation Blue** (`#4a90d9`) / **Filiation Rose** (`#c47ba0`): gender, carried by the tree node's left bar, `PersonCard`, avatars and legends. Deliberately mode-independent — same hex in light and dark — so a person reads the same hue everywhere in the app.
+- **Filiation Blue** (`#4a90d9`) / **Filiation Rose** (`#c47ba0`): gender, carried by the tree node's left bar, `PersonCard`, avatars and legends. Deliberately mode-independent — same hex in light and dark — so a person reads the same hue everywhere in the app. The tree node FACE fills (not the bar) were retuned alongside the canvas swap so gender-tinted nodes stay visible against the new navy rather than blending into it.
 - **Muted Taupe** (`#a2988a`): deceased status.
 - **Warm Green** (`#58b294`) / **Warm Coral** (`#e07862`) / **Warm Amber** (`#d8a555`) / **Soft Slate-Blue** (`#8aa8cc`): success / danger / warning / info. Carried by toast icon + progress bar + text, never by a card border.
 
 ### Neutral
-- **Heartwood Canvas** (`#16120e`, light `#f4f0e6`): the app background.
-- **Raised Card** (`#2a231a`, light `#fcfaf3`): cards, panels — deliberately ~2× brighter than the canvas (not a subtle hue nudge) so it reads as unmistakably lifted, even in a compressed screenshot.
-- **Inert / Hover Fill** (`#372e22`, light `#ffffff`): hover states, muted zones — the lightest tier on dark, lightest on light too.
-- **Recessed Chrome** (`#201a13`, light `#e9e1cd`): sidebars, toolbars, inputs — its own tier, distinct from both canvas and card.
-- **Paper Ink** (`#f3ecdf` on dark, `#211b12` on light): primary text.
-- **Muted Ink** (`#aa9e8c` / `#9c9081`): secondary and tertiary text, both tuned ≥4.5:1 against canvas *and* card.
-- **Hairline** (`#362f26`) / **Structural Border** (`#4a4033`): dividers vs. interactive outlines (inputs, buttons).
+- **Marine Deep Canvas** (`#0f1a24`, light `#f4f0e6`): the app background. Replaced the original warm "Heartwood" ember canvas (`#16120e`) on request — same depth-ladder logic, cool navy hue instead.
+- **Raised Card** (`#1e3040`, light `#fcfaf3`): cards, panels — deliberately ~2.8× brighter than the canvas (not a subtle hue nudge) so it reads as unmistakably lifted, even in a compressed screenshot.
+- **Inert / Hover Fill** (`#2a3d4f`, light `#ffffff`): hover states, muted zones — the lightest tier on dark, lightest on light too.
+- **Recessed Chrome** (`#141f2a`, light `#e9e1cd`): sidebars, toolbars, inputs — its own tier, distinct from both canvas and card.
+- **Paper Ink** (`#f3ecdf` on dark, `#211b12` on light): primary text. Unchanged by the canvas swap — this is what keeps the system feeling like Suimini rather than a generic dark-blue app.
+- **Muted Ink** (`#9aacba` / `#8fa2b1`): secondary and tertiary text, cool blue-grey, both tuned ≥4.5:1 against canvas *and* card.
+- **Hairline** (`#243646`) / **Structural Border** (`#3a5568`): dividers vs. interactive outlines (inputs, buttons).
 
 ### Named Rules
 **The Rare Gold Rule.** The accent is reserved for action and link — never a large fill, never a decorative background. Whatever the active theme (6 options), the accent covers roughly ≤10% of any screen.
-**The Depth-Ladder Rule.** Four surface tiers, darkest to lightest: recessed chrome < canvas < raised card < hover/inert. The jump canvas→card is deliberately bold (roughly double perceived brightness), not a 2–3 RGB unit nudge — flattened tiers were a shipped regression, caught and fixed twice.
+**The Depth-Ladder Rule.** Four surface tiers, darkest to lightest: canvas < recessed chrome < raised card < hover/inert. The jump canvas→card is deliberately bold (roughly ×2.8), not a 2–3 RGB unit nudge — flattened tiers were a shipped regression, caught and fixed twice. The ratio was preserved when the canvas hue moved from ember to navy.
 **The Signal-Not-Decor Rule.** Gender/status/semantic colors (blue, rose, green, coral, amber, slate-blue) carry real information and must never be repurposed as an aesthetic accent.
+**The Accent-Survives-The-Canvas Rule.** When the canvas mood changes (as it did, ember → navy), the accent and ink are the last things to move — they're the constant that keeps the system recognizable underneath a very different backdrop.
 
 ## 3. Typography
 
@@ -156,16 +157,16 @@ Type scale is a documented major-third (ratio 1.25) on a 15px base: step -1 (12p
 Flat by default; depth is carried primarily by the surface tiers themselves (the Depth-Ladder Rule), with a warm diffuse shadow reserved for genuine elevation — never a decorative resting-state shadow on every card.
 
 ### Shadow Vocabulary
-- **`--shadow-sm`** (`0 1px 2px rgba(12,8,4,.35), 0 2px 8px rgba(12,8,4,.25)`): the default resting shadow under any `.card` — a whisper, not a statement.
-- **`--shadow`** (`0 4px 12px rgba(12,8,4,.35), 0 12px 32px rgba(12,8,4,.35)`): hover / active surfaces.
-- **`--shadow-lg`** (`0 8px 20px rgba(12,8,4,.4), 0 24px 56px rgba(12,8,4,.45)`): toasts, dropdowns.
-- **`--shadow-xl`** (`0 12px 28px rgba(12,8,4,.45), 0 36px 80px rgba(12,8,4,.5)`): modals.
-- **`--shadow-accent`** (`0 0 0 1px rgba(201,168,76,.35), 0 8px 28px rgba(201,168,76,.18)`): the one glow allowed — gold-tinted, reserved for the primary button hover and other accent-carrying surfaces.
+- **`--shadow-sm`** (`0 1px 2px rgba(6,10,15,.35), 0 2px 8px rgba(6,10,15,.25)`): the default resting shadow under any `.card` — a whisper, not a statement.
+- **`--shadow`** (`0 4px 12px rgba(6,10,15,.35), 0 12px 32px rgba(6,10,15,.35)`): hover / active surfaces.
+- **`--shadow-lg`** (`0 8px 20px rgba(6,10,15,.4), 0 24px 56px rgba(6,10,15,.45)`): toasts, dropdowns.
+- **`--shadow-xl`** (`0 12px 28px rgba(6,10,15,.45), 0 36px 80px rgba(6,10,15,.5)`): modals.
+- **`--shadow-accent`** (`0 0 0 1px rgba(201,168,76,.35), 0 8px 28px rgba(201,168,76,.18)`): the one glow allowed — gold-tinted, reserved for the primary button hover and other accent-carrying surfaces. Unchanged by the canvas swap.
 
 Light mode carries the same vocabulary at lower opacity and a warm-brown tint (`rgba(90,70,40,…)`) instead of near-black, so elevation reads consistently without ever looking sooty on paper.
 
 ### Named Rules
-**The Whisper-Not-Shout Rule.** Shadows are warm and diffuse, never hard-offset or floating without a state to justify them. A card at rest gets `--shadow-sm` only; anything louder is a reaction to hover, focus, or selection.
+**The Whisper-Not-Shout Rule.** Shadows are diffuse, never hard-offset or floating without a state to justify them. A card at rest gets `--shadow-sm` only; anything louder is a reaction to hover, focus, or selection.
 
 ## 5. Components
 
@@ -199,7 +200,7 @@ Light mode carries the same vocabulary at lower opacity and a warm-brown tint (`
 
 ### Tree Node (signature)
 - **Shape:** 10px-radius rounded rect (`rx=10`), matching the app's default component radius exactly — the tree is not a special sharp-cornered exception.
-- **Face:** a gender-tinted fill (soft blue/rose/parchment wash, distinct light and dark variants) with a bright left bar in the same `GENDER_BAR` hue — the one legitimate colored-left-bar pattern in the whole system, because it is information (who this person is), not ornament. The founder/pivot and a Focus-mode spouse read gold instead of gender-tinted, matching the one-accent rule.
+- **Face:** a gender-tinted fill (soft blue/rose/parchment wash, distinct light and dark variants) with a bright left bar in the same `GENDER_BAR` hue — the one legitimate colored-left-bar pattern in the whole system, because it is information (who this person is), not ornament. The founder/pivot and a Focus-mode spouse read gold instead of gender-tinted, matching the one-accent rule. Dark-mode face fills were retuned when the canvas moved to navy — the male face in particular was already blue-tinted and had all but disappeared into the new canvas at the old values; faces are now re-verified to sit clearly above `--bg` again.
 - **Name:** kept in full-contrast ink regardless of the tinted face — an earlier colored-name variant failed the contrast bar and was reverted.
 
 ### Brand Mark
