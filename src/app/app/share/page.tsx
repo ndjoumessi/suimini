@@ -25,9 +25,9 @@ export default function SharePage() {
   }, []);
 
   return (
-    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', background: '#f4f1ea' }}>
-      <BrandLockup size={32} color="#1b1b1b" accent="#bf4b2c" surface="#f4f1ea" fontSize={24} />
-      <p style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: '12px', letterSpacing: '0.08em', color: '#4a4742', margin: 0 }}>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', background: '#0f1a24' }}>
+      <BrandLockup size={32} color="#f3ecdf" accent="#c9a84c" surface="#1e3040" fontSize={24} />
+      <p style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: '12px', letterSpacing: '0.08em', color: '#9aacba', margin: 0 }}>
         CHARGEMENT…
       </p>
     </div>

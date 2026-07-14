@@ -13,7 +13,8 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { fonts, fontSize, spacing, radius, shadows } from '@/lib/theme';
+import { BrandMark } from '@/components/Brand';
+import { fonts, fontSize, spacing, shadows } from '@/lib/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -71,8 +72,8 @@ export default function LoginScreen() {
       >
         {/* Wordmark */}
         <View style={styles.brand}>
-          <View style={[styles.mark, shadows.low, { backgroundColor: colors.accentLight }]}>
-            <Text style={[styles.markText, { color: colors.accent }]}>S</Text>
+          <View style={[styles.mark, shadows.low]}>
+            <BrandMark size={64} color={colors.text} accent={colors.accent} surface={colors.accentLight} />
           </View>
           <Text style={[styles.wordmark, { color: colors.text }]}>Suimini</Text>
           <Text style={[styles.tagline, { color: colors.textMuted }]}>
@@ -158,11 +159,9 @@ const styles = StyleSheet.create({
   mark: {
     width: 64,
     height: 64,
-    borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  markText: { fontFamily: fonts.display, fontSize: 36 },
   wordmark: { fontFamily: fonts.display, fontSize: fontSize.xxl, marginTop: spacing.xs },
   tagline: { fontFamily: fonts.body, fontSize: fontSize.base, textAlign: 'center' },
   form: { gap: spacing.md },

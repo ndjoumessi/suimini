@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#f4f1ea"
+      "backgroundColor": "#F7F5F0"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -29,7 +29,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#bf4b2c"
+        "backgroundColor": "#2F6D4F"
       },
       "package": "com.suimini.app",
       "versionCode": 2,
@@ -48,7 +48,7 @@
         "expo-notifications",
         {
           "icon": "./assets/images/notification-icon.png",
-          "color": "#bf4b2c"
+          "color": "#2F6D4F"
         }
       ],
       "expo-asset",

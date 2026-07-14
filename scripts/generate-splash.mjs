@@ -31,10 +31,10 @@ function buildHtml(w, h) {
 <meta charset="utf-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,400&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
-  html,body{width:${w}px;height:${h}px;overflow:hidden;background:#f4f1ea}
+  html,body{width:${w}px;height:${h}px;overflow:hidden;background:#0f1a24}
   .wrap{
     width:${Math.round(1024*scale)}px;height:${Math.round(1024*scale)}px;
     position:absolute;

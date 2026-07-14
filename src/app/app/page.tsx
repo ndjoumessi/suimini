@@ -11,9 +11,9 @@ const SuiminiApp = dynamic(() => import('@/components/SuiminiApp'), { ssr: false
 function Loader() {
   const tc = useTranslations('common');
   return (
-    <div role="status" style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '18px', background: 'var(--bg, #f4f1ea)' }}>
-      <BrandLockup size={34} color="var(--ink, #1b1b1b)" accent="var(--accent, #bf4b2c)" surface="var(--bg-card, #ffffff)" fontSize={26} />
-      <span className="spinner" aria-hidden="true" style={{ color: 'var(--accent, #bf4b2c)' }} />
+    <div role="status" style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '18px', background: 'var(--bg, #0f1a24)' }}>
+      <BrandLockup size={34} color="var(--ink, #f3ecdf)" accent="var(--accent, #c9a84c)" surface="var(--bg-card, #1e3040)" fontSize={26} />
+      <span className="spinner" aria-hidden="true" style={{ color: 'var(--accent, #c9a84c)' }} />
       <span className="sr-only">{tc('loading')}</span>
     </div>
   );

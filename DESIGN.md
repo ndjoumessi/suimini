@@ -204,7 +204,7 @@ Light mode carries the same vocabulary at lower opacity and a warm-brown tint (`
 - **Name:** kept in full-contrast ink regardless of the tinted face — an earlier colored-name variant failed the contrast bar and was reverted.
 
 ### Brand Mark
-- **Shape:** a bordered square (2.6px stroke) softened to a 6px-equivalent corner radius (`--radius-sm`), enclosing a minimal branching glyph (one parent node, two children), also lightly rounded — `src/components/Brand.tsx`. Connectors use round line caps rather than square, matching the soft-geometry rule everywhere else in the system.
+- **Shape (redesign 2026-07-14, « sceau du registre »):** the frame is now a rounded square rotated 45° into a seal/diamond — a wax-seal, hand-stamped-register read — enclosing the same one-parent/two-children glyph, whose nodes are themselves small diamonds instead of squares. `src/components/Brand.tsx` (web); `mobile/components/Brand.tsx` mirrors the exact same geometry for the mobile app, but in Canopée's own palette (never Marine Deep navy). This unifies the app icon with the landing hero's `LineageMark` (same diamond-node language, see the landing section above). Connectors are drawn first and diamonds painted on top so line ends don't need trimming to the rotated edges. Regenerated everywhere the mark appears as a static asset: `public/icon-*.{svg,png}`, `favicon.ico`, `og.{svg,png}`, `splash.svg` + the 9 device `splash-*.png` (`scripts/generate-splash.mjs`), and the mobile `icon.png`/`adaptive-icon.png`/`splash.png`/`notification-icon.png` (`mobile/app.json`) — all previously stale leftovers from the pre-BrandMark "Atelier" 🌿-emoji era that had never been touched when `BrandMark` was first introduced.
 
 ## 6. Do's and Don'ts
 

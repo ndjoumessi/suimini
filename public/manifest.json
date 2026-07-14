@@ -9,8 +9,8 @@
   "orientation": "portrait-primary",
   "lang": "fr",
   "dir": "ltr",
-  "theme_color": "#f4f1ea",
-  "background_color": "#f4f1ea",
+  "theme_color": "#0f1a24",
+  "background_color": "#0f1a24",
   "categories": ["lifestyle", "productivity", "social"],
   "icons": [
     {
