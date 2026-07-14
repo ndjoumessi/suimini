@@ -13,12 +13,16 @@ test.beforeEach(async ({ page }) => {
   await Promise.all([page.waitForURL('**/app'), demoBtn.click()]);
 });
 
-test('dashboard shows a greeting', async ({ page }) => {
-  await expect(page.locator('body')).toContainText('Bonjour');
-});
+// No "shows a greeting" test here: DashboardView's <h1> shows the active
+// tree's name whenever a tree is loaded (`hasTree` — see DashboardView.tsx),
+// and the demo flow always seeds one. The `t('greeting'…)`/`greetingGeneric`
+// copy only renders with zero trees, a state this flow never reaches — it
+// would be dead code in this test. "dashboard shows the demo tree name"
+// below already covers what actually renders here.
 
-test('dashboard stats include the 13 demo persons', async ({ page }) => {
-  await expect(page.locator('body')).toContainText('13');
+test('dashboard stats include the 19 demo persons', async ({ page }) => {
+  // sampleData.ts seeds ids p1..p19 — kept in sync if that dataset grows again.
+  await expect(page.locator('body')).toContainText('19');
 });
 
 test('dashboard shows the demo tree name', async ({ page }) => {

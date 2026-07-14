@@ -18,6 +18,11 @@ const enterDemoAndOpenTree = async (page: Page) => {
     .locator('nav[aria-label="Navigation mobile"]')
     .getByRole('button', { name: 'Arbre' })
     .click();
+  // Focus is the default tree view (TreeView.tsx) — these tests exercise the
+  // SVG-canvas-only features (.person-node count, zoom %), so switch to
+  // "Complète" explicitly before waiting on .tree-svg (it never mounts under
+  // the default Focus mode).
+  await page.getByRole('button', { name: 'Complète' }).click();
   await page.locator('.tree-svg').waitFor({ state: 'visible' });
 };
 

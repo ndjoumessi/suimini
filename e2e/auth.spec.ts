@@ -13,13 +13,13 @@ test('landing page loads with hero section', async ({ page }) => {
 
 test('auth modal opens on login click', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: /Connexion/i }).first().click();
+  await page.getByRole('button', { name: 'Se connecter' }).first().click();
   await expect(page.locator('[role="dialog"]')).toBeVisible();
 });
 
 test('auth modal closes on overlay click', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: /Connexion/i }).first().click();
+  await page.getByRole('button', { name: 'Se connecter' }).first().click();
   await expect(page.locator('[role="dialog"]')).toBeVisible();
   // ESC closes the modal
   await page.keyboard.press('Escape');

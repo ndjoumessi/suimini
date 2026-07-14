@@ -9,7 +9,10 @@ test.use({ viewport: { width: 390, height: 844 } });
 
 const VIEWS = [
   { label: 'Arbre', nav: 'Arbre' },
-  { label: 'Membres', nav: 'Membres' },
+  // BottomNav's "list" item is labelled "Personnes" (messages/fr.json
+  // nav.persons), not "Membres" — that string belongs to the sharing/members
+  // panel, a different surface.
+  { label: 'Personnes', nav: 'Personnes' },
   { label: 'Carte', nav: 'Carte' },
   { label: 'Journal', nav: 'Journal' },
 ] as const;
@@ -32,12 +35,17 @@ for (const { label, nav } of VIEWS) {
   });
 }
 
-test('navigating back to Dashboard shows the greeting', async ({ page }) => {
+test('navigating back to Dashboard shows the tree name', async ({ page }) => {
   const bottomNav = page.locator('nav[aria-label="Navigation mobile"]');
   await bottomNav.getByRole('button', { name: 'Arbre' }).click();
-  await page.locator('.tree-svg').waitFor({ state: 'visible' });
+  // Focus is the default tree view (TreeView.tsx) — `.tree-svg` only mounts
+  // once the user explicitly switches to "Complète"; wait on FocusTree's own
+  // root instead, matching what actually renders by default.
+  await page.locator('.ft-root').waitFor({ state: 'visible' });
   // Ouvrir la sidebar via le bouton Menu, puis cliquer Accueil
   await bottomNav.getByRole('button', { name: 'Ouvrir le menu' }).click();
   await page.getByRole('button', { name: 'Accueil' }).first().click();
-  await expect(page.locator('body')).toContainText('Bonjour');
+  // DashboardView shows the active tree's name once a tree is loaded (never
+  // a personal greeting in the demo flow — see dashboard.spec.ts's comment).
+  await expect(page.locator('body')).toContainText('Famille Dupont');
 });
