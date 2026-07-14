@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Mobile splash master (redesign 2026-07-14, « Canopée » palette — warm paper
+       + forest green, NEVER the web's Marine Deep navy). Same seal geometry as
+       mobile/components/Brand.tsx (scaled ×9.375 from its 32-unit grid), "Suimini"
+       wordmark (Playfair Display) + tagline (IBM Plex Mono) below. Rasterized to
+       assets/splash.png at 1024×1024 (Expo resizeMode:contain, bg #F7F5F0). Source
+       kept so the PNG can be regenerated with real fonts (see scripts note in the
+       font-fidelity commit). -->
+  <rect width="1024" height="1024" fill="#F7F5F0"/>
+
+  <g transform="translate(362 240) scale(9.375)">
+    <rect x="6.3" y="6.3" width="19.4" height="19.4" rx="4" ry="4" fill="#FFFFFF" stroke="#2F6D4F" stroke-width="2.6" transform="rotate(45 16 16)"/>
+    <g stroke="#212721" stroke-width="2" stroke-linecap="round">
+      <path d="M16 12 V18"/>
+      <path d="M10.5 18 H21.5"/>
+      <path d="M10.5 18 V21"/>
+      <path d="M21.5 18 V21"/>
+    </g>
+    <rect x="13.4" y="9.4" width="5.2" height="5.2" rx="1.3" ry="1.3" fill="#2F6D4F" stroke="#FFFFFF" stroke-width="1.4" transform="rotate(45 16 12)"/>
+    <rect x="8.2" y="18.7" width="4.6" height="4.6" rx="1.15" ry="1.15" fill="#212721" transform="rotate(45 10.5 21)"/>
+    <rect x="19.2" y="18.7" width="4.6" height="4.6" rx="1.15" ry="1.15" fill="#212721" transform="rotate(45 21.5 21)"/>
+  </g>
+
+  <!-- Wordmark "Suimini" -->
+  <text x="512" y="600" font-family="'Playfair Display', Georgia, serif"
+        font-size="92" font-weight="700" fill="#212721"
+        text-anchor="middle" letter-spacing="-1">Suimini</text>
+
+  <!-- Tagline -->
+  <text x="512" y="656" font-family="'IBM Plex Mono', 'Courier New', monospace"
+        font-size="24" font-weight="500" fill="#2F6D4F"
+        text-anchor="middle" letter-spacing="3">MÉMOIRE FAMILIALE</text>
+
+  <!-- Bottom rule -->
+  <rect x="400" y="696" width="224" height="1" fill="#212721" opacity="0.18"/>
+</svg>
