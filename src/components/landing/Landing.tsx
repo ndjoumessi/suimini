@@ -188,8 +188,8 @@ function LineageMark() {
 function Fleuron() {
   return (
     <svg className="lp-fleuron" viewBox="0 0 120 24" aria-hidden="true">
-      <path d="M0 12 H46" stroke="var(--hair-2)" strokeWidth="1" />
-      <path d="M74 12 H120" stroke="var(--hair-2)" strokeWidth="1" />
+      <path d="M0 12 H46" stroke="rgba(224,232,240,0.15)" strokeWidth="1" />
+      <path d="M74 12 H120" stroke="rgba(224,232,240,0.15)" strokeWidth="1" />
       <g transform="rotate(45 60 12)">
         <rect x="55" y="7" width="10" height="10" fill="none" stroke="#c9a84c" strokeWidth="1.1" />
       </g>
@@ -457,7 +457,7 @@ const CSS = `
      froid) au lieu de l'ancien gris-brun chaud, pour rester cohérents avec le
      nouveau canvas. Tout re-vérifié ≥4,5:1 texte/fond. */
   --sky: #141f2a; --sky-deep: #0f1a24; --sky-rise: #1e3040; --sky-card: #2a3d4f;
-  --star: #f3ecdf; --star-muted: #9aacba; --star-faint: #8fa2b1;
+  --star: #f3ecdf; --star-muted: #aebecb; --star-faint: #9db0be;
   --amber: #c9a84c; --amber-soft: #dcc06a; --amber-deep: #a98c3e;
   --ink-on-amber: #171006;
   --hair: rgba(224,232,240,0.07); --hair-2: rgba(224,232,240,0.15);
@@ -510,7 +510,7 @@ const CSS = `
 @media (max-width: 720px) { .lp-nav-link { display: none; } }
 
 /* HERO */
-.lp-hero { position: relative; min-height: 100vh; min-height: 100dvh; display: flex; align-items: center; justify-content: center; overflow: hidden; background: radial-gradient(130% 90% at 50% -10%, #362b1a 0%, var(--sky) 48%, var(--sky-deep) 100%); }
+.lp-hero { position: relative; min-height: 100vh; min-height: 100dvh; display: flex; align-items: center; justify-content: center; overflow: hidden; background: radial-gradient(130% 90% at 50% -10%, #223a52 0%, var(--sky) 48%, var(--sky-deep) 100%); }
 .lp-sky { position: absolute; inset: -6%; opacity: 0.9; }
 .lp-sky-svg { width: 100%; height: 100%; }
 /* Faint ruled-page texture behind the hero (ledger/manuscript lines) — sits
@@ -580,7 +580,7 @@ const CSS = `
 .lp-fig-note { margin: clamp(30px, 4vw, 44px) 0 0; font-family: var(--font-body); font-size: 1.02rem; color: var(--star-faint); }
 
 /* FINAL CTA */
-.lp-final { position: relative; padding: clamp(112px, 15vw, 190px) 24px clamp(96px, 12vw, 160px); text-align: center; background: radial-gradient(80% 120% at 50% 120%, #3a2f1c 0%, #2b2318 44%, var(--sky) 74%); overflow: hidden; }
+.lp-final { position: relative; padding: clamp(112px, 15vw, 190px) 24px clamp(96px, 12vw, 160px); text-align: center; background: radial-gradient(80% 120% at 50% 120%, #223a52 0%, #182734 44%, var(--sky) 74%); overflow: hidden; }
 .lp-final::before { content: ''; position: absolute; left: 50%; top: 0; width: 1px; height: clamp(80px, 12vw, 160px); transform: translateX(-50%); background: linear-gradient(transparent, rgba(201,168,76,0.4)); pointer-events: none; }
 .lp-final-body { position: relative; z-index: 1; }
 .lp-final-fine { margin: 26px 0 0; font-family: var(--font-body); font-size: 0.86rem; color: var(--star-faint); letter-spacing: 0.01em; }
