@@ -264,7 +264,7 @@ export default function StatisticsView({ tree, onSelectPerson }: Props) {
 
         /* ---- Hero — cartes chiffrées (mêmes bordures que les panneaux) ---- */
         .sv-hero { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 8px; }
-        .sv-hero-cell { background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 20px 24px; display: flex; flex-direction: column; min-width: 0; transition: box-shadow var(--t-base) var(--ease-out), transform var(--t-base) var(--ease-out); }
+        .sv-hero-cell { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 20px 24px; display: flex; flex-direction: column; min-width: 0; transition: box-shadow var(--t-base) var(--ease-out), transform var(--t-base) var(--ease-out); }
         .sv-hero-cell:hover { box-shadow: var(--shadow-accent); transform: translateY(-2px); }
         .sv-hero-icon { color: var(--accent-muted); margin-bottom: 12px; }
         .sv-hero-num { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.4rem, 5vw, 3.4rem); line-height: 0.95; color: var(--accent); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }

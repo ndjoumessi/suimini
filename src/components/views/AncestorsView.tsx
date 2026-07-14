@@ -327,7 +327,7 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
         .ex-swap { display: inline-flex; align-items: center; justify-content: center; color: var(--accent); flex-shrink: 0; height: 40px; }
 
         /* Result card */
-        .ex-result { background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 22px 20px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
+        .ex-result { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 22px 20px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
         .ex-party { display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; cursor: pointer; padding: 6px; min-width: 0; }
         .ex-party:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         .ex-party-name { font-size: 16px; font-weight: 700; color: var(--ink); margin-top: 4px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

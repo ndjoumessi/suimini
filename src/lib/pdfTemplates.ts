@@ -408,7 +408,7 @@ export function generateFamilyBookHTML(
     /* ---- Generation pages ---- */
     .gen-band { background: ${pal.bandBg}; color: ${pal.bandInk}; font-family: ${pal.display}; font-weight: 700; font-size: 14pt; letter-spacing: 2px; text-transform: uppercase; padding: 10pt 14pt; margin-bottom: 16pt; ${options.theme === 'minimal' ? `border-bottom: 2px solid ${pal.ink}; padding-left: 0; padding-right: 0;` : `border: ${pal.ficheBorder};`} }
     .fiches { display: flex; flex-direction: column; gap: 14pt; }
-    .fiche { background: ${pal.cardBg}; border: ${pal.ficheBorder}; ${pal.ficheShadow !== 'none' ? `box-shadow: ${pal.ficheShadow};` : ''} padding: 12pt 14pt; page-break-inside: avoid; border-left: 4px solid ${pal.accent}; }
+    .fiche { background: ${pal.cardBg}; border: ${pal.ficheBorder}; ${pal.ficheShadow !== 'none' ? `box-shadow: ${pal.ficheShadow};` : ''} padding: 12pt 14pt; page-break-inside: avoid; }
     .fiche-head { display: flex; gap: 12pt; align-items: flex-start; }
     .fiche-photo { width: 80px; height: 80px; flex-shrink: 0; object-fit: cover; border: ${pal.ficheBorder}; background: ${pal.bg}; }
     .fiche-main { flex: 1; min-width: 0; }
@@ -460,7 +460,7 @@ function fichePerson(
   // rule does not apply — the booklet is rendered by the browser print window.
   const photo =
     options.includePhotos && p.profilePhoto
-      ? `<img class="fiche-photo" src="${escapeHtml(p.profilePhoto)}" alt="">`
+      ? `<img class="fiche-photo" src="${escapeHtml(p.profilePhoto)}" alt="${escapeHtml(getDisplayName(p))}">`
       : '';
 
   // Birth line

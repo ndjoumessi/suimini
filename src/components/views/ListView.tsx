@@ -127,7 +127,7 @@ export default function ListView({ tree, onSelectPerson, onAddPerson, canEdit = 
           text-align: left; cursor: pointer; transition: background var(--t-fast); }
         .lv-row:hover { background: var(--interactive); }
         .lv-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-        .lv-rbar { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--bar); transition: background var(--t-fast), width var(--t-fast); }
+        .lv-rbar { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--bar); transition: background var(--t-fast); }
         .lv-row:hover .lv-rbar { background: var(--accent); }
         .lv-rname { flex: 1; min-width: 0; font-family: var(--font-body); font-size: 13px; font-weight: 700; color: var(--ink); line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .lv-rdates { font-family: var(--font-mono); font-size: 11px; color: var(--accent-text); opacity: 0.85; flex-shrink: 0; white-space: nowrap; }

@@ -931,7 +931,7 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
         .tv-presence-avatar {
           opacity: 0;
           transform: scale(0.6);
-          animation: tvPresenceIn 240ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+          animation: tvPresenceIn 240ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         @keyframes tvPresenceIn {
           to { opacity: 1; transform: scale(1); }

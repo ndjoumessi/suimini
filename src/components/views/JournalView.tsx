@@ -135,7 +135,7 @@ export default function JournalView({ tree, onSelectPerson, onAdd, onUpdate, onD
                 {editingId === entry.id ? (
                   <EntryEditor tree={tree} draft={draft} setDraft={setDraft} toggleMention={toggleMention} onSave={save} onCancel={cancel} title={t('editEntry')} />
                 ) : (
-                  <div className="card" style={{ padding: '14px 16px 14px 18px', borderLeft: '3px solid var(--accent)' }}>
+                  <div className="card" style={{ padding: '14px 18px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div className="label" style={{ color: 'var(--accent-text)', opacity: 0.8 }}>

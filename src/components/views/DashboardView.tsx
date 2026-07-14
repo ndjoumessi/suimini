@@ -368,7 +368,7 @@ export default function DashboardView({ trees, activeTree, canEdit = true, displ
 
         /* Stats */
         .dash-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-        .dash-stat { position: relative; background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
+        .dash-stat { position: relative; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
           padding: 20px 24px 20px; display: flex; flex-direction: column;
           transition: box-shadow var(--t-base) var(--ease-out), transform var(--t-base) var(--ease-out), background var(--t-base) var(--ease-out); }
         .dash-stat:hover { background: var(--interactive); box-shadow: var(--shadow-accent); transform: translateY(-2px); }

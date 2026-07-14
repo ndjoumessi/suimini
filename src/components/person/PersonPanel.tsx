@@ -724,7 +724,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
               {person.education&&<InfoBlock label={t('education')} Icon={GraduationCap}>{person.education}</InfoBlock>}
             </div>
             {person.bio&&(
-              <div style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)', borderLeft:'3px solid var(--accent)' }}>
+              <div style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)' }}>
                 <div style={{ fontSize:'11px', color:'var(--text-light)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'6px' }}>{t('biography')}</div>
                 <p style={{ margin:0, fontSize:'13px', lineHeight:'1.7' }}>{person.bio}</p>
               </div>
@@ -1034,7 +1034,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
               <div style={{ display:'flex', flexDirection:'column', gap:'10px', marginBottom:'12px' }}>
               {
                 person.citations.map(citation=>(
-                  <div key={citation.id} style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)', border:'1px solid var(--border)', borderLeft:'3px solid var(--accent)' }}>
+                  <div key={citation.id} style={{ padding:'12px', background:'var(--bg-muted)', borderRadius:'var(--radius)', border:'1px solid var(--border)' }}>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:'8px' }}>
                       <div style={{ flex:1, minWidth:0 }}>
                         <div style={{ fontWeight:'700', fontSize:'13px', lineHeight:1.4, display:'flex', alignItems:'center', gap:'5px' }}><BookOpen size={13} aria-hidden="true" /> {citation.title}</div>
