@@ -202,14 +202,22 @@ export async function acceptInvitation(token: string): Promise<{ treeId: string;
   const row = (data as Array<{ tree_id: string; tree_name: string; role: MemberRole }>)[0];
 
   // Best-effort: notify the tree owner that a member just joined. Fire-and-forget —
-  // an email failure must never break the join. Covers both accept paths (the explicit
-  // button AND the post-sign-in auto-accept) since both funnel through here.
+  // a notification failure must never break the join. Covers both accept paths (the
+  // explicit button AND the post-sign-in auto-accept) since both funnel through here.
+  // Two independent channels: email (Resend) + push (Expo), each no-op gracefully.
   fetch('/api/send-approval-email', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ treeId: row.tree_id }),
   }).catch((err: unknown) => {
-    console.warn('[sharing] Échec notification propriétaire:', err);
+    console.warn('[sharing] Échec notification email propriétaire:', err);
+  });
+  fetch('/api/push/notify-join', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ treeId: row.tree_id }),
+  }).catch((err: unknown) => {
+    console.warn('[sharing] Échec notification push propriétaire:', err);
   });
 
   return { treeId: row.tree_id, treeName: row.tree_name, role: row.role };

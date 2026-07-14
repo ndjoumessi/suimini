@@ -23,9 +23,7 @@
 // le nom complet affichable, jamais first_name seul.
 // ============================================================================
 import { createClient } from 'npm:@supabase/supabase-js@2';
-
-const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
-const EXPO_CHUNK = 100; // limite de l'API Expo par requête
+import { type ExpoPushMessage, sendExpoPush } from '../_shared/expoPush.ts';
 
 interface PersonRow {
   id: string; tree_id: string;
@@ -149,7 +147,7 @@ Deno.serve(async (req) => {
   const localeOf = (uid: string): Locale => localeByUser.get(uid) ?? 'fr';
 
   // --- 4. Messages localisés PAR DESTINATAIRE (titre + corps selon sa locale) ---
-  const messages: { to: string; title: string; body: string; sound: string; data: Record<string, string> }[] = [];
+  const messages: ExpoPushMessage[] = [];
   for (const ev of events) {
     const name = displayName(ev.person);
     const users = recipientsByTree.get(ev.person.tree_id) ?? new Set<string>();
@@ -164,22 +162,9 @@ Deno.serve(async (req) => {
   }
 
   // --- 5. Envoi Expo par paquets de 100 + purge des tokens morts ---
-  let sent = 0;
-  const dead: string[] = [];
-  for (let i = 0; i < messages.length; i += EXPO_CHUNK) {
-    const chunk = messages.slice(i, i + EXPO_CHUNK);
-    const res = await fetch(EXPO_PUSH_URL, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', accept: 'application/json' },
-      body: JSON.stringify(chunk),
-    });
-    const json = await res.json().catch(() => ({}));
-    const tickets: { status?: string; details?: { error?: string } }[] = json?.data ?? [];
-    tickets.forEach((ticket, idx) => {
-      if (ticket.status === 'ok') sent += 1;
-      else if (ticket.details?.error === 'DeviceNotRegistered') dead.push(chunk[idx].to);
-    });
-  }
+  // Cœur d'envoi mutualisé (_shared/expoPush.ts) : chunks de 100 + détection
+  // DeviceNotRegistered. Même logique qu'avant, désormais partagée.
+  const { sent, dead } = await sendExpoPush(messages);
   // push_tokens n'est PAS couverte par la règle soft-delete (persons/relationships) :
   // un token expiré est un déchet technique, on le purge réellement.
   if (dead.length) await supabase.from('push_tokens').delete().in('token', dead);
