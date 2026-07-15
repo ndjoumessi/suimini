@@ -213,10 +213,56 @@ transite PAS par `/api/data/*`). Deux conséquences :
    Supabase (ou juste R2 en écrivant l'URL R2, Supabase restant lisible pour
    l'existant). Valider que les nouvelles photos s'affichent partout (web + mobile +
    PDF + partage public).
-5. **Copie des blobs existants** Supabase → R2 (script `rclone`/S3 sync). — *user
-   (credentials Supabase Storage + R2).* Réécriture des URLs `profile_photo` = **pas
-   nécessaire** si on garde le domaine Supabase lisible ; sinon rewrite par script.
-6. **Flip** `NEXT_PUBLIC_STORAGE_BACKEND=r2` + redeploy.
+5. **Copie des blobs existants** Supabase → R2 (script `rclone`/S3 sync,
+   `scripts/copy-avatars-to-r2.sh` — **fait**, voir plus haut). Réécriture des URLs
+   `profile_photo` = **pas nécessaire** si on garde le domaine Supabase lisible ;
+   sinon rewrite par script — voir §4.7 ci-dessous (**écrit, pas encore exécuté**).
+6. **Flip** `NEXT_PUBLIC_STORAGE_BACKEND=r2` + redeploy. **(fait, 2026-07-15, voir
+   §7.)**
+
+### 4.7 Réécriture des URLs existantes (optionnelle, écrite — pas encore exécutée)
+
+Depuis le flip (§4.4 étape 6), seules les **nouvelles** photos partent vers R2 —
+les photos déjà présentes avant la copie continuent de pointer vers Supabase
+Storage (jamais vidé, toujours lisible). C'est un choix **valide et à faible
+risque** : cohabitation des deux domaines tant que Supabase Storage n'est pas
+fermé.
+
+Si on veut aussi faire pointer les photos **existantes** vers R2 (nettoyage,
+pas un prérequis), `scripts/rewrite-photo-urls-to-r2.mjs` (Node, `pg`, miroir du
+SSL de `lib/railwayDb.ts`) réécrit le préfixe d'URL Supabase→R2 dans **3 emplacements**
+identifiés par lecture directe du schéma/mappers (`railway/schema.sql`,
+`supabaseSync.ts`, `types/index.ts`) :
+- `persons.profile_photo` (colonne dédiée) ;
+- `persons.extra` (jsonb catch-all : `photos`, `photoTags[].photoUrl`,
+  `media[].url`/`.thumbnail` — tous non-canoniques, jamais de colonne dédiée) ;
+- `journal_entries.photos` (colonne jsonb dédiée).
+
+(La table Railway `photo_tags` existe dans le schéma mais n'est utilisée par
+AUCUN code applicatif actuel — recherche exhaustive dans `src/`, zéro résultat —
+donc hors périmètre ; à ajouter si elle est câblée un jour.)
+
+Remplacement de préfixe littéral (pas de parsing JSON par chemin — `extra`/
+`photos` traités comme du texte JSON sérialisé, `replace()` côté Postgres), sûr
+car l'URL ne contient aucun caractère d'échappement JSON. `updated_at` **jamais
+touché** (réécriture technique, pas une vraie édition — ne fausse pas le tri
+« Dernières modifications »).
+
+```bash
+RAILWAY_DATABASE_URL=postgres://... \
+OLD_URL_PREFIX='https://bhthavcnlxflhhevdneo.supabase.co/storage/v1/object/public/avatars/' \
+NEW_URL_PREFIX='https://pub-294a3e5b78874be9a57f9627498a4c81.r2.dev/' \
+node scripts/rewrite-photo-urls-to-r2.mjs           # DRY_RUN=1 par défaut
+
+DRY_RUN=0 node scripts/rewrite-photo-urls-to-r2.mjs # écriture réelle (transaction)
+```
+
+Réversible : relancer avec `OLD_URL_PREFIX`/`NEW_URL_PREFIX` inversés (tant que
+Supabase Storage reste lisible). Testé : garde-fous `requireEnv` (échec propre si
+variable manquante), échec de connexion géré proprement (pas de crash brut) — pas
+testable de bout en bout sans Postgres réel dans ce sandbox (aucun `psql`/`initdb`
+disponible ici, contrairement au Mac du user). **Pas encore exécuté contre
+Railway** — décision du user.
 
 ### 4.5 « Definition of ready » — Storage (avant flip)
 
