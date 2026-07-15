@@ -13,6 +13,7 @@ import { ViewMode, Person, FamilyTree, PhotoTag } from '@/types';
 import { generateId, getDisplayName } from '@/lib/treeUtils';
 import { useConflicts, removeConflict, Conflict } from '@/lib/conflictQueue';
 import { isSelfEcho } from '@/lib/realtimeEcho';
+import { isRailwayRealtimeEnabled, connectTreeRelay } from '@/lib/realtimeRelay';
 import Sidebar from './layout/Sidebar';
 import ContentHeader from './layout/ContentHeader';
 import BottomNav from './BottomNav';
@@ -363,6 +364,45 @@ export default function SuiminiApp() {
         if (status === 'SUBSCRIBED') channel.track({ user: user.email || user.id, at: Date.now() });
       });
     return () => { sb.removeChannel(channel); setPresenceCount(1); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store.cloud, activeTreeId, user]);
+
+  // Temps réel Railway (ADDITIF, derrière NEXT_PUBLIC_REALTIME_BACKEND=railway).
+  // Le canal Supabase ci-dessus écoute des tables qui ne bougent plus depuis
+  // DB_BACKEND=railway (voir CLAUDE.md) → il ne relaie plus JAMAIS une vraie
+  // écriture d'un autre appareil. Ce relais WebSocket branché sur le LISTEN/NOTIFY
+  // de Railway (scripts/realtime-relay/, trigger railway/realtime-notify.sql)
+  // rétablit la mise à jour live pendant que deux appareils sont ouverts en même
+  // temps. Flag absent → cet effet ne fait RIEN (le canal Supabase, la présence et
+  // le resync-au-retour-de-focus restent inchangés). Voir docs/railway-realtime-plan.md.
+  useEffect(() => {
+    if (!store.cloud || !supabase || !activeTreeId || !user) return;
+    if (!isRailwayRealtimeEnabled()) return;
+    const sb = supabase;
+    const relayUrl = process.env.NEXT_PUBLIC_REALTIME_URL as string;
+    // Filet anti-écho identique au canal Supabase : on ignore le signal issu de
+    // NOTRE propre écriture récente (le relais ne porte pas la signature de ligne,
+    // on retombe sur la fenêtre temporelle — reloadTreeFromCloud reste idempotent).
+    const SELF_WRITE_WINDOW_MS = 6000;
+    const handle = connectTreeRelay({
+      url: relayUrl,
+      treeId: activeTreeId,
+      getToken: async () => {
+        const { data: { session } } = await sb.auth.getSession();
+        return session?.access_token ?? null;
+      },
+      onChange: () => {
+        if (loginGraceRef.current) return;                                      // rafale au login
+        if (Date.now() - store.lastLocalWriteRef.current < SELF_WRITE_WINDOW_MS) return; // notre propre écriture
+        store.reloadTreeFromCloud(activeTreeId);
+        const now = Date.now();
+        if (now - collabToastAtRef.current >= COLLAB_TOAST_WINDOW_MS) {
+          collabToastAtRef.current = now;
+          showToast(tToastRef.current('collaboratorEdited'), 'info');
+        }
+      },
+    });
+    return () => handle.close();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store.cloud, activeTreeId, user]);
 
