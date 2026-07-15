@@ -89,6 +89,7 @@ export default function LoginScreen() {
             placeholder={t('auth.emailPlaceholder')}
             autoCapitalize="none"
             autoComplete="email"
+            textContentType="username"
             keyboardType="email-address"
           />
           {!magic ? (
@@ -99,6 +100,12 @@ export default function LoginScreen() {
               placeholder="••••••••"
               secureTextEntry
               autoCapitalize="none"
+              // Sans ces deux hints, l'OS ne propose pas d'enregistrer le mot
+              // de passe après une connexion réussie (rien à voir avec le
+              // stockage app — c'est le gestionnaire natif, Keychain/Autofill
+              // iOS ou Autofill Android, qui gère la sauvegarde/suggestion).
+              autoComplete="current-password"
+              textContentType="password"
             />
           ) : null}
 

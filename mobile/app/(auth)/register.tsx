@@ -94,6 +94,8 @@ export default function RegisterScreen() {
               onChangeText={setName}
               placeholder={t('auth.register.displayNamePlaceholder')}
               autoCapitalize="words"
+              autoComplete="name"
+              textContentType="name"
             />
             <Input
               label={t('auth.email')}
@@ -103,6 +105,7 @@ export default function RegisterScreen() {
               autoCapitalize="none"
               keyboardType="email-address"
               autoComplete="email"
+              textContentType="username"
             />
             <Input
               label={t('auth.password')}
@@ -111,6 +114,11 @@ export default function RegisterScreen() {
               placeholder={t('auth.register.passwordHint')}
               secureTextEntry
               autoCapitalize="none"
+              // "new-password"/"newPassword" (distinct de login.tsx) : signale à
+              // l'OS qu'il s'agit d'un NOUVEAU mot de passe à proposer/générer et
+              // à enregistrer, pas de compléter un mot de passe existant.
+              autoComplete="new-password"
+              textContentType="newPassword"
             />
             {error ? (
               <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>
