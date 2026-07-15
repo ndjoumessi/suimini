@@ -194,3 +194,51 @@ create index if not exists person_suggestions_lookup_idx on person_suggestions(t
 create index if not exists scanned_documents_lookup_idx  on scanned_documents(tree_id, person_id, created_at);
 create index if not exists photo_tags_tree_id_idx        on photo_tags(tree_id);
 create index if not exists photo_tags_person_id_idx      on photo_tags(person_id);
+
+-- ---------------------------------------------------------------------------
+-- Temps réel : trigger LISTEN/NOTIFY (canal 'tree_changes')
+-- ---------------------------------------------------------------------------
+-- Réplique de railway/realtime-notify.sql (gardé aussi en script autonome pour
+-- un rejeu ciblé). Émet un pg_notify compact à chaque écriture de contenu
+-- d'arbre ; consommé par le service relais (scripts/realtime-relay/) qui le
+-- rediffuse aux clients via WebSocket. Voir docs/railway-realtime-plan.md.
+-- ⚠️ Le relais DOIT écouter sur une connexion DIRECTE (unpooled) — LISTEN/NOTIFY
+-- ne passe pas PgBouncer transaction-mode.
+create or replace function notify_tree_change() returns trigger as $$
+declare
+  v_tree_id text;
+begin
+  if (tg_op = 'DELETE') then
+    v_tree_id := old.tree_id;
+  else
+    v_tree_id := new.tree_id;
+  end if;
+  if v_tree_id is not null then
+    perform pg_notify(
+      'tree_changes',
+      json_build_object('t', v_tree_id, 'tbl', tg_table_name, 'op', tg_op)::text
+    );
+  end if;
+  return null;
+end;
+$$ language plpgsql;
+
+drop trigger if exists trg_notify_change on persons;
+create trigger trg_notify_change
+  after insert or update or delete on persons
+  for each row execute function notify_tree_change();
+
+drop trigger if exists trg_notify_change on relationships;
+create trigger trg_notify_change
+  after insert or update or delete on relationships
+  for each row execute function notify_tree_change();
+
+drop trigger if exists trg_notify_change on journal_entries;
+create trigger trg_notify_change
+  after insert or update or delete on journal_entries
+  for each row execute function notify_tree_change();
+
+drop trigger if exists trg_notify_change on tree_members;
+create trigger trg_notify_change
+  after insert or update or delete on tree_members
+  for each row execute function notify_tree_change();
