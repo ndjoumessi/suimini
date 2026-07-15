@@ -31,18 +31,35 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('tree renders sample nodes', async ({ page }) => {
-  // Le layout vertical affiche 17 des 19 personnes de l'arbre démo enrichi
-  // (5 générations) selon generationsToShow par défaut.
-  await expect(page.locator('.person-node')).toHaveCount(17);
+  // ⚠️ Ce compte N'EST PAS "17 des 19 personnes" (ancien commentaire, jamais
+  // revérifié après l'ajout de la virtualisation par viewport — voir
+  // TreeView.tsx "Virtualisation par viewport" : seuls les .person-node
+  // intersectant le viewport ±200px sont MONTÉS dans le DOM, donc ce compte
+  // dépend de la taille du viewport (390×844 ici), pas juste du nombre de
+  // personnes. 16 est la valeur réelle observée deux fois de suite en CI
+  // (runs #286 et #288, même viewport) — mais reste fragile par nature : si
+  // ça recasse après un changement de layout/données, revérifier en CI
+  // (Chromium indisponible en local — voir CLAUDE.md) plutôt que de deviner
+  // un nouveau chiffre.
+  await expect(page.locator('.person-node')).toHaveCount(16);
 });
 
 test('clicking a node opens PersonPanel', async ({ page }) => {
-  await page.locator('.person-node').first().click();
+  // Activation clavier (focus + Entrée) plutôt que .click() : évite toute
+  // dépendance à la géométrie/au hit-testing du canvas SVG virtualisé
+  // (superposition de connecteurs, pointer-events des nœuds hors focus,
+  // animation d'entrée) — handleNodeClick est déclenché de façon identique
+  // par les deux voies (TreeView.tsx, onKeyDown Enter/Espace).
+  const node = page.locator('.person-node').first();
+  await node.focus();
+  await node.press('Enter');
   await expect(page.locator('[data-testid="person-panel"]')).toBeVisible();
 });
 
 test('PersonPanel closes on the Fermer button', async ({ page }) => {
-  await page.locator('.person-node').first().click();
+  const node = page.locator('.person-node').first();
+  await node.focus();
+  await node.press('Enter');
   await expect(page.locator('[data-testid="person-panel"]')).toBeVisible();
   await page.getByRole('button', { name: 'Fermer le panneau' }).click();
   await expect(page.locator('[data-testid="person-panel"]')).not.toBeVisible();
@@ -61,11 +78,19 @@ test('zoom reset returns to 100%', async ({ page }) => {
 });
 
 test('dark mode toggle sets data-theme="dark"', async ({ page }) => {
-  // Ouvrir la sidebar via le bouton Menu du BottomNav
+  // Le sélecteur de thème n'est plus un bouton unique dans la sidebar (« Activer
+  // le mode sombre » n'existe plus) : depuis le redesign « Veillée » (light/dark/
+  // system réel — voir CLAUDE.md), c'est un groupe Clair/Sombre/Système dans
+  // Réglages (SettingsView.tsx, set-mode-btn). On force d'abord le mode clair
+  // pour que le test soit valable même si "dark" est déjà actif par défaut
+  // (sinon cliquer "Sombre" sur un thème déjà sombre ne prouverait rien).
   await page
     .locator('nav[aria-label="Navigation mobile"]')
     .getByRole('button', { name: 'Ouvrir le menu' })
     .click();
-  await page.getByRole('button', { name: 'Activer le mode sombre' }).click();
+  await page.getByRole('button', { name: 'Paramètres' }).click();
+  await page.getByRole('button', { name: 'Clair' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await page.getByRole('button', { name: 'Sombre' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 });
