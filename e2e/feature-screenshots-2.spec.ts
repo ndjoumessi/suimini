@@ -20,7 +20,9 @@ test('shot: export PDF modal + generated booklet', async ({ page, context }) => 
   const demoBtn = page.getByRole('button', { name: /Essayer la démo/i }).first();
   await expect(demoBtn).toBeVisible();
   await Promise.all([page.waitForURL('**/app'), demoBtn.click()]);
-  await expect(page.getByRole('heading', { name: /Bonjour/i })).toBeVisible({ timeout: 15_000 });
+  // Same fix as dashboard-screenshot.spec.ts / feature-screenshots.spec.ts:
+  // the demo tree always exists, so the <h1> shows its name, never "Bonjour".
+  await expect(page.getByRole('heading', { name: 'Famille Dupont' })).toBeVisible({ timeout: 15_000 });
 
   // Open the export modal via the sidebar "Exporter le livret" button.
   const exportBtn = page.getByRole('button', { name: /Exporter le livret/i }).first();

@@ -44,7 +44,10 @@ test('shot: mobile TreeView 390px with bottom nav', async ({ page }) => {
   const demoBtn = page.getByRole('button', { name: /Essayer la démo/i }).first();
   await expect(demoBtn).toBeVisible();
   await Promise.all([page.waitForURL('**/app'), demoBtn.click()]);
-  await expect(page.getByRole('heading', { name: /Bonjour/i })).toBeVisible({ timeout: 15_000 });
+  // DashboardView.tsx shows the ACTIVE TREE NAME as soon as a tree exists
+  // (hasTree) — "Bonjour" is only the zero-tree fallback, never true in demo
+  // (the seeded tree is always "Famille Dupont"). See dashboard-screenshot.spec.ts.
+  await expect(page.getByRole('heading', { name: 'Famille Dupont' })).toBeVisible({ timeout: 15_000 });
 
   // Switch to the tree view via the bottom nav (TreePine / "Arbre").
   const treeNav = page.getByRole('button', { name: /^Arbre$/i }).last();
