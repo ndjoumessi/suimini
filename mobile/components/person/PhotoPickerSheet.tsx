@@ -1,7 +1,7 @@
 /**
- * Bottom-sheet avatar picker (mobile). Two sources — camera / gallery — both
- * with square editing (`aspect [1,1]`, `quality 1`); compression happens after,
- * in `uploadAvatarMobile`. Permissions are requested on first use and refusal is
+ * Bottom-sheet avatar picker (mobile). Two sources — camera / gallery — sans
+ * étape d'édition OS forcée (voir plus bas) ; compression happens after, in
+ * `uploadAvatarMobile`. Permissions are requested on first use and refusal is
  * handled gracefully (Alert). While the picked photo is compressed + uploaded an
  * ActivityIndicator shows; on success the before→after size is surfaced.
  *
@@ -93,9 +93,16 @@ export function PhotoPickerSheet({
     const allowed = await ensurePermission(source);
     if (!allowed) return;
 
+    // ⚠️ Pas de `allowsEditing`/`aspect` : sur Android, l'écran système de
+    // recadrage déclenché par ces options a été signalé comme bloquant (le
+    // bouton "Redimensionner"/validation ne confirme pas la sélection pour
+    // certains users/appareils) — symptôme identique à un bug connu de
+    // `expo-image-picker` avec l'UI de crop native Android. On saute donc
+    // l'édition OS (comme le flux web, qui n'impose pas non plus de crop
+    // système) : la photo brute part directement en compression/upload,
+    // et `Avatar.tsx` l'affiche déjà en `resizeMode="cover"` (recadrage
+    // visuel à l'affichage, quel que soit le ratio source).
     const options: ImagePicker.ImagePickerOptions = {
-      allowsEditing: true,
-      aspect: [1, 1],
       quality: 1, // compression happens in uploadAvatarMobile
     };
 
