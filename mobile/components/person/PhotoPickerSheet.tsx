@@ -3,7 +3,9 @@
  * étape d'édition OS forcée (voir plus bas) ; compression happens after, in
  * `uploadAvatarMobile`. Permissions are requested on first use and refusal is
  * handled gracefully (Alert). While the picked photo is compressed + uploaded an
- * ActivityIndicator shows; on success the before→after size is surfaced.
+ * ActivityIndicator shows; on success the sheet dismisses immediately (pas
+ * d'écran intermédiaire affichant la taille avant/après compression — non
+ * actionnable pour l'utilisateur, ça ne faisait qu'ajouter un tap).
  *
  * Style Canopée : sheet arrondie (radius.xl) + poignée, scrim du thème,
  * boutons-source en cartes arrondies avec disque tonal. Tout le texte passe
@@ -25,7 +27,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Camera, Images, X } from 'lucide-react-native';
 import { fonts, fontSize, spacing, radius, shadows, borderWidth } from '@/lib/theme';
 import { useTheme } from '@/hooks/useTheme';
-import { currentLanguage } from '@/lib/i18n';
 import { uploadAvatarMobile } from '@/lib/uploadImage';
 
 interface PhotoPickerSheetProps {
@@ -38,16 +39,6 @@ interface PhotoPickerSheetProps {
    * upload succeeded, otherwise the local `file://` uri (demo / offline).
    */
   onResult: (uri: string) => void;
-}
-
-/** Humanized byte size, localized units + decimal separator (fr: "2,3 Mo"). */
-function humanBytes(n: number): string {
-  const fr = currentLanguage() === 'fr';
-  const [mb, kb, b] = fr ? ['Mo', 'Ko', 'o'] : ['MB', 'KB', 'B'];
-  const fmt = (v: number) => (fr ? v.toFixed(1).replace('.', ',') : v.toFixed(1));
-  if (n >= 1024 * 1024) return `${fmt(n / (1024 * 1024))} ${mb}`;
-  if (n >= 1024) return `${Math.round(n / 1024)} ${kb}`;
-  return `${n} ${b}`;
 }
 
 type Source = 'camera' | 'gallery';
@@ -63,11 +54,9 @@ export function PhotoPickerSheet({
   const insets = useSafeAreaInsets();
 
   const [busy, setBusy] = useState(false);
-  const [sizeText, setSizeText] = useState<string | null>(null);
 
   const close = () => {
     setBusy(false);
-    setSizeText(null);
     onClose();
   };
 
@@ -121,7 +110,6 @@ export function PhotoPickerSheet({
     const localUri = result.assets[0].uri;
 
     setBusy(true);
-    setSizeText(null);
     let out;
     try {
       out = await uploadAvatarMobile(localUri, personId);
@@ -134,25 +122,17 @@ export function PhotoPickerSheet({
     // (demo mode, or an upload failure — the photo still shows locally).
     onResult(out?.url ?? localUri);
 
-    if (out?.beforeBytes && out?.afterBytes && out.beforeBytes !== out.afterBytes) {
-      setSizeText(`${humanBytes(out.beforeBytes)} → ${humanBytes(out.afterBytes)}`);
-    } else {
-      setSizeText(null);
-    }
-
     if (out?.error) {
       Alert.alert(t('photo.uploadErrorTitle'), t('photo.uploadErrorBody'));
       close();
       return;
     }
 
-    // Uploaded (or demo). If we have a size line to show, keep the sheet open on
-    // a success state; otherwise dismiss immediately.
-    if (out?.beforeBytes && out?.afterBytes && out.beforeBytes !== out.afterBytes) {
-      // keep open — user taps Done
-    } else {
-      close();
-    }
+    // Uploaded (or demo). Dismiss immediately — the before→after compression
+    // size used to be surfaced on an extra "Terminé" confirmation screen, but
+    // that info isn't actionable for the user and just adds a tap before the
+    // photo shows up on the profile.
+    close();
   };
 
   return (
@@ -189,25 +169,6 @@ export function PhotoPickerSheet({
               <Text style={[styles.status, { color: colors.textMuted }]}>
                 {t('photo.uploading')}
               </Text>
-            </View>
-          ) : sizeText ? (
-            <View style={styles.center}>
-              <Text style={[styles.doneLabel, { color: colors.success }]}>
-                {t('photo.done')}
-              </Text>
-              <Text style={[styles.sizeText, { color: colors.textMuted }]}>
-                {t('photo.compressed', { sizes: sizeText })}
-              </Text>
-              <TouchableOpacity
-                onPress={close}
-                accessibilityRole="button"
-                accessibilityLabel={t('common.done')}
-                style={[styles.doneBtn, { backgroundColor: colors.accent }]}
-              >
-                <Text style={[styles.doneBtnText, { color: colors.onAccent }]}>
-                  {t('common.done')}
-                </Text>
-              </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.options}>
@@ -301,15 +262,4 @@ const styles = StyleSheet.create({
   sourceLabel: { fontFamily: fonts.bodyBold, fontSize: fontSize.base },
   center: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md },
   status: { fontFamily: fonts.body, fontSize: fontSize.sm },
-  doneLabel: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm, letterSpacing: 0.4 },
-  sizeText: { fontFamily: fonts.mono, fontSize: fontSize.sm, letterSpacing: 0.3 },
-  doneBtn: {
-    borderRadius: radius.full,
-    paddingVertical: spacing.smd,
-    paddingHorizontal: spacing.xl,
-    marginTop: spacing.xs,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  doneBtnText: { fontFamily: fonts.bodyBold, fontSize: fontSize.base },
 });

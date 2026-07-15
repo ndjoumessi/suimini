@@ -236,8 +236,6 @@ export const en: Resources = {
     addPhoto: 'Add a photo',
     changePhoto: 'Change photo',
     uploading: 'Uploading…',
-    done: 'Photo updated',
-    compressed: 'Compressed: {{sizes}}',
     permDeniedTitle: 'Permission denied',
     permCameraBody: 'Allow camera access in settings to take a photo.',
     permLibraryBody: 'Allow photo access in settings to choose one.',

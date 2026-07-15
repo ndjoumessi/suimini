@@ -235,8 +235,6 @@ export const fr = {
     addPhoto: 'Ajouter une photo',
     changePhoto: 'Changer la photo',
     uploading: 'Envoi en cours…',
-    done: 'Photo mise à jour',
-    compressed: 'Compressée : {{sizes}}',
     permDeniedTitle: 'Autorisation refusée',
     permCameraBody: "Autorisez l'accès à l'appareil photo dans les réglages pour prendre une photo.",
     permLibraryBody: "Autorisez l'accès aux photos dans les réglages pour en choisir une.",

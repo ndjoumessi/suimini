@@ -1,10 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { View } from 'react-native';
+import { AppState, View } from 'react-native';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/lib/i18n';
 import { useAppFonts, useTheme } from '@/hooks/useTheme';
@@ -25,6 +25,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const refreshFromRemote = useStore((s) => s.refreshFromRemote);
   const seedDemo = useStore((s) => s.seedDemo);
+  const lastForegroundRefreshRef = useRef(0);
 
   useEffect(() => {
     seedDemo();
@@ -47,6 +48,27 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     return () => {
       active = false;
     };
+  }, [isDemo, session?.access_token, refreshFromRemote]);
+
+  // Resync au retour au premier plan (équivalent mobile du garde-fou
+  // "visibilitychange" du store web — voir useFamilyStore.ts). Le canal
+  // Realtime web n'existe pas côté mobile et, de toute façon, écoute des
+  // tables SUPABASE qui ne bougent plus depuis le passage à 100%
+  // `DB_BACKEND=railway` (les écritures d'un autre appareil — ex. l'app web,
+  // ou ce même compte sur un autre téléphone — n'étaient donc JAMAIS
+  // rattrapées avant un relancement complet de l'app). Seuil anti-rafale de
+  // 10s (aligné sur STALE_MS côté web) pour ne pas re-fetcher à chaque
+  // micro va-et-vient d'AppState.
+  useEffect(() => {
+    if (isDemo || !session?.access_token) return;
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') return;
+      const now = Date.now();
+      if (now - lastForegroundRefreshRef.current < 10_000) return;
+      lastForegroundRefreshRef.current = now;
+      refreshFromRemote();
+    });
+    return () => sub.remove();
   }, [isDemo, session?.access_token, refreshFromRemote]);
 
   useEffect(() => {
