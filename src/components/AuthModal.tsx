@@ -28,7 +28,10 @@ export default function AuthModal({ onClose, initialTab = 'login' }: Props) {
   const [confirm, setConfirm] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [organization, setOrganization] = useState('');
-  const [remember, setRemember] = useState(true);
+  // Décochée par défaut (pas pré-cochée avant toute saisie) — cohérent avec
+  // mobile/app/(auth)/login.tsx. Reste sans effet sur la durée de session
+  // Supabase (voir signIn ci-dessous) — cosmétique des deux côtés pour l'instant.
+  const [remember, setRemember] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);

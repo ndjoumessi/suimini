@@ -37,8 +37,10 @@ export default function LoginScreen() {
   // de session Supabase (`signIn` ne prend pas ce paramètre ; la persistance
   // est toujours celle configurée sur le client). Une vraie option
   // « session courte » nécessiterait un stockage de session commutable, pas
-  // encore présent côté web non plus.
-  const [remember, setRemember] = useState(true);
+  // encore présent côté web non plus. Décochée par défaut (pas pré-cochée
+  // avant même d'avoir saisi quoi que ce soit) — l'utilisateur l'active
+  // explicitement s'il le souhaite.
+  const [remember, setRemember] = useState(false);
 
   const onSubmit = async () => {
     setError(null);
