@@ -27,8 +27,17 @@ const IMPORT_DISMISSED_KEY = 'suimini_import_dismissed';
 const CACHE_META_KEY = 'suimini_cache_meta';
 const STORE_VERSION = 3;
 // A cloud refetch is forced when the tab regains focus and the cache is older than
-// this (Supabase always wins).
-const STALE_MS = 5 * 60 * 1000;
+// this (Railway/Supabase always wins).
+// ⚠️ Volontairement COURT (pas 5 min) : le canal Realtime de SuiminiApp.tsx
+// (`postgres_changes` sur `persons`/`relationships`) écoute les tables SUPABASE —
+// or depuis le passage à 100% `DB_BACKEND=railway` (voir CLAUDE.md « Backend
+// données — Railway »), TOUTES les écritures atterrissent dans Railway, jamais
+// dans Supabase. Ce canal ne se déclenche donc plus JAMAIS pour un vrai changement
+// de données (symptôme observé : « obligé de faire un refresh manuel pour voir la
+// photo mise à jour depuis un autre appareil »). Ce pull-au-retour-de-focus est
+// désormais le SEUL mécanisme qui rattrape les écritures d'un autre
+// appareil/session — le seuil est donc réduit à quasi-immédiat plutôt que 5 min.
+const STALE_MS = 10 * 1000;
 
 function readCacheVersion(): number | null {
   if (typeof window === 'undefined') return null;
@@ -738,7 +747,7 @@ export function useFamilyStore(user: StoreUser | null = null, authReady = true) 
       if (syncErrorKindRef.current === 'save') return; // unsynced edit pending — don't pull
       const last = lastSyncRef.current;
       if (last != null && Date.now() - last > STALE_MS) {
-        console.info('[store] Cache périmé (>5 min) → resync au retour de focus.');
+        console.info('[store] Cache périmé → resync au retour de focus (canal Realtime inopérant depuis le passage à Railway).');
         resync();
       }
     };
