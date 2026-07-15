@@ -24,8 +24,11 @@ test('shot: export PDF modal + generated booklet', async ({ page, context }) => 
   // the demo tree always exists, so the <h1> shows its name, never "Bonjour".
   await expect(page.getByRole('heading', { name: 'Famille Dupont' })).toBeVisible({ timeout: 15_000 });
 
-  // Open the export modal via the sidebar "Exporter le livret" button.
-  const exportBtn = page.getByRole('button', { name: /Exporter le livret/i }).first();
+  // Open the export modal via the sidebar export chip. Its accessible name is
+  // the short "Exporter" (Sidebar.tsx, aria-label={ts('export')} → sidebar.export
+  // in messages/fr.json) — "Exporter le livret" is the MODAL's own copy (pdf.export),
+  // a different i18n key entirely, not what the sidebar button says.
+  const exportBtn = page.getByRole('button', { name: 'Exporter' }).first();
   await expect(exportBtn).toBeVisible({ timeout: 8_000 });
   await exportBtn.click();
   await page.waitForTimeout(600); // modal open transition
