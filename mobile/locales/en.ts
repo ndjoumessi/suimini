@@ -30,6 +30,7 @@ export const en: Resources = {
     magicSent: 'Sign-in link sent. Check your emails.',
     usePassword: 'Use a password',
     useMagic: 'Get a magic link',
+    rememberMe: 'Stay signed in',
     continueDemo: 'Continue in demo',
     demoHint: 'Supabase not configured — demo mode (Dupont family tree).',
     noAccount: 'No account yet?',

@@ -11,10 +11,11 @@ import {
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Check } from 'lucide-react-native';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { BrandMark } from '@/components/Brand';
-import { fonts, fontSize, spacing, shadows } from '@/lib/theme';
+import { fonts, fontSize, spacing, radius, borderWidth, shadows } from '@/lib/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -31,6 +32,13 @@ export default function LoginScreen() {
   const [magic, setMagic] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Miroir de AuthModal.tsx (web) : la case existe des deux côtés pour la
+  // parité visuelle, mais reste — comme sur le web — sans effet sur la durée
+  // de session Supabase (`signIn` ne prend pas ce paramètre ; la persistance
+  // est toujours celle configurée sur le client). Une vraie option
+  // « session courte » nécessiterait un stockage de session commutable, pas
+  // encore présent côté web non plus.
+  const [remember, setRemember] = useState(true);
 
   const onSubmit = async () => {
     setError(null);
@@ -109,6 +117,32 @@ export default function LoginScreen() {
             />
           ) : null}
 
+          {!magic ? (
+            <TouchableOpacity
+              onPress={() => setRemember((r) => !r)}
+              style={styles.rememberRow}
+              hitSlop={8}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: remember }}
+              accessibilityLabel={t('auth.rememberMe')}
+            >
+              <View
+                style={[
+                  styles.checkbox,
+                  {
+                    borderColor: remember ? colors.accent : colors.border,
+                    backgroundColor: remember ? colors.accent : colors.bgCard,
+                  },
+                ]}
+              >
+                {remember ? <Check size={13} color={colors.onAccent} strokeWidth={3} /> : null}
+              </View>
+              <Text style={[styles.rememberText, { color: colors.textMuted }]}>
+                {t('auth.rememberMe')}
+              </Text>
+            </TouchableOpacity>
+          ) : null}
+
           {error ? (
             <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>
           ) : null}
@@ -172,6 +206,22 @@ const styles = StyleSheet.create({
   wordmark: { fontFamily: fonts.display, fontSize: fontSize.xxl, marginTop: spacing.xs },
   tagline: { fontFamily: fonts.body, fontSize: fontSize.base, textAlign: 'center' },
   form: { gap: spacing.md },
+  rememberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minHeight: 32,
+    marginTop: -spacing.xs,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: radius.sm,
+    borderWidth: borderWidth + 0.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rememberText: { fontFamily: fonts.body, fontSize: fontSize.sm },
   error: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm },
   notice: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm },
   switch: { alignItems: 'center', paddingVertical: spacing.sm, minHeight: 40, justifyContent: 'center' },

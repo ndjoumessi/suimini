@@ -28,6 +28,7 @@ export const fr = {
     magicSent: 'Lien de connexion envoyé. Vérifiez vos emails.',
     usePassword: 'Utiliser un mot de passe',
     useMagic: 'Recevoir un lien magique',
+    rememberMe: 'Rester connecté',
     continueDemo: 'Continuer en démo',
     demoHint: 'Supabase non configuré — mode démo (arbre Famille Dupont).',
     noAccount: 'Pas encore de compte ?',
