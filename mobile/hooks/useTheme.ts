@@ -36,7 +36,18 @@ interface ThemeStore {
 const useThemeStore = create<ThemeStore>()(
   persist(
     (set) => ({
-      preference: 'system',
+      // Défaut FIXE (pas 'system') — miroir du web (`useDarkMode.ts`, qui
+      // démarre toujours sur 'dark'/Veillée quel que soit l'OS) : la première
+      // impression est celle de la marque, pas celle du thème système du
+      // téléphone. Symptôme observé sans ce défaut fixe : web et mobile
+      // affichaient des apparences différentes par défaut alors que web
+      // ignore délibérément le thème système tant que l'utilisateur ne
+      // choisit pas explicitement "Système" dans les réglages — mobile
+      // suivait l'OS dès l'installation, mobile suivait donc parfois l'OS et
+      // web jamais. 'light' (pas 'dark') car « Canopée » est la palette JOUR
+      // (sœur diurne de la « Veillée » nocturne du web) — cohérent avec sa
+      // propre identité de marque, comme web reste sur sa nuit "Veillée".
+      preference: 'light',
       setPreference: (preference) => set({ preference }),
     }),
     { name: 'suimini-theme-pref', storage: createJSONStorage(() => themeStorage) },
