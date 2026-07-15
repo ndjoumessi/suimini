@@ -108,8 +108,8 @@ export const fr = {
     demoMode: 'Mode démo',
     notConnected: 'Non connecté',
     localData: 'Données locales (arbre Famille Dupont).',
-    connected: 'Connecté via Supabase.',
-    supabaseMissing: 'Supabase non configuré.',
+    connected: 'Compte synchronisé.',
+    supabaseMissing: 'Connexion non configurée.',
     appearance: 'Apparence',
     system: 'Système',
     light: 'Clair',
@@ -242,6 +242,12 @@ export const fr = {
     pickErrorBody: "La photo n'a pas pu être ouverte. Réessayez.",
     uploadErrorTitle: 'Envoi impossible',
     uploadErrorBody: "La photo a été appliquée localement mais pas sauvegardée en ligne. Réessayez.",
+    adjustTitle: 'Ajuster',
+    adjustInstruction: 'Glissez la photo pour la recentrer.',
+    adjustConfirm: 'Valider',
+    adjustLabel: 'Recentrer la photo',
+    adjustValue: 'Position {{x}}%, {{y}}%',
+    recenterReset: 'Recentrer',
   },
 };
 

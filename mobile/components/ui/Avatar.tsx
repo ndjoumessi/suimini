@@ -1,4 +1,5 @@
-import { View, Text, Image, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { fonts, borderWidth } from '@/lib/theme';
 import { useTheme } from '@/hooks/useTheme';
 import type { Person } from '@/lib/types';
@@ -33,11 +34,18 @@ export function Avatar({ person, size = 48, ring = true }: AvatarProps) {
   };
 
   if (isRaster) {
+    // Cadrage (recentrage) choisi lors de l'ajout/changement de la photo — voir
+    // PhotoAdjustControl. `expo-image` (contrairement au <Image> RN de base) sait
+    // faire un vrai `contentPosition` en %, équivalent de l'`object-position` CSS
+    // utilisé côté web (PersonAvatar.tsx) : même modèle {x,y} 0–100, 50/50 = centré.
+    const pos = person.profilePhotoPosition;
     return (
       <Image
         source={{ uri: person.profilePhoto }}
+        alt="" // décoratif : le nom de la personne est toujours affiché à côté (même patron que PersonAvatar.tsx web)
         style={[styles.base, box]}
-        resizeMode="cover"
+        contentFit="cover"
+        contentPosition={pos ? { left: `${pos.x}%`, top: `${pos.y}%` } : 'center'}
       />
     );
   }

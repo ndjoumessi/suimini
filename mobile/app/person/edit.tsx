@@ -70,6 +70,7 @@ export default function PersonEditScreen() {
   const [birthCity, setBirthCity] = useState(existing?.birthPlace?.city ?? '');
   const [bio, setBio] = useState(existing?.bio ?? '');
   const [profilePhoto, setProfilePhoto] = useState(existing?.profilePhoto ?? '');
+  const [profilePhotoPosition, setProfilePhotoPosition] = useState(existing?.profilePhotoPosition);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,6 +86,7 @@ export default function PersonEditScreen() {
     gender,
     isAlive: !deathDate.trim(),
     profilePhoto: profilePhoto || undefined,
+    profilePhotoPosition,
     createdAt: existing?.createdAt ?? '',
     updatedAt: existing?.updatedAt ?? '',
   };
@@ -123,6 +125,7 @@ export default function PersonEditScreen() {
       birthPlace: city ? { ...(existing?.birthPlace ?? {}), city } : undefined,
       bio: bio.trim() || undefined,
       profilePhoto: profilePhoto || undefined,
+      profilePhotoPosition,
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     };
@@ -412,7 +415,10 @@ export default function PersonEditScreen() {
           visible={photoSheet}
           personId={existing?.id ?? 'new'}
           onClose={() => setPhotoSheet(false)}
-          onResult={(uri) => setProfilePhoto(uri)}
+          onResult={(uri, pos) => {
+            setProfilePhoto(uri);
+            setProfilePhotoPosition(pos);
+          }}
         />
       ) : null}
     </KeyboardAvoidingView>

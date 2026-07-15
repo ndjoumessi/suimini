@@ -1,11 +1,11 @@
 /**
  * Bottom-sheet avatar picker (mobile). Two sources — camera / gallery — sans
- * étape d'édition OS forcée (voir plus bas) ; compression happens after, in
- * `uploadAvatarMobile`. Permissions are requested on first use and refusal is
- * handled gracefully (Alert). While the picked photo is compressed + uploaded an
- * ActivityIndicator shows; on success the sheet dismisses immediately (pas
- * d'écran intermédiaire affichant la taille avant/après compression — non
- * actionnable pour l'utilisateur, ça ne faisait qu'ajouter un tap).
+ * étape d'édition OS forcée (voir plus bas), suivies d'une étape d'AJUSTEMENT
+ * maison (recentrage, pas un vrai crop pixel) avant l'upload ; compression
+ * happens after, in `uploadAvatarMobile`. Permissions are requested on first
+ * use and refusal is handled gracefully (Alert). While the picked photo is
+ * compressed + uploaded an ActivityIndicator shows; on success the sheet
+ * dismisses immediately.
  *
  * Style Canopée : sheet arrondie (radius.xl) + poignée, scrim du thème,
  * boutons-source en cartes arrondies avec disque tonal. Tout le texte passe
@@ -28,6 +28,8 @@ import { Camera, Images, X } from 'lucide-react-native';
 import { fonts, fontSize, spacing, radius, shadows, borderWidth } from '@/lib/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { uploadAvatarMobile } from '@/lib/uploadImage';
+import { Button } from '@/components/ui/Button';
+import { PhotoAdjustControl, type PhotoPosition } from '@/components/person/PhotoAdjustControl';
 
 interface PhotoPickerSheetProps {
   visible: boolean;
@@ -37,11 +39,16 @@ interface PhotoPickerSheetProps {
   /**
    * Final photo uri to store on the person: the Supabase public URL when the
    * upload succeeded, otherwise the local `file://` uri (demo / offline).
+   * `position` is the chosen recentring ({x,y} 0–100, 50/50 = centré) —
+   * stored as `person.profilePhotoPosition`, read by `Avatar.tsx`.
    */
-  onResult: (uri: string) => void;
+  onResult: (uri: string, position?: PhotoPosition) => void;
 }
 
 type Source = 'camera' | 'gallery';
+type Step = 'choose' | 'adjust';
+
+const CENTER: PhotoPosition = { x: 50, y: 50 };
 
 export function PhotoPickerSheet({
   visible,
@@ -54,9 +61,19 @@ export function PhotoPickerSheet({
   const insets = useSafeAreaInsets();
 
   const [busy, setBusy] = useState(false);
+  const [step, setStep] = useState<Step>('choose');
+  const [pickedUri, setPickedUri] = useState<string | null>(null);
+  const [position, setPosition] = useState<PhotoPosition>(CENTER);
+
+  const reset = () => {
+    setBusy(false);
+    setStep('choose');
+    setPickedUri(null);
+    setPosition(CENTER);
+  };
 
   const close = () => {
-    setBusy(false);
+    reset();
     onClose();
   };
 
@@ -87,10 +104,9 @@ export function PhotoPickerSheet({
     // bouton "Redimensionner"/validation ne confirme pas la sélection pour
     // certains users/appareils) — symptôme identique à un bug connu de
     // `expo-image-picker` avec l'UI de crop native Android. On saute donc
-    // l'édition OS (comme le flux web, qui n'impose pas non plus de crop
-    // système) : la photo brute part directement en compression/upload,
-    // et `Avatar.tsx` l'affiche déjà en `resizeMode="cover"` (recadrage
-    // visuel à l'affichage, quel que soit le ratio source).
+    // l'édition OS et on propose à la place notre propre étape d'ajustement
+    // (recentrage, voir PhotoAdjustControl) — même esprit que le web
+    // (PhotoPositionControl), jamais l'écran de crop natif.
     const options: ImagePicker.ImagePickerOptions = {
       quality: 1, // compression happens in uploadAvatarMobile
     };
@@ -107,12 +123,17 @@ export function PhotoPickerSheet({
     }
 
     if (result.canceled || !result.assets?.length) return;
-    const localUri = result.assets[0].uri;
+    setPickedUri(result.assets[0].uri);
+    setPosition(CENTER);
+    setStep('adjust');
+  };
 
+  const confirmAdjust = async () => {
+    if (!pickedUri) return;
     setBusy(true);
     let out;
     try {
-      out = await uploadAvatarMobile(localUri, personId);
+      out = await uploadAvatarMobile(pickedUri, personId);
     } catch {
       out = { error: 'unexpected' as string };
     }
@@ -120,7 +141,7 @@ export function PhotoPickerSheet({
 
     // Optimistic: use the uploaded URL when available, else the local uri
     // (demo mode, or an upload failure — the photo still shows locally).
-    onResult(out?.url ?? localUri);
+    onResult(out?.url ?? pickedUri, position);
 
     if (out?.error) {
       Alert.alert(t('photo.uploadErrorTitle'), t('photo.uploadErrorBody'));
@@ -128,10 +149,6 @@ export function PhotoPickerSheet({
       return;
     }
 
-    // Uploaded (or demo). Dismiss immediately — the before→after compression
-    // size used to be surfaced on an extra "Terminé" confirmation screen, but
-    // that info isn't actionable for the user and just adds a tap before the
-    // photo shows up on the profile.
     close();
   };
 
@@ -151,7 +168,7 @@ export function PhotoPickerSheet({
           <View style={[styles.grabber, { backgroundColor: colors.borderStrong }]} />
           <View style={styles.header}>
             <Text style={[styles.title, { color: colors.text }]}>
-              {t('photo.title')}
+              {step === 'adjust' ? t('photo.adjustTitle') : t('photo.title')}
             </Text>
             <TouchableOpacity
               onPress={close}
@@ -169,6 +186,26 @@ export function PhotoPickerSheet({
               <Text style={[styles.status, { color: colors.textMuted }]}>
                 {t('photo.uploading')}
               </Text>
+            </View>
+          ) : step === 'adjust' && pickedUri ? (
+            <View style={styles.adjustWrap}>
+              <PhotoAdjustControl uri={pickedUri} position={position} onChange={setPosition} />
+              <Text style={[styles.adjustHint, { color: colors.textMuted }]}>
+                {t('photo.adjustInstruction')}
+              </Text>
+              <View style={styles.adjustActions}>
+                <Button
+                  label={t('common.cancel')}
+                  variant="secondary"
+                  onPress={() => setStep('choose')}
+                  style={styles.adjustBtn}
+                />
+                <Button
+                  label={t('photo.adjustConfirm')}
+                  onPress={confirmAdjust}
+                  style={styles.adjustBtn}
+                />
+              </View>
             </View>
           ) : (
             <View style={styles.options}>
@@ -262,4 +299,8 @@ const styles = StyleSheet.create({
   sourceLabel: { fontFamily: fonts.bodyBold, fontSize: fontSize.base },
   center: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md },
   status: { fontFamily: fonts.body, fontSize: fontSize.sm },
+  adjustWrap: { alignItems: 'center', gap: spacing.sm, paddingBottom: spacing.xs },
+  adjustHint: { fontFamily: fonts.body, fontSize: fontSize.sm, textAlign: 'center' },
+  adjustActions: { flexDirection: 'row', gap: spacing.sm, alignSelf: 'stretch', marginTop: spacing.xs },
+  adjustBtn: { flex: 1 },
 });
