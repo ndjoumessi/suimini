@@ -10,6 +10,8 @@ import i18n from '@/lib/i18n';
 import { useAppFonts, useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
 import { useStore } from '@/lib/store';
+import { supabase } from '@/lib/supabase';
+import { isRailwayRealtimeEnabled, connectTreeRelay } from '@/lib/realtimeRelay';
 import {
   registerForPushNotifications,
   savePushToken,
@@ -25,7 +27,9 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const refreshFromRemote = useStore((s) => s.refreshFromRemote);
   const seedDemo = useStore((s) => s.seedDemo);
+  const activeTreeId = useStore((s) => s.activeTreeId);
   const lastForegroundRefreshRef = useRef(0);
+  const lastRelayRefreshRef = useRef(0);
 
   useEffect(() => {
     seedDemo();
@@ -70,6 +74,35 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     });
     return () => sub.remove();
   }, [isDemo, session?.access_token, refreshFromRemote]);
+
+  // Temps réel Railway (ADDITIF, derrière EXPO_PUBLIC_REALTIME_BACKEND=railway).
+  // Complète le resync d'AppState ci-dessus : met à jour l'arbre affiché EN DIRECT
+  // pendant qu'un autre appareil (ex. l'app web) le modifie, sans attendre un
+  // retour au premier plan. Flag absent → cet effet ne fait RIEN. Le contenu réel
+  // est rechargé par refreshFromRemote (API authentifiée), le relais ne transporte
+  // aucune donnée. Voir docs/railway-realtime-plan.md.
+  useEffect(() => {
+    if (isDemo || !session?.access_token || !activeTreeId) return;
+    if (!isRailwayRealtimeEnabled() || !supabase) return;
+    const sb = supabase;
+    const handle = connectTreeRelay({
+      url: process.env.EXPO_PUBLIC_REALTIME_URL as string,
+      treeId: activeTreeId,
+      getToken: async () => {
+        const { data } = await sb.auth.getSession();
+        return data.session?.access_token ?? null;
+      },
+      onChange: () => {
+        const now = Date.now();
+        // Anti-rafale : un UPSERT distant émet plusieurs signaux ; le relais coalesce
+        // déjà, on garde un petit garde-fou local (refreshFromRemote recharge tout).
+        if (now - lastRelayRefreshRef.current < 3_000) return;
+        lastRelayRefreshRef.current = now;
+        refreshFromRemote();
+      },
+    });
+    return () => handle.close();
+  }, [isDemo, session?.access_token, activeTreeId, refreshFromRemote]);
 
   useEffect(() => {
     if (loading) return;
