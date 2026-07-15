@@ -258,11 +258,22 @@ DRY_RUN=0 node scripts/rewrite-photo-urls-to-r2.mjs # écriture réelle (transac
 ```
 
 Réversible : relancer avec `OLD_URL_PREFIX`/`NEW_URL_PREFIX` inversés (tant que
-Supabase Storage reste lisible). Testé : garde-fous `requireEnv` (échec propre si
-variable manquante), échec de connexion géré proprement (pas de crash brut) — pas
-testable de bout en bout sans Postgres réel dans ce sandbox (aucun `psql`/`initdb`
-disponible ici, contrairement au Mac du user). **Pas encore exécuté contre
-Railway** — décision du user.
+Supabase Storage reste lisible).
+
+✅ **EXÉCUTÉ CONTRE RAILWAY (2026-07-15).** Connexion via le proxy public
+(`tokaido.proxy.rlwy.net`, `RAILWAY_DB_INSECURE_SSL=1` — cert auto-signé du proxy,
+acceptable pour cette connexion locale ponctuelle, non un service exposé).
+Dry-run puis écriture réelle :
+```
+AVANT : persons.profile_photo=5, persons.extra=3, journal_entries.photos=0
+APRÈS : 0 partout (réconciliation OK)
+```
+5 fiches personnes (photo de profil) + 3 fiches avec des photos dans `extra`
+(galerie/tags) réécrites vers R2 — cohérent avec les 11 fichiers copiés par
+`copy-avatars-to-r2.sh` (certaines personnes ont plusieurs photos dans `extra`,
+d'où 5+3=8 lignes DB pour 11 fichiers). Plus aucune fiche ne référence l'ancien
+préfixe Supabase — toutes les photos (anciennes et nouvelles) pointent
+maintenant vers R2.
 
 ### 4.5 « Definition of ready » — Storage (avant flip)
 
