@@ -4,11 +4,17 @@
  *
  * Session persistence uses MMKV when available (fast, synchronous), falling back
  * to in-memory storage on Expo Go — see lib/storage.ts.
+ *
+ * Sécu F3 : cette instance MMKV (access + refresh token Supabase) est chiffrée
+ * au repos via une clé Keychain/Keystore (expo-secure-store) — voir
+ * `createKVStorage`/`getOrCreateEncryptionKey` dans lib/storage.ts pour le détail
+ * (migration transparente d'une session déjà écrite en clair par une version
+ * antérieure, repli gracieux sans chiffrement si SecureStore est indisponible).
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createKVStorage } from './storage';
 
-const storage = createKVStorage('suimini-auth');
+const storage = createKVStorage('suimini-auth', 'suimini_mmkv_auth_key');
 
 const mmkvStorage = {
   getItem: (key: string) => storage.getString(key) ?? null,

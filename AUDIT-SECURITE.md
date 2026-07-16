@@ -12,7 +12,7 @@
 |---|----------|-------|---------|--------|
 | F1 | **Haute** | Le journal familial fuite aux membres acceptés via la lecture non masquée (backend Railway, sans RLS) | `railwayStore.ts:185-202`, `apiData.ts:44-51` | **✅ Corrigé (2026-07-16)** — `stripUnauthorizedJournal` (`authz.ts`) appliqué dans `GET /api/data/trees` et `GET /api/data/trees/[id]` juste avant la réponse JSON, testé (`e2e/authz.spec.ts`). |
 | F2 | **Moyenne** | Le partage public lit un instantané Supabase figé → édition privée/suppression post-cutover non honorée | `supabaseSync.ts:479-509`, `supabaseSync.ts:466-472` | **✅ Corrigé (2026-07-16)**, effet de bord du correctif architecture F1 — `loadPublicTree`/`getPublicShare`/`setTreePublic` passent désormais par `DataStore` (Railway ou Supabase selon `DB_BACKEND`), plus jamais Supabase-direct. |
-| F3 | **Moyenne** | Tokens de session Supabase stockés en clair (MMKV non chiffré) sur mobile | `mobile/lib/supabase.ts:11-33` | Ouvert |
+| F3 | **Moyenne** | Tokens de session Supabase stockés en clair (MMKV non chiffré) sur mobile | `mobile/lib/supabase.ts:11-33` | ✅ Corrigé (2026-07-16) — non testé sur device réel, voir note |
 | F4 | Basse | Rate-limiting IA « fail-open » sur panne RPC/Supabase | `rateLimit.ts:90-102` | ✅ Corrigé (2026-07-16) |
 | F5 | Basse | Envoi d'email d'invitation à une adresse arbitraire, sans rate-limit, nom d'expéditeur contrôlé | `send-invite-email/route.ts:19-70` | ✅ Corrigé (2026-07-16) |
 | F6 | Basse | Fail-open pré-migration : `42703` = tout utilisateur traité comme admin/approuvé | `send-approval/route.ts:35`, `proxy.ts:45-46` | ✅ Vérifié (2026-07-16) — déjà scopé, pas de changement requis |
@@ -62,7 +62,9 @@ Le client Supabase mobile persiste la session (access token et **refresh token**
 
 **Scénario** : sur un appareil rooté/jailbreaké ou via un backup non chiffré, le refresh token (longue durée) peut être extrait puis rejoué pour obtenir des sessions valides → prise de contrôle du compte.
 
-**Remédiation** : `expo-secure-store` (Keychain/Keystore natif), ou a minima une `encryptionKey` MMKV dérivée d'un secret gardé dans le Keychain. Conserver le repli mémoire pour Expo Go.
+**Correctif (2026-07-16)** : `mobile/lib/storage.ts` génère (ou relit) une clé de 16 caractères via `expo-secure-store` (API synchrone JSI, plugin déjà posé dans `app.json`), persistée dans le Keychain (iOS) / Keystore (Android) — c'est cette couche, pas l'entropie de la clé, qui protège contre l'extraction (Keychain exclu des sauvegardes non chiffrées, protection matérielle quand disponible). L'instance MMKV `suimini-auth` est construite SANS `encryptionKey` (pour lire une session déjà écrite en clair par une version antérieure) puis `recrypt(key)` (synchrone) migre en place — aucune session existante perdue, aucune déconnexion forcée à la mise à jour. Scopé au SEUL store de session (`createKVStorage('suimini-auth', 'suimini_mmkv_auth_key')`) ; les 4 autres instances MMKV (thème, i18n, tokens push, cache arbre) restent inchangées, ne portant pas de secret équivalent. Repli gracieux (pas de chiffrement, comme avant) si `SecureStore` est indisponible.
+
+⚠️ **Non vérifié sur device/simulateur réel** : cet agent n'a pas d'accès à un appareil ou simulateur mobile dans son environnement d'exécution. Vérifié uniquement via `tsc --noEmit` (propre) et `expo export --platform android` (le bundling Metro JS résout les 3471 modules sans erreur — la seule étape qui échoue ensuite, la compilation Hermes en bytecode natif, échoue pour une raison d'environnement sans rapport : le binaire `hermesc` fourni est x86-64 et ce sandbox tourne en ARM64). **Avant tout déploiement, tester manuellement sur un dev build réel** : login, kill+relaunch de l'app (la session doit survivre), et si possible vérifier qu'une session pré-existante (utilisateur déjà connecté avant ce correctif) n'est pas invalidée par la première migration `recrypt`.
 
 ---
 
@@ -122,6 +124,6 @@ Les mutations s'authentifiaient par cookie de session (web), sans vérification 
 
 1. ~~**F1 (Haute) — à corriger sans délai**~~ **✅ Fait (2026-07-16)** : `stripUnauthorizedJournal` appliqué sur les deux routes de lecture (`/api/data/trees`, `/api/data/trees/[id]`), aux deux backends par défense en profondeur.
 2. ~~**F2 (Moyenne)**~~ **✅ Fait (2026-07-16)**, en même temps que le correctif architecture F1 (partage/`DataStore`).
-3. **F3 (Moyenne)** : migrer le stockage de session mobile vers `expo-secure-store`. — reste ouvert (voir note ci-dessous).
+3. ~~**F3 (Moyenne)**~~ **✅ Fait (2026-07-16)** : clé MMKV via `expo-secure-store` + `recrypt()` en place — **à valider manuellement sur device réel avant déploiement** (voir note F3 ci-dessus).
 
-**Mise à jour (2026-07-16)** : F1, F2, F4, F5, F7 corrigés + F6 vérifié (voir tableau de synthèse) — vérifiés `tsc`/`eslint` propres + `e2e/authz.spec.ts` (23/23). Seul **F3** (chiffrement de session mobile MMKV) reste ouvert : nécessite un test sur device/simulateur réel, indisponible dans ce sandbox — voir la tâche dédiée avant tout déploiement mobile.
+**Mise à jour (2026-07-16)** : F1 à F7 tous corrigés ou vérifiés (voir tableau de synthèse) — `tsc`/`eslint` propres côté web, `tsc` propre + `expo export` (bundling JS OK) côté mobile, `e2e/authz.spec.ts` (23/23). Seul point restant : validation de F3 sur un vrai appareil/simulateur mobile, hors de portée de cet environnement d'exécution.
