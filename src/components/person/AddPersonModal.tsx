@@ -8,7 +8,7 @@ import { Check, Plus, Link2, User, X, ArrowLeft, Heart, Baby, Users, UsersRound 
 import type { LucideIcon } from 'lucide-react';
 import PersonForm from './PersonForm';
 import DuplicateWarningModal from './DuplicateWarningModal';
-import { findPotentialDuplicates, type DuplicateMatch } from '@/lib/duplicateDetection';
+import { findPotentialDuplicates, type DuplicateMatch } from '@/lib/search/duplicateDetection';
 
 interface Props {
   onClose: () => void;

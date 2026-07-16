@@ -8,7 +8,7 @@
 import { test, expect } from '@playwright/test';
 import {
   detectVariants, normalizeOcrPerson, normalizeOcrResult,
-} from '../src/lib/ocrNormalization';
+} from '../src/lib/search/ocrNormalization';
 
 // ---------- detectVariants ----------
 

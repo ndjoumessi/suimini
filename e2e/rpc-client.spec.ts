@@ -5,7 +5,7 @@
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { test, expect } from '@playwright/test';
-import { rpcViaApi } from '../src/lib/rpcClient';
+import { rpcViaApi } from '../src/lib/data/rpcClient';
 
 function mockFetch(res: { ok: boolean; status: number; json: any }) {
   const calls: { url: string; body: any }[] = [];

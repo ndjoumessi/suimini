@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { checkOrigin } from '@/lib/apiData';
+import { checkOrigin } from '@/lib/data/apiData';
 
 // Server route; runs on Node.
 export const runtime = 'nodejs';

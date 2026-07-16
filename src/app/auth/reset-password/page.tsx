@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Lock, Eye, EyeOff, Check, X, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/data/supabase';
 import { passwordChecks, passwordScore, strengthLevel } from '@/lib/password';
 import { BrandLockup } from '@/components/Brand';
 

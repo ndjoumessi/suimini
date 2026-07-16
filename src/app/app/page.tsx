@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/data/supabase';
 import { BrandLockup } from '@/components/Brand';
 
 const SuiminiApp = dynamic(() => import('@/components/SuiminiApp'), { ssr: false });

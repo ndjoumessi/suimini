@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { guardTreeWrite } from '@/lib/apiData';
+import { guardTreeWrite } from '@/lib/data/apiData';
 
 // POST /api/data/trees/[id]/save  { tree, isOwner? } → saveTreeToSupabase
 // AuthZ : canWriteTreeContent (owner | tree_shares=write). `isOwner` est

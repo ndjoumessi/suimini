@@ -10,8 +10,8 @@ import { test, expect } from '@playwright/test';
 import {
   pushChildTable, deleteChildRows, saveTreeToSupabase, loadOneTree,
   preserveRemoteExtra, _setSoftDeleteSupported,
-} from '../src/lib/supabaseSync';
-import { mergeTreeFavoringLocal, treeIdSets, removedIds } from '../src/lib/syncMerge';
+} from '../src/lib/data/supabaseSync';
+import { mergeTreeFavoringLocal, treeIdSets, removedIds } from '../src/lib/sync/syncMerge';
 import type { FamilyTree, Person, Relationship } from '../src/types';
 
 // ---------- Faux client Supabase (enregistre chaque requête) ----------

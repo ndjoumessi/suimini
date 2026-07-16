@@ -3,7 +3,7 @@ import { useState, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Gender } from '@/types';
 import { ArrowRight, Users, UserPlus, Gamepad2, Sparkles, ImageUp, X } from 'lucide-react';
-import { uploadAvatar } from '@/lib/uploadImage';
+import { uploadAvatar } from '@/lib/media/uploadImage';
 import { useOverlay } from '@/hooks/useOverlay';
 
 export interface OnboardingData {

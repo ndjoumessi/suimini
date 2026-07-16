@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { enforceRateLimit, releaseRateLimit } from '@/lib/rateLimit';
+import { enforceRateLimit, releaseRateLimit } from '@/lib/notifications/rateLimit';
 import type { FamilyTree, Person } from '@/types';
 import { buildGenerationMap } from '@/lib/treeUtils';
 import {

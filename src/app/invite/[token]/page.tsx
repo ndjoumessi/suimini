@@ -3,11 +3,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/data/supabase';
 import {
   getInvitation, acceptInvitation, PENDING_INVITE_KEY,
   type InvitationInfo,
-} from '@/lib/sharing';
+} from '@/lib/data/sharing';
 import { TreePine, UserPlus, Clock, ArrowLeft, LogIn } from 'lucide-react';
 
 type PageState =

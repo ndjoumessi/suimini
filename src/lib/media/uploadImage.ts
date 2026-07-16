@@ -1,6 +1,6 @@
-import { supabase } from './supabase';
-import { compressImage } from './imageCompression';
-import { getStorageProvider } from './storageProvider';
+import { supabase } from '@/lib/data/supabase';
+import { compressImage } from '@/lib/media/imageCompression';
+import { getStorageProvider } from '@/lib/media/storageProvider';
 
 export interface UploadResult {
   url: string;

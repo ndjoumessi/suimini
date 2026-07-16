@@ -14,11 +14,11 @@
 import { test, expect } from '@playwright/test';
 import {
   pushChildTable, detectDeleteConflicts, restoreEntityAlive, _setSoftDeleteSupported,
-} from '../src/lib/supabaseSync';
-import { mergeTreeFavoringLocal } from '../src/lib/syncMerge';
+} from '../src/lib/data/supabaseSync';
+import { mergeTreeFavoringLocal } from '../src/lib/sync/syncMerge';
 import {
   addConflicts, getConflicts, removeConflict, clearConflicts, Conflict,
-} from '../src/lib/conflictQueue';
+} from '../src/lib/sync/conflictQueue';
 import type { FamilyTree, Person } from '../src/types';
 
 // ---------- Faux client Supabase (enregistre chaque requête) ----------

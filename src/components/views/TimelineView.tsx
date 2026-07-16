@@ -6,7 +6,7 @@ import { EmptyState } from '../ui/EmptyState';
 import { PersonCombobox } from '../ui/PersonCombobox';
 import { FamilyTree, EventType, Person } from '@/types';
 import { getDisplayName, formatDate, getChildren, getParents } from '@/lib/treeUtils';
-import { eventsOverlapping, type HistoricalEvent } from '@/lib/history';
+import { eventsOverlapping, type HistoricalEvent } from '@/lib/sync/history';
 import { currentNodeMode } from '../tree/nodeStyle';
 
 interface TimelineEntry {

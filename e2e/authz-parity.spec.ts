@@ -22,8 +22,8 @@ import { test, expect } from '@playwright/test';
 import {
   canReadTreeAsMember, canWriteTreeContent, canReadJournal, isTreeOwner,
   createSupabaseAuthzProvider, type AuthzDataProvider, type MaybeCaller,
-} from '../src/lib/authz';
-import { createRailwayAuthzProvider } from '../src/lib/railwayStore';
+} from '../src/lib/data/authz';
+import { createRailwayAuthzProvider } from '../src/lib/data/railwayStore';
 
 // ── Même fixture que e2e/authz.spec.ts (arbre privé + arbre public, mêmes
 // partages/membres) — dupliquée ici plutôt que ré-exportée pour que ce test

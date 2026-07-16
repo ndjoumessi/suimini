@@ -1,9 +1,9 @@
 // Multi-member tree sharing (tree_members). All functions degrade to safe
 // no-ops when Supabase isn't configured OR the table hasn't been applied yet
 // (errors are swallowed so the single-owner app keeps working).
-import { supabase } from './supabase';
-import { callRpc, rpcViaApi } from '@/lib/rpcClient';
-import { getDataLayer } from '@/lib/dataClient';
+import { supabase } from '@/lib/data/supabase';
+import { callRpc, rpcViaApi } from '@/lib/data/rpcClient';
+import { getDataLayer } from '@/lib/data/dataClient';
 
 export type MemberRole = 'viewer' | 'editor' | 'admin';
 export type MemberStatus = 'pending' | 'accepted' | 'declined';
@@ -175,7 +175,7 @@ export async function fetchMyRole(treeId: string): Promise<TreeRole | null> {
 import {
   shareTree as shareTreeDirect, listShares as listSharesDirect, unshareTree as unshareTreeDirect,
   getPublicShare as getPublicShareDirect, setTreePublic as setTreePublicDirect,
-} from './supabaseSync';
+} from '@/lib/data/supabaseSync';
 
 export async function shareTree(treeId: string, email: string, permission: 'read' | 'write'): Promise<{ error?: string }> {
   if (getDataLayer() === 'api') return shareTreeViaApi(treeId, email, permission);

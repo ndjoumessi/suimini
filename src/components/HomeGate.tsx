@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/data/supabase';
 import { markSigningOut } from '@/hooks/useAuth';
 import type { UserStatus } from '@/types';
 import PendingApprovalScreen from '@/components/PendingApprovalScreen';

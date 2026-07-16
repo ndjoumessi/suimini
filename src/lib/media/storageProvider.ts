@@ -22,7 +22,7 @@
  * TOUJOURS le passe-plat Supabase (ou `null` si Supabase n'est pas configuré →
  * l'appelant retombe sur le data-URL local, comme aujourd'hui).
  */
-import { supabase } from './supabase';
+import { supabase } from '@/lib/data/supabase';
 
 export type StorageBackend = 'supabase' | 'object-store';
 

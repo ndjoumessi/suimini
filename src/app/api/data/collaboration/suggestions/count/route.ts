@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { guardTreeWrite } from '@/lib/apiData';
+import { guardTreeWrite } from '@/lib/data/apiData';
 
 // Phase 0 — GET ?treeId → { count } (suggestions pending, pour le badge sidebar).
 // AuthZ : OWNER-only (mirror RLS 0012).

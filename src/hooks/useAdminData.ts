@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
-import { callRpc } from '@/lib/rpcClient';
+import { supabase } from '@/lib/data/supabase';
+import { callRpc } from '@/lib/data/rpcClient';
 import type { UserProfile, AdminNotification, UserStatus, UserRole } from '@/types';
 
 /**

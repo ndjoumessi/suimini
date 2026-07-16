@@ -6,9 +6,9 @@ import ReactCrop, { centerCrop, makeAspectCrop, convertToPixelCrop, type Crop, t
 import 'react-image-crop/dist/ReactCrop.css';
 import { FamilyTree, Person } from '@/types';
 import { getDisplayName, formatYear } from '@/lib/treeUtils';
-import { uploadAvatar, deleteAvatarByUrl } from '@/lib/uploadImage';
-import { formatBytes } from '@/lib/imageCompression';
-import { cropToCanvas, cropToFile } from '@/lib/imageCrop';
+import { uploadAvatar, deleteAvatarByUrl } from '@/lib/media/uploadImage';
+import { formatBytes } from '@/lib/media/imageCompression';
+import { cropToCanvas, cropToFile } from '@/lib/media/imageCrop';
 import { GENDER_BAR, currentNodeMode } from '../tree/nodeStyle';
 import { useOverlay } from '@/hooks/useOverlay';
 

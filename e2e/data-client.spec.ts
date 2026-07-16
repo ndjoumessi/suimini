@@ -7,7 +7,7 @@
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { test, expect } from '@playwright/test';
-import { getDataClient, getDataLayer, setServerDataLayer } from '../src/lib/dataClient';
+import { getDataClient, getDataLayer, setServerDataLayer } from '../src/lib/data/dataClient';
 
 const METHODS = ['loadTrees', 'loadOneTree', 'saveTree', 'deleteTree', 'deleteChildRows', 'detectDeleteConflicts', 'restoreEntity'] as const;
 
@@ -73,7 +73,7 @@ test('getDataClient() reflète le cookie au RUNTIME (bascule sans reload)', () =
 });
 
 // ── ApiDataClient (PR3) : lecture via /api/data/* (fetch mocké) ──────────────
-import { apiDataClient } from '../src/lib/dataClient';
+import { apiDataClient } from '../src/lib/data/dataClient';
 
 test('ApiDataClient.loadTrees → GET /api/data/trees, renvoie le LoadResult', async () => {
   const calls: string[] = [];

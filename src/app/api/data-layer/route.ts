@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getServerAuth } from '@/lib/apiAuth';
-import { getDataLayerRule, resolveLayer } from '@/lib/dataLayerConfig';
+import { getServerAuth } from '@/lib/data/apiAuth';
+import { getDataLayerRule, resolveLayer } from '@/lib/data/dataLayerConfig';
 
 /**
  * GET /api/data-layer → { layer: 'api' | 'direct' } pour l'appelant.

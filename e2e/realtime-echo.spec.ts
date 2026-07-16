@@ -8,8 +8,8 @@ import { test, expect } from '@playwright/test';
 import {
   isSelfEcho, recordSelfWrites, rowSignature, softDeleteSignature, hardDeleteSignature,
   _resetEchoRegistry,
-} from '../src/lib/realtimeEcho';
-import { pushChildTable, deleteChildRows, _setSoftDeleteSupported } from '../src/lib/supabaseSync';
+} from '../src/lib/sync/realtimeEcho';
+import { pushChildTable, deleteChildRows, _setSoftDeleteSupported } from '../src/lib/data/supabaseSync';
 
 // Faux client Supabase minimal (upsert/update/delete no-op réussis).
 function fakeClient() {

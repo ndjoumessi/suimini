@@ -29,17 +29,17 @@ import {
   getPublicShare as getPublicShareSupa, setTreePublic as setTreePublicSupa,
   loadPublicTree as loadPublicTreeSupa,
   type LoadResult, type DeleteConflict, type ChildTable,
-} from '@/lib/supabaseSync';
+} from '@/lib/data/supabaseSync';
 import {
   createSupabaseAuthzProvider, type AuthzDataProvider, type Caller,
-} from '@/lib/authz';
+} from '@/lib/data/authz';
 import {
   fetchCommentsDirect, addCommentDirect,
   fetchPendingSuggestionsDirect, countPendingSuggestionsDirect, addSuggestionDirect, resolveSuggestionDirect,
   type PersonComment, type PersonSuggestion,
-} from '@/lib/collaboration';
-import { inviteMemberDirect, mapRow as mapMemberRow, type InviteResult, type MemberRole, type TreeMember } from '@/lib/sharing';
-import { railwayConfigured } from '@/lib/railwayDb';
+} from '@/lib/data/collaboration';
+import { inviteMemberDirect, mapRow as mapMemberRow, type InviteResult, type MemberRole, type TreeMember } from '@/lib/data/sharing';
+import { railwayConfigured } from '@/lib/data/railwayDb';
 import type { FamilyTree, Person, Relationship } from '@/types';
 
 export type Backend = 'supabase' | 'railway';
@@ -188,7 +188,7 @@ export function resolveBackend(caller: Caller | null): Backend {
  */
 export async function getDataStore(client: any, caller: Caller | null): Promise<DataStore> {
   if (resolveBackend(caller) === 'railway') {
-    const { RailwayStore } = await import('@/lib/railwayStore');
+    const { RailwayStore } = await import('@/lib/data/railwayStore');
     return new RailwayStore();
   }
   return new SupabaseStore(client);

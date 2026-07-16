@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { guardTreeWrite } from '@/lib/apiData';
+import { guardTreeWrite } from '@/lib/data/apiData';
 
 // Phase 1 — POST { treeId, email, role } → { invite: { member, token } }.
 // Invite (ou ré-invite) un membre par email (upsert tree_members). AuthZ : OWNER

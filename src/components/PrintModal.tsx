@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { FamilyTree, Person } from '@/types';
 import { getDisplayName, formatDate, formatYear, formatAge, getAge, computeTreeStats, getGeneration } from '@/lib/treeUtils';
-import { buildTreeLayout, validateVisualTree, NODE_W, NODE_H } from '@/lib/treeLayout';
+import { buildTreeLayout, validateVisualTree, NODE_W, NODE_H } from '@/lib/export/treeLayout';
 import { GENDER_BAR } from './tree/nodeStyle';
 import { List, LayoutGrid, BarChart3, TreePine, BookOpen, Printer, X, Moon, Sun } from 'lucide-react';
 import { ErrorMessage } from './ui/ErrorMessage';

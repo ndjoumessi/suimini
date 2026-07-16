@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/data/supabase';
 import { FamilyTree, Person, Relationship, JournalEntry } from '@/types';
-import { recordSelfWrites, rowSignature, softDeleteSignature, hardDeleteSignature } from '@/lib/realtimeEcho';
+import { recordSelfWrites, rowSignature, softDeleteSignature, hardDeleteSignature } from '@/lib/sync/realtimeEcho';
 
 export interface SharedMeta { sharedByName?: string; permission?: string; }
 export interface LoadResult { trees: FamilyTree[]; shared: Record<string, SharedMeta>; }

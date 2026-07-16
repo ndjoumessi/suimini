@@ -3,8 +3,8 @@ import { useTranslations } from 'next-intl';
 import { AlertTriangle, ShieldAlert, X } from 'lucide-react';
 import { useOverlay } from '@/hooks/useOverlay';
 import { getDisplayName } from '@/lib/treeUtils';
-import type { DuplicateMatch } from '@/lib/duplicateDetection';
-import { isBlocking } from '@/lib/duplicateDetection';
+import type { DuplicateMatch } from '@/lib/search/duplicateDetection';
+import { isBlocking } from '@/lib/search/duplicateDetection';
 
 interface Props {
   candidates: DuplicateMatch[];

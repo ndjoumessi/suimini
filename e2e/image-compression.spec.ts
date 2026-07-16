@@ -8,7 +8,7 @@
  *  - `formatBytes(...)`    : formatage lisible des octets.
  */
 import { test, expect } from '@playwright/test';
-import { shouldCompress, formatBytes } from '../src/lib/imageCompression';
+import { shouldCompress, formatBytes } from '../src/lib/media/imageCompression';
 
 const KB = 1024;
 const MB = 1024 * 1024;

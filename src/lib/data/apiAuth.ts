@@ -14,7 +14,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createServerClient } from '@supabase/ssr';
 import { cookies, headers } from 'next/headers';
-import type { Caller, Role } from '@/lib/authz';
+import type { Caller, Role } from '@/lib/data/authz';
 
 export interface ServerAuth {
   client: any | null;

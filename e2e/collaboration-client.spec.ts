@@ -11,7 +11,7 @@ import {
   fetchComments, addComment, fetchPendingSuggestions, countPendingSuggestions,
   addSuggestion, resolveSuggestion,
   fetchCommentsDirect, addCommentDirect, resolveSuggestionDirect, countPendingSuggestionsDirect,
-} from '../src/lib/collaboration';
+} from '../src/lib/data/collaboration';
 
 function withCookie(cookie: string, fn: () => Promise<void> | void) {
   const orig = (globalThis as any).document;

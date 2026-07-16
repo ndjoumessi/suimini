@@ -1,11 +1,11 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/data/supabase';
 import { sampleFamilyTree } from '@/lib/sampleData';
-import { offlineStorage } from '@/lib/offlineStorage';
+import { offlineStorage } from '@/lib/data/offlineStorage';
 import type { UserProfile } from '@/types';
-import { fetchMyMemberships, acceptInvitation, PENDING_INVITE_KEY, type TreeMember } from '@/lib/sharing';
+import { fetchMyMemberships, acceptInvitation, PENDING_INVITE_KEY, type TreeMember } from '@/lib/data/sharing';
 
 /** If the user arrived via an /invite link before signing in, claim it now. */
 async function claimPendingInvite(): Promise<boolean> {

@@ -11,7 +11,7 @@ import {
   isBlocking,
   birthYear,
   normalizeName,
-} from '../src/lib/duplicateDetection';
+} from '../src/lib/search/duplicateDetection';
 import type { Person } from '../src/types';
 
 // Fabrique de personne minimale : seuls les champs pertinents sont surchargés.

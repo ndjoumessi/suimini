@@ -7,8 +7,8 @@
  * appartenance…) → l'endpoint ne fait que forwarder sous l'identité de l'appelant.
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { supabase } from '@/lib/supabase';
-import { getDataLayer } from '@/lib/dataClient';
+import { supabase } from '@/lib/data/supabase';
+import { getDataLayer } from '@/lib/data/dataClient';
 
 export interface RpcResult<T = any> { data: T | null; error: { message: string } | null }
 

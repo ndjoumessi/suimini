@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getServerAuth } from '@/lib/apiAuth';
-import { isTreeOwner } from '@/lib/authz';
-import { getDataStore } from '@/lib/dataStore';
-import { checkOrigin } from '@/lib/apiData';
+import { getServerAuth } from '@/lib/data/apiAuth';
+import { isTreeOwner } from '@/lib/data/authz';
+import { getDataStore } from '@/lib/data/dataStore';
+import { checkOrigin } from '@/lib/data/apiData';
 
 // Phase 0/1 — POST { id, status } → { ok }. Accepte/rejette une suggestion.
 // La suggestion ne porte pas de treeId dans le corps : on lit son tree_id via le

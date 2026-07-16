@@ -9,8 +9,8 @@
 // public branche via getDataLayer() — les composants appelants restent inchangés.
 // Les fonctions REALTIME/PRESENCE (WebSocket) restent directes par conception.
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { supabase } from './supabase';
-import { getDataLayer } from './dataClient';
+import { supabase } from '@/lib/data/supabase';
+import { getDataLayer } from '@/lib/data/dataClient';
 
 // Helpers HTTP fail-safe : comme les cœurs Direct, ils DÉGRADENT (jamais de throw)
 // pour préserver le contrat « no-op gracefully » de tout le module.

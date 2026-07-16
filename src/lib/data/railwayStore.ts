@@ -10,15 +10,15 @@
  * l'invariant « les colonnes priment sur extra » a UNE seule source de vérité.
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { query, withTransaction } from '@/lib/railwayDb';
+import { query, withTransaction } from '@/lib/data/railwayDb';
 import {
   personToRow, rowToPerson, relToRow, rowToRel, journalToRow, rowToJournal,
   type LoadResult, type SharedMeta, type DeleteConflict, type ChildTable,
-} from '@/lib/supabaseSync';
-import { type AuthzDataProvider, type Caller, type Permission, type MembershipStatus } from '@/lib/authz';
-import type { PersonComment, PersonSuggestion } from '@/lib/collaboration';
-import type { RpcResult, AddSuggestionInput } from '@/lib/dataStore';
-import type { InviteResult, MemberRole, TreeMember } from '@/lib/sharing';
+} from '@/lib/data/supabaseSync';
+import { type AuthzDataProvider, type Caller, type Permission, type MembershipStatus } from '@/lib/data/authz';
+import type { PersonComment, PersonSuggestion } from '@/lib/data/collaboration';
+import type { RpcResult, AddSuggestionInput } from '@/lib/data/dataStore';
+import type { InviteResult, MemberRole, TreeMember } from '@/lib/data/sharing';
 import type { FamilyTree, Person, Relationship } from '@/types';
 import type { PoolClient, QueryResultRow } from 'pg';
 

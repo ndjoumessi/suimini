@@ -6,8 +6,8 @@ import ReactCrop, { convertToPixelCrop, type Crop, type PixelCrop } from 'react-
 import 'react-image-crop/dist/ReactCrop.css';
 import type { FamilyTree, Gender } from '@/types';
 import { getDisplayName } from '@/lib/treeUtils';
-import { uploadAvatar } from '@/lib/uploadImage';
-import { cropToFile, isFullFrameCrop } from '@/lib/imageCrop';
+import { uploadAvatar } from '@/lib/media/uploadImage';
+import { cropToFile, isFullFrameCrop } from '@/lib/media/imageCrop';
 import { useOverlay } from '@/hooks/useOverlay';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';

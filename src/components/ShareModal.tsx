@@ -9,7 +9,7 @@ import {
   getTreeMembers, inviteMember, updateMemberRole, removeMember, sharingEnabled,
   shareTree, listShares, unshareTree, getPublicShare, setTreePublic,
   type ManagedMember, type MemberRole, type MemberStatus,
-} from '@/lib/sharing';
+} from '@/lib/data/sharing';
 import {
   Share2, X, Download, Code2, Lightbulb, Mail, Copy, Check, MessageCircle,
   Pencil, Eye, ExternalLink, Users, Trash2, UserPlus, ChevronRight, ArrowRight,

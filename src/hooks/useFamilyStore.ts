@@ -3,12 +3,12 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { FamilyTree, Person, Relationship, JournalEntry } from '@/types';
 import { sampleFamilyTree } from '@/lib/sampleData';
 import { generateId, getDisplayName } from '@/lib/treeUtils';
-import { isSupabaseConfigured, supabase } from '@/lib/supabase';
-import type { SharedMeta, ChildTable } from '@/lib/supabaseSync';
-import { getDataClient, ensureServerDataLayer } from '@/lib/dataClient';
-import { mergeTreeFavoringLocal, treeIdSets, removedIds, TreeIdSets } from '@/lib/syncMerge';
-import { addConflicts, Conflict } from '@/lib/conflictQueue';
-import { offlineStorage } from '@/lib/offlineStorage';
+import { isSupabaseConfigured, supabase } from '@/lib/data/supabase';
+import type { SharedMeta, ChildTable } from '@/lib/data/supabaseSync';
+import { getDataClient, ensureServerDataLayer } from '@/lib/data/dataClient';
+import { mergeTreeFavoringLocal, treeIdSets, removedIds, TreeIdSets } from '@/lib/sync/syncMerge';
+import { addConflicts, Conflict } from '@/lib/sync/conflictQueue';
+import { offlineStorage } from '@/lib/data/offlineStorage';
 
 const STORAGE_KEY = 'suimini_trees';
 const ACTIVE_TREE_KEY = 'suimini_active_tree';

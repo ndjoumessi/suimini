@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import LanguageSwitcher from '../LanguageSwitcher';
-import { countPendingSuggestions } from '@/lib/collaboration';
+import { countPendingSuggestions } from '@/lib/data/collaboration';
 import { relativeSyncParts } from '@/lib/relativeTime';
 import { FamilyTree, ViewMode } from '@/types';
 import {

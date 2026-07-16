@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { guardTreeWrite, isChildTable } from '@/lib/apiData';
+import { guardTreeWrite, isChildTable } from '@/lib/data/apiData';
 
 // POST /api/data/trees/[id]/children/delete  { table, ids } → soft-delete
 // AuthZ : canWriteTreeContent. `table` whitelisté (persons|relationships|journal_entries).

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getServerAuth } from '@/lib/apiAuth';
-import { getDataStore, DATA_PLANE_RPCS } from '@/lib/dataStore';
-import { checkOrigin } from '@/lib/apiData';
+import { getServerAuth } from '@/lib/data/apiAuth';
+import { getDataStore, DATA_PLANE_RPCS } from '@/lib/data/dataStore';
+import { checkOrigin } from '@/lib/data/apiData';
 
 // POST /api/data/rpc/[name] { args } → forward de la RPC sous l'identité de
 // l'appelant. Les RPC sont SECURITY DEFINER (AuthZ interne : rôle admin,

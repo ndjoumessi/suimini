@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { enforceRateLimit, releaseRateLimit } from '@/lib/rateLimit';
-import { normalizeOcrResult, type NormalizedPersonExtra } from '@/lib/ocrNormalization';
+import { enforceRateLimit, releaseRateLimit } from '@/lib/notifications/rateLimit';
+import { normalizeOcrResult, type NormalizedPersonExtra } from '@/lib/search/ocrNormalization';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;

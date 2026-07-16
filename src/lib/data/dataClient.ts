@@ -14,7 +14,7 @@ import {
   loadTreesFromSupabase, saveTreeToSupabase, deleteTreeFromSupabase, deleteChildRows,
   loadOneTree, detectDeleteConflicts, restoreEntityAlive,
   type LoadResult, type DeleteConflict, type ChildTable,
-} from '@/lib/supabaseSync';
+} from '@/lib/data/supabaseSync';
 import type { FamilyTree, Person, Relationship } from '@/types';
 
 export interface DataClient {

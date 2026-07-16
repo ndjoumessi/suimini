@@ -3,7 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDataLayerRule } from '@/lib/dataLayerConfig';
+import { getDataLayerRule } from '@/lib/data/dataLayerConfig';
 
 // Server route (Node) : diagnostic de configuration. Réservé aux admins.
 // ⚠️ Ne renvoie JAMAIS la VALEUR d'un secret — uniquement sa PRÉSENCE (booléen).

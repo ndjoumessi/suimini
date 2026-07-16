@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { FamilyTree, ViewMode, Person } from '@/types';
 import { getDisplayName, formatYear, findRelationPath, describeRelation } from '@/lib/treeUtils';
-import { searchPersons } from '@/lib/fuzzySearch';
+import { searchPersons } from '@/lib/search/fuzzySearch';
 import type { Locale } from '@/i18n/config';
 import { useOverlay } from '@/hooks/useOverlay';
 import {

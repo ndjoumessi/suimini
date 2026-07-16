@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerAuth } from '@/lib/apiAuth';
+import { getServerAuth } from '@/lib/data/apiAuth';
 
 // GET /api/data/whoami — sonde de diagnostic (canary). Dit à L'APPELANT si le
 // serveur résout SA session (cookie ou Bearer). Ne renvoie que des infos sur

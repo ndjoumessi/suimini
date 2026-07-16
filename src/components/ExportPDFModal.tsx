@@ -8,7 +8,7 @@ import {
   generateFamilyBookHTML,
   estimatePageCount,
   type ExportOptions,
-} from '@/lib/pdfTemplates';
+} from '@/lib/export/pdfTemplates';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 

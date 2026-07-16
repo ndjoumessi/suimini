@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { AlertTriangle } from 'lucide-react';
 import { useOverlay } from '@/hooks/useOverlay';
-import type { Conflict } from '@/lib/conflictQueue';
+import type { Conflict } from '@/lib/sync/conflictQueue';
 
 /**
  * Conflit multi-appareils (delete-vs-edit) : la fiche/relation qu'on éditait a été

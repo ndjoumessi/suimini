@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { type ExpoPushMessage, type PushLocale, memberJoinedPushMessage, sendExpoPush } from '@/lib/push';
-import { guardTreeRead, checkOrigin } from '@/lib/apiData';
+import { type ExpoPushMessage, type PushLocale, memberJoinedPushMessage, sendExpoPush } from '@/lib/notifications/push';
+import { guardTreeRead, checkOrigin } from '@/lib/data/apiData';
 
 // Server-only. Node runtime (fetch vers l'API Expo + Supabase).
 export const runtime = 'nodejs';

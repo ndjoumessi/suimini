@@ -12,8 +12,8 @@ import {
   expandSynonyms,
   canonicalize,
   TEDA_SYNONYMS,
-} from '../src/lib/bamilekeNames';
-import { searchPersons } from '../src/lib/fuzzySearch';
+} from '../src/lib/search/bamilekeNames';
+import { searchPersons } from '../src/lib/search/fuzzySearch';
 import type { Person } from '../src/types';
 
 // ---------- Fabrique de personnes minimale ----------

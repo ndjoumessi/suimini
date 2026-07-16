@@ -16,8 +16,8 @@
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { test, expect } from '@playwright/test';
-import { RailwayStore } from '@/lib/railwayStore';
-import { query } from '@/lib/railwayDb';
+import { RailwayStore } from '@/lib/data/railwayStore';
+import { query } from '@/lib/data/railwayDb';
 
 const TEST_URL = process.env.RAILWAY_TEST_DATABASE_URL;
 const RUN = !!TEST_URL;

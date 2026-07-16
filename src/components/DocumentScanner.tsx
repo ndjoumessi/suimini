@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { Sparkles, X as XIcon, ScanText, FileText, ArrowRight, ChevronDown } from 'lucide-react';
 import type { FamilyTree } from '@/types';
 import { getDisplayName } from '@/lib/treeUtils';
-import { uploadAvatar } from '@/lib/uploadImage';
+import { uploadAvatar } from '@/lib/media/uploadImage';
 import { useOverlay } from '@/hooks/useOverlay';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';

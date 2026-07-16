@@ -3,7 +3,7 @@ import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react
 import { useTranslations } from 'next-intl';
 import { FamilyTree, Person } from '@/types';
 import { getParents, getChildren, getSpouses, getSiblings, getDisplayName, formatYear, getAge, formatAge, personCompleteness, findRelationPath, describeRelation, buildGenerationMap, findUnion, isUnionEnded } from '@/lib/treeUtils';
-import { joinTreeCursors, presenceColor, collaborationEnabled, type CursorPeer } from '@/lib/collaboration';
+import { joinTreeCursors, presenceColor, collaborationEnabled, type CursorPeer } from '@/lib/data/collaboration';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/useMediaQuery';
 import { Plus, Sprout, Camera, CheckCircle2, FileText, MapPin, Crown } from 'lucide-react';

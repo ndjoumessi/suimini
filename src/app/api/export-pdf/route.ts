@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { guardTreeRead, checkOrigin } from '@/lib/apiData';
-import { generateFamilyBookHTML, type ExportOptions } from '@/lib/pdfTemplates';
+import { guardTreeRead, checkOrigin } from '@/lib/data/apiData';
+import { generateFamilyBookHTML, type ExportOptions } from '@/lib/export/pdfTemplates';
 
 // Node runtime: we return the booklet HTML — the actual PDF rendering is done
 // by the browser print dialog (Chromium can't run on Vercel), so this is a

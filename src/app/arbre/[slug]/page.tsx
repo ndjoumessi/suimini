@@ -1,8 +1,8 @@
 import { cache } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { getServerAuth } from '@/lib/apiAuth';
-import { getDataStore } from '@/lib/dataStore';
+import { getServerAuth } from '@/lib/data/apiAuth';
+import { getDataStore } from '@/lib/data/dataStore';
 import PublicTreeView from '@/components/PublicTreeView';
 
 // Always render dynamically so is_public/public_slug is re-checked on every

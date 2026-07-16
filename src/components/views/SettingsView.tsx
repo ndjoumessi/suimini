@@ -3,8 +3,8 @@ import { useState, useRef, useEffect, type ReactNode, type CSSProperties } from 
 import { useTranslations } from 'next-intl';
 import { ColorThemeId, FamilyTree } from '@/types';
 import { COLOR_THEMES } from '@/lib/themes';
-import { supabase } from '@/lib/supabase';
-import { callRpc } from '@/lib/rpcClient';
+import { supabase } from '@/lib/data/supabase';
+import { callRpc } from '@/lib/data/rpcClient';
 import { markSigningOut } from '@/hooks/useAuth';
 import { relativeSyncParts } from '@/lib/relativeTime';
 import { LOCALES, type Locale } from '@/i18n/config';

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { guardTreeWrite } from '@/lib/apiData';
+import { guardTreeWrite } from '@/lib/data/apiData';
 
 // Phase 0 — commentaires de personne.
 //   GET  ?treeId&personId          → { comments }

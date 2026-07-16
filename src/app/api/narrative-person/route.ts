@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { enforceRateLimit, releaseRateLimit } from '@/lib/rateLimit';
+import { enforceRateLimit, releaseRateLimit } from '@/lib/notifications/rateLimit';
 import type { FamilyTree, Person } from '@/types';
 import { getParents, getChildren, getSpouses, getSiblings, getDisplayName } from '@/lib/treeUtils';
-import { eventsOverlapping } from '@/lib/history';
+import { eventsOverlapping } from '@/lib/sync/history';
 
 // Server-side only: ANTHROPIC_API_KEY is never exposed to the browser.
 export const runtime = 'nodejs';

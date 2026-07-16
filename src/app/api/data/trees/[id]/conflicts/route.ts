@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { guardTreeWrite, isChildTable } from '@/lib/apiData';
+import { guardTreeWrite, isChildTable } from '@/lib/data/apiData';
 
 // POST /api/data/trees/[id]/conflicts  { table, entities } → DeleteConflict[]
 // Détection delete-vs-edit avant un push. AuthZ : canWriteTreeContent.

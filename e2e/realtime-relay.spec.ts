@@ -9,7 +9,7 @@ import {
   parseRelayMessage,
   isChangeForTree,
   isRailwayRealtimeEnabled,
-} from '../src/lib/realtimeRelay';
+} from '../src/lib/sync/realtimeRelay';
 
 test.describe('parseRelayMessage', () => {
   test('parse un message de changement valide', () => {

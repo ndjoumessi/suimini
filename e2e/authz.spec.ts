@@ -11,7 +11,7 @@ import {
   isPersonPubliclyVisible, isRelationshipPubliclyVisible,
   createSupabaseAuthzProvider, stripUnauthorizedJournal,
   type AuthzDataProvider, type MaybeCaller,
-} from '../src/lib/authz';
+} from '../src/lib/data/authz';
 
 // ── Fixtures : un arbre privé et un arbre public, mêmes partages/membres ──────
 const FIX: Record<string, { owner: string; public: boolean; shares: Record<string, 'read' | 'write'>; members: Record<string, 'pending' | 'accepted' | 'declined'> }> = {

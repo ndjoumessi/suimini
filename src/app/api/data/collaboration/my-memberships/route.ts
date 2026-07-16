@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getServerAuth } from '@/lib/apiAuth';
-import { getDataStore } from '@/lib/dataStore';
+import { getServerAuth } from '@/lib/data/apiAuth';
+import { getDataStore } from '@/lib/data/dataStore';
 
 // Phase 1 (PRÊT MAIS INACTIF par défaut) — GET → { memberships }.
 // « Quels arbres partagés AVEC moi » (tree_members acceptés du caller). Utilisé

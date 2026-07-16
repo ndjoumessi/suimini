@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getServerAuth } from '@/lib/apiAuth';
-import { getDataStore } from '@/lib/dataStore';
-import { stripUnauthorizedJournal } from '@/lib/authz';
+import { getServerAuth } from '@/lib/data/apiAuth';
+import { getDataStore } from '@/lib/data/dataStore';
+import { stripUnauthorizedJournal } from '@/lib/data/authz';
 
 // Phase 0/1 — GET /api/data/trees : charge les arbres accessibles de l'appelant
 // (owner + partagés). Le backend (Supabase RLS ou Railway authz-explicite) est

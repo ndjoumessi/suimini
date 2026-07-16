@@ -2,7 +2,7 @@
 // by person life-era badges. Bilingual labels/context (the UI picks by locale).
 
 import type { Person } from '@/types';
-import { getAge } from './treeUtils';
+import { getAge } from '@/lib/treeUtils';
 
 export interface HistoricalEvent {
   id: string;

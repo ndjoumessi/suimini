@@ -5,7 +5,7 @@
  * Config) n'est pas testée ici : elle dépend d'un store externe et fail-safe déjà.
  */
 import { test, expect } from '@playwright/test';
-import { bucketOf, resolveLayer, FALLBACK_RULE, type DataLayerRule } from '../src/lib/dataLayerConfig';
+import { bucketOf, resolveLayer, FALLBACK_RULE, type DataLayerRule } from '../src/lib/data/dataLayerConfig';
 
 test('bucketOf : déterministe (même userId → même bucket) et borné [0,99]', () => {
   for (const id of ['u-alpha', 'user-123', '9f2c-uuid-xyz', '', 'é#!']) {

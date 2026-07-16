@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { guardTreeWrite } from '@/lib/apiData';
+import { guardTreeWrite } from '@/lib/data/apiData';
 
 // Phase 0 — suggestions d'édition.
 //   GET  ?treeId[&personId]        → { suggestions } (pending, plus ancien d'abord)

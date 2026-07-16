@@ -14,7 +14,7 @@
 import Fuse from 'fuse.js';
 import type { IFuseOptions } from 'fuse.js';
 import type { Person } from '@/types';
-import { normalizeBamilekeName, expandSynonyms } from './bamilekeNames';
+import { normalizeBamilekeName, expandSynonyms } from '@/lib/search/bamilekeNames';
 
 export interface PersonMatch {
   /** Champ Fuse ayant matché (firstName / lastName / nickName / bio). */

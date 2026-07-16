@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { memberJoinedEmailHtml } from '@/lib/emails';
+import { memberJoinedEmailHtml } from '@/lib/notifications/emails';
 
 /**
  * Screenshot capture for the PDF-booklet + owner-notification-email features.

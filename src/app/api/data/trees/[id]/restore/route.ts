@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { guardTreeWrite } from '@/lib/apiData';
+import { guardTreeWrite } from '@/lib/data/apiData';
 
 // POST /api/data/trees/[id]/restore  { entityType, entity } → ré-upsert vivant
 // (résolution de conflit « Restaurer »). AuthZ : canWriteTreeContent.

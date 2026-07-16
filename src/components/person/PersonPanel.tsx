@@ -3,12 +3,12 @@ import { useState, useEffect, useRef, useMemo, useId, useCallback } from 'react'
 import { useTranslations, useLocale } from 'next-intl';
 import { Person, FamilyTree, Relationship, RelationType, FamilyEvent, EventType, Note, Citation, DnaOrigin, AiNarrative } from '@/types';
 import { getParents, getChildren, getSpouses, getSiblings, getAge, formatDate, formatYear, getDisplayName, generateId, safeHttpUrl, compareByBirthDate } from '@/lib/treeUtils';
-import { deleteAvatarByUrl, uploadAvatar } from '@/lib/uploadImage';
-import { personEras, type HistoricalEvent } from '@/lib/history';
+import { deleteAvatarByUrl, uploadAvatar } from '@/lib/media/uploadImage';
+import { personEras, type HistoricalEvent } from '@/lib/sync/history';
 import PersonAvatar from './PersonAvatar';
 import PhotoPositionControl from './PhotoPositionControl';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { fetchComments, addComment, subscribeComments, collaborationEnabled, type PersonComment, fetchPendingSuggestions, addSuggestion, resolveSuggestion, type PersonSuggestion } from '@/lib/collaboration';
+import { fetchComments, addComment, subscribeComments, collaborationEnabled, type PersonComment, fetchPendingSuggestions, addSuggestion, resolveSuggestion, type PersonSuggestion } from '@/lib/data/collaboration';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/useMediaQuery';
 import { useOverlay } from '@/hooks/useOverlay';

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { guardTreeWrite } from '@/lib/apiData';
+import { guardTreeWrite } from '@/lib/data/apiData';
 
 // Phase 1 — F1 fix : lien public en lecture seule (trees.is_public/public_slug),
 // owner-only (métadonnée d'arbre, même tier que shareTree/deleteTree — jamais

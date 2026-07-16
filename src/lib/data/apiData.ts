@@ -7,10 +7,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import { getServerAuth } from '@/lib/apiAuth';
-import { canWriteTreeContent, isTreeOwner, canReadTreeAsMember, type Caller } from '@/lib/authz';
-import { getDataStore, type DataStore } from '@/lib/dataStore';
-import type { ChildTable } from '@/lib/supabaseSync';
+import { getServerAuth } from '@/lib/data/apiAuth';
+import { canWriteTreeContent, isTreeOwner, canReadTreeAsMember, type Caller } from '@/lib/data/authz';
+import { getDataStore, type DataStore } from '@/lib/data/dataStore';
+import type { ChildTable } from '@/lib/data/supabaseSync';
 
 /**
  * Sécu F7 (durcissement) : vérifie que l'Origin d'une requête state-changing

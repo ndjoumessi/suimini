@@ -5,10 +5,10 @@
  * signaler la variante détectée, pour que l'UI puisse la surfacer ("TEDA'A →
  * TEDA") avant l'import.
  *
- * ⚠️ Toute la logique de normalisation vit dans `@/lib/bamilekeNames` — ce
+ * ⚠️ Toute la logique de normalisation vit dans `@/lib/search/bamilekeNames` — ce
  * module ne fait que la RÉUTILISER (aucune règle dupliquée, aucun réseau).
  */
-import { canonicalize } from '@/lib/bamilekeNames';
+import { canonicalize } from '@/lib/search/bamilekeNames';
 
 /** Résultat de la détection de variante pour un nom donné. */
 export interface VariantInfo {

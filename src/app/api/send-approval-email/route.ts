@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { MEMBER_JOINED_SUBJECT, memberJoinedEmailHtml } from '@/lib/emails';
-import { guardTreeRead, checkOrigin } from '@/lib/apiData';
+import { MEMBER_JOINED_SUBJECT, memberJoinedEmailHtml } from '@/lib/notifications/emails';
+import { guardTreeRead, checkOrigin } from '@/lib/data/apiData';
 
 // Server-only: RESEND_API_KEY is never exposed to the browser.
 export const runtime = 'nodejs';

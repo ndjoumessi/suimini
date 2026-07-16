@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { enforceRateLimit, releaseRateLimit } from '@/lib/rateLimit';
+import { enforceRateLimit, releaseRateLimit } from '@/lib/notifications/rateLimit';
 import type { Person } from '@/types';
 
 export const runtime = 'nodejs';

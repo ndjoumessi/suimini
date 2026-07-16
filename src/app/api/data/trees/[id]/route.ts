@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { guardTreeRead, guardTreeWrite } from '@/lib/apiData';
-import { stripUnauthorizedJournal } from '@/lib/authz';
+import { guardTreeRead, guardTreeWrite } from '@/lib/data/apiData';
+import { stripUnauthorizedJournal } from '@/lib/data/authz';
 
 // Phase 0/1 — GET /api/data/trees/[id] : un arbre (non masqué) pour un appelant
 // AYANT UNE RELATION avec lui (owner | tree_shares | membre accepté). Le public

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchMyRole, type TreeRole } from '@/lib/sharing';
+import { fetchMyRole, type TreeRole } from '@/lib/data/sharing';
 
 /**
  * Effective role of the current user on the active tree.

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { guardTreeWrite } from '@/lib/apiData';
+import { guardTreeWrite } from '@/lib/data/apiData';
 
 // Phase 1 — F1 fix : partage par email (tree_shares), owner-only. Miroir de
 // `collaboration/members/route.ts` (même guard, même forme). GET liste, POST

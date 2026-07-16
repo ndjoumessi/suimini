@@ -3,7 +3,7 @@ import { useOverlay } from '@/hooks/useOverlay';
 import { useState, useRef } from 'react';
 import { FamilyTree, Person, Relationship } from '@/types';
 import { exportGEDCOM } from '@/lib/treeUtils';
-import { parseGEDCOM } from '@/lib/gedcomParser';
+import { parseGEDCOM } from '@/lib/export/gedcomParser';
 import { CheckCircle2, AlertCircle, FolderOpen, X, ScanLine, Upload, Download, FileJson, Globe, ArrowRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { exportGEDCOM } from '../src/lib/treeUtils';
-import { parseGEDCOM } from '../src/lib/gedcomParser';
+import { parseGEDCOM } from '../src/lib/export/gedcomParser';
 import type { FamilyTree, Person, Relationship } from '../src/types';
 
 /**

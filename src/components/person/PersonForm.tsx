@@ -3,7 +3,7 @@ import { useState, useRef, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { AlertCircle, FolderOpen, Plus, X, Dna, ImageUp, Images, Check } from 'lucide-react';
 import { Person, Gender } from '@/types';
-import { uploadAvatar } from '@/lib/uploadImage';
+import { uploadAvatar } from '@/lib/media/uploadImage';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import PhotoPositionControl from './PhotoPositionControl';

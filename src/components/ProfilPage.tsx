@@ -1,7 +1,7 @@
 'use client';
 import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/data/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import { useFamilyStore } from '@/hooks/useFamilyStore';
 import { BrandLockup } from '@/components/Brand';

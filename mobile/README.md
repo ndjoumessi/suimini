@@ -15,7 +15,7 @@ sur iOS et Android.
 - **lucide-react-native** — icônes
 
 Le modèle de données (`lib/types.ts`) et le mapping Supabase (`lib/supabaseSync.ts`)
-sont **calqués sur le web** (`src/types`, `src/lib/supabaseSync.ts`) : même schéma
+sont **calqués sur le web** (`src/types`, `src/lib/data/supabaseSync.ts`) : même schéma
 de colonnes, mêmes objets `Person` / `Relationship` / `FamilyTree`.
 
 ## Setup

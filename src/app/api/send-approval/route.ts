@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
-import { APPROVED_SUBJECT, approvedEmailHtml } from '@/lib/emails';
-import { checkOrigin } from '@/lib/apiData';
+import { APPROVED_SUBJECT, approvedEmailHtml } from '@/lib/notifications/emails';
+import { checkOrigin } from '@/lib/data/apiData';
 
 // Server-only: RESEND_API_KEY is never exposed to the browser.
 export const runtime = 'nodejs';

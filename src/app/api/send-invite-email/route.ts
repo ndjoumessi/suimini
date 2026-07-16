@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { INVITE_SUBJECT, inviteEmailHtml } from '@/lib/emails';
-import { guardTreeWrite } from '@/lib/apiData';
-import { enforceRateLimit } from '@/lib/rateLimit';
+import { INVITE_SUBJECT, inviteEmailHtml } from '@/lib/notifications/emails';
+import { guardTreeWrite } from '@/lib/data/apiData';
+import { enforceRateLimit } from '@/lib/notifications/rateLimit';
 
 // Server-only: RESEND_API_KEY is never exposed to the browser.
 export const runtime = 'nodejs';
