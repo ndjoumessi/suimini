@@ -20,31 +20,38 @@ import type { PersonComment, PersonSuggestion } from '@/lib/collaboration';
 import type { RpcResult, AddSuggestionInput } from '@/lib/dataStore';
 import type { InviteResult, MemberRole, TreeMember } from '@/lib/sharing';
 import type { FamilyTree, Person, Relationship } from '@/types';
-import type { PoolClient } from 'pg';
+import type { PoolClient, QueryResultRow } from 'pg';
 
 // ── Provider d'autorisation Railway (miroir de createSupabaseAuthzProvider) ────
-export function createRailwayAuthzProvider(): AuthzDataProvider {
+// Archi F4 : `queryFn` est injectable (défaut = `query` réel de railwayDb), même
+// patron `client: any = supabase` que `createSupabaseAuthzProvider`/`sharing.ts`
+// — permet un test de PARITÉ pure-logic entre les deux providers (une même
+// fixture en mémoire jouée contre les deux), sans base Railway réelle. Voir
+// e2e/authz-parity.spec.ts.
+type QueryFn = <T extends QueryResultRow = QueryResultRow>(text: string, params?: unknown[]) => Promise<T[]>;
+
+export function createRailwayAuthzProvider(queryFn: QueryFn = query): AuthzDataProvider {
   return {
     async getTreeOwnerId(treeId) {
-      const rows = await query<{ owner_id: string }>('select owner_id from trees where id = $1', [treeId]);
+      const rows = await queryFn<{ owner_id: string }>('select owner_id from trees where id = $1', [treeId]);
       return rows[0]?.owner_id ?? null;
     },
     async getTreeSharePermission(treeId, email) {
-      const rows = await query<{ permission: string }>(
+      const rows = await queryFn<{ permission: string }>(
         'select permission from tree_shares where tree_id = $1 and lower(shared_with_email) = lower($2)', [treeId, email],
       );
       const p = rows[0]?.permission;
       return p === 'read' || p === 'write' ? (p as Permission) : null;
     },
     async getMembershipStatus(treeId, userId) {
-      const rows = await query<{ status: string }>(
+      const rows = await queryFn<{ status: string }>(
         'select status from tree_members where tree_id = $1 and user_id = $2', [treeId, userId],
       );
       const s = rows[0]?.status;
       return s === 'pending' || s === 'accepted' || s === 'declined' ? (s as MembershipStatus) : null;
     },
     async isTreePublic(treeId) {
-      const rows = await query<{ is_public: boolean }>('select is_public from trees where id = $1', [treeId]);
+      const rows = await queryFn<{ is_public: boolean }>('select is_public from trees where id = $1', [treeId]);
       return !!rows[0]?.is_public;
     },
   };
