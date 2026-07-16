@@ -111,14 +111,11 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
   const openModal = () => { setAddPersonId(''); setPendingFile(null); setPreviewUrl(''); setDragOver(false); setPersonQuery(''); setPersonDropdownOpen(false); resetCrop(); setShowAdd(true); };
   const closeModal = () => { setShowAdd(false); setPendingFile(null); setPreviewUrl(''); setPersonQuery(''); setPersonDropdownOpen(false); resetCrop(); };
 
-  // Esc closes the upload / delete modals. (The lightbox handles its own Esc via
-  // useOverlay in PhotoLightbox.)
-  useEffect(() => {
-    if (!showAdd && !confirmDelete) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { closeModal(); setConfirmDelete(null); } };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [showAdd, confirmDelete]);
+  // Upload/delete modals used a bespoke Esc-only listener (no focus-trap, and
+  // not registered in useOverlay's LIFO stack like every other overlay —
+  // AUDIT-V5 P2 #26). Same shared hook as the lightbox now.
+  const uploadOverlayRef = useOverlay<HTMLDivElement>(closeModal, { enabled: showAdd });
+  const deleteOverlayRef = useOverlay<HTMLDivElement>(() => setConfirmDelete(null), { enabled: !!confirmDelete });
 
   // Revoke object URLs to avoid leaks.
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
@@ -319,7 +316,7 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
       {/* Upload modal */}
       {showAdd && onUpdatePerson && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && closeModal()}>
-          <div role="dialog" aria-modal="true" aria-label={t('modalTitle')} className="modal" style={{ maxWidth: '560px', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+          <div ref={uploadOverlayRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={t('modalTitle')} className="modal" style={{ maxWidth: '560px', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
             <div className="gv-modal-head">
               <h2 className="serif" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.15rem' }}>
                 <ImagePlus size={18} aria-hidden="true" style={{ color: 'var(--accent)' }} /> {t('modalTitle')}
@@ -426,7 +423,7 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
       {/* Delete confirmation */}
       {confirmDelete && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setConfirmDelete(null)}>
-          <div role="dialog" aria-modal="true" aria-label={t('deleteConfirmTitle')} className="modal" style={{ maxWidth: '380px' }}>
+          <div ref={deleteOverlayRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={t('deleteConfirmTitle')} className="modal" style={{ maxWidth: '380px' }}>
             <div style={{ padding: '24px' }}>
               <h2 className="serif" style={{ margin: '0 0 8px', fontSize: '1.15rem', color: 'var(--ink)' }}>{t('deleteConfirmTitle')}</h2>
               <p style={{ margin: '0 0 22px', fontSize: '14px', lineHeight: 1.5, color: 'var(--text-muted)' }}>{t('deleteConfirmText')}</p>

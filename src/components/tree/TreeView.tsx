@@ -1142,7 +1142,12 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
                       moveKbFocus(p.id, e.key);
                     }
                   }}
-                  opacity={dimmed ? 0.15 : (p.isAlive ? 1 : 0.72)}
+                  {/* Deceased cards read very pale once ALSO caught by focus-mode
+                      dimming (AUDIT-V5 P2 #31) — 0.72 was already faint against
+                      the node's own muted face colour; 0.82 keeps the "deceased"
+                      cue readable while `dimmed` (0.15) still wins outright when
+                      a node falls outside the focus set. */}
+                  opacity={dimmed ? 0.15 : (p.isAlive ? 1 : 0.82)}
                   style={{
                     cursor: dimmed ? 'default' : 'pointer',
                     pointerEvents: dimmed ? 'none' : 'auto',
@@ -1454,10 +1459,10 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
             <div className="label" style={{ marginBottom: '8px', color: 'var(--text)' }}>{t('legend')}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '6px', height: '14px', background: '#4A90D9', flexShrink: 0 }} /> {t('male')}
+                <span style={{ width: '6px', height: '14px', background: 'var(--male)', flexShrink: 0 }} /> {t('male')}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '6px', height: '14px', background: '#C47BA0', flexShrink: 0 }} /> {t('female')}
+                <span style={{ width: '6px', height: '14px', background: 'var(--female)', flexShrink: 0 }} /> {t('female')}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ width: '6px', height: '14px', background: 'var(--accent)', flexShrink: 0 }} /> {t('origin')}
@@ -1670,9 +1675,12 @@ function FanChart({ fan, fanGenColor, r0, ring, selectedPersonId, onSelectPerson
         const maxChars = s.gen <= 1 ? 12 : s.gen === 2 ? 9 : 7;
         const fontSize = s.gen <= 1 ? 12 : s.gen === 2 ? 10 : 8.5;
         const label = s.person.firstName.length > maxChars ? s.person.firstName.slice(0, maxChars - 1) + '…' : s.person.firstName;
+        // Gender wasn't previously stated in the slot's name (colour-only,
+        // WCAG 1.4.1, AUDIT-V5 P2 #30) — mirrors the main tree's aria-label.
+        const slotGenderWord = s.person.gender === 'female' ? t('genderF') : s.person.gender === 'male' ? t('genderM') : '';
         return (
           <g key={s.person.id} role="button" tabIndex={0} className="fan-slot"
-            aria-label={`${s.person.firstName} ${s.person.lastName}`}
+            aria-label={`${s.person.firstName} ${s.person.lastName}${slotGenderWord ? `, ${slotGenderWord}` : ''}`}
             style={{ cursor: 'pointer' }}
             onClick={() => onSelectPerson(s.person.id)}
             onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectPerson(s.person.id); } }}>
@@ -1688,9 +1696,11 @@ function FanChart({ fan, fanGenColor, r0, ring, selectedPersonId, onSelectPerson
         );
       })}
 
-      {root && (
+      {root && (() => {
+        const rootGenderWord = root.person.gender === 'female' ? t('genderF') : root.person.gender === 'male' ? t('genderM') : '';
+        return (
         <g role="button" tabIndex={0} className="fan-slot"
-          aria-label={`${root.person.firstName} ${root.person.lastName}`}
+          aria-label={`${root.person.firstName} ${root.person.lastName}${rootGenderWord ? `, ${rootGenderWord}` : ''}`}
           style={{ cursor: 'pointer' }}
           onClick={() => onSelectPerson(root.person.id)}
           onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectPerson(root.person.id); } }}>
@@ -1702,7 +1712,8 @@ function FanChart({ fan, fanGenColor, r0, ring, selectedPersonId, onSelectPerson
             {root.person.lastName.length > 13 ? root.person.lastName.slice(0, 12) + '…' : root.person.lastName}
           </text>
         </g>
-      )}
+        );
+      })()}
 
       {fan.maxGen === 0 && (
         <text x={0} y={r0 + 30} textAnchor="middle" fontSize={13} fontFamily="var(--font-body)" fill="var(--text-muted)">

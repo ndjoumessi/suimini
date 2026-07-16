@@ -16,6 +16,7 @@ const MODE_META = {
   ancestors: { Icon: TreePine, labelKey: 'modeAncestors' },
   descendants: { Icon: Sprout, labelKey: 'modeDescendants' },
 } as const;
+const MODES = ['relation', 'compare', 'ancestors', 'descendants'] as const;
 
 interface Props {
   tree: FamilyTree;
@@ -88,12 +89,38 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
           </header>
 
           {/* Tabs */}
-          <div className="ex-tabs" role="tablist" aria-label={t('title')}>
-            {(['relation', 'compare', 'ancestors', 'descendants'] as const).map(m => {
+          <div
+            className="ex-tabs"
+            role="tablist"
+            aria-label={t('title')}
+            onKeyDown={e => {
+              // Roving tab focus: Left/Right (and Home/End) move between tabs
+              // and activate the target, per the WAI-ARIA tabs pattern — the
+              // tablist previously had no arrow-key support at all (AUDIT-V5
+              // P2 #25).
+              if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+              e.preventDefault();
+              const i = MODES.indexOf(mode);
+              const next = e.key === 'Home' ? 0 : e.key === 'End' ? MODES.length - 1
+                : e.key === 'ArrowRight' ? (i + 1) % MODES.length : (i - 1 + MODES.length) % MODES.length;
+              setMode(MODES[next]);
+              document.getElementById(`ex-tab-${MODES[next]}`)?.focus();
+            }}
+          >
+            {MODES.map(m => {
               const { Icon, labelKey } = MODE_META[m];
               const on = mode === m;
               return (
-                <button key={m} role="tab" aria-selected={on} onClick={() => setMode(m)} className={`ex-tab ${on ? 'on' : ''}`}>
+                <button
+                  key={m}
+                  id={`ex-tab-${m}`}
+                  role="tab"
+                  aria-selected={on}
+                  aria-controls="ex-tabpanel"
+                  tabIndex={on ? 0 : -1}
+                  onClick={() => setMode(m)}
+                  className={`ex-tab ${on ? 'on' : ''}`}
+                >
                   <Icon size={15} aria-hidden="true" /> {t(labelKey)}
                 </button>
               );
@@ -134,6 +161,9 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
             )}
           </div>
 
+          {/* Single shared tabpanel for all 4 modes — the tablist above had no
+              tabpanel/aria-controls pairing at all (AUDIT-V5 P2 #25). */}
+          <div role="tabpanel" id="ex-tabpanel" aria-labelledby={`ex-tab-${mode}`} tabIndex={0}>
           {/* ===== RELATION ===== */}
           {mode === 'relation' && person1 && person2 && (
             <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
@@ -303,6 +333,7 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
               <p className="ex-empty-text">{!person1Id ? t('selectFirstPrompt') : t('selectSecondPrompt')}</p>
             </div>
           )}
+          </div>
         </div>
       </div>
 
@@ -374,6 +405,12 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
         .ex-table { display: flex; flex-direction: column; gap: 6px; }
         .ex-trow { display: grid; grid-template-columns: 1fr 130px 1fr; align-items: center; gap: 0; }
         .ex-tcell { padding: 7px 10px; font-size: 13px; font-weight: 600; text-align: center; background: var(--bg-muted); color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        /* 390px: 130px fixed centre column left the two value cells only
+           ~106px each — field labels were clipped mid-word (AUDIT-V5 P2 #25). */
+        @media (max-width: 420px) {
+          .ex-trow { grid-template-columns: 1fr 84px 1fr; }
+          .ex-tcell { padding: 6px 6px; font-size: 11.5px; }
+        }
         .ex-tcell.same { background: var(--success); color: var(--ink-on-accent); }
         .ex-tcell.empty { color: var(--text-light); font-weight: 400; }
         .ex-tlabel { text-align: center; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-light); border-left: 1px solid var(--accent-light); border-right: 1px solid var(--accent-light); padding: 0 8px; }

@@ -72,6 +72,30 @@ function Eyebrow({ Icon, children }: { Icon: typeof Users; children: React.React
   );
 }
 
+/** Confirm-in-app replacement for the `window.confirm` this used to be
+ *  (AUDIT-V5 P2 #20) — native browser dialogs sit outside the app's theming
+ *  and `useOverlay`'s focus-trap. Nested safely under ShareModal's own
+ *  overlay thanks to `useOverlay`'s LIFO stack (see hooks/useOverlay.ts). */
+function RemoveMemberConfirmModal({ onCancel, onConfirm, title, cancelLabel, confirmLabel }: {
+  onCancel: () => void; onConfirm: () => void;
+  title: string; cancelLabel: string; confirmLabel: string;
+}) {
+  const overlayRef = useOverlay(onCancel);
+  return (
+    <div className="modal-overlay" onMouseDown={e => e.target === e.currentTarget && onCancel()}>
+      <div ref={overlayRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={title} className="modal" style={{ maxWidth: '380px' }}>
+        <div style={{ padding: '22px' }}>
+          <h3 className="serif" style={{ margin: '0 0 12px', fontSize: '1.1rem' }}>{title}</h3>
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+            <button onClick={onCancel} className="btn btn-ghost btn-sm">{cancelLabel}</button>
+            <button onClick={onConfirm} className="btn btn-danger btn-sm">{confirmLabel}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Square custom toggle (no native checkbox). Whole row is the control; the box
  *  fills gold with a check when on. `desc` clamps to 2 lines. */
 function SquareToggle({
@@ -190,8 +214,13 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
     }
   }
 
+  // `window.confirm` used to gate this (AUDIT-V5 P2 #20) — a native browser
+  // dialog outside the app's own focus-trap/theming, and unusable in any
+  // automated flow. `removeTarget` drives an in-app confirm modal instead
+  // (same `useOverlay` pattern as every other delete confirmation).
+  const [removeTarget, setRemoveTarget] = useState<string | null>(null);
+
   async function doRemoveMember(email: string) {
-    if (typeof window !== 'undefined' && !window.confirm(tm('removeConfirm', { email }))) return;
     const ok = await removeMember(tree.id, email);
     if (!ok) { onToast?.(t('errFailed'), 'error'); return; }
     await refreshMembers();
@@ -274,6 +303,11 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
   function copyToClipboard(text: string, key: string) {
     navigator.clipboard.writeText(text).then(() => {
       setCopied(key);
+      // The button's own label swap ("Copié") is silent to screen readers —
+      // no aria-live region was announcing it (AUDIT-V5 P2 #20). The toast
+      // container is a permanent live region, so routing through it gives
+      // the same feedback non-visually too.
+      onToast?.(t('copied'), 'info');
       setTimeout(() => setCopied(null), 2500);
     });
   }
@@ -415,7 +449,7 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
                           <option value="admin">{t('admin')}</option>
                         </select>
                         <button
-                          onClick={() => doRemoveMember(m.email)}
+                          onClick={() => setRemoveTarget(m.email)}
                           aria-label={`${t('remove')} — ${m.email}`}
                           className="btn btn-ghost btn-sm btn-icon"
                           style={{ color: 'var(--danger)', flexShrink: 0 }}
@@ -618,6 +652,16 @@ export default function ShareModal({ tree, cloud, canManageMembers = true, onReq
           .embed-summary svg { color: inherit; }
         `}</style>
       </div>
+
+      {removeTarget && (
+        <RemoveMemberConfirmModal
+          title={tm('removeConfirm', { email: removeTarget })}
+          cancelLabel={tm('cancel')}
+          confirmLabel={tm('remove')}
+          onCancel={() => setRemoveTarget(null)}
+          onConfirm={() => { const email = removeTarget; setRemoveTarget(null); void doRemoveMember(email); }}
+        />
+      )}
     </div>
   );
 }

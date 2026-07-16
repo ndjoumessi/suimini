@@ -125,7 +125,7 @@ function LangToggle() {
   return (
     <div className="lp-lang" role="group" aria-label={t('footer.language')}>
       {LOCALES.map((l) => (
-        <button key={l} type="button" onClick={() => choose(l)} aria-pressed={l === locale} aria-label={l === 'fr' ? 'Français' : 'English'} className={l === locale ? 'lp-lang-on' : ''}>
+        <button key={l} type="button" onClick={() => choose(l)} aria-pressed={l === locale} aria-label={l === 'fr' ? t('footer.langFr') : t('footer.langEn')} className={l === locale ? 'lp-lang-on' : ''}>
           {l.toUpperCase()}
         </button>
       ))}

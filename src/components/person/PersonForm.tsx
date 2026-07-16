@@ -373,8 +373,8 @@ const PF_CSS = `
 .pf-gender-btn { height: 40px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-3); color: var(--text-muted); font-family: var(--font-body); font-size: 13px; font-weight: 600; letter-spacing: 0; text-transform: none; cursor: pointer; transition: border-color 150ms ease, color 150ms ease, background 150ms ease; }
 .pf-gender-btn:hover { border-color: var(--accent); color: var(--ink); }
 .pf-gender-btn.on { color: var(--ink-on-accent); border-color: transparent; }
-.pf-gender-btn.on-male { background: #4a90d9; }
-.pf-gender-btn.on-female { background: #c47ba0; }
+.pf-gender-btn.on-male { background: var(--male); }
+.pf-gender-btn.on-female { background: var(--female); }
 .pf-gender-btn.on-unknown { background: var(--accent); }
 
 /* advanced disclosure */

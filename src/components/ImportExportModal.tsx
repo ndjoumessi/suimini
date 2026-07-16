@@ -264,7 +264,7 @@ export default function ImportExportModal({ tree, onImport, onMerge, onClose, in
               )}
 
               {importMsg && (
-                <div role="status" style={{
+                <div role={importOk ? 'status' : 'alert'} style={{
                   padding: '12px', borderRadius: 'var(--radius)', background: 'var(--bg-muted)',
                   border: `1.5px solid ${importOk ? 'var(--success)' : 'var(--danger)'}`,
                   fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text)',

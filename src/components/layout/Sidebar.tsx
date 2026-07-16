@@ -371,7 +371,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         /* Tagline : passe sur deux lignes plutôt que d'être tronquée en plein mot
            (« MÉMOIRE … »). Corps + interlettrage réduits pour tenir face au
            sélecteur FR/EN dans la même rangée, jusqu'aux sidebars 180px. */
-        .sb-tagline { font-family: var(--font-mono); font-size: 8.5px; letter-spacing: 0.09em; line-height: 1.3; text-transform: uppercase; color: var(--accent-muted); margin-top: 3px; }
+        .sb-tagline { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.09em; line-height: 1.3; text-transform: uppercase; color: var(--accent-muted); margin-top: 3px; }
 
         /* Active tree block */
         .sb-tree {
@@ -384,11 +384,12 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sb-tree-eyebrow { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); flex: 1; }
         .sb-tree-chev { color: var(--text-light); flex-shrink: 0; }
         .sb-tree-name { font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .sb-tree-meta { font-family: var(--font-mono); font-size: 10px; color: var(--accent-text); opacity: 0.85; }
-        .sb-tree-badge { align-self: flex-start; margin-top: 5px; font-family: var(--font-mono); font-size: 8.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; padding: 2px 8px; border: 1px solid currentColor; border-radius: var(--radius-full); }
+        .sb-tree-meta { font-family: var(--font-mono); font-size: 10px; color: var(--accent-text); }
+        .sb-tree-badge { align-self: flex-start; margin-top: 5px; font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; padding: 2px 8px; border: 1px solid currentColor; border-radius: var(--radius-full); }
         .sb-badge-owner { color: var(--accent-text); }
         .sb-badge-guest { color: var(--text-muted); }
-        .sb-pending { min-width: 18px; height: 18px; padding: 0 5px; display: inline-flex; align-items: center; justify-content: center; background: var(--danger); color: #1c0c07; border-radius: var(--radius-full); font-family: var(--font-mono); font-size: 10px; font-weight: 700; flex-shrink: 0; }
+        .sb-pending, .sb-count { color: #1c0c07; } /* single source for the ink-on-danger literal, was duplicated (AUDIT-V5 P2 #23) */
+        .sb-pending { min-width: 18px; height: 18px; padding: 0 5px; display: inline-flex; align-items: center; justify-content: center; background: var(--danger); border-radius: var(--radius-full); font-family: var(--font-mono); font-size: 10px; font-weight: 700; flex-shrink: 0; }
 
         /* Layout: fixed top + fixed footer, only the nav scrolls */
         .sb-top { flex-shrink: 0; }
@@ -416,7 +417,7 @@ export default function Sidebar({ activeView, onViewChange, activeTree, trees, o
         .sb-item-active .sb-icon { color: var(--accent); }
         .sb-active-bar { display: none; }
         .sb-icon { width: 16px; display: inline-flex; justify-content: center; position: relative; flex-shrink: 0; color: var(--accent-text); transition: color var(--t-fast); }
-        .sb-count { margin-left: auto; background: var(--danger); color: #1c0c07; border-radius: var(--radius-full); padding: 1px 7px; font-family: var(--font-mono); font-size: 10px; font-weight: 700; }
+        .sb-count { margin-left: auto; background: var(--danger); border-radius: var(--radius-full); padding: 1px 7px; font-family: var(--font-mono); font-size: 10px; font-weight: 700; }
 
         /* Quick actions — inset horizontal aligné sur le bloc « Arbre actif »
            (.sb-tree, 14px) et le pied de compte, pour que le bouton « Ajouter »,

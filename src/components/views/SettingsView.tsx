@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ThemeMode } from '@/hooks/useDarkMode';
+import { useOverlay } from '@/hooks/useOverlay';
 
 interface Props {
   themeId: ColorThemeId;
@@ -72,6 +73,10 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
   const [savingName, setSavingName] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [clearCacheOpen, setClearCacheOpen] = useState(false);
+  // Neither modal had a focus-trap/Esc handler (AUDIT-V5 P2 #26) — `enabled`
+  // keeps the hook inert while its own modal is closed.
+  const deleteOverlayRef = useOverlay(() => setDeleteOpen(false), { enabled: deleteOpen });
+  const clearCacheOverlayRef = useOverlay(() => setClearCacheOpen(false), { enabled: clearCacheOpen });
   const [confirmText, setConfirmText] = useState('');
   const [busy, setBusy] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
@@ -392,7 +397,7 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
       {/* Delete-account confirmation modal */}
       {deleteOpen && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setDeleteOpen(false)}>
-          <div role="dialog" aria-modal="true" aria-label={t('deleteTitle')} className="modal" style={{ maxWidth: '420px' }}>
+          <div ref={deleteOverlayRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={t('deleteTitle')} className="modal" style={{ maxWidth: '420px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: 'var(--bw) solid var(--border-strong)' }}>
               <h2 className="serif" style={{ margin: 0, fontSize: '1.1rem', color: 'var(--danger)' }}>{t('deleteTitle')}</h2>
               <button onClick={() => setDeleteOpen(false)} aria-label={t('cancel')} className="btn btn-ghost btn-sm btn-icon"><X size={16} /></button>
@@ -416,7 +421,7 @@ export default function SettingsView({ themeId, onSelectTheme, onPreviewTheme, o
       {/* Clear-cache confirmation modal (remplace window.confirm natif) */}
       {clearCacheOpen && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setClearCacheOpen(false)}>
-          <div role="dialog" aria-modal="true" aria-label={t('clearCache')} className="modal" style={{ maxWidth: '420px' }}>
+          <div ref={clearCacheOverlayRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={t('clearCache')} className="modal" style={{ maxWidth: '420px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: 'var(--bw) solid var(--border-strong)' }}>
               <h2 className="serif" style={{ margin: 0, fontSize: '1.1rem', color: 'var(--danger)' }}>{t('clearCache')}</h2>
               <button onClick={() => setClearCacheOpen(false)} aria-label={t('cancel')} className="btn btn-ghost btn-sm btn-icon"><X size={16} /></button>
