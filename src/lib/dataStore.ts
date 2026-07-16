@@ -25,6 +25,9 @@ import {
   loadTreesFromSupabase, loadOneTree as loadOneTreeSupa, saveTreeToSupabase,
   deleteChildRows as deleteChildRowsSupa, detectDeleteConflicts as detectConflictsSupa,
   restoreEntityAlive,
+  shareTree as shareTreeSupa, listShares as listSharesSupa, unshareTree as unshareTreeSupa,
+  getPublicShare as getPublicShareSupa, setTreePublic as setTreePublicSupa,
+  loadPublicTree as loadPublicTreeSupa,
   type LoadResult, type DeleteConflict, type ChildTable,
 } from '@/lib/supabaseSync';
 import {
@@ -85,6 +88,17 @@ export interface DataStore {
   // `caller` peut être `null` : seule `get_invitation` (F2) est appelable anonyme,
   // les autres cas exigent un caller réel et rejettent sinon (voir RailwayStore.rpc).
   rpc(name: string, args: Record<string, unknown>, caller: Caller | null): Promise<RpcResult>;
+
+  // Partage par email (tree_shares) + lien public (trees.is_public/public_slug).
+  // F1 fix : AuthZ owner-only faite par la route (guardTreeWrite(id,'owner')).
+  shareTree(treeId: string, email: string, permission: 'read' | 'write'): Promise<{ error?: string }>;
+  listShares(treeId: string): Promise<{ email: string; permission: string }[]>;
+  unshareTree(treeId: string, email: string): Promise<void>;
+  getPublicShare(treeId: string): Promise<{ isPublic: boolean; slug: string | null }>;
+  setTreePublic(treeId: string, isPublic: boolean, slug?: string | null): Promise<{ error?: string }>;
+  /** Lecture ANONYME par slug (page /arbre/[slug]) — masquage par-fiche (privacy)
+   * appliqué dans l'implémentation, jamais de journal exposé publiquement. */
+  loadPublicTree(slug: string): Promise<FamilyTree | null>;
 }
 
 /** Backend Supabase : passe-plat vers supabaseSync sous le client de l'appelant.
@@ -132,6 +146,17 @@ export class SupabaseStore implements DataStore {
     const { data, error } = await this.client.rpc(name, args);
     return { data: data ?? null, error: error ? { message: error.message as string } : null };
   }
+
+  shareTree(treeId: string, email: string, permission: 'read' | 'write') {
+    return shareTreeSupa(treeId, email, permission, this.client);
+  }
+  listShares(treeId: string) { return listSharesSupa(treeId, this.client); }
+  unshareTree(treeId: string, email: string) { return unshareTreeSupa(treeId, email, this.client); }
+  getPublicShare(treeId: string) { return getPublicShareSupa(treeId, this.client); }
+  setTreePublic(treeId: string, isPublic: boolean, slug?: string | null) {
+    return setTreePublicSupa(treeId, isPublic, slug, this.client);
+  }
+  loadPublicTree(slug: string) { return loadPublicTreeSupa(slug, this.client); }
 }
 
 // ── Sélecteur de backend ─────────────────────────────────────────────────────

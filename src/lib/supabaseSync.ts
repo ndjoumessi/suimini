@@ -430,32 +430,38 @@ export async function deleteTreeFromSupabase(treeId: string, ownerId?: string): 
 
 // ---------- Sharing ----------
 
-export async function shareTree(treeId: string, email: string, permission: 'read' | 'write'): Promise<{ error?: string }> {
-  if (!supabase) return { error: 'Supabase non configuré.' };
-  const { error } = await supabase.from('tree_shares').upsert(
+// `client` injectable (Phase 1, F1 fix) : `SupabaseStore` (dataStore.ts) passe le
+// client SERVEUR de l'appelant (sa session, ses cookies) au lieu du singleton
+// navigateur — ces 5 fonctions tournaient auparavant hardwired sur `supabase`
+// (le singleton du navigateur), inatteignables depuis une route serveur, donc
+// invisibles pour `DataStore`/Railway. Défaut = `supabase` pour ne rien casser
+// des appelants navigateur existants (aucun ne passe encore de client explicite).
+export async function shareTree(treeId: string, email: string, permission: 'read' | 'write', client: any = supabase): Promise<{ error?: string }> {
+  if (!client) return { error: 'Supabase non configuré.' };
+  const { error } = await client.from('tree_shares').upsert(
     { tree_id: treeId, shared_with_email: email.trim().toLowerCase(), permission },
     { onConflict: 'tree_id,shared_with_email' }
   );
   return { error: error?.message };
 }
 
-export async function listShares(treeId: string): Promise<{ email: string; permission: string }[]> {
-  if (!supabase) return [];
-  const { data } = await supabase.from('tree_shares').select('shared_with_email, permission').eq('tree_id', treeId);
+export async function listShares(treeId: string, client: any = supabase): Promise<{ email: string; permission: string }[]> {
+  if (!client) return [];
+  const { data } = await client.from('tree_shares').select('shared_with_email, permission').eq('tree_id', treeId);
   return (data || []).map((s: any) => ({ email: s.shared_with_email, permission: s.permission }));
 }
 
-export async function unshareTree(treeId: string, email: string): Promise<void> {
-  if (!supabase) return;
-  await supabase.from('tree_shares').delete().eq('tree_id', treeId).eq('shared_with_email', email);
+export async function unshareTree(treeId: string, email: string, client: any = supabase): Promise<void> {
+  if (!client) return;
+  await client.from('tree_shares').delete().eq('tree_id', treeId).eq('shared_with_email', email);
 }
 
 // ---------- Public read-only sharing (is_public + public_slug) ----------
 
 /** Current public state of a tree (owner-only read via RLS). */
-export async function getPublicShare(treeId: string): Promise<{ isPublic: boolean; slug: string | null }> {
-  if (!supabase) return { isPublic: false, slug: null };
-  const { data } = await supabase.from('trees').select('is_public, public_slug').eq('id', treeId).single();
+export async function getPublicShare(treeId: string, client: any = supabase): Promise<{ isPublic: boolean; slug: string | null }> {
+  if (!client) return { isPublic: false, slug: null };
+  const { data } = await client.from('trees').select('is_public, public_slug').eq('id', treeId).single();
   return { isPublic: !!data?.is_public, slug: (data?.public_slug as string | null) ?? null };
 }
 
@@ -463,24 +469,29 @@ export async function getPublicShare(treeId: string): Promise<{ isPublic: boolea
  * Toggle public read-only access. When enabling, a slug must be supplied; we keep
  * it on disable so re-enabling reuses the same shareable link (avoids unique churn).
  */
-export async function setTreePublic(treeId: string, isPublic: boolean, slug?: string | null): Promise<{ error?: string }> {
-  if (!supabase) return { error: 'Supabase non configuré.' };
+export async function setTreePublic(treeId: string, isPublic: boolean, slug?: string | null, client: any = supabase): Promise<{ error?: string }> {
+  if (!client) return { error: 'Supabase non configuré.' };
   const patch: Record<string, any> = { is_public: isPublic };
   if (isPublic && slug) patch.public_slug = slug;
-  const { error } = await supabase.from('trees').update(patch).eq('id', treeId);
+  const { error } = await client.from('trees').update(patch).eq('id', treeId);
   return { error: error?.message };
 }
 
 /**
- * Server-safe anonymous load of a public tree by slug. Uses a fresh anon client
- * (no session) — RLS `*_public_read` policies expose the rows when is_public.
+ * Anonymous load of a public tree by slug. Accepts an injectable client (F1 fix :
+ * `SupabaseStore.loadPublicTree` passes the server-resolved client from
+ * `getServerAuth()`, scoped to the current request) — falls back to building a
+ * fresh anon client when called without one (legacy/standalone use).
  * Returns null when not found / not public / Supabase unconfigured.
  */
-export async function loadPublicTree(slug: string): Promise<FamilyTree | null> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  const sb = createClient(url, key, { auth: { persistSession: false } });
+export async function loadPublicTree(slug: string, client?: any): Promise<FamilyTree | null> {
+  let sb = client;
+  if (!sb) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!url || !key) return null;
+    sb = createClient(url, key, { auth: { persistSession: false } });
+  }
   // Explicit column allowlist — never select('*') for anonymous reads (keeps
   // owner_id and internal flags off the wire).
   const { data: t } = await sb.from('trees')

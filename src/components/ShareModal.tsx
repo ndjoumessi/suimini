@@ -3,11 +3,11 @@ import { useOverlay } from '@/hooks/useOverlay';
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { FamilyTree } from '@/types';
-import { shareTree, listShares, unshareTree, getPublicShare, setTreePublic } from '@/lib/supabaseSync';
 import { useAuth } from '@/hooks/useAuth';
 import { BrandMark } from '@/components/Brand';
 import {
   getTreeMembers, inviteMember, updateMemberRole, removeMember, sharingEnabled,
+  shareTree, listShares, unshareTree, getPublicShare, setTreePublic,
   type ManagedMember, type MemberRole, type MemberStatus,
 } from '@/lib/sharing';
 import {

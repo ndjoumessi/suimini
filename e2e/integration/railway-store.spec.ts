@@ -168,4 +168,71 @@ describeIntegration('Railway real-cloud store', () => {
       await store.deleteTree(cTreeId, caller.userId);
     }
   });
+
+  // F1 fix : shareTree/listShares/unshareTree (tree_shares) + getPublicShare/
+  // setTreePublic/loadPublicTree (trees.is_public/public_slug) — Supabase-direct
+  // avant ce fix, jamais exercés contre un backend Railway réel jusqu'ici.
+  test('sharing par email + lien public (tree_shares / is_public / public_slug)', async () => {
+    const store = new RailwayStore();
+    const sTreeId = 'itest-share-' + Math.random().toString(36).slice(2, 8);
+    const slug = 'itest-slug-' + Math.random().toString(36).slice(2, 8);
+    const tree: any = {
+      id: sTreeId, name: 'Share Tree', createdAt: '2026-07-11T10:00:00.000Z', updatedAt: '2026-07-11T10:00:00.000Z',
+      persons: [
+        { id: 'sp1', firstName: 'Public', lastName: 'Person', gender: 'male', isAlive: true, privacy: 'public',
+          createdAt: '2026-07-11T10:00:00.000Z', updatedAt: '2026-07-11T10:00:00.000Z' },
+        { id: 'sp2', firstName: 'Private', lastName: 'Person', gender: 'female', isAlive: true, privacy: 'private',
+          createdAt: '2026-07-11T10:00:00.000Z', updatedAt: '2026-07-11T10:00:00.000Z' },
+      ],
+      relationships: [{ id: 'sr1', type: 'spouse', person1Id: 'sp1', person2Id: 'sp2', isActive: true }],
+      journal: [],
+    };
+    try {
+      await store.saveTree(tree, caller.userId, true);
+
+      // Partage par email : upsert, liste, ré-partage (changement de permission), retrait.
+      expect(await store.shareTree(sTreeId, 'Reader@Suimini.test', 'read')).toEqual({});
+      let shares = await store.listShares(sTreeId);
+      expect(shares).toEqual([{ email: 'reader@suimini.test', permission: 'read' }]);
+
+      expect(await store.shareTree(sTreeId, 'reader@suimini.test', 'write')).toEqual({});
+      shares = await store.listShares(sTreeId);
+      expect(shares).toEqual([{ email: 'reader@suimini.test', permission: 'write' }]); // upsert, pas de doublon
+
+      await store.unshareTree(sTreeId, 'reader@suimini.test');
+      expect(await store.listShares(sTreeId)).toEqual([]);
+
+      // getTreeSharePermission (authz) voit bien le partage tant qu'il existe.
+      await store.shareTree(sTreeId, 'writer@suimini.test', 'write');
+      expect(await store.authz.getTreeSharePermission(sTreeId, 'writer@suimini.test')).toBe('write');
+      expect(await store.authz.getTreeSharePermission(sTreeId, 'nobody@suimini.test')).toBeNull();
+
+      // Lien public : état initial fermé, sans slug.
+      expect(await store.getPublicShare(sTreeId)).toEqual({ isPublic: false, slug: null });
+      expect(await store.authz.isTreePublic(sTreeId)).toBe(false);
+
+      // Activation avec slug.
+      expect(await store.setTreePublic(sTreeId, true, slug)).toEqual({});
+      expect(await store.getPublicShare(sTreeId)).toEqual({ isPublic: true, slug });
+      expect(await store.authz.isTreePublic(sTreeId)).toBe(true);
+
+      // Lecture anonyme par slug : fiche privée + relation qui la touche masquées.
+      const pub = await store.loadPublicTree(slug);
+      expect(pub).toBeTruthy();
+      expect(pub!.id).toBe(sTreeId);
+      expect(pub!.persons.map(p => p.id)).toEqual(['sp1']);
+      expect(pub!.relationships.length).toBe(0); // sr1 touche sp2 (privé) → masquée
+      expect(pub!.journal).toEqual([]); // jamais exposé publiquement
+
+      // Slug/tree inconnu → null (pas d'exception).
+      expect(await store.loadPublicTree('slug-inexistant-xyz')).toBeNull();
+
+      // Désactivation : le slug est CONSERVÉ (réactiver réutilise le même lien).
+      expect(await store.setTreePublic(sTreeId, false)).toEqual({});
+      expect(await store.getPublicShare(sTreeId)).toEqual({ isPublic: false, slug });
+      expect(await store.loadPublicTree(slug)).toBeNull(); // is_public=false → plus lisible publiquement
+    } finally {
+      await store.deleteTree(sTreeId, caller.userId);
+    }
+  });
 });

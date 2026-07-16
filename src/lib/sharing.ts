@@ -173,6 +173,89 @@ export async function fetchMyRole(treeId: string): Promise<TreeRole | null> {
   return (data as TreeRole | null) ?? null;
 }
 
+// ── Partage par email (tree_shares) + lien public (F1 fix) ───────────────────
+// F1 : ShareModal.tsx importait ces 5 fonctions DIRECTEMENT depuis supabaseSync.ts
+// (Supabase-direct, sans passer par getDataLayer()/DataStore) — cassé en silence
+// depuis le cutover Railway (nouveaux partages/liens publics jamais lus par
+// l'AuthZ, qui lit désormais Railway). Même patron *Direct/*ViaApi qu'inviteMember
+// ci-dessus : ShareModal importe maintenant ces wrappers d'ICI, plus de
+// supabaseSync directement.
+import {
+  shareTree as shareTreeDirect, listShares as listSharesDirect, unshareTree as unshareTreeDirect,
+  getPublicShare as getPublicShareDirect, setTreePublic as setTreePublicDirect,
+} from './supabaseSync';
+
+export async function shareTree(treeId: string, email: string, permission: 'read' | 'write'): Promise<{ error?: string }> {
+  if (getDataLayer() === 'api') return shareTreeViaApi(treeId, email, permission);
+  return shareTreeDirect(treeId, email, permission, supabase);
+}
+async function shareTreeViaApi(treeId: string, email: string, permission: 'read' | 'write'): Promise<{ error?: string }> {
+  try {
+    const res = await fetch(`/api/data/trees/${treeId}/share`, {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify({ email, permission }),
+    });
+    const json = await res.json().catch(() => ({} as { error?: string }));
+    if (!res.ok) return { error: json.error || `API ${res.status}` };
+    return json;
+  } catch (e) { return { error: e instanceof Error ? e.message : 'Erreur réseau.' }; }
+}
+
+export async function listShares(treeId: string): Promise<{ email: string; permission: string }[]> {
+  if (getDataLayer() === 'api') return listSharesViaApi(treeId);
+  return listSharesDirect(treeId, supabase);
+}
+async function listSharesViaApi(treeId: string): Promise<{ email: string; permission: string }[]> {
+  try {
+    const res = await fetch(`/api/data/trees/${treeId}/share`, { credentials: 'same-origin' });
+    if (!res.ok) return [];
+    const json = (await res.json()) as { shares?: { email: string; permission: string }[] };
+    return json.shares ?? [];
+  } catch { return []; }
+}
+
+export async function unshareTree(treeId: string, email: string): Promise<void> {
+  if (getDataLayer() === 'api') { await unshareTreeViaApi(treeId, email); return; }
+  return unshareTreeDirect(treeId, email, supabase);
+}
+async function unshareTreeViaApi(treeId: string, email: string): Promise<void> {
+  try {
+    await fetch(`/api/data/trees/${treeId}/share?email=${encodeURIComponent(email)}`, {
+      method: 'DELETE', credentials: 'same-origin',
+    });
+  } catch { /* best-effort, la liste sera re-fetchée par l'appelant */ }
+}
+
+export async function getPublicShare(treeId: string): Promise<{ isPublic: boolean; slug: string | null }> {
+  if (getDataLayer() === 'api') return getPublicShareViaApi(treeId);
+  return getPublicShareDirect(treeId, supabase);
+}
+async function getPublicShareViaApi(treeId: string): Promise<{ isPublic: boolean; slug: string | null }> {
+  try {
+    const res = await fetch(`/api/data/trees/${treeId}/public`, { credentials: 'same-origin' });
+    if (!res.ok) return { isPublic: false, slug: null };
+    return (await res.json()) as { isPublic: boolean; slug: string | null };
+  } catch { return { isPublic: false, slug: null }; }
+}
+
+export async function setTreePublic(treeId: string, isPublic: boolean, slug?: string | null): Promise<{ error?: string }> {
+  if (getDataLayer() === 'api') return setTreePublicViaApi(treeId, isPublic, slug);
+  return setTreePublicDirect(treeId, isPublic, slug, supabase);
+}
+async function setTreePublicViaApi(treeId: string, isPublic: boolean, slug?: string | null): Promise<{ error?: string }> {
+  try {
+    const res = await fetch(`/api/data/trees/${treeId}/public`, {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify({ isPublic, slug: slug ?? null }),
+    });
+    const json = await res.json().catch(() => ({} as { error?: string }));
+    if (!res.ok) return { error: json.error || `API ${res.status}` };
+    return json;
+  } catch (e) { return { error: e instanceof Error ? e.message : 'Erreur réseau.' }; }
+}
+
 export interface InvitationInfo {
   treeName: string;
   role: MemberRole;

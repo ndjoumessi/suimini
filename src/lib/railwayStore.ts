@@ -359,6 +359,85 @@ export class RailwayStore {
     return rows.map(mapMemberRow);
   }
 
+  // ── Partage par email (tree_shares) + lien public (F1 fix) ───────────────────
+  // Miroir des fonctions Supabase du même nom (`supabaseSync.ts`) — AuthZ owner-only
+  // faite par la route (`guardTreeWrite(id,'owner')`), jamais ici.
+
+  async shareTree(treeId: string, email: string, permission: 'read' | 'write'): Promise<{ error?: string }> {
+    try {
+      await query(
+        `insert into tree_shares (tree_id, shared_with_email, permission)
+         values ($1, lower($2), $3)
+         on conflict (tree_id, shared_with_email) do update set permission = excluded.permission`,
+        [treeId, email.trim(), permission],
+      );
+      return {};
+    } catch (e) {
+      console.error('[railwayStore] shareTree failed', e);
+      return { error: 'Partage échoué.' };
+    }
+  }
+
+  async listShares(treeId: string): Promise<{ email: string; permission: string }[]> {
+    return query<{ email: string; permission: string }>(
+      'select shared_with_email as email, permission from tree_shares where tree_id = $1', [treeId],
+    );
+  }
+
+  async unshareTree(treeId: string, email: string): Promise<void> {
+    await query('delete from tree_shares where tree_id = $1 and lower(shared_with_email) = lower($2)', [treeId, email]);
+  }
+
+  async getPublicShare(treeId: string): Promise<{ isPublic: boolean; slug: string | null }> {
+    const rows = await query<{ is_public: boolean; public_slug: string | null }>(
+      'select is_public, public_slug from trees where id = $1', [treeId],
+    );
+    return { isPublic: !!rows[0]?.is_public, slug: rows[0]?.public_slug ?? null };
+  }
+
+  /** Garde le slug à l'extinction (comportement identique à la version Supabase,
+   * supabaseSync.ts) — réactiver réutilise le même lien plutôt que d'en régénérer un. */
+  async setTreePublic(treeId: string, isPublic: boolean, slug?: string | null): Promise<{ error?: string }> {
+    try {
+      if (isPublic && slug) {
+        await query('update trees set is_public = $2, public_slug = $3 where id = $1', [treeId, isPublic, slug]);
+      } else {
+        await query('update trees set is_public = $2 where id = $1', [treeId, isPublic]);
+      }
+      return {};
+    } catch (e) {
+      console.error('[railwayStore] setTreePublic failed', e);
+      return { error: 'Mise à jour échouée.' };
+    }
+  }
+
+  /** Lecture ANONYME par slug (page /arbre/[slug]) — même masquage par-fiche
+   * (privacy) que la version Supabase, journal jamais exposé publiquement. */
+  async loadPublicTree(slug: string): Promise<FamilyTree | null> {
+    const treeRows = await query<any>(
+      `select id, name, description, settings, created_at, updated_at
+         from trees where public_slug = $1 and is_public = true`, [slug],
+    );
+    const t = treeRows[0];
+    if (!t) return null;
+    const [persons, rels] = await Promise.all([
+      query<any>('select * from persons where tree_id = $1', [t.id]),
+      query<any>('select * from relationships where tree_id = $1', [t.id]),
+    ]);
+    const allPersons = live(persons).map(rowToPerson).filter(p => p.privacy !== 'private');
+    const visibleIds = new Set(allPersons.map(p => p.id));
+    const allRels = live(rels).map(rowToRel)
+      .filter(r => visibleIds.has(r.person1Id) && visibleIds.has(r.person2Id));
+    return {
+      id: t.id, name: t.name, description: t.description || undefined,
+      settings: t.settings || undefined, createdAt: t.created_at, updatedAt: t.updated_at,
+      rootPersonId: t.settings?.rootPersonId,
+      persons: allPersons,
+      relationships: allRels,
+      journal: [],
+    };
+  }
+
   // ── RPC data-plane (membres/invitations) ─────────────────────────────────────
   // Miroir des RPC SECURITY DEFINER 0013 : `auth.uid()` remplacé par `caller`.
 
