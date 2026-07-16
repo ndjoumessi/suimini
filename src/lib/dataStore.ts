@@ -82,7 +82,9 @@ export interface DataStore {
   getMyMemberships(userId: string): Promise<TreeMember[]>;
 
   // RPC data-plane (membres/invitations) forwardées sous l'identité de l'appelant.
-  rpc(name: string, args: Record<string, unknown>, caller: Caller): Promise<RpcResult>;
+  // `caller` peut être `null` : seule `get_invitation` (F2) est appelable anonyme,
+  // les autres cas exigent un caller réel et rejettent sinon (voir RailwayStore.rpc).
+  rpc(name: string, args: Record<string, unknown>, caller: Caller | null): Promise<RpcResult>;
 }
 
 /** Backend Supabase : passe-plat vers supabaseSync sous le client de l'appelant.

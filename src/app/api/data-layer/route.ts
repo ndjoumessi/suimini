@@ -10,8 +10,13 @@ import { getDataLayerRule, resolveLayer } from '@/lib/dataLayerConfig';
  * instantanés pour toute nouvelle session/navigation, sans redéploiement.
  *
  * ⚠️ Appelant ANONYME → toujours 'direct' : tout /api/data/* exige une session
- * (401 sinon), et le chemin invitation `get_invitation` pré-login DOIT rester direct.
- * Seuls les utilisateurs authentifiés sont éligibles à l'`api` (allowlist / %).
+ * (401 sinon), sauf l'exemption scopée `get_invitation` (voir ANON_ALLOWED dans
+ * /api/data/rpc/[name]/route.ts, correctif F2). Ce défaut 'direct' pour l'anonyme
+ * ne gate donc PLUS le pré-login invite : `sharing.ts:getInvitation` route
+ * désormais TOUJOURS via `/api/data/rpc/get_invitation` (indépendamment de ce
+ * flag), justement pour atteindre le bon backend serveur même sans session.
+ * Seuls les utilisateurs authentifiés sont éligibles à l'`api` pour le RESTE
+ * (tree data, autres RPC — allowlist / %).
  */
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

@@ -2,7 +2,7 @@
 // no-ops when Supabase isn't configured OR the table hasn't been applied yet
 // (errors are swallowed so the single-owner app keeps working).
 import { supabase } from './supabase';
-import { callRpc } from '@/lib/rpcClient';
+import { callRpc, rpcViaApi } from '@/lib/rpcClient';
 import { getDataLayer } from '@/lib/dataClient';
 
 export type MemberRole = 'viewer' | 'editor' | 'admin';
@@ -182,10 +182,19 @@ export interface InvitationInfo {
   expiresAt: string | null;
 }
 
-/** Read an invitation by token (works logged-out). Via SECURITY DEFINER RPC. */
+/** Read an invitation by token (works logged-out). Via SECURITY DEFINER RPC.
+ *
+ *  F2 fix : contrairement aux autres RPC de ce fichier, celle-ci ne passe PAS
+ *  par `callRpc`/`getDataLayer()` — un visiteur anonyme est toujours épinglé
+ *  sur `direct` (voir `/api/data-layer`), qui pointait cette lecture sur
+ *  Supabase même quand l'invitation vit sur Railway (backend `DB_BACKEND`
+ *  courant). On force donc TOUJOURS le chemin `/api/data/rpc/get_invitation`,
+ *  qui résout lui-même le bon backend serveur (`getDataStore`) indépendamment
+ *  de la session — cette RPC est explicitement exemptée de l'auth requise sur
+ *  cette route (voir commentaire `ANON_ALLOWED` dans la route). */
 export async function getInvitation(token: string): Promise<InvitationInfo | null> {
   if (!supabase) return null;
-  const { data, error } = await callRpc('get_invitation', { p_token: token });
+  const { data, error } = await rpcViaApi('get_invitation', { p_token: token });
   if (error || !data || !(data as unknown[])[0]) return null;
   const r = (data as Array<{ tree_name: string; role: MemberRole; status: MemberStatus; invited_email: string; inviter_name: string | null; expires_at: string | null }>)[0];
   return { treeName: r.tree_name, role: r.role, status: r.status, invitedEmail: r.invited_email, inviterName: r.inviter_name, expiresAt: r.expires_at };

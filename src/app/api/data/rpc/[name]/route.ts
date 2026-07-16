@@ -18,18 +18,29 @@ const ALLOWED = new Set([
   'delete_account', 'get_public_profiles',
 ]);
 
+// F2 fix : `get_invitation` doit rester lisible PRÉ-LOGIN (page /invite/[token],
+// visiteur anonyme cliquant un lien d'email). Côté Supabase, la fonction
+// Postgres équivalente est `GRANT`ée à `anon` (voir `0013_collaboration_rpc.sql`)
+// — cette exemption reproduit la même intention ici, mais SCOPÉE À CETTE SEULE
+// RPC : tout le reste de cette route continue d'exiger une session (`accept_invitation`
+// a besoin d'un vrai `caller.userId` pour stamper l'acceptation, et n'est donc PAS
+// exempté). Ne pas élargir cet ensemble sans réévaluer l'AuthZ de la RPC visée.
+const ANON_ALLOWED = new Set(['get_invitation']);
+
 export async function POST(req: Request, { params }: { params: Promise<{ name: string }> }) {
   const { name } = await params;
   if (!ALLOWED.has(name)) return NextResponse.json({ error: 'RPC non autorisée.' }, { status: 403 });
 
   const { client, caller } = await getServerAuth();
   if (!client) return NextResponse.json({ error: 'Supabase non configuré.' }, { status: 500 });
-  if (!caller) return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 });
+  if (!caller && !ANON_ALLOWED.has(name)) return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
   const args = (body as { args?: Record<string, unknown> })?.args ?? {};
 
   // Railway ne connaît que les RPC data-plane ; l'admin/profil reste sur Supabase.
+  // `getDataStore` accepte `caller: null` (résout le backend effectif quand même) —
+  // c'est ce qui permet à `get_invitation` d'atteindre Railway sans session.
   const store = await getDataStore(client, caller);
   if (store.backend === 'railway' && DATA_PLANE_RPCS.has(name)) {
     const { data, error } = await store.rpc(name, args, caller);

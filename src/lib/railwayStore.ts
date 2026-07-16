@@ -362,14 +362,22 @@ export class RailwayStore {
   // ── RPC data-plane (membres/invitations) ─────────────────────────────────────
   // Miroir des RPC SECURITY DEFINER 0013 : `auth.uid()` remplacé par `caller`.
 
-  async rpc(name: string, args: Record<string, unknown>, caller: Caller): Promise<RpcResult> {
+  async rpc(name: string, args: Record<string, unknown>, caller: Caller | null): Promise<RpcResult> {
     try {
+      // F2 fix : seule `get_invitation` est appelable anonyme (pré-login, page
+      // /invite/[token]) — la route serveur ne laisse passer que celle-là sans
+      // session (voir ANON_ALLOWED dans /api/data/rpc/[name]/route.ts), mais on
+      // re-vérifie ici en dur : un `caller` manquant sur n'importe quel autre nom
+      // doit échouer proprement plutôt que de crasher sur `caller.userId`.
+      if (!caller && name !== 'get_invitation') {
+        return { data: null, error: { message: 'Non authentifié.' } };
+      }
       switch (name) {
-        case 'get_tree_members': return { data: await this.getTreeMembers(String(args.p_tree_id), caller), error: null };
-        case 'update_member_role': return await this.updateMemberRole(String(args.p_tree_id), String(args.p_email), String(args.p_role), caller);
-        case 'remove_member': return await this.removeMember(String(args.p_tree_id), String(args.p_email), caller);
-        case 'my_tree_role': return { data: await this.myTreeRole(String(args.p_tree_id), caller), error: null };
-        case 'accept_invitation': return { data: await this.acceptInvitation(String(args.p_token), caller), error: null };
+        case 'get_tree_members': return { data: await this.getTreeMembers(String(args.p_tree_id), caller as Caller), error: null };
+        case 'update_member_role': return await this.updateMemberRole(String(args.p_tree_id), String(args.p_email), String(args.p_role), caller as Caller);
+        case 'remove_member': return await this.removeMember(String(args.p_tree_id), String(args.p_email), caller as Caller);
+        case 'my_tree_role': return { data: await this.myTreeRole(String(args.p_tree_id), caller as Caller), error: null };
+        case 'accept_invitation': return { data: await this.acceptInvitation(String(args.p_token), caller as Caller), error: null };
         case 'get_invitation': return { data: await this.getInvitation(String(args.p_token)), error: null };
         default: return { data: null, error: { message: `RPC ${name} non implémentée pour Railway.` } };
       }
@@ -436,8 +444,10 @@ export class RailwayStore {
     );
     if (!rows[0]) return [];
     // inviter_name vit dans profiles (Supabase, hors périmètre Railway) → null ici.
-    // (En mode api, l'appel anonyme /invite reste sur Supabase ; ce chemin ne sert
-    //  qu'un appelant authentifié allowlisté.) Suivi : enrichir via get_public_profiles.
+    // Suivi : enrichir via get_public_profiles.
+    // (F2, corrigé : ce chemin EST désormais atteignable par un visiteur anonyme —
+    // voir ANON_ALLOWED dans /api/data/rpc/[name]/route.ts et le commentaire sur
+    // sharing.ts:getInvitation. Il n'y a plus d'allowlist qui le limiterait.)
     return [{ ...rows[0], inviter_name: null }];
   }
 }
