@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerAuth } from '@/lib/apiAuth';
 import { getDataStore, DATA_PLANE_RPCS } from '@/lib/dataStore';
+import { checkOrigin } from '@/lib/apiData';
 
 // POST /api/data/rpc/[name] { args } → forward de la RPC sous l'identité de
 // l'appelant. Les RPC sont SECURITY DEFINER (AuthZ interne : rôle admin,
@@ -28,6 +29,11 @@ const ALLOWED = new Set([
 const ANON_ALLOWED = new Set(['get_invitation']);
 
 export async function POST(req: Request, { params }: { params: Promise<{ name: string }> }) {
+  // Sécu F7 : certaines RPC ici sont state-changing (accept_invitation,
+  // remove_member, approve_user…) même si `get_invitation` est en lecture.
+  const originErr = await checkOrigin();
+  if (originErr) return originErr;
+
   const { name } = await params;
   if (!ALLOWED.has(name)) return NextResponse.json({ error: 'RPC non autorisée.' }, { status: 403 });
 

@@ -22,6 +22,7 @@ import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { getServerAuth } from '@/lib/apiAuth';
 import { getR2Client, isPathOwnedBy, readR2Env } from '@/lib/r2';
+import { checkOrigin } from '@/lib/apiData';
 
 // Node runtime (SDK AWS + crypto de signature).
 export const runtime = 'nodejs';
@@ -31,6 +32,9 @@ export const runtime = 'nodejs';
 const EXPIRY_SECONDS = 300; // 5 minutes
 
 export async function POST(req: Request) {
+  const originErr = await checkOrigin();
+  if (originErr) return originErr;
+
   // --- R2 configuré ? (échec gracieux, pas de crash) ---
   const env = readR2Env();
   if (!env) {

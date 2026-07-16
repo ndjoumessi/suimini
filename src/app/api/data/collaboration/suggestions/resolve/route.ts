@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerAuth } from '@/lib/apiAuth';
 import { isTreeOwner } from '@/lib/authz';
 import { getDataStore } from '@/lib/dataStore';
+import { checkOrigin } from '@/lib/apiData';
 
 // Phase 0/1 — POST { id, status } → { ok }. Accepte/rejette une suggestion.
 // La suggestion ne porte pas de treeId dans le corps : on lit son tree_id via le
@@ -10,6 +11,9 @@ import { getDataStore } from '@/lib/dataStore';
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
+  const originErr = await checkOrigin();
+  if (originErr) return originErr;
+
   const body = await req.json().catch(() => null);
   const id = body?.id;
   const status = body?.status;

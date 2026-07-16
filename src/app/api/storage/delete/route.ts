@@ -15,10 +15,14 @@ import { NextResponse } from 'next/server';
 import { DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getServerAuth } from '@/lib/apiAuth';
 import { getR2Client, isPathOwnedBy, readR2Env } from '@/lib/r2';
+import { checkOrigin } from '@/lib/apiData';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
+  const originErr = await checkOrigin();
+  if (originErr) return originErr;
+
   const env = readR2Env();
   if (!env) {
     return NextResponse.json(

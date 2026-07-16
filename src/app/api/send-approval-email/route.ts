@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { MEMBER_JOINED_SUBJECT, memberJoinedEmailHtml } from '@/lib/emails';
+import { checkOrigin } from '@/lib/apiData';
 
 // Server-only: RESEND_API_KEY is never exposed to the browser.
 export const runtime = 'nodejs';
@@ -20,6 +21,9 @@ const APP_BASE = 'https://suimini.vercel.app';
  * No-ops gracefully (200 { skipped }) on self-join, missing owner email, or no RESEND_API_KEY.
  */
 export async function POST(req: Request) {
+  const originErr = await checkOrigin();
+  if (originErr) return originErr;
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) return NextResponse.json({ error: 'Supabase non configuré.' }, { status: 500 });

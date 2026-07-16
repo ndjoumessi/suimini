@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { type ExpoPushMessage, type PushLocale, memberJoinedPushMessage, sendExpoPush } from '@/lib/push';
+import { checkOrigin } from '@/lib/apiData';
 
 // Server-only. Node runtime (fetch vers l'API Expo + Supabase).
 export const runtime = 'nodejs';
@@ -24,6 +25,9 @@ export const runtime = 'nodejs';
  * sans token, ou Supabase non configuré.
  */
 export async function POST(req: Request) {
+  const originErr = await checkOrigin();
+  if (originErr) return originErr;
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) return NextResponse.json({ error: 'Supabase non configuré.' }, { status: 500 });

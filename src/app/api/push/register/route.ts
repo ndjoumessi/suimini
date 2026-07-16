@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { checkOrigin } from '@/lib/apiData';
 
 // Server route; runs on Node.
 export const runtime = 'nodejs';
@@ -19,6 +20,11 @@ export const runtime = 'nodejs';
  * No-op gracieux (500) si Supabase n'est pas configuré.
  */
 export async function POST(req: Request) {
+  // Sécu F7 : sans effet pour l'app mobile (Bearer, pas d'en-tête Origin envoyé
+  // par un fetch natif) — défense en profondeur pour un éventuel appel web.
+  const originErr = await checkOrigin();
+  if (originErr) return originErr;
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) {

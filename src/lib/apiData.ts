@@ -6,10 +6,36 @@
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 import { getServerAuth } from '@/lib/apiAuth';
 import { canWriteTreeContent, isTreeOwner, canReadTreeAsMember, type Caller } from '@/lib/authz';
 import { getDataStore, type DataStore } from '@/lib/dataStore';
 import type { ChildTable } from '@/lib/supabaseSync';
+
+/**
+ * Sécu F7 (durcissement) : vérifie que l'Origin d'une requête state-changing
+ * correspond bien à l'hôte de la requête — en plus de la protection SameSite
+ * implicite des cookies de session Supabase (déjà le filet PRINCIPAL, cf.
+ * AUDIT-SECURITE.md — ce check est une DÉFENSE EN PROFONDEUR, pas le seul
+ * rempart). Un Origin ABSENT (clients non-navigateur : curl, apps mobiles en
+ * Bearer, qui n'envoient pas cet en-tête) est laissé passer — fail-open
+ * volontaire, cohérent avec le reste de l'appli. Un Origin PRÉSENT mais
+ * divergent de l'hôte est en revanche rejeté : c'est la signature d'une
+ * requête cross-site.
+ */
+export async function checkOrigin(): Promise<NextResponse | null> {
+  const h = await headers();
+  const origin = h.get('origin');
+  if (!origin) return null;
+  try {
+    const originHost = new URL(origin).host;
+    const requestHost = h.get('host');
+    if (requestHost && originHost !== requestHost) {
+      return NextResponse.json({ error: 'Origine non autorisée.' }, { status: 403 });
+    }
+  } catch { /* Origin malformé (rare) → ne pas bloquer la requête pour ça */ }
+  return null;
+}
 
 export const CHILD_TABLES: ChildTable[] = ['persons', 'relationships', 'journal_entries'];
 export function isChildTable(v: unknown): v is ChildTable {
@@ -31,6 +57,8 @@ async function authed(): Promise<Guard> {
 
 /** AuthN + AuthZ écriture/propriété sur un arbre. */
 export async function guardTreeWrite(treeId: string, mode: 'write' | 'owner'): Promise<Guard> {
+  const originErr = await checkOrigin();
+  if (originErr) return { ok: false, res: originErr };
   const g = await authed();
   if (!g.ok) return g;
   const allowed = mode === 'owner'
