@@ -103,7 +103,9 @@ Depuis le 100% Railway, il n'y a **plus de RLS en filet** sur le chemin nominal 
 
 Inventaire vérifié : **33 fichiers de specs** (31 dans `e2e/` + 2 dans `e2e/integration/`), ratio pure-logic/navigateur toujours adapté au profil de risque (sync/merge/authz), `a11y.spec.ts` en garde-fou.
 
-**F7 · Mineur** — Zones critiques sans couverture, inchangées : (a) les route handlers `/api/data/*` eux-mêmes (401/403/happy-path) — c'est pourtant là que vit l'unique AuthZ post-RLS ; (b) exactement le périmètre de F1/F2/F8 (`loadPublicTree`, `shareTree`, flux `/invite`) — corrélation non fortuite : les chemins non testés sont ceux qui ont dérivé ; (c) `railway-store.spec.ts` jamais exécuté en CI (cf. F4).
+**F7 · Mineur** — **✅ Traité, volet 401 (2026-07-16)** : `e2e/api-data-authn.spec.ts` — balayage 401 anonyme sur les ~22 routes `/api/data/*` (requêtes HTTP réelles contre un serveur Next vivant, pas pure-logic), incluant les 3 exceptions délibérées (`whoami`, `my-memberships` fail-open, exemption anonyme `rpc/get_invitation`) et la whitelist RPC. Chaque prédiction de statut a été vérifiée manuellement contre un `next dev` réel (curl) faute de pouvoir faire tourner Chromium+Playwright de bout en bout dans ce sandbox. **Volet 403 (droits) et happy-path restent un gap documenté** — nécessitent un compte de test réel (`SUPABASE_TEST_*`), absent de cet environnement ; à couvrir dans `e2e/integration/` avec le même patron self-skip que `railway-store.spec.ts` (cf. F4) quand ces secrets existeront. Constat original :
+
+(a) les route handlers `/api/data/*` eux-mêmes (401/403/happy-path) — c'est pourtant là que vit l'unique AuthZ post-RLS ; (b) exactement le périmètre de F1/F2/F8 (`loadPublicTree`, `shareTree`, flux `/invite`) — corrélation non fortuite : les chemins non testés sont ceux qui ont dérivé ; (c) `railway-store.spec.ts` jamais exécuté en CI (cf. F4).
 
 ## 5. Migrations SQL
 
@@ -111,7 +113,7 @@ Inventaire vérifié : **33 fichiers de specs** (31 dans `e2e/` + 2 dans `e2e/in
 
 Railway n'avait aucun framework de migration : `railway/` = `schema.sql` + `realtime-notify.sql`, pas de `railway/migrations/`, pas de table de tracking, application manuelle `psql` sur l'URL unpooled — pour le schéma qui porte désormais 100% des données de production. Le framework Supabase (`supabase/migrations/0001-0017` + `scripts/migrate.mjs`) est propre mais migre un backend en fin de vie pour le data-plane. *Recommandation* : créer `railway/migrations/` en réutilisant `migrate.mjs` (paramétré sur `RAILWAY_DATABASE_URL` unpooled).
 
-**F14 · Observation** — Double système Supabase (miroirs racine `supabase/*.sql` + migrations versionnées) : toujours synchronisé, discipline purement manuelle. Geler officiellement les miroirs (bandeau « historique ») ou check CI de dérive.
+**F14 · Observation** — **✅ Corrigé (2026-07-16)** : bandeau « miroir historique, ne plus éditer directement » ajouté en tête des 16 fichiers `supabase/*.sql` qui ont un équivalent en migration versionnée (les 3 scripts sans équivalent — `cleanup-demo-tree.sql`, `cleanup-extra-duplicates.sql`, `seed-admin.sql` — restent la voie normale, à dessein). Constat original : double système Supabase (miroirs racine `supabase/*.sql` + migrations versionnées) : toujours synchronisé, discipline purement manuelle. Geler officiellement les miroirs (bandeau « historique ») ou check CI de dérive.
 
 ## 6. Scalabilité (croissance 10×)
 
@@ -193,23 +195,25 @@ Pour que ce rapport ne soit pas faussement alarmiste — ce qui suit a été lu 
 | F4 | AuthZ en 4 exemplaires sans test de parité ; `railway-store.spec.ts` jamais en CI | **Majeur** (préventif) | **✅ Corrigé** (test de parité pure-logic ; secret CI toujours manquant, action manuelle) |
 | F5 | Railway sans framework de migrations versionnées | **Majeur** (latent) | **✅ Corrigé** (secret CI toujours manquant, action manuelle) |
 | F6 | Écriture/lecture O(arbre entier) à chaque édition — rupture à 10× | **Majeur** (horizon) | **📄 Analysé, non corrigé** — refactor jugé trop risqué sans feu vert explicite (`docs/f6-scalability-analysis.md`) |
-| F7 | Route handlers `/api/data/*` sans tests 401/403/happy-path | Mineur | **Toujours ouvert** |
+| F7 | Route handlers `/api/data/*` sans tests 401/403/happy-path | Mineur | **✅ Traité (volet 401)** — 403/happy-path en gap documenté (`SUPABASE_TEST_*` manquant) |
 | F8 | Canaux/routes annexes sur tables Supabase mortes (`subscribeComments`, `/api/export-pdf`, notify-join, send-approval-email) | Mineur | **✅ Corrigé** (sauf `subscribeComments`, documenté comme inerte — pas de correctif, portée plus large) |
 | F9 | Rollback Storage partiellement fictif ; domaine `pub-*.r2.dev` en prod | Mineur | **📄 Documenté**, non exécutable par un agent (dashboard Cloudflare requis) |
 | F10 | CLAUDE.md : 5 dérives état-courant vs code (palette, rate-limit, AUDIT-V4, compte de specs, promesse rollback) | Mineur | **✅ Corrigé** |
 | F11 | `Person` mobile sans `media`/`photoTags`, parité non testée | Mineur | **✅ Corrigé** (test de parité pure-logic) |
 | F12 | `server-only` partiel (3 fichiers sur ~8 concernés) ; partage éclaté dans `supabaseSync.ts` (cause racine de F1) | Mineur | **✅ Vérifié** — ne peut pas être complété sans casser des tests existants (documenté) |
 | F13 | Code mort (`fetchMembers`), commentaire périmé (`railwayStore.ts:438-440`), `sharedByName` en dur | Observation | **✅ Partiellement traité** (code mort retiré, commentaire corrigé ; `sharedByName` laissé en l'état) |
-| F14 | Double système migrations Supabase, synchronisé mais manuel | Observation | Inchangé |
+| F14 | Double système migrations Supabase, synchronisé mais manuel | Observation | **✅ Corrigé** (bandeau « historique » sur les 16 miroirs) |
 
-**Bilan (2026-07-16, fin de journée) : 5 des 6 Majeurs corrigés (F6 analysé mais pas corrigé, en attente de feu vert) ; 4 des 6 Mineurs corrigés (F7 toujours ouvert, F9 documenté mais bloqué sur un accès externe) ; 2 des 2 Observations traitées côté F13 (F14 hors scope de cette passe).**
+**Bilan (2026-07-16, soir) : 5 des 6 Majeurs corrigés (F6 analysé mais pas corrigé, en attente de feu vert) ; 5 des 6 Mineurs traités (F7 volet 401 fait, volet 403/happy-path en gap documenté ; F9 documenté mais bloqué sur un accès externe) ; 3 des 3 Observations traitées (F13 partiel, F14 fait, garde-fou d'inventaire posé).**
 
-## Recommandations priorisées — état (2026-07-16)
+## Recommandations priorisées — état (2026-07-16, soir)
 
 1. ~~**Corriger F2 (invitation anonyme) en premier**~~ **✅ Fait.**
 2. ~~**Corriger F1 (partage email/public)**~~ **✅ Fait**, y compris l'endpoint public `/api/data/trees/[id]/public`.
 3. ~~**Requalifier le rollback (F3)**~~ **✅ Fait**, script de copie inverse écrit et testé (mocké).
-4. **Poser le garde-fou d'inventaire de frontière** — **non fait** dans cette passe (pas explicitement demandé ; resterait la meilleure protection contre un futur F1/F2/F8).
+4. ~~**Poser le garde-fou d'inventaire de frontière**~~ **✅ Fait** — `e2e/frontier-inventory.spec.ts`, vérifié en injectant une violation réelle puis en confirmant l'échec.
 5. ~~**Fermer le risque AuthZ (F4) + migrations Railway (F5)**~~ **✅ Fait** pour la partie code (test de parité + framework de migrations) ; **le secret `RAILWAY_TEST_DATABASE_URL`/`RAILWAY_DATABASE_URL_UNPOOLED` reste à poser côté GitHub Secrets** (accès manuel requis, hors de portée d'un agent).
+6. ~~**F7 (tests 401 des route handlers)**~~ **✅ Fait** — `e2e/api-data-authn.spec.ts` ; le volet 403/happy-path reste un gap documenté (credentials de test absentes).
+7. ~~**F14 (gel officiel des miroirs Supabase)**~~ **✅ Fait** — bandeau sur les 16 fichiers concernés.
 
-**Restent ouverts, non traités dans cette passe** : F7 (tests 401/403 des route handlers), le garde-fou d'inventaire de frontière (recommandation n°4), F14 (gel officiel des miroirs Supabase), et F6 au-delà de l'analyse écrite (attend un feu vert explicite avant tout code, cf. `docs/f6-scalability-analysis.md`).
+**Restent ouverts** : le volet 403/happy-path de F7 (nécessite `SUPABASE_TEST_*`, hors de portée de cet environnement), et F6 au-delà de l'analyse écrite (attend un feu vert explicite avant tout code, cf. `docs/f6-scalability-analysis.md`). F9 reste bloqué sur un accès dashboard Cloudflare que l'agent n'a pas.
