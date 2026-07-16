@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/data/supabase';
 import { callRpc } from '@/lib/data/rpcClient';
-import type { UserProfile, AdminNotification, UserStatus, UserRole } from '@/types';
+import type { UserProfile, AdminNotification, UserStatus, UserRole, AdminAuditEntry } from '@/types';
 
 /**
  * Admin data layer: wraps the SECURITY DEFINER RPCs (admin-only, enforced
@@ -17,6 +17,7 @@ export function useAdminData({ enabled }: { enabled: boolean }) {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [auditLog, setAuditLog] = useState<AdminAuditEntry[]>([]);
   const [loading, setLoading] = useState(false);
   // True only until the FIRST users+notifications fetch settles — unlike `loading`
   // (which flips true/false around every fetchUsers call, including routine
@@ -43,33 +44,42 @@ export function useAdminData({ enabled }: { enabled: boolean }) {
     }
   }, []);
 
+  /** Les 10 dernières actions de modération (RPC `get_admin_audit_log`, 0020) —
+   * fail-safe : une base pré-migration (fonction absente) laisse juste le
+   * journal vide plutôt que de faire planter l'écran Admin. */
+  const fetchAuditLog = useCallback(async () => {
+    if (!supabase) return;
+    const { data, error } = await callRpc('get_admin_audit_log', { limit_count: 10 });
+    if (!error && data) setAuditLog(data as AdminAuditEntry[]);
+  }, []);
+
   const approveUser = useCallback(async (id: string) => {
     if (!supabase) return { error: 'Supabase non configuré.' };
     const { error } = await callRpc('approve_user', { target_user_id: id });
-    if (!error) await Promise.all([fetchUsers(), fetchNotifications()]);
+    if (!error) await Promise.all([fetchUsers(), fetchNotifications(), fetchAuditLog()]);
     return { error: error?.message };
-  }, [fetchUsers, fetchNotifications]);
+  }, [fetchUsers, fetchNotifications, fetchAuditLog]);
 
   const rejectUser = useCallback(async (id: string, reason?: string) => {
     if (!supabase) return { error: 'Supabase non configuré.' };
     const { error } = await callRpc('reject_user', { target_user_id: id, reason: reason || null });
-    if (!error) await Promise.all([fetchUsers(), fetchNotifications()]);
+    if (!error) await Promise.all([fetchUsers(), fetchNotifications(), fetchAuditLog()]);
     return { error: error?.message };
-  }, [fetchUsers, fetchNotifications]);
+  }, [fetchUsers, fetchNotifications, fetchAuditLog]);
 
   const setStatus = useCallback(async (id: string, newStatus: UserStatus) => {
     if (!supabase) return { error: 'Supabase non configuré.' };
     const { error } = await callRpc('set_user_status', { target_user_id: id, new_status: newStatus });
-    if (!error) await fetchUsers();
+    if (!error) await Promise.all([fetchUsers(), fetchAuditLog()]);
     return { error: error?.message };
-  }, [fetchUsers]);
+  }, [fetchUsers, fetchAuditLog]);
 
   const setRole = useCallback(async (id: string, newRole: UserRole) => {
     if (!supabase) return { error: 'Supabase non configuré.' };
     const { error } = await callRpc('set_user_role', { target_user_id: id, new_role: newRole });
-    if (!error) await fetchUsers();
+    if (!error) await Promise.all([fetchUsers(), fetchAuditLog()]);
     return { error: error?.message };
-  }, [fetchUsers]);
+  }, [fetchUsers, fetchAuditLog]);
 
   const markAllNotificationsRead = useCallback(async () => {
     if (!supabase) return { error: 'Supabase non configuré.' };
@@ -94,7 +104,7 @@ export function useAdminData({ enabled }: { enabled: boolean }) {
   useEffect(() => {
     if (!enabled || !supabase) { setInitialLoading(false); return; }
     const sb = supabase;
-    Promise.all([fetchUsers(), fetchNotifications()]).finally(() => setInitialLoading(false));
+    Promise.all([fetchUsers(), fetchNotifications(), fetchAuditLog()]).finally(() => setInitialLoading(false));
 
     const notifChannel = sb
       .channel('admin-notifs')
@@ -115,7 +125,7 @@ export function useAdminData({ enabled }: { enabled: boolean }) {
       sb.removeChannel(notifChannel);
       sb.removeChannel(pendingChannel);
     };
-  }, [enabled, fetchUsers, fetchNotifications]);
+  }, [enabled, fetchUsers, fetchNotifications, fetchAuditLog]);
 
   // Reflect pending-approval count in the PWA app badge.
   useEffect(() => {
@@ -132,8 +142,8 @@ export function useAdminData({ enabled }: { enabled: boolean }) {
   }, [unreadCount]);
 
   return {
-    users, notifications, unreadCount, loading, initialLoading,
-    fetchUsers, fetchNotifications,
+    users, notifications, unreadCount, auditLog, loading, initialLoading,
+    fetchUsers, fetchNotifications, fetchAuditLog,
     approveUser, rejectUser, setStatus, setRole, markAllNotificationsRead,
   };
 }

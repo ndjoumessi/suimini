@@ -350,6 +350,18 @@ create trigger on_new_user_notify
 
 -- F. RPC SECURITY DEFINER (validation des comptes, admin-only) ----------------
 
+-- Journal d'audit des actions de modération (append-only, RPC admin-only
+-- get_admin_audit_log ci-dessous) — voir supabase/migrations/0020_admin_audit_log.sql.
+create table if not exists public.admin_audit_log (
+  id bigserial primary key,
+  actor_id uuid not null references auth.users(id) on delete cascade,
+  action text not null check (action in ('approved','rejected','suspended','reactivated','promoted','demoted')),
+  target_user_id uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+alter table public.admin_audit_log enable row level security;
+create index if not exists admin_audit_log_created_at_idx on public.admin_audit_log (created_at desc);
+
 -- Approuver un user
 create or replace function public.approve_user(target_user_id uuid)
 returns void language plpgsql security definer set search_path = public as $$
@@ -364,6 +376,7 @@ begin
   where id = target_user_id;
   update public.admin_notifications set is_read = true
   where type = 'new_user' and payload->>'user_id' = target_user_id::text;
+  insert into public.admin_audit_log (actor_id, action, target_user_id) values (auth.uid(), 'approved', target_user_id);
 end; $$;
 
 -- Rejeter un user
@@ -379,6 +392,7 @@ begin
   where id = target_user_id;
   update public.admin_notifications set is_read = true
   where type = 'new_user' and payload->>'user_id' = target_user_id::text;
+  insert into public.admin_audit_log (actor_id, action, target_user_id) values (auth.uid(), 'rejected', target_user_id);
 end; $$;
 
 -- Suspendre / réactiver un user
@@ -389,6 +403,8 @@ begin
     raise exception 'Unauthorized';
   end if;
   update public.profiles set status = new_status where id = target_user_id;
+  insert into public.admin_audit_log (actor_id, action, target_user_id)
+  values (auth.uid(), case when new_status = 'suspended' then 'suspended' else 'reactivated' end, target_user_id);
 end; $$;
 
 -- Promouvoir / rétrograder (superadmin only)
@@ -399,6 +415,30 @@ begin
     raise exception 'Unauthorized';
   end if;
   update public.profiles set role = new_role where id = target_user_id;
+  insert into public.admin_audit_log (actor_id, action, target_user_id)
+  values (auth.uid(), case when new_role = 'admin' then 'promoted' else 'demoted' end, target_user_id);
+end; $$;
+
+-- Lire le journal d'audit (admin only)
+create or replace function public.get_admin_audit_log(limit_count integer default 10)
+returns table (
+  id bigint, action text, created_at timestamptz,
+  actor_display text, actor_email text,
+  target_display text, target_email text
+) language plpgsql security definer stable set search_path = public as $$
+begin
+  if not exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.role in ('admin','superadmin')) then
+    raise exception 'Unauthorized';
+  end if;
+  return query
+    select l.id, l.action, l.created_at,
+           a.display_name, a.email,
+           t.display_name, t.email
+      from public.admin_audit_log l
+      left join public.profiles a on a.id = l.actor_id
+      left join public.profiles t on t.id = l.target_user_id
+     order by l.created_at desc
+     limit least(greatest(limit_count, 1), 50);
 end; $$;
 
 -- Lister tous les users (admin only)
@@ -452,6 +492,7 @@ end; $$;
 grant execute on function public.approve_user(uuid)                 to authenticated;
 grant execute on function public.reject_user(uuid, text)            to authenticated;
 grant execute on function public.set_user_status(uuid, text)        to authenticated;
+grant execute on function public.get_admin_audit_log(integer)       to authenticated;
 grant execute on function public.set_user_role(uuid, text)          to authenticated;
 grant execute on function public.list_all_users()                   to authenticated;
 grant execute on function public.get_unread_notifications()         to authenticated;

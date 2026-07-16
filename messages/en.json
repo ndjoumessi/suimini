@@ -585,7 +585,31 @@
     "systemItemSecrets": "Secrets and environment variables (presence only, never the values)",
     "systemItemTransport": "Data transport and global flip (Edge Config)",
     "systemItemMigrations": "Expected SQL migrations",
-    "systemHealthCta": "Open diagnostics"
+    "systemHealthCta": "Open diagnostics",
+    "selectAll": "Select all",
+    "selectedCount": "{count} selected",
+    "selectedCountPlural": "{count} selected",
+    "bulkApprove": "Approve all",
+    "bulkReject": "Reject all",
+    "toastBulkApproved": "{count} account(s) approved",
+    "toastBulkRejected": "{count} account(s) rejected",
+    "sortBy": "Sort by",
+    "sortName": "Name",
+    "sortDate": "Sign-up date",
+    "sortStatus": "Status",
+    "systemRollout": "API rollout",
+    "systemMigrationsOk": "Migrations OK",
+    "systemSecretsOk": "Secrets present",
+    "systemSecretsMissing": "Secrets missing",
+    "activityTitle": "Recent activity",
+    "activityEmpty": "No recent actions",
+    "activityYou": "You",
+    "activityApproved": "approved {name}",
+    "activityRejected": "rejected {name}",
+    "activitySuspended": "suspended {name}",
+    "activityReactivated": "reactivated {name}",
+    "activityPromoted": "promoted {name} to admin",
+    "activityDemoted": "demoted {name} to user"
   },
   "adminHome": {
     "greeting": "Hello, {name}",
@@ -601,7 +625,9 @@
     "linkNotificationsDesc": "History of recent sign-ups.",
     "linkSystemDesc": "Configuration, data transport and migrations.",
     "statusTitle": "Platform status",
-    "statusDesc": "Public availability page (Supabase, database, auth, storage)."
+    "statusDesc": "Public availability page (Supabase, database, auth, storage).",
+    "refresh": "Refresh",
+    "activityEyebrow": "History"
   },
   "profile": {
     "backToApp": "Back to app",

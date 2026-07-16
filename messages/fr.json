@@ -585,7 +585,31 @@
     "systemItemSecrets": "Secrets et variables d'environnement (présence uniquement, jamais les valeurs)",
     "systemItemTransport": "Transport des données et flip global (Edge Config)",
     "systemItemMigrations": "Migrations SQL attendues",
-    "systemHealthCta": "Ouvrir le diagnostic"
+    "systemHealthCta": "Ouvrir le diagnostic",
+    "selectAll": "Tout sélectionner",
+    "selectedCount": "{count} sélectionnée",
+    "selectedCountPlural": "{count} sélectionnées",
+    "bulkApprove": "Tout approuver",
+    "bulkReject": "Tout rejeter",
+    "toastBulkApproved": "{count} compte(s) approuvé(s)",
+    "toastBulkRejected": "{count} compte(s) refusé(s)",
+    "sortBy": "Trier par",
+    "sortName": "Nom",
+    "sortDate": "Date d'inscription",
+    "sortStatus": "Statut",
+    "systemRollout": "Rollout API",
+    "systemMigrationsOk": "Migrations OK",
+    "systemSecretsOk": "Secrets présents",
+    "systemSecretsMissing": "Secrets manquants",
+    "activityTitle": "Activité récente",
+    "activityEmpty": "Aucune action récente",
+    "activityYou": "Vous",
+    "activityApproved": "a approuvé {name}",
+    "activityRejected": "a refusé {name}",
+    "activitySuspended": "a suspendu {name}",
+    "activityReactivated": "a réactivé {name}",
+    "activityPromoted": "a promu {name} en admin",
+    "activityDemoted": "a rétrogradé {name} en utilisateur"
   },
   "adminHome": {
     "greeting": "Bonjour, {name}",
@@ -601,7 +625,9 @@
     "linkNotificationsDesc": "Historique des inscriptions récentes.",
     "linkSystemDesc": "Configuration, transport des données et migrations.",
     "statusTitle": "Statut de la plateforme",
-    "statusDesc": "Page publique de disponibilité (Supabase, base, auth, stockage)."
+    "statusDesc": "Page publique de disponibilité (Supabase, base, auth, stockage).",
+    "refresh": "Rafraîchir",
+    "activityEyebrow": "Historique"
   },
   "profile": {
     "backToApp": "Retour à l’app",

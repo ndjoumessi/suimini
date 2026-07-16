@@ -1,12 +1,13 @@
 'use client';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
-  ShieldCheck, Clock, Users, Bell, Activity, ArrowRight, CheckCircle, RadioTower,
+  ShieldCheck, Clock, Users, Bell, Activity, ArrowRight, CheckCircle, RadioTower, RefreshCw,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { AdminData } from '@/hooks/useAdminData';
-import type { UserRole } from '@/types';
+import type { AdminAuditEntry, UserRole } from '@/types';
+import { SystemStatChips, relative } from '@/components/AdminDashboard';
 
 type AdminTab = 'pending' | 'users' | 'notifications' | 'system';
 
@@ -39,6 +40,17 @@ function fmtDate(d?: string): string {
   catch { return '—'; }
 }
 
+const ACTIVITY_KEY: Record<AdminAuditEntry['action'], string> = {
+  approved: 'activityApproved', rejected: 'activityRejected', suspended: 'activitySuspended',
+  reactivated: 'activityReactivated', promoted: 'activityPromoted', demoted: 'activityDemoted',
+};
+
+/** "Vous avez approuvé X" si l'acteur == l'admin connecté, sinon son nom. */
+function activityActor(entry: AdminAuditEntry, userEmail: string | null | undefined, ta: (k: string) => string): string {
+  if (entry.actor_email && userEmail && entry.actor_email === userEmail) return ta('activityYou');
+  return entry.actor_display || entry.actor_email || '—';
+}
+
 /**
  * Dashboard « Accueil » dédié aux comptes admin/superadmin. Un admin pur n'a
  * PAS d'arbre actif de façon permanente (rôle = modération, pas construction
@@ -53,11 +65,25 @@ export default function AdminHomeView({ admin, role, displayName, userEmail, onO
   const ta = useTranslations('admin');
   const tp = useTranslations('profile');
   const firstName = firstNameOf(displayName, userEmail);
+  const [checkedAt, setCheckedAt] = useState<Date | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const today = useMemo(
     () => new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
     [],
   );
+
+  function handleRefresh() {
+    setRefreshing(true);
+    Promise.all([admin.fetchUsers(), admin.fetchNotifications(), admin.fetchAuditLog()])
+      .finally(() => { setRefreshing(false); setCheckedAt(new Date()); });
+  }
+
+  // Le premier chargement (déclenché par useAdminData lui-même) compte aussi
+  // comme une vérification fraîche — pas besoin d'attendre un clic manuel.
+  useEffect(() => {
+    if (!admin.initialLoading) setCheckedAt(new Date());
+  }, [admin.initialLoading]);
 
   const pending = useMemo(() => admin.users.filter(u => u.status === 'pending'), [admin.users]);
   const activeCount = useMemo(() => admin.users.filter(u => u.status === 'approved').length, [admin.users]);
@@ -85,9 +111,20 @@ export default function AdminHomeView({ admin, role, displayName, userEmail, onO
         <header className="adh-hero">
           <div className="adh-hero-top">
             <span className="adh-date">{today}</span>
-            <span className="adh-role">
-              <ShieldCheck size={13} aria-hidden="true" /> {roleLabel}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span className="adh-role">
+                <ShieldCheck size={13} aria-hidden="true" /> {roleLabel}
+              </span>
+              {checkedAt && (
+                <span className="adh-checked">
+                  <span className="adh-checked-dot" aria-hidden="true" />
+                  {relative(checkedAt.toISOString(), ta)}
+                </span>
+              )}
+              <button type="button" onClick={handleRefresh} disabled={refreshing} className="adh-refresh" aria-label={t('refresh')} title={t('refresh')}>
+                <RefreshCw size={14} aria-hidden="true" style={refreshing ? { animation: 'adh-spin 0.8s linear infinite' } : undefined} />
+              </button>
+            </div>
           </div>
           <h1 className="adh-title">{firstName ? t('greeting', { name: firstName }) : t('greetingGeneric')}</h1>
           <span className="adh-rule" aria-hidden="true" />
@@ -163,6 +200,34 @@ export default function AdminHomeView({ admin, role, displayName, userEmail, onO
           </section>
         </div>
 
+        {/* ===== RECENT ACTIVITY ===== */}
+        {/* Journal des actions de modération PASSÉES (approuvé/refusé/suspendu/
+            promu, qui et quand) — manquait entièrement avant : seules les files
+            FUTURES (demandes, notifications) existaient. RPC get_admin_audit_log
+            (0020), fail-safe (liste vide si la migration n'est pas encore posée). */}
+        <section className="adh-card">
+          <Head Icon={Activity} eyebrow={t('activityEyebrow')} title={ta('activityTitle')} />
+          {admin.auditLog.length > 0 ? (
+            <ul className="adh-activity">
+              {admin.auditLog.map((entry: AdminAuditEntry) => (
+                <li key={entry.id} className="adh-activity-item">
+                  <span className={`adh-activity-dot adh-activity-dot-${entry.action}`} aria-hidden="true" />
+                  <span className="adh-activity-text">
+                    <b>{activityActor(entry, userEmail, ta)}</b>{' '}
+                    {ta(ACTIVITY_KEY[entry.action], { name: entry.target_display || entry.target_email || '—' })}
+                  </span>
+                  <span className="adh-activity-when">{relative(entry.created_at, ta)}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="adh-empty">
+              <Activity size={26} strokeWidth={1.25} aria-hidden="true" style={{ color: 'var(--text-light)' }} />
+              <p>{ta('activityEmpty')}</p>
+            </div>
+          )}
+        </section>
+
         {/* ===== QUICK ACCESS ===== */}
         <section className="adh-card">
           <Head eyebrow={t('quickAccessEyebrow')} title={t('quickAccess')} />
@@ -183,6 +248,17 @@ export default function AdminHomeView({ admin, role, displayName, userEmail, onO
           </div>
         </section>
 
+        {/* ===== SYSTEM ===== */}
+        {/* Chiffres en direct au lieu d'un simple lien : avant, il fallait quitter
+            l'accueil et ouvrir /admin/health pour savoir si tout allait bien. */}
+        <section className="adh-card">
+          <Head Icon={Activity} eyebrow={ta('tabSystem')} title={ta('systemHealthTitle')} />
+          <SystemStatChips />
+          <a href="/admin/health" className="btn btn-primary btn-sm" style={{ marginTop: '14px', gap: '7px' }}>
+            {ta('systemHealthCta')} <ArrowRight size={14} aria-hidden="true" />
+          </a>
+        </section>
+
         {/* ===== PLATFORM STATUS LINK ===== */}
         <a href="/status" target="_blank" rel="noopener noreferrer" className="adh-status">
           <span className="adh-status-icon"><RadioTower size={16} aria-hidden="true" /></span>
@@ -197,13 +273,20 @@ export default function AdminHomeView({ admin, role, displayName, userEmail, onO
       <style>{`
         .adh-wrap { padding: 36px 40px 56px; max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 26px; }
 
-        .adh-hero { padding: 4px 0 2px; }
-        .adh-hero-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 22px; }
+        .adh-hero { padding: 2px 0; }
+        .adh-hero-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
         .adh-date { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); }
         .adh-role { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-text); background: var(--accent-light); padding: 4px 12px; border-radius: var(--radius-full); }
-        .adh-title { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.5rem, 6vw, 4rem); line-height: 1; letter-spacing: -0.01em; color: var(--accent); margin: 0; text-wrap: balance; overflow-wrap: break-word; }
-        .adh-rule { display: block; width: 60px; height: 2px; background: var(--accent); margin: 18px 0 0; }
-        .adh-sub { font-family: var(--font-body); font-size: 14px; color: var(--text-muted); margin: 16px 0 0; max-width: 56ch; line-height: 1.5; }
+        .adh-checked { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 11px; color: var(--text-light); }
+        .adh-checked-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); flex-shrink: 0; }
+        .adh-refresh { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: var(--radius); background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted); cursor: pointer; flex-shrink: 0; transition: color var(--t-fast), border-color var(--t-fast); }
+        .adh-refresh:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
+        .adh-refresh:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        .adh-refresh:disabled { opacity: 0.6; cursor: default; }
+        .adh-title { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.05; letter-spacing: -0.01em; color: var(--accent); margin: 0; text-wrap: balance; overflow-wrap: break-word; }
+        .adh-rule { display: block; width: 48px; height: 2px; background: var(--accent); margin: 12px 0 0; }
+        .adh-sub { font-family: var(--font-body); font-size: 13.5px; color: var(--text-muted); margin: 10px 0 0; max-width: 56ch; line-height: 1.5; }
+        @keyframes adh-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
         .adh-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
         .adh-stat { position: relative; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg);
@@ -236,6 +319,16 @@ export default function AdminHomeView({ admin, role, displayName, userEmail, onO
         .adh-when { font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--accent-text); flex-shrink: 0; }
         .adh-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 28px 12px; text-align: center; }
         .adh-empty p { margin: 0; font-size: 13px; color: var(--text-muted); }
+
+        .adh-activity { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
+        .adh-activity-item { display: flex; align-items: flex-start; gap: 10px; padding: 7px 4px; }
+        .adh-activity-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; background: var(--text-light); }
+        .adh-activity-dot-approved, .adh-activity-dot-reactivated { background: var(--success); }
+        .adh-activity-dot-rejected, .adh-activity-dot-suspended, .adh-activity-dot-demoted { background: var(--danger); }
+        .adh-activity-dot-promoted { background: var(--accent); }
+        .adh-activity-text { flex: 1; min-width: 0; font-size: 13px; color: var(--text-muted); line-height: 1.4; }
+        .adh-activity-text b { color: var(--ink); font-weight: 700; }
+        .adh-activity-when { flex-shrink: 0; font-family: var(--font-mono); font-size: 11px; color: var(--text-light); white-space: nowrap; }
 
         .adh-quick { display: flex; flex-direction: column; gap: 8px; }
         /* NB: .adh-quick sits INSIDE a .adh-card (--bg-card) — the tiles need a step

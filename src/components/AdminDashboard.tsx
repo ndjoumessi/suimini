@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   ShieldCheck, Users, Bell, CheckCircle, Check, X, Search,
   MoreVertical, UserPlus, Pause, Play, ArrowUp, ArrowDown, Clock,
-  Activity, ArrowRight, Filter, ChevronDown,
+  Activity, ArrowRight, Filter, ChevronDown, ArrowUpDown,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { AdminData } from '@/hooks/useAdminData';
@@ -38,7 +38,7 @@ function fmtDate(d?: string): string {
   catch { return '—'; }
 }
 
-function relative(d: string, t: T): string {
+export function relative(d: string, t: T): string {
   const diff = Date.now() - new Date(d).getTime();
   const m = Math.floor(diff / 60000);
   if (m < 1) return t('relInstant');
@@ -163,6 +163,17 @@ function PendingTab({ admin, pending, onToast }: { admin: AdminData; pending: Us
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
+  // Sélection multiple — pas d'action groupée avant : chaque demande se traitait
+  // une par une même quand la file en contenait plusieurs.
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+
+  function toggle(id: string) {
+    setSelected(s => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  }
+  function toggleAll() {
+    setSelected(s => s.size === pending.length ? new Set() : new Set(pending.map(u => u.id)));
+  }
 
   async function approve(u: UserProfile) {
     setBusy(u.id);
@@ -180,6 +191,28 @@ function PendingTab({ admin, pending, onToast }: { admin: AdminData; pending: Us
     onToast(error ? t('toastError', { error }) : t('toastRejected'), error ? 'error' : 'info');
   }
 
+  async function bulkApprove() {
+    const targets = pending.filter(u => selected.has(u.id));
+    setBulkBusy(true);
+    const results = await Promise.all(targets.map(u => admin.approveUser(u.id)));
+    setBulkBusy(false);
+    setSelected(new Set());
+    targets.forEach((u, i) => { if (!results[i].error) notifyApproval(u.email, u.display_name); });
+    const okCount = results.filter(r => !r.error).length;
+    const firstError = results.find(r => r.error)?.error ?? '';
+    onToast(okCount === targets.length ? t('toastBulkApproved', { count: okCount }) : t('toastError', { error: firstError }), okCount === targets.length ? 'success' : 'error');
+  }
+  async function bulkReject() {
+    const targets = pending.filter(u => selected.has(u.id));
+    setBulkBusy(true);
+    const results = await Promise.all(targets.map(u => admin.rejectUser(u.id)));
+    setBulkBusy(false);
+    setSelected(new Set());
+    const okCount = results.filter(r => !r.error).length;
+    const firstError = results.find(r => r.error)?.error ?? '';
+    onToast(okCount === targets.length ? t('toastBulkRejected', { count: okCount }) : t('toastError', { error: firstError }), okCount === targets.length ? 'info' : 'error');
+  }
+
   if (pending.length === 0) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '60px 24px', textAlign: 'center', color: 'var(--text-muted)' }}>
@@ -192,9 +225,31 @@ function PendingTab({ admin, pending, onToast }: { admin: AdminData; pending: Us
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '760px' }}>
       <TabIntro>{t('pendingHint')}</TabIntro>
+
+      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', color: 'var(--text-muted)', cursor: 'pointer', padding: '0 2px' }}>
+        <input type="checkbox" checked={selected.size === pending.length} onChange={toggleAll} />
+        {t('selectAll')}
+      </label>
+
+      {selected.size > 0 && (
+        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: 'var(--accent-light)', borderColor: 'var(--accent-muted)' }}>
+          <span style={{ fontSize: '12.5px', color: 'var(--accent-text)', fontWeight: 600 }}>
+            {selected.size > 1 ? t('selectedCountPlural', { count: selected.size }) : t('selectedCount', { count: selected.size })}
+          </span>
+          <span style={{ flex: 1 }} />
+          <button onClick={bulkApprove} disabled={bulkBusy} className="btn btn-sm" style={{ background: 'var(--success)', color: 'var(--ink-on-accent)', gap: '5px' }}>
+            <Check size={14} aria-hidden="true" /> {t('bulkApprove')}
+          </button>
+          <button onClick={bulkReject} disabled={bulkBusy} className="btn btn-sm" style={{ background: 'var(--bg)', color: 'var(--danger)', border: '1px solid var(--border-strong)' }}>
+            {t('bulkReject')}
+          </button>
+        </div>
+      )}
+
       {pending.map(u => (
         <div key={u.id} className="card" style={{ padding: '14px 16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <input type="checkbox" checked={selected.has(u.id)} onChange={() => toggle(u.id)} aria-label={u.display_name || u.email} />
             <Avatar name={u.display_name} email={u.email} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>{u.display_name || u.email}</div>
@@ -229,15 +284,20 @@ function PendingTab({ admin, pending, onToast }: { admin: AdminData; pending: Us
 }
 
 /* ===================== TAB 2 — All users ===================== */
+type SortKey = 'date' | 'name' | 'status';
+
 function UsersTab({ admin, isSuperAdmin, onToast }: { admin: AdminData; isSuperAdmin: boolean; onToast: Toast }) {
   const t = useTranslations('admin');
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<UserStatus | 'all'>('all');
   const [filterOpen, setFilterOpen] = useState(false);
+  const [sort, setSort] = useState<SortKey>('date');
+  const [sortOpen, setSortOpen] = useState(false);
   const [menuId, setMenuId] = useState<string | null>(null);
   const [hoverId, setHoverId] = useState<string | null>(null);
   const menuBtnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const filterBtnRef = useRef<HTMLButtonElement | null>(null);
+  const sortBtnRef = useRef<HTMLButtonElement | null>(null);
 
   const FILTERS: { id: UserStatus | 'all'; label: string }[] = [
     { id: 'all', label: t('allStatuses') },
@@ -248,11 +308,29 @@ function UsersTab({ admin, isSuperAdmin, onToast }: { admin: AdminData; isSuperA
   ];
   const filterLabel = FILTERS.find(f => f.id === filter)?.label ?? FILTERS[0].label;
 
-  const rows = useMemo(() => admin.users.filter(u => {
-    if (filter !== 'all' && u.status !== filter) return false;
-    if (q && !(`${u.display_name || ''} ${u.email}`.toLowerCase().includes(q.toLowerCase()))) return false;
-    return true;
-  }), [admin.users, q, filter]);
+  const SORTS: { id: SortKey; label: string }[] = [
+    { id: 'date', label: t('sortDate') },
+    { id: 'name', label: t('sortName') },
+    { id: 'status', label: t('sortStatus') },
+  ];
+  const sortLabel = SORTS.find(s => s.id === sort)?.label ?? SORTS[0].label;
+
+  const rows = useMemo(() => {
+    const filtered = admin.users.filter(u => {
+      if (filter !== 'all' && u.status !== filter) return false;
+      if (q && !(`${u.display_name || ''} ${u.email}`.toLowerCase().includes(q.toLowerCase()))) return false;
+      return true;
+    });
+    const sorted = [...filtered];
+    if (sort === 'name') {
+      sorted.sort((a, b) => (a.display_name || a.email).localeCompare(b.display_name || b.email));
+    } else if (sort === 'status') {
+      sorted.sort((a, b) => a.status.localeCompare(b.status));
+    } else {
+      sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+    return sorted;
+  }, [admin.users, q, filter, sort]);
 
   function closeMenu(returnFocusTo?: string) {
     setMenuId(null);
@@ -310,6 +388,46 @@ function UsersTab({ admin, isSuperAdmin, onToast }: { admin: AdminData; isSuperA
                     >
                       <span style={{ width: '14px', display: 'inline-flex', flexShrink: 0 }}>{on && <Check size={14} aria-hidden="true" />}</span>
                       {f.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+        {/* Tri — même patron de popover que le filtre juste au-dessus. */}
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <button
+            ref={sortBtnRef}
+            onClick={() => setSortOpen(o => !o)}
+            onKeyDown={e => { if (e.key === 'Escape' && sortOpen) { e.preventDefault(); setSortOpen(false); } }}
+            className="btn btn-secondary btn-sm"
+            aria-haspopup="listbox"
+            aria-expanded={sortOpen}
+            style={{ gap: '8px', minWidth: '176px', justifyContent: 'space-between' }}
+          >
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <ArrowUpDown size={13} aria-hidden="true" style={{ flexShrink: 0 }} /> {sortLabel}
+            </span>
+            <ChevronDown size={14} aria-hidden="true" style={{ flexShrink: 0, transition: 'transform var(--t-fast)', transform: sortOpen ? 'rotate(180deg)' : 'none' }} />
+          </button>
+          {sortOpen && (
+            <>
+              <div onClick={() => setSortOpen(false)} aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 'calc(var(--z-dropdown) - 1)' }} />
+              <div role="listbox" aria-label={t('sortBy')}
+                onKeyDown={e => { if (e.key === 'Escape') { e.preventDefault(); setSortOpen(false); sortBtnRef.current?.focus(); } }}
+                style={{ position: 'absolute', left: 0, top: '100%', zIndex: 'var(--z-dropdown)', marginTop: '4px', minWidth: '190px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)', padding: '4px', display: 'flex', flexDirection: 'column' }}>
+                {SORTS.map(s => {
+                  const on = s.id === sort;
+                  return (
+                    <button key={s.id} role="option" aria-selected={on}
+                      onClick={() => { setSort(s.id); setSortOpen(false); sortBtnRef.current?.focus(); }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '9px 12px', minHeight: '40px', border: 'none', background: on ? 'var(--bg-muted)' : 'none', cursor: 'pointer', textAlign: 'left', fontSize: '13px', fontFamily: 'var(--font-body)', color: on ? 'var(--accent-text)' : 'var(--text)', fontWeight: on ? 700 : 400, borderRadius: 'var(--radius-sm)' }}
+                      onMouseEnter={e => { if (!on) e.currentTarget.style.background = 'var(--bg-muted)'; }}
+                      onMouseLeave={e => { if (!on) e.currentTarget.style.background = 'none'; }}
+                    >
+                      <span style={{ width: '14px', display: 'inline-flex', flexShrink: 0 }}>{on && <Check size={14} aria-hidden="true" />}</span>
+                      {s.label}
                     </button>
                   );
                 })}
@@ -441,13 +559,47 @@ function NotificationsTab({ admin, onToast }: { admin: AdminData; onToast: Toast
 }
 
 /* ===================== TAB 4 — Système / diagnostic ===================== */
-/* Surface la page /admin/health (existante mais jusque-là non liée) : c'est le
-   « suivi du logiciel » — secrets, transport des données, migrations. On ne
-   ré-implémente pas le fetch ici : un lien Next vers la page dédiée (garde admin
-   + i18n déjà en place) suffit et reste sûr. */
+/* Surface la page /admin/health (existante) : c'est le « suivi du logiciel » —
+   secrets, transport des données, migrations. On ne ré-implémente pas la page
+   complète ici, mais on affiche désormais 3 chiffres en direct (rollout API,
+   migrations appliquées, secrets) au lieu d'une liste statique de 3 libellés
+   génériques qui ne disait pas si tout allait bien SANS cliquer vers /admin/health. */
+export function SystemStatChips() {
+  const t = useTranslations('admin');
+  const [health, setHealth] = useState<{ ok: boolean; migrations: string[]; dataLayer?: { apiPercent: number } } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/health').then(r => r.ok ? r.json() : null).then(d => { if (active) setHealth(d); }).catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  return (
+    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+      <div className="card" style={{ flex: '1 1 120px', padding: '10px 14px' }}>
+        <div className="serif" style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--accent)' }}>
+          {health?.dataLayer ? `${health.dataLayer.apiPercent}%` : '—'}
+        </div>
+        <div className="label" style={{ fontSize: '9.5px', marginTop: '2px' }}>{t('systemRollout')}</div>
+      </div>
+      <div className="card" style={{ flex: '1 1 120px', padding: '10px 14px' }}>
+        <div className="serif" style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--success)' }}>
+          {health ? health.migrations.length : '—'}
+        </div>
+        <div className="label" style={{ fontSize: '9.5px', marginTop: '2px' }}>{t('systemMigrationsOk')}</div>
+      </div>
+      <div className="card" style={{ flex: '1 1 120px', padding: '10px 14px' }}>
+        <div className="serif" style={{ fontSize: '1.2rem', fontWeight: 700, color: health ? (health.ok ? 'var(--success)' : 'var(--danger)') : 'var(--text-muted)' }}>
+          {health ? (health.ok ? '✓' : '!') : '—'}
+        </div>
+        <div className="label" style={{ fontSize: '9.5px', marginTop: '2px' }}>{health?.ok === false ? t('systemSecretsMissing') : t('systemSecretsOk')}</div>
+      </div>
+    </div>
+  );
+}
+
 function SystemTab() {
   const t = useTranslations('admin');
-  const items = [t('systemItemSecrets'), t('systemItemTransport'), t('systemItemMigrations')];
   return (
     <div style={{ maxWidth: '760px' }}>
       <TabIntro>{t('systemHint')}</TabIntro>
@@ -461,13 +613,9 @@ function SystemTab() {
             <p style={{ margin: '3px 0 0', fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>{t('systemHealthDesc')}</p>
           </div>
         </div>
-        <ul style={{ listStyle: 'none', margin: '14px 0 0', padding: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {items.map((it, i) => (
-            <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-muted)' }}>
-              <Check size={14} aria-hidden="true" style={{ color: 'var(--success)', flexShrink: 0 }} /> {it}
-            </li>
-          ))}
-        </ul>
+        <div style={{ marginTop: '14px' }}>
+          <SystemStatChips />
+        </div>
         <Link href="/admin/health" className="btn btn-primary btn-sm" style={{ marginTop: '18px', gap: '7px' }}>
           {t('systemHealthCta')} <ArrowRight size={14} aria-hidden="true" />
         </Link>

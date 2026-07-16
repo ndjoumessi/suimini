@@ -219,6 +219,20 @@ export interface AdminNotification {
   created_at: string;
 }
 
+export type AdminAuditAction = 'approved' | 'rejected' | 'suspended' | 'reactivated' | 'promoted' | 'demoted';
+
+/** Une ligne du journal d'audit admin (RPC `get_admin_audit_log`) — qui a fait
+ * quoi à qui, et quand. Append-only côté serveur (voir supabase/migrations/0020). */
+export interface AdminAuditEntry {
+  id: number;
+  action: AdminAuditAction;
+  created_at: string;
+  actor_display?: string;
+  actor_email?: string;
+  target_display?: string;
+  target_email?: string;
+}
+
 export interface Tenant {
   id: string;
   name: string;

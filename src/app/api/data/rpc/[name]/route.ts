@@ -14,7 +14,7 @@ const ALLOWED = new Set([
   // Partage / collaboration
   'get_tree_members', 'update_member_role', 'remove_member', 'my_tree_role', 'get_invitation', 'accept_invitation',
   // Admin
-  'list_all_users', 'get_unread_notifications', 'approve_user', 'reject_user', 'set_user_status', 'set_user_role', 'mark_all_notifications_read',
+  'list_all_users', 'get_unread_notifications', 'approve_user', 'reject_user', 'set_user_status', 'set_user_role', 'mark_all_notifications_read', 'get_admin_audit_log',
   // Compte / profils
   'delete_account', 'get_public_profiles',
 ]);
