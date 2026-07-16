@@ -43,7 +43,7 @@ export function safeHttpUrl(u?: string): string | undefined {
 }
 
 /** Levenshtein edit distance (number of insertions/deletions/substitutions). */
-export function levenshtein(a: string, b: string): number {
+function levenshtein(a: string, b: string): number {
   if (a === b) return 0;
   if (!a.length) return b.length;
   if (!b.length) return a.length;
@@ -60,7 +60,7 @@ export function levenshtein(a: string, b: string): number {
 }
 
 /** Soundex phonetic code (e.g. "Dupont" and "Dupond" → same code). */
-export function soundex(s: string): string {
+function soundex(s: string): string {
   const str = normalizeText(s).replace(/[^a-z]/g, '');
   if (!str) return '';
   const codes: Record<string, string> = {

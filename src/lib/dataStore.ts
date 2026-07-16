@@ -162,7 +162,7 @@ export class SupabaseStore implements DataStore {
 // ── Sélecteur de backend ─────────────────────────────────────────────────────
 
 /** Lit DB_BACKEND (défaut 'supabase'). */
-export function configuredBackend(): Backend {
+function configuredBackend(): Backend {
   return process.env.DB_BACKEND === 'railway' ? 'railway' : 'supabase';
 }
 

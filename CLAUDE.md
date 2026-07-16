@@ -77,8 +77,11 @@ messages/              # fr.json + en.json
 supabase/              # schema.sql + scripts *.sql (share-public.sql, storage.sql,
                        #   push-tokens.sql…) ; migrations/ = framework VERSIONNÉ
                        #   (0001-0017 + scripts/migrate.mjs) — voir « Migrations ».
-  teda/                # scripts SQL de l'arbre famille TEDA (seed, enrichissement,
-                       #   update-teda-v2-final.sql…) ; pdf/ = sources du PDF de synthèse
+  teda/                # scripts SQL de l'arbre famille TEDA — RESTORE_TEDA_FROM_EXPORT.sql
+                       #   (source de vérité) + update-teda-djoumessi-family.sql…
+                       #   (anciens scripts incrémentaux seed/enrichissement purgés,
+                       #   2026-07-16 : leur effet cumulé est dans le restore) ;
+                       #   pdf/ = sources du PDF de synthèse
 mobile/                # App React Native / Expo (SDK 54) — voir section « Mobile »
 e2e/                   # tests Playwright
 docs/                  # notes de conception (détails sortis de CLAUDE.md) :

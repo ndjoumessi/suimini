@@ -44,5 +44,8 @@ données doit être reportée dans `teda_v2.html` **et** `teda_v2_en.html`.
 6. Corrections intégrées (rattachements v2 + corrections du 13 juin 2026)
 7. Points résolus vs questions ouvertes
 
-Sources de données : `seed-teda-rpc.sql`, `update-teda-enrichissement.sql`,
-`update-teda-branche-etendue.sql`, `addendum-tsana-sebastien.md`.
+Sources de données (historique) : scripts SQL incrémentaux `seed-teda-rpc.sql`,
+`update-teda-enrichissement.sql`, `update-teda-branche-etendue.sql` — purgés le
+2026-07-16 (superseded, leur effet cumulé est désormais dans
+`RESTORE_TEDA_FROM_EXPORT.sql`, la source de vérité actuelle) — et
+`addendum-tsana-sebastien.md`.

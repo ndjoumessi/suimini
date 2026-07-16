@@ -21,10 +21,10 @@ WHERE name LIKE '%TEDA%'
     WHERE email = 'dromel902007@yahoo.fr'
   );
 
--- 3) Après ce nettoyage, ré-injectez proprement avec supabase/seed-teda-rpc.sql
---    en passant CE MÊME owner :
---      SELECT public.seed_teda_family(
---        (SELECT id FROM auth.users WHERE email = 'dromel902007@yahoo.fr'));
+-- 3) Après ce nettoyage, restaurez proprement avec
+--    supabase/teda/RESTORE_TEDA_FROM_EXPORT.sql (source de vérité, 57 pers./93 rel.,
+--    ou 71/119 si vous rejouez aussi update-teda-djoumessi-family.sql ensuite),
+--    en passant CE MÊME owner_id.
 --    (l'owner doit correspondre au compte connecté, sinon trees_select
---     — owner_id = auth.uid() — masque l'arbre et les 48 personnes ne s'affichent pas.)
+--     — owner_id = auth.uid() — masque l'arbre et les personnes ne s'affichent pas.)
 -- ============================================================================

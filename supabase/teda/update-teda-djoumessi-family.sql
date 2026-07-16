@@ -6,8 +6,8 @@
 --
 -- ⚠️ CORRECTIONS par rapport au brouillon fourni :
 --  1. CONVENTION DE NOMS de l'arbre TEDA : first_name = NOM (famille), last_name =
---     prénom (cf. rows existantes ('DJOUMESSI','Mathias'), ('TSANA','Sébastien') et
---     le commentaire de update-teda-v3-corrections.sql). Le brouillon les inversait
+--     prénom (cf. rows existantes ('DJOUMESSI','Mathias'), ('TSANA','Sébastien') —
+--     convention documentée dans CLAUDE.md). Le brouillon les inversait
 --     ('Lucienne','KENFACK') → les nouveaux membres se seraient affichés « prénom /
 --     NOM » à l'envers du reste de l'arbre. Ici : first_name = NOM, last_name = prénom.
 --  2. Le lieu de naissance va dans la COLONNE dédiée `birth_place` (JSONB {"city":…}),
