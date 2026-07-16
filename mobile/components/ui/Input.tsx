@@ -17,7 +17,7 @@ interface InputProps extends TextInputProps {
  * Champ Canopée — surface remplie arrondie (radius.sm), bordure hairline qui
  * passe à l'accent (2 px) au focus. Label en Figtree Medium, casse normale.
  */
-export function Input({ label, style, onFocus, onBlur, ...rest }: InputProps) {
+export function Input({ label, style, onFocus, onBlur, accessibilityLabel, ...rest }: InputProps) {
   const { colors } = useTheme();
   const [focused, setFocused] = useState(false);
 
@@ -28,6 +28,11 @@ export function Input({ label, style, onFocus, onBlur, ...rest }: InputProps) {
       ) : null}
       <TextInput
         placeholderTextColor={colors.textLight}
+        // `label` was only a visual sibling <Text> — RN doesn't auto-associate
+        // it with the field like an HTML <label for> would (AUDIT-V5 P2 #35),
+        // so VoiceOver/TalkBack announced no name. Falls back to it unless a
+        // caller passes its own accessibilityLabel.
+        accessibilityLabel={accessibilityLabel ?? label}
         {...rest}
         onFocus={(e) => {
           setFocused(true);

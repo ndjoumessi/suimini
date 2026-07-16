@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { View, Text, SectionList, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, SectionList, StyleSheet, TouchableOpacity, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -54,7 +54,15 @@ export default function TimelineScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { persons } = useFamilyStore();
+  const { persons, refreshFromRemote } = useFamilyStore();
+  // Was the only main list without pull-to-refresh (AUDIT-V5 P2 #34) —
+  // same pattern as people.tsx.
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refreshFromRemote();
+    setRefreshing(false);
+  }, [refreshFromRemote]);
 
   const sections = useMemo(() => {
     const items: TimelineItem[] = [];
@@ -83,14 +91,17 @@ export default function TimelineScreen() {
     });
     items.sort((a, b) => a.date.localeCompare(b.date));
 
-    // Group by decade.
+    // Group by decade. Was a hardcoded `${...}0s` suffix — the only real
+    // i18n gap on mobile (AUDIT-V5 P2 #33), reading e.g. "1980s" even in
+    // French. Grouping key stays the bare decade number; the label goes
+    // through t('timeline.decade').
     const byDecade = new Map<string, TimelineItem[]>();
     items.forEach((it) => {
-      const decade = `${it.year.slice(0, 3)}0s`;
+      const decade = `${it.year.slice(0, 3)}0`;
       if (!byDecade.has(decade)) byDecade.set(decade, []);
       byDecade.get(decade)!.push(it);
     });
-    return Array.from(byDecade.entries()).map(([title, data]) => ({ title, data }));
+    return Array.from(byDecade.entries()).map(([decade, data]) => ({ title: t('timeline.decade', { decade }), data }));
   }, [persons, t]);
 
   return (
@@ -131,7 +142,12 @@ export default function TimelineScreen() {
             icon={<Clock size={32} color={colors.accent} />}
             title={t('timeline.empty')}
             description={t('timeline.emptyDesc')}
+            ctaLabel={t('people.addPerson')}
+            onCta={() => router.push('/person/edit')}
           />
+        }
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />
         }
       />
     </View>

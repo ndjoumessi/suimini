@@ -82,6 +82,18 @@ export function PhotoAdjustControl({
         accessibilityRole="adjustable"
         accessibilityLabel={t('photo.adjustLabel')}
         accessibilityValue={{ text: t('photo.adjustValue', { x: position.x, y: position.y }) }}
+        // role="adjustable" tells VoiceOver/TalkBack a swipe-up/down gesture
+        // is available, but nothing actually happened on that gesture
+        // without this handler (AUDIT-V5 P2 #37) — the pan gesture above is
+        // otherwise the only way to move the crop, unusable blind. Steps the
+        // horizontal axis (the more legible single-axis proxy for "recentre
+        // the photo") by 5% per increment/decrement.
+        accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+        onAccessibilityAction={(event) => {
+          const step = 5;
+          if (event.nativeEvent.actionName === 'increment') onChange({ x: clampPct(position.x + step), y: position.y });
+          else if (event.nativeEvent.actionName === 'decrement') onChange({ x: clampPct(position.x - step), y: position.y });
+        }}
         style={[
           styles.circle,
           {

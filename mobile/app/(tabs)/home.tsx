@@ -65,6 +65,8 @@ export default function HomeScreen() {
           icon={<TreePine size={32} color={colors.accent} />}
           title={t('home.noTree')}
           description={t('home.noTreeDesc')}
+          ctaLabel={t('common.retry')}
+          onCta={refreshFromRemote}
         />
       </View>
     );

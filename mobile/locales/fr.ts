@@ -96,6 +96,7 @@ export const fr = {
     eyebrow: 'Chronologie',
     empty: "Pas encore d'événements",
     emptyDesc: 'Les naissances, mariages et autres jalons apparaîtront ici.',
+    decade: 'Années {{decade}}',
     events: {
       birth: 'Naissance',
       death: 'Décès',

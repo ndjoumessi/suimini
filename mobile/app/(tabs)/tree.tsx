@@ -33,6 +33,8 @@ export default function TreeScreen() {
           icon={<TreePine size={32} color={colors.accent} />}
           title={t('tree.empty')}
           description={t('tree.emptyDesc')}
+          ctaLabel={t('people.addPerson')}
+          onCta={() => router.push('/person/edit')}
         />
       ) : (
         <>

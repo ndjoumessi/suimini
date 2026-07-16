@@ -1,8 +1,16 @@
+import { PixelRatio } from 'react-native';
 import { G, Rect, Circle, Text as SvgText } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import type { Person } from '@/lib/types';
 import { getRoleColor } from '@/lib/theme';
 import { NODE_W, NODE_H } from '@/lib/treeLayout';
+
+// SVG text ignores the OS's font-scale setting by default — unlike RN's own
+// <Text>, which honours it automatically (AUDIT-V5 P2 #38, Dynamic
+// Type/font-scale insensitivity). Scaling every fontSize by the device's
+// current factor restores that behaviour for someone who bumped their
+// system text size for readability.
+const fontScale = () => PixelRatio.getFontScale();
 
 interface PersonNodeProps {
   person: Person;
@@ -36,6 +44,7 @@ export function PersonNode({
 }: PersonNodeProps) {
   const { t } = useTranslation();
   const spine = getRoleColor(person);
+  const scale = fontScale();
 
   // Mirror of the web tree's aria-label (TreeView.tsx) — name, gender stated
   // in words (not just the colour dot), birth year when known. VoiceOver/
@@ -67,17 +76,17 @@ export function PersonNode({
       <SvgText
         x={x + 26}
         y={y + 24}
-        fontSize={12}
+        fontSize={12 * scale}
         fontWeight="700"
         fill={ink}
       >
         {truncate(person.firstName, 12)}
       </SvgText>
-      <SvgText x={x + 15} y={y + 40} fontSize={11} fill={muted}>
+      <SvgText x={x + 15} y={y + 40} fontSize={11 * scale} fill={muted}>
         {truncate(person.lastName, 16)}
       </SvgText>
       {person.birthDate ? (
-        <SvgText x={x + 15} y={y + 56} fontSize={9} fill={faint}>
+        <SvgText x={x + 15} y={y + 56} fontSize={9 * scale} fill={faint}>
           {person.isAlive ? `${t('tree.born')} ` : '✝ '}
           {person.birthDate.slice(0, 4)}
           {!person.isAlive && person.deathDate

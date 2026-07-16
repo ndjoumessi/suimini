@@ -98,6 +98,7 @@ export const en: Resources = {
     eyebrow: 'Timeline',
     empty: 'No events yet',
     emptyDesc: 'Births, marriages and other milestones will appear here.',
+    decade: '{{decade}}s',
     events: {
       birth: 'Birth',
       death: 'Death',
