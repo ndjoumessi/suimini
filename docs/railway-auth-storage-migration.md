@@ -5,8 +5,10 @@
 > déployé, upload réel confirmé sur `suimini.vercel.app` (PUT 200, CORS OK, photo
 > affichée via `pub-294a3e5b78874be9a57f9627498a4c81.r2.dev`). Tout l'historique de
 > validation (dry-run, prod brut, Preview isolée, prod réelle) est détaillé en §4.
-> **Mobile flippé et testé en local le 2026-07-16 (tâche #34)** — reste seulement le
-> test sur un build EAS packagé avant d'aller en prod mobile (voir §7).
+> **Mobile flippé et testé de bout en bout le 2026-07-16 (tâche #34)** : local
+> (`expo start`) ET build EAS packagé (`--local`, APK réel installé sur téléphone) —
+> voir §7. Storage Phase A est désormais 100% validée, web et mobile, local et
+> packagé.
 > **Phase B (Auth) reste non commencée, sans plan ni feu vert** — voir §5.
 >
 > ⚠️ **Supabase reste une dépendance ACTIVE et CRITIQUE malgré le flip Storage.**
@@ -301,8 +303,17 @@ maintenant vers R2.
       sur `expo start` avec un vrai compte (arbre TEDA) → objet confirmé dans le
       dashboard Cloudflare R2 : `a8d07d13-f795-41ec-824f-5453cce02c0e/
       teda-p69-1784217752654.webp`, `image/webp`, convention de path respectée.
-      Test EAS build (packagé, hors `expo start`) : pas encore fait — voir `docs/
-      r2-mobile-test-checklist.md` §6.)**
+      Test EAS build packagé refait ensuite (`eas build --local --platform android
+      --profile preview` — quota cloud EAS épuisé ce mois-ci, build local utilisé à
+      la place) : a d'abord échoué sur `:expo-image:compileReleaseKotlin` (bug réel
+      dans `expo-image@2.0.4`, `GlideUrlWrapperLoader.kt:31` — `Response.body`
+      passé nullable là où un `ResponseBody` non-null était attendu, flag par le
+      compilateur Kotlin K2 2.1.20 ; corrigé via `patch-package`, voir
+      `mobile/patches/expo-image+2.0.4.patch`). Build relancé après le patch → APK
+      généré (`build-1784228757604.apk`, 89.3 Mo) → installé sur téléphone → upload
+      réel confirmé : nouvel objet `a8d07d13-f795-41ec-824f-5453cce02c0e/
+      teda-p69-1784231082261.webp` dans le dashboard R2. **Storage mobile validé
+      local ET packagé.**)**
 - [x] Compte des objets Supabase == compte des objets R2 après copie (réconciliation,
       façon 71/122 de la data). **(2026-07-15, via `scripts/copy-avatars-to-r2.sh
       DRY_RUN=0` : 11 objets Supabase → 11 transférés → 11 côté R2, comptes égaux.
@@ -417,9 +428,9 @@ plusieurs semaines ET que le provider n'a pas été tranché (§5.1).
 | | Data (Phase 1) | Storage (Phase A) | Auth (Phase B) |
 |---|---|---|---|
 | Frontière/seam | `DataStore` ✅ | `StorageProvider` ✅ | à concevoir |
-| Impl neuve | `RailwayStore` ✅ live 100% | `ObjectStoreProvider` ✅ **LIVE 100% (web)** | ⏳ (préparation seulement) |
+| Impl neuve | `RailwayStore` ✅ live 100% | `ObjectStoreProvider` ✅ **LIVE 100% (web + mobile)** | ⏳ (préparation seulement) |
 | Backend cible | Railway PG | Cloudflare R2 | GoTrue self-host (proposé) |
-| Prêt à démarrer ? | fait | **web fait — mobile flippé et testé en local (2026-07-16), EAS pas encore fait** | **non — attendre le soak** |
+| Prêt à démarrer ? | fait | **fait — web et mobile (local + build EAS packagé), 2026-07-16** | **non — attendre le soak** |
 | Rollback | Edge Config une-ligne | flag client absent/`supabase` + redeploy | repointage GoTrue (fragile) |
 
 > **Storage — LIVE EN PRODUCTION (2026-07-15).** `NEXT_PUBLIC_STORAGE_BACKEND=r2`
@@ -440,11 +451,16 @@ plusieurs semaines ET que le provider n'a pas été tranché (§5.1).
 > Preview isolée** (photo affichée, URL R2 confirmée) → **flip Production** →
 > **upload réel via l'UI en prod confirmé** (PUT 200, CORS OK, URL R2 confirmée).
 >
-> **Mobile flippé et testé (2026-07-16, tâche #34)** : `EXPO_PUBLIC_STORAGE_BACKEND=r2`
-> + `EXPO_PUBLIC_R2_PUBLIC_BASE_URL` posées dans `mobile/.env` (local), upload réel
-> confirmé (`expo start`, vrai compte, objet visible dans le dashboard R2). Restant :
-> poser les mêmes 2 variables sur EAS (`eas env:create`, voir `docs/
-> r2-mobile-test-checklist.md` §6) et refaire le test sur un vrai build APK avant
-> tout build de prod — `mobile/.env` n'est jamais inclus dans un build EAS. Rollback
-> jamais déclenché en conditions réelles (trivial par construction, voir §4.6 et la
-> note de tête de document).
+> **Mobile flippé et testé de bout en bout (2026-07-16, tâche #34)** :
+> `EXPO_PUBLIC_STORAGE_BACKEND=r2` + `EXPO_PUBLIC_R2_PUBLIC_BASE_URL` posées en
+> local (`mobile/.env`) ET sur EAS (`eas env:create`, 3 environnements). Upload réel
+> confirmé deux fois : (1) `expo start` avec un vrai compte, objet visible dans le
+> dashboard R2 ; (2) build EAS packagé (`eas build --local --platform android
+> --profile preview`, quota cloud EAS épuisé ce mois → build local utilisé) →
+> échec initial sur `:expo-image:compileReleaseKotlin` (bug réel dans
+> `expo-image@2.0.4`, corrigé via `patch-package` — voir
+> `mobile/patches/expo-image+2.0.4.patch`) → APK installé sur téléphone → upload
+> confirmé, nouvel objet dans le dashboard R2. **Storage Phase A est désormais
+> 100% validée, web et mobile, local et packagé.** Rollback jamais déclenché en
+> conditions réelles (trivial par construction, voir §4.6 et la note de tête de
+> document).
