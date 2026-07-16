@@ -8,10 +8,22 @@
 > **`NEXT_PUBLIC_MEMBERSHIPS_VIA_API=1`** (`fetchMyMemberships` suit Railway). Déploiement =
 > commit `67e6349` → `dpl_E9fjFVKFxWPgPVTBbsohH8VCjCmK`. Post-flip : Railway 10/100 connexions,
 > 71 persons, trafic authentifié `/api/data/*` → 200, 0 erreur 500/« too many clients ».
-> Données Supabase copiées + intégrité vérifiée. **Supabase = source de vérité, jamais modifié.**
-> **ROLLBACK INSTANTANÉ (une ligne, network-only, sans redeploy)** : remettre l'Edge Config
-> `data_layer` à `{"default":"direct","apiPercent":0,"apiAllowlist":["a8d07d13-f795-41ec-824f-5453cce02c0e"]}`
-> → tous en `direct`→Supabase. (Rollback profond : `DB_BACKEND=supabase` + redeploy.)
+> Données Supabase copiées le 2026-07-11 + intégrité vérifiée à cette date. **Supabase n'a plus
+> été écrit depuis — son contenu est un instantané figé au cutover, pas une réplique à jour.**
+> ⚠️ **REQUALIFICATION (F3, audit d'architecture) — le flip Edge Config N'EST PAS un rollback
+> sans perte.** Il ne fait que rerouter le NAVIGATEUR vers Supabase (network-only, instantané) —
+> il ne copie AUCUNE donnée. Toute édition faite depuis le 2026-07-11 vit UNIQUEMENT sur Railway ;
+> flipper sans plus reviendrait à servir un instantané périmé (invitations envoyées dans le vide,
+> partages fantômes, arbres modifiés depuis qui régresseraient). C'est un **frein d'urgence avec
+> perte de données assumée**, pas un rollback transparent, TANT QUE le script §9 n'a pas tourné.
+> **Procédure de rollback réel (sans perte)** : (1) exécuter `railway/reverse-copy-to-supabase.sh`
+> (copie Railway → Supabase, §9 ci-dessous — MANUEL, l'agent n'a pas les credentials DB directes
+> des deux côtés) ; (2) vérifier les comptes de lignes source==destination (le script les affiche) ;
+> (3) SEULEMENT ENSUITE flipper l'Edge Config `data_layer` à
+> `{"default":"direct","apiPercent":0,"apiAllowlist":["a8d07d13-f795-41ec-824f-5453cce02c0e"]}`
+> → tous en `direct`→Supabase. (Rollback profond : `DB_BACKEND=supabase` + redeploy, une fois la
+> copie faite.) Un flip d'urgence SANS la copie reste possible (frein immédiat), mais doit être
+> traité comme une dégradation de service assumée, jamais présenté comme un simple aller-retour.
 
 ## 1. Objectif & périmètre
 
@@ -219,15 +231,61 @@ Railway PROD** (2026-07-11, cf. §5.1) — infra prod prête (schéma vide, aucu
       `NEXT_PUBLIC_MEMBERSHIPS_VIA_API=1`. Commit `67e6349` → `dpl_E9fjFVKFxWPgPVTBbsohH8VCjCmK`
       Ready/aliasé. Vérif : Railway 10/100 connexions, 71 persons, `/api/data/*` authentifié → 200,
       0 erreur 500/« too many clients ».
-- [x] **Rollback INSTANTANÉ documenté (une ligne)** : Edge Config `data_layer` →
+- [x] **Flip Edge Config documenté (une ligne, network-only)** : `data_layer` →
       `{"default":"direct","apiPercent":0,"apiAllowlist":["a8d07d13-f795-41ec-824f-5453cce02c0e"]}`
-      (network-only, sans redeploy) → tous en `direct`→Supabase. Rollback profond =
-      `DB_BACKEND=supabase` + redeploy (données Supabase intactes).
+      → tous en `direct`→Supabase. **⚠️ Requalifié (F3, 2026-07-16) : ce n'est PAS un rollback
+      sans perte** — voir l'encart en tête de doc et §9. À faire précéder de
+      `railway/reverse-copy-to-supabase.sh` pour un vrai retour arrière. Rollback profond =
+      `DB_BACKEND=supabase` + redeploy (données Supabase intactes MAIS périmées sans §9).
 
 **Garde-fous utilisateur** : stop + feu vert explicite avant (a) cutover prod,
 (b) toute écriture/suppression sur la base Supabase de PROD.
 
-## 8. Prochaine phase — migration Auth + Storage (non commencée)
+## 9. Rollback réel — script de copie inverse Railway → Supabase (F3)
+
+**Pourquoi ce script existe.** L'audit d'architecture (`AUDIT-ARCHITECTURE.md`, finding F3)
+a relevé que le « rollback instantané » ci-dessus ne fait bouger AUCUNE donnée — c'est un
+flip de TRANSPORT (quel backend le navigateur lit), pas une resynchronisation. Depuis que
+Railway est la source de vérité (2026-07-11), Supabase est un instantané figé qui se périme
+un peu plus chaque jour. Sans ce script, tout rollback est un frein d'urgence avec perte de
+données assumée, jamais un aller-retour transparent.
+
+**`railway/reverse-copy-to-supabase.sh`** — copie les 10 tables du plan données d'arbre
+(`trees`, `persons`, `relationships`, `journal_entries`, `tree_shares`, `tree_members`,
+`person_comments`, `person_suggestions`, `scanned_documents`, `photo_tags`) depuis Railway
+vers Supabase, dans l'ordre FK-safe. Ne touche JAMAIS au schéma/RLS/policies Supabase — que
+les lignes de ces 10 tables, entièrement remplacées par le contenu Railway courant.
+
+- **Manuel, jamais lancé par l'agent** : nécessite un accès Postgres DIRECT aux deux bases
+  (URL Railway UNPOOLED + connection string Postgres directe Supabase, rôle `postgres`),
+  credentials qu'aucun agent n'a dans ce projet (cf. CLAUDE.md « Variables d'environnement »).
+- **Dry-run par défaut** : sans `CONFIRM=yes`, affiche seulement le plan + les comptes de
+  lignes actuels des deux côtés, ne modifie rien.
+- **Destructif côté Supabase pour ces 10 tables uniquement** : chaque table est vidée
+  (`DELETE`, ordre FK inverse) puis re-remplie via `pg_dump --data-only` (Railway) +
+  `pg_restore --data-only --disable-triggers` (Supabase). Vérification finale : comptes de
+  lignes source==destination sur les 10 tables (échoue bruyamment sinon).
+- **⚠️ Caveat connu — fenêtre F1 (2026-07-11 → correctif) :** avant le correctif F1 (partage
+  par email / lien public), certaines écritures de `tree_shares`/`trees.is_public` passaient
+  encore en direct sur Supabase et n'ont jamais atteint Railway. Une ligne créée UNIQUEMENT
+  dans cette fenêtre serait écrasée par ce script (Railway ne l'a jamais eue). Le script
+  affiche une requête de vérification manuelle pour ce cas avant de demander confirmation ;
+  à défaut de certitude, comparer `tree_shares`/`trees` des deux côtés pour la période
+  2026-07-11 → date du correctif F1 avant de lancer avec `CONFIRM=yes`.
+- **Usage** :
+  ```bash
+  RAILWAY_SOURCE_URL='postgres://...@<host-unpooled>:<port>/railway' \
+  SUPABASE_TARGET_URL='postgres://postgres:<password>@<host>:5432/postgres' \
+    ./railway/reverse-copy-to-supabase.sh              # dry-run
+
+  RAILWAY_SOURCE_URL='...' SUPABASE_TARGET_URL='...' CONFIRM=yes \
+    ./railway/reverse-copy-to-supabase.sh              # exécution réelle
+  ```
+
+**Une fois ce script exécuté avec succès** (comptes identiques sur les 10 tables), le flip
+Edge Config de l'encart en tête de doc redevient un vrai rollback sans perte.
+
+## 10. Prochaine phase — migration Auth + Storage (non commencée)
 
 **État actuel.** La migration des **données** (arbre, collaboration, RPC, invitations) est
 **complète et en prod à 100% sur Railway**, stable depuis le **2026-07-11**. **MAIS** deux
