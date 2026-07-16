@@ -49,12 +49,23 @@ export default function HistoryIndicator({ canUndo, canRedo, lastAction, nextAct
     return () => document.removeEventListener('mousedown', onDown);
   }, [visible]);
 
+  // 4s was a hard, uninterruptible window — reading "action X, Undo?" and
+  // deciding to act sometimes doesn't fit in that time (AUDIT-V5 P2 #19).
+  // Hovering/focusing the bar now pauses the countdown; it resumes (full
+  // 4s) once the pointer/focus leaves, so it never dismisses out from under
+  // an attentive user.
+  const pauseTimer = () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  const resumeTimer = () => { timerRef.current = setTimeout(() => setVisible(false), DISMISS_MS); };
+
   if ((!canUndo && !canRedo) || !visible) return null;
 
   return (
     // role="status" : l'apparition de la barre (« Annuler : … ») est annoncée aux
     // lecteurs d'écran — elle s'auto-efface après 4 s, sinon ils la manquaient.
-    <div ref={boxRef} role="status" style={{
+    <div ref={boxRef} role="status"
+      onMouseEnter={pauseTimer} onMouseLeave={resumeTimer}
+      onFocus={pauseTimer} onBlur={resumeTimer}
+      style={{
       position: 'absolute', bottom: '16px', left: '50%', transform: 'translateX(-50%)',
       zIndex: 30, display: 'flex', alignItems: 'center', gap: '8px',
       background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',

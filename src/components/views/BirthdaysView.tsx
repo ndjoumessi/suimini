@@ -30,15 +30,26 @@ export default function BirthdaysView({ tree, onSelectPerson }: Props) {
   const today = filtered.filter(a => a.daysUntil === 0);
   const upcoming = filtered.filter(a => a.daysUntil > 0);
 
-  // Group upcoming by month
-  const byMonth: Record<number, typeof upcoming> = {};
+  // Group upcoming by month. Keyed by `${year}-${month}`, not just month
+  // (0-11): a range that wraps past December merges January of THIS year
+  // with January of NEXT year under the same bucket otherwise (AUDIT-V5 P2
+  // #28) — e.g. daysAhead=365 from early January lands back in January
+  // twelve months later. A plain numeric key also has a second failure mode:
+  // JS objects auto-sort all-integer-like keys ascending regardless of
+  // insertion order, so December (this year) would list AFTER January (next
+  // year) instead of before it. The compound string key avoids both: it's
+  // no longer all-digits, so insertion order (already chronological, from
+  // `upcoming`) is preserved — tracked explicitly via `monthOrder` rather
+  // than relying on `Object.keys()` iteration order.
+  const byMonth: Record<string, typeof upcoming> = {};
+  const monthOrder: string[] = [];
+  const currentYear = new Date().getFullYear();
   upcoming.forEach(a => {
-    const birth = new Date(a.date);
     const d = new Date();
     d.setDate(d.getDate() + a.daysUntil);
-    const month = d.getMonth();
-    if (!byMonth[month]) byMonth[month] = [];
-    byMonth[month].push(a);
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    if (!byMonth[key]) { byMonth[key] = []; monthOrder.push(key); }
+    byMonth[key].push(a);
   });
 
   const typeIcon = (type: string, size = 14): ReactNode => {
@@ -132,12 +143,14 @@ export default function BirthdaysView({ tree, onSelectPerson }: Props) {
         )}
 
         {/* BY MONTH */}
-        {Object.keys(byMonth).map(monthStr => {
+        {monthOrder.map(key => {
+          const [yearStr, monthStr] = key.split('-');
+          const year = +yearStr;
           const month = +monthStr;
-          const items = byMonth[month];
-          const monthLabel = new Date(2000, month, 1).toLocaleDateString(dateLocale, { month: 'long' });
+          const items = byMonth[key];
+          const monthLabel = new Date(year, month, 1).toLocaleDateString(dateLocale, year !== currentYear ? { month: 'long', year: 'numeric' } : { month: 'long' });
           return (
-            <div key={month} style={{ marginBottom: '24px' }}>
+            <div key={key} style={{ marginBottom: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
                 <div className="label" style={{ fontSize: '12px', color: 'var(--text-muted)', minWidth: '80px' }}>
                   {monthLabel}
@@ -182,6 +195,10 @@ function AnniversaryCard({ a, onSelect, typeIcon, typeLabel, typeColor, t, dateL
       }}
       onMouseEnter={e => { e.currentTarget.style.borderColor = typeColor(a.type); e.currentTarget.style.boxShadow = 'var(--shadow)'; }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = highlight ? 'var(--accent)' : 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
+      // Keyboard-only users got no equivalent of the hover feedback above
+      // (AUDIT-V5 P2 #28) — same state change on focus/blur.
+      onFocus={e => { e.currentTarget.style.borderColor = typeColor(a.type); e.currentTarget.style.boxShadow = 'var(--shadow)'; }}
+      onBlur={e => { e.currentTarget.style.borderColor = highlight ? 'var(--accent)' : 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
     >
       {/* Avatar */}
       <PersonAvatar person={a.person} size={44} />

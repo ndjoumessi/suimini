@@ -20,12 +20,15 @@ const ROW_V = 120;   // vertical gap between generation rows
 const PADX = 52;
 const PADY = 72;
 
-// Per-generation accent line (génération 0 = la plus ancienne).
+// Per-generation accent line (génération 0 = la plus ancienne). Kept in sync
+// with TreeView.tsx's `genColorTV` — the two used to diverge (this file kept
+// the older, darker hues) which read as an inconsistency switching between
+// Focus/Complète on the same tree (AUDIT-V5 P2 #21).
 function genColor(g: number): string {
   if (g <= 1) return 'var(--accent)';   // or (thémable)
-  if (g <= 3) return '#5b7fa6';   // bleu-gris
-  if (g <= 5) return '#5b8a6e';   // vert-sauge
-  return '#8a5b6e';               // rose-muted
+  if (g <= 3) return '#7fa0c6';   // bleu-gris
+  if (g <= 5) return '#7fae94';   // vert-sauge
+  return '#c490a6';               // rose-muted
 }
 
 function dateLine(p: Person): string {
