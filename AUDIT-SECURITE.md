@@ -13,10 +13,10 @@
 | F1 | **Haute** | Le journal familial fuite aux membres acceptés via la lecture non masquée (backend Railway, sans RLS) | `railwayStore.ts:185-202`, `apiData.ts:44-51` | **✅ Corrigé (2026-07-16)** — `stripUnauthorizedJournal` (`authz.ts`) appliqué dans `GET /api/data/trees` et `GET /api/data/trees/[id]` juste avant la réponse JSON, testé (`e2e/authz.spec.ts`). |
 | F2 | **Moyenne** | Le partage public lit un instantané Supabase figé → édition privée/suppression post-cutover non honorée | `supabaseSync.ts:479-509`, `supabaseSync.ts:466-472` | **✅ Corrigé (2026-07-16)**, effet de bord du correctif architecture F1 — `loadPublicTree`/`getPublicShare`/`setTreePublic` passent désormais par `DataStore` (Railway ou Supabase selon `DB_BACKEND`), plus jamais Supabase-direct. |
 | F3 | **Moyenne** | Tokens de session Supabase stockés en clair (MMKV non chiffré) sur mobile | `mobile/lib/supabase.ts:11-33` | Ouvert |
-| F4 | Basse | Rate-limiting IA « fail-open » sur panne RPC/Supabase | `rateLimit.ts:90-102` | Ouvert |
-| F5 | Basse | Envoi d'email d'invitation à une adresse arbitraire, sans rate-limit, nom d'expéditeur contrôlé | `send-invite-email/route.ts:19-70` | Ouvert |
-| F6 | Basse | Fail-open pré-migration : `42703` = tout utilisateur traité comme admin/approuvé | `send-approval/route.ts:35`, `proxy.ts:45-46` | Ouvert |
-| F7 | Basse/Info | Pas de protection CSRF explicite (repose sur SameSite implicite des cookies Supabase) | routes `/api/*` | Ouvert |
+| F4 | Basse | Rate-limiting IA « fail-open » sur panne RPC/Supabase | `rateLimit.ts:90-102` | ✅ Corrigé (2026-07-16) |
+| F5 | Basse | Envoi d'email d'invitation à une adresse arbitraire, sans rate-limit, nom d'expéditeur contrôlé | `send-invite-email/route.ts:19-70` | ✅ Corrigé (2026-07-16) |
+| F6 | Basse | Fail-open pré-migration : `42703` = tout utilisateur traité comme admin/approuvé | `send-approval/route.ts:35`, `proxy.ts:45-46` | ✅ Vérifié (2026-07-16) — déjà scopé, pas de changement requis |
+| F7 | Basse/Info | Pas de protection CSRF explicite (repose sur SameSite implicite des cookies Supabase) | routes `/api/*` | ✅ Corrigé (2026-07-16) |
 
 ---
 
@@ -66,39 +66,39 @@ Le client Supabase mobile persiste la session (access token et **refresh token**
 
 ---
 
-## F4 — Basse — Rate-limiting IA « fail-open » sur panne
+## F4 — Basse — Rate-limiting IA « fail-open » sur panne — ✅ Corrigé (2026-07-16)
 
 **Fichier** : `src/lib/rateLimit.ts:90-102`.
 
-Les 5 routes IA sont toutes protégées (`enforceRateLimit` vérifié en tête de chaque handler). Mais si la RPC `consume_rate_limit` échoue (migration absente, panne transitoire), la requête passe (`return null`). Risque réduit en régime établi (migration appliquée), mais une panne transitoire Supabase désactive le rate-limiting.
+Les 5 routes IA sont toutes protégées (`enforceRateLimit` vérifié en tête de chaque handler). Mais si la RPC `consume_rate_limit` échouait (migration absente, panne transitoire), la requête passait sans filet (`return null`) dans TOUS les cas d'erreur.
 
-**Remédiation** (optionnelle) : fail-closed borné pendant les pannes, ou couche de rate-limit edge indépendante de Supabase.
+**Correctif** : seule la RPC ABSENTE (`42883`/`PGRST202`/message « function ... does not exist » — migration `rate-limits.sql` pas encore passée) fail-open sans filet, ce qui reste le bootstrap volontaire pré-migration. Toute autre panne (réseau, Supabase injoignable, erreur transitoire) retombe désormais sur le compteur mémoire par IP (même filet que le mode anonyme/démo), côté RPC-en-erreur **et** côté exception réseau. Borne le risque de coût IA en cas d'incident, sans jamais bloquer l'usage normal pré-migration.
 
 ---
 
-## F5 — Basse — Relais d'email d'invitation vers adresse arbitraire
+## F5 — Basse — Relais d'email d'invitation vers adresse arbitraire — ✅ Corrigé (2026-07-16)
 
 **Fichier** : `src/app/api/send-invite-email/route.ts:19-70`.
 
-Tout utilisateur authentifié (pas forcément propriétaire de l'arbre) peut déclencher l'envoi d'un email à n'importe quelle adresse, avec `inviterName`/`treeName` contrôlés par l'attaquant. Impact limité : contenu échappé, lien toujours vers le domaine officiel. Risque réel = spam/réputation Resend, phishing léger.
+Tout utilisateur authentifié (pas forcément propriétaire de l'arbre) pouvait déclencher l'envoi d'un email à n'importe quelle adresse, avec `inviterName`/`treeName` contrôlés par l'attaquant.
 
-**Remédiation** : exiger que l'appelant soit propriétaire de l'arbre référencé ; rate-limit par utilisateur.
+**Correctif** : la route accepte désormais `treeId` et vérifie explicitement `guardTreeWrite(treeId, 'owner')` (même backend que les données, Supabase ou Railway) avant tout envoi — l'appelant doit être PROPRIÉTAIRE de l'arbre référencé. Rate-limit dédié ajouté (30/h/utilisateur, `RATE_LIMITS['/api/send-invite-email']`).
 
 ---
 
-## F6 — Basse — Fail-open pré-migration (`42703`)
+## F6 — Basse — Fail-open pré-migration (`42703`) — ✅ Vérifié (2026-07-16)
 
 **Fichiers** : `send-approval/route.ts:35`, `proxy.ts:45-46`.
 
-Deux endroits traitent l'absence de colonne (migration multitenant non appliquée) comme un accès permis. Choix de bootstrap documenté ; la prod a les colonnes → risque nul en régime établi. Signalé pour exhaustivité en cas de rollback de schéma. Le reste de `proxy.ts` échoue fermé correctement.
+Vérification (pas de changement de code nécessaire) : les deux endroits testent l'égalité EXACTE avec le code Postgres `42703` (colonne absente), jamais un catch-all générique — toute AUTRE erreur (ligne absente, panne transitoire) échoue fermé. Choix de bootstrap correctement scopé ; la prod a les colonnes depuis le schéma initial → risque nul en régime établi. Conservé tel quel pour la résilience à un éventuel rollback de schéma.
 
 ---
 
-## F7 — Basse/Info — CSRF non explicitement mitigé
+## F7 — Basse/Info — CSRF non explicitement mitigé — ✅ Corrigé (2026-07-16)
 
-Les mutations s'authentifient par cookie de session (web), sans vérification explicite d'`Origin`/`Referer`. Protection implicite via `SameSite` des cookies Supabase. Aucune route API ne pose de header CORS permissif (pas d'exposition cross-origin volontaire).
+Les mutations s'authentifiaient par cookie de session (web), sans vérification explicite d'`Origin`/`Referer` — protection seulement implicite via `SameSite` des cookies Supabase (qui reste le filet principal).
 
-**Remédiation** (durcissement) : vérification explicite d'`Origin` en tête des handlers de mutation.
+**Correctif** : nouveau helper `checkOrigin()` (`apiData.ts`, via `next/headers`) comparant l'en-tête `Origin` (envoyé par tout navigateur sur une requête state-changing) à l'hôte de la requête — absent (curl, apps mobiles en Bearer) → laissé passer (fail-open volontaire) ; présent mais divergent → 403. Branché dans `guardTreeWrite` (couvre `/api/data/trees/*` + `collaboration/*`) et explicitement dans les routes mutation hors `apiData.ts` (`data/rpc/[name]`, `collaboration/suggestions/resolve`, `send-approval(-email)`, `push/register`, `push/notify-join`, `storage/sign-upload`, `storage/delete`).
 
 ---
 
@@ -122,7 +122,6 @@ Les mutations s'authentifient par cookie de session (web), sans vérification ex
 
 1. ~~**F1 (Haute) — à corriger sans délai**~~ **✅ Fait (2026-07-16)** : `stripUnauthorizedJournal` appliqué sur les deux routes de lecture (`/api/data/trees`, `/api/data/trees/[id]`), aux deux backends par défense en profondeur.
 2. ~~**F2 (Moyenne)**~~ **✅ Fait (2026-07-16)**, en même temps que le correctif architecture F1 (partage/`DataStore`).
-3. **F3 (Moyenne)** : migrer le stockage de session mobile vers `expo-secure-store`.
-4. **F4-F7 (Basses)** : durcir au fil de l'eau.
+3. **F3 (Moyenne)** : migrer le stockage de session mobile vers `expo-secure-store`. — reste ouvert (voir note ci-dessous).
 
-**Mise à jour (2026-07-16)** : F1 et F2 corrigés (voir tableau de synthèse) — vérifiés `tsc`/`eslint` propres + `e2e/authz.spec.ts` (23/23, nouveau test `stripUnauthorizedJournal`). F3-F7 restent ouverts.
+**Mise à jour (2026-07-16)** : F1, F2, F4, F5, F7 corrigés + F6 vérifié (voir tableau de synthèse) — vérifiés `tsc`/`eslint` propres + `e2e/authz.spec.ts` (23/23). Seul **F3** (chiffrement de session mobile MMKV) reste ouvert : nécessite un test sur device/simulateur réel, indisponible dans ce sandbox — voir la tâche dédiée avant tout déploiement mobile.
