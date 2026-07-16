@@ -92,11 +92,15 @@ export async function inviteMember(
   if (!result) return null;
 
   // Send invitation email — fire-and-forget, never blocks the invitation itself.
+  // Sécu F5 : treeId est envoyé pour que la route revérifie côté serveur que
+  // l'appelant est bien PROPRIÉTAIRE de cet arbre (guardTreeWrite 'owner') —
+  // avant, la route faisait confiance à inviterName/treeName sans lien vérifié
+  // vers un arbre réel.
   if (inviterName && treeName) {
     fetch('/api/send-invite-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: clean, inviterName, treeName, token: result.token }),
+      body: JSON.stringify({ treeId, email: clean, inviterName, treeName, token: result.token }),
     }).catch((err: unknown) => {
       console.warn('[sharing] Échec envoi email invitation:', err);
     });

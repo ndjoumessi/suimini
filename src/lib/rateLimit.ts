@@ -8,18 +8,22 @@ import { createServerClient } from '@supabase/ssr';
  * supabase/rate-limits.sql), et par IP en mémoire (best-effort, par instance
  * serverless) pour les appels anonymes (mode démo).
  *
- * Fail-open assumé : si la RPC n'existe pas encore (migration non exécutée) ou
- * si Supabase est injoignable, la requête PASSE — le rate limiting est une
- * protection de coût, pas une fonction critique ; il ne doit jamais casser
- * les fonctionnalités pré-migration.
+ * Fail-open SCOPÉ (sécu F4) : seule la RPC ABSENTE (migration `rate-limits.sql`
+ * pas encore exécutée) fait passer la requête sans filet — c'est le bootstrap
+ * volontaire, pour ne jamais casser les fonctionnalités pré-migration. Toute
+ * AUTRE panne (réseau, Supabase injoignable, erreur transitoire) retombe sur
+ * le compteur mémoire par IP (même filet que le mode anonyme/démo) plutôt que
+ * de laisser passer sans aucune limite — borne le risque de coût en cas
+ * d'incident, sans bloquer l'usage normal.
  */
 
 export const RATE_LIMITS = {
-  '/api/narrative':        { max: 10, windowSeconds: 3600 },
-  '/api/narrative-person': { max: 10, windowSeconds: 3600 },
-  '/api/analyze-photo':    { max: 5,  windowSeconds: 3600 },
-  '/api/ocr-document':     { max: 5,  windowSeconds: 3600 },
-  '/api/search':           { max: 20, windowSeconds: 3600 },
+  '/api/narrative':          { max: 10, windowSeconds: 3600 },
+  '/api/narrative-person':   { max: 10, windowSeconds: 3600 },
+  '/api/analyze-photo':      { max: 5,  windowSeconds: 3600 },
+  '/api/ocr-document':       { max: 5,  windowSeconds: 3600 },
+  '/api/search':             { max: 20, windowSeconds: 3600 },
+  '/api/send-invite-email':  { max: 30, windowSeconds: 3600 }, // Sécu F5 : borne le spam d'invitations
 } as const;
 export type RateLimitedEndpoint = keyof typeof RATE_LIMITS;
 
@@ -88,17 +92,34 @@ export async function enforceRateLimit(req: Request, endpoint: RateLimitedEndpoi
           p_endpoint: endpoint, p_max: max, p_window_seconds: windowSeconds,
         });
         if (error) {
-          // RPC absente (migration pas encore passée) ou erreur transitoire → fail-open.
-          console.warn(`[rateLimit] RPC indisponible (${error.code ?? ''} ${error.message}) — requête autorisée.`);
-          return null;
+          // Sécu F4 : seule la RPC ABSENTE (migration pas encore passée) fail-open
+          // sans filet — c'est le cas bootstrap volontaire (pré-`rate-limits.sql`).
+          // Toute AUTRE erreur (panne réseau, permission, Supabase indisponible…)
+          // retombe sur le compteur mémoire par IP plutôt qu'un fail-open total :
+          // ça borne le risque de coût (usage IA illimité) pendant un incident,
+          // sans jamais bloquer un usage normal pré-migration.
+          const code = error.code ?? '';
+          const missingFn = code === '42883' || code === 'PGRST202' || /function .* does not exist/i.test(error.message ?? '');
+          if (missingFn) {
+            console.warn(`[rateLimit] RPC absente (migration non appliquée) — requête autorisée.`);
+            return null;
+          }
+          console.warn(`[rateLimit] RPC en erreur (${code} ${error.message}) — repli par IP.`);
+          const ip = (req.headers.get('x-forwarded-for') ?? 'unknown').split(',')[0].trim();
+          const verdict = anonAllowed(`${ip}:${endpoint}:fallback`, max, windowSeconds);
+          return verdict.allowed ? null : deny(verdict.retryAfter);
         }
         const res = data as { allowed?: boolean; retry_after?: number } | null;
         if (res && res.allowed === false) return deny(res.retry_after ?? windowSeconds);
         return null;
       }
     } catch (err) {
-      console.warn('[rateLimit] vérification impossible — requête autorisée.', err);
-      return null;
+      // Panne de connexion à Supabase lui-même (pas seulement la RPC) : même repli
+      // borné par IP plutôt qu'un fail-open total.
+      console.warn('[rateLimit] vérification impossible — repli par IP.', err);
+      const ip = (req.headers.get('x-forwarded-for') ?? 'unknown').split(',')[0].trim();
+      const verdict = anonAllowed(`${ip}:${endpoint}:fallback`, max, windowSeconds);
+      return verdict.allowed ? null : deny(verdict.retryAfter);
     }
   }
 

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
 import { INVITE_SUBJECT, inviteEmailHtml } from '@/lib/emails';
+import { guardTreeWrite } from '@/lib/apiData';
+import { enforceRateLimit } from '@/lib/rateLimit';
 
 // Server-only: RESEND_API_KEY is never exposed to the browser.
 export const runtime = 'nodejs';
@@ -11,27 +11,33 @@ const FROM = process.env.RESEND_FROM || 'Suimini <onboarding@resend.dev>';
 const APP_BASE = 'https://suimini.vercel.app';
 
 /**
- * POST /api/send-invite-email  { email, inviterName, treeName, token }
- * Sends a tree-member invitation email. Caller MUST be authenticated (any user may
- * invite — ownership check is handled at the inviteMember layer).
+ * POST /api/send-invite-email  { treeId, email, inviterName, treeName, token }
+ * Sends a tree-member invitation email.
+ *
+ * Sécu F5 : l'appelant DOIT être propriétaire de `treeId` (guardTreeWrite
+ * 'owner', même backend que les données — Supabase ou Railway). Avant ce
+ * correctif, la route faisait confiance à `inviterName`/`treeName` fournis
+ * par le client sans revérifier de lien réel vers un arbre — n'importe quel
+ * utilisateur authentifié pouvait déclencher un email référençant un arbre
+ * qui n'était pas le sien. Le token d'invitation lui-même reste généré en
+ * amont par `inviteMember` (owner-only, RLS/authz applicative) ; ce check
+ * protège spécifiquement CET envoi d'email.
  * No-ops gracefully (200 { skipped }) when RESEND_API_KEY is not configured.
  */
 export async function POST(req: Request) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return NextResponse.json({ error: 'Supabase non configuré.' }, { status: 500 });
-
-  // --- AuthN: any authenticated user may send an invite ---
-  const cookieStore = await cookies();
-  const supabase = createServerClient(url, key, {
-    cookies: { getAll() { return cookieStore.getAll(); }, setAll() { /* read-only here */ } },
-  });
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 });
-
   // --- Payload ---
-  let body: { email?: string; inviterName?: string; treeName?: string; token?: string };
+  let body: { treeId?: string; email?: string; inviterName?: string; treeName?: string; token?: string };
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Corps invalide.' }, { status: 400 }); }
+
+  const treeId = body.treeId?.trim();
+  if (!treeId) return NextResponse.json({ error: 'Arbre manquant.' }, { status: 400 });
+
+  // --- AuthN + AuthZ : propriétaire de l'arbre uniquement ---
+  const guard = await guardTreeWrite(treeId, 'owner');
+  if (!guard.ok) return guard.res;
+
+  const limited = await enforceRateLimit(req, '/api/send-invite-email');
+  if (limited) return limited;
 
   const email = body.email?.trim();
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
