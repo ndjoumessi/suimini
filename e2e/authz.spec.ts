@@ -9,7 +9,7 @@ import {
   canReadTreeAsMember, canWriteTreeContent, canReadJournal, isTreeOwner,
   canReadOwnProfile, isAdmin, isSuperAdmin,
   isPersonPubliclyVisible, isRelationshipPubliclyVisible,
-  createSupabaseAuthzProvider,
+  createSupabaseAuthzProvider, stripUnauthorizedJournal,
   type AuthzDataProvider, type MaybeCaller,
 } from '../src/lib/authz';
 
@@ -133,4 +133,32 @@ test('createSupabaseAuthzProvider : absence de fait → null / false', async () 
   expect(await p.getTreeSharePermission('T', 'x@y')).toBe(null);
   expect(await p.getMembershipStatus('T', 'u')).toBe(null);
   expect(await p.isTreePublic('T')).toBe(false);
+});
+
+// ── Sécu F1 : le journal ne doit PAS fuiter à un simple membre accepté ───────
+// (RailwayStore n'a pas de RLS pour l'appliquer en amont — stripUnauthorizedJournal
+// est la seule ligne de défense sur ce backend ; voir routes /api/data/trees[/[id]]).
+test('stripUnauthorizedJournal : retire le journal pour un membre, le garde pour owner/share', async () => {
+  const mkTree = (id: string) => ({ id, journal: [{ id: 'j1' }] });
+
+  // Owner et partages (read/write) : journal conservé.
+  for (const caller of [C.owner, C.shareRead, C.shareWrite]) {
+    const tree = mkTree('Tpriv');
+    await stripUnauthorizedJournal(provider, [tree], caller);
+    expect(tree.journal).toEqual([{ id: 'j1' }]);
+  }
+
+  // Membre accepté, membre en attente, étranger, admin, anonyme : journal retiré.
+  for (const caller of [C.memberAcc, C.memberPend, C.stranger, C.admin, C.anon]) {
+    const tree = mkTree('Tpriv');
+    await stripUnauthorizedJournal(provider, [tree], caller);
+    expect(tree.journal).toEqual([]);
+  }
+
+  // Plusieurs arbres à la fois (cas de la route liste /api/data/trees) : filtrage
+  // INDÉPENDANT par arbre — memberAcc n'a le journal sur AUCUN des deux ici.
+  const trees = [mkTree('Tpriv'), mkTree('Tpub')];
+  await stripUnauthorizedJournal(provider, trees, C.memberAcc);
+  expect(trees[0].journal).toEqual([]);
+  expect(trees[1].journal).toEqual([]);
 });

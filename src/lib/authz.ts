@@ -84,6 +84,25 @@ export async function canReadJournal(p: AuthzDataProvider, treeId: string, c: Ma
   return hasShare(p, treeId, c, 'read');
 }
 
+/**
+ * Retire `journal` (→ `[]`) des arbres où l'appelant N'A PAS l'accès journal
+ * (`canReadJournal` ci-dessus — jamais un simple membre accepté). Sur Supabase,
+ * la policy `journal_select` fait déjà ce filtrage en amont (RLS) ; sur Railway,
+ * il n'y a PAS de RLS, donc `RailwayStore.loadTrees`/`loadOneTree` renvoient le
+ * journal SANS filtrage par appelant — cette fonction est la SEULE ligne de
+ * défense sur ce backend (sécu F1 : le journal fuitait aux membres acceptés).
+ * Utilisée par les routes `/api/data/trees` et `/api/data/trees/[id]` juste
+ * avant la réponse JSON ; appliquée aux deux backends par simplicité/défense en
+ * profondeur (redondante mais inoffensive côté Supabase, où RLS a déjà tranché).
+ */
+export async function stripUnauthorizedJournal<T extends { id: string; journal?: unknown[] }>(
+  p: AuthzDataProvider, trees: T[], c: MaybeCaller,
+): Promise<void> {
+  await Promise.all(trees.map(async (tree) => {
+    if (!(await canReadJournal(p, tree.id, c))) tree.journal = [];
+  }));
+}
+
 /** métadonnées d'arbre (update/delete/insert) : owner UNIQUEMENT. */
 export async function isTreeOwner(p: AuthzDataProvider, treeId: string, c: MaybeCaller): Promise<boolean> {
   return isOwner(p, treeId, c);

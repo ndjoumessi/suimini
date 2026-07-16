@@ -8,15 +8,15 @@
 
 ## Synthèse des findings
 
-| # | Sévérité | Titre | Fichier |
-|---|----------|-------|---------|
-| F1 | **Haute** | Le journal familial fuite aux membres acceptés via la lecture non masquée (backend Railway, sans RLS) | `railwayStore.ts:185-202`, `apiData.ts:44-51` |
-| F2 | **Moyenne** | Le partage public lit un instantané Supabase figé → édition privée/suppression post-cutover non honorée | `supabaseSync.ts:479-509`, `supabaseSync.ts:466-472` |
-| F3 | **Moyenne** | Tokens de session Supabase stockés en clair (MMKV non chiffré) sur mobile | `mobile/lib/supabase.ts:11-33` |
-| F4 | Basse | Rate-limiting IA « fail-open » sur panne RPC/Supabase | `rateLimit.ts:90-102` |
-| F5 | Basse | Envoi d'email d'invitation à une adresse arbitraire, sans rate-limit, nom d'expéditeur contrôlé | `send-invite-email/route.ts:19-70` |
-| F6 | Basse | Fail-open pré-migration : `42703` = tout utilisateur traité comme admin/approuvé | `send-approval/route.ts:35`, `proxy.ts:45-46` |
-| F7 | Basse/Info | Pas de protection CSRF explicite (repose sur SameSite implicite des cookies Supabase) | routes `/api/*` |
+| # | Sévérité | Titre | Fichier | Statut |
+|---|----------|-------|---------|--------|
+| F1 | **Haute** | Le journal familial fuite aux membres acceptés via la lecture non masquée (backend Railway, sans RLS) | `railwayStore.ts:185-202`, `apiData.ts:44-51` | **✅ Corrigé (2026-07-16)** — `stripUnauthorizedJournal` (`authz.ts`) appliqué dans `GET /api/data/trees` et `GET /api/data/trees/[id]` juste avant la réponse JSON, testé (`e2e/authz.spec.ts`). |
+| F2 | **Moyenne** | Le partage public lit un instantané Supabase figé → édition privée/suppression post-cutover non honorée | `supabaseSync.ts:479-509`, `supabaseSync.ts:466-472` | **✅ Corrigé (2026-07-16)**, effet de bord du correctif architecture F1 — `loadPublicTree`/`getPublicShare`/`setTreePublic` passent désormais par `DataStore` (Railway ou Supabase selon `DB_BACKEND`), plus jamais Supabase-direct. |
+| F3 | **Moyenne** | Tokens de session Supabase stockés en clair (MMKV non chiffré) sur mobile | `mobile/lib/supabase.ts:11-33` | Ouvert |
+| F4 | Basse | Rate-limiting IA « fail-open » sur panne RPC/Supabase | `rateLimit.ts:90-102` | Ouvert |
+| F5 | Basse | Envoi d'email d'invitation à une adresse arbitraire, sans rate-limit, nom d'expéditeur contrôlé | `send-invite-email/route.ts:19-70` | Ouvert |
+| F6 | Basse | Fail-open pré-migration : `42703` = tout utilisateur traité comme admin/approuvé | `send-approval/route.ts:35`, `proxy.ts:45-46` | Ouvert |
+| F7 | Basse/Info | Pas de protection CSRF explicite (repose sur SameSite implicite des cookies Supabase) | routes `/api/*` | Ouvert |
 
 ---
 
@@ -120,9 +120,9 @@ Les mutations s'authentifient par cookie de session (web), sans vérification ex
 
 ## Recommandations priorisées
 
-1. **F1 (Haute) — à corriger sans délai** : appliquer `canReadJournal` sur le chemin de lecture Railway ; le journal fuite actuellement à tout membre accepté en production.
-2. **F2 (Moyenne)** : router le partage public vers Railway ou suspendre le partage public tant qu'il lit l'instantané figé.
+1. ~~**F1 (Haute) — à corriger sans délai**~~ **✅ Fait (2026-07-16)** : `stripUnauthorizedJournal` appliqué sur les deux routes de lecture (`/api/data/trees`, `/api/data/trees/[id]`), aux deux backends par défense en profondeur.
+2. ~~**F2 (Moyenne)**~~ **✅ Fait (2026-07-16)**, en même temps que le correctif architecture F1 (partage/`DataStore`).
 3. **F3 (Moyenne)** : migrer le stockage de session mobile vers `expo-secure-store`.
 4. **F4-F7 (Basses)** : durcir au fil de l'eau.
 
-Aucune modification de fichier n'a été effectuée (audit lecture seule).
+**Mise à jour (2026-07-16)** : F1 et F2 corrigés (voir tableau de synthèse) — vérifiés `tsc`/`eslint` propres + `e2e/authz.spec.ts` (23/23, nouveau test `stripUnauthorizedJournal`). F3-F7 restent ouverts.
