@@ -13,6 +13,12 @@ out/
 /blob-report/
 /playwright/.cache/
 
+# Design-review screenshots (e2e/dashboard-screenshot.spec.ts + feature-screenshots*.spec.ts
+# write these to the repo root by design — CI uploads them as a build artifact, they should
+# never be git-committed; see .github/workflows/ci.yml "design-review-screenshots").
+/dashboard.png
+/shot-*.png
+
 # Impeccable design tooling (reinstall via `npx impeccable skills install`) + local harness settings
 .claude/
 .impeccable/
