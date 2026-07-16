@@ -1,0 +1,73 @@
+# Application AUTOMATIQUE des migrations de schéma Railway au push sur `main`.
+# Miroir de migrate.yml (Supabase) — Archi F5.
+#
+# Secret repo requis (À AJOUTER MANUELLEMENT — Settings → Secrets and variables
+# → Actions — hors de portée d'un agent) :
+#   RAILWAY_DATABASE_URL_UNPOOLED — URL Postgres DIRECTE (pas la variante poolée
+#   utilisée par l'app au runtime). Sans ce secret, le job est SAUTÉ (non bloquant),
+#   même garde-fou que migrate.yml.
+#
+# Backend : `psql` uniquement (Railway n'a pas d'équivalent de la Management API
+# Supabase pour du SQL arbitraire sans connexion directe).
+name: Apply Railway DB Migrations
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'railway/migrations/**'
+      - 'scripts/migrate-railway.mjs'
+      - '.github/workflows/migrate-railway.yml'
+  workflow_dispatch:
+    inputs:
+      command:
+        description: "Commande (up = applique | baseline = marque appliqué sans exécuter | status)"
+        default: up
+        type: choice
+        options: [up, baseline, status]
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Guard — secret présent ?
+        id: guard
+        env:
+          RAILWAY_DATABASE_URL_UNPOOLED: ${{ secrets.RAILWAY_DATABASE_URL_UNPOOLED }}
+        run: |
+          set -euo pipefail
+          if [ -z "${RAILWAY_DATABASE_URL_UNPOOLED:-}" ]; then
+            echo "::warning::RAILWAY_DATABASE_URL_UNPOOLED absent — migrations Railway sautées (non bloquant)."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Node 22
+        if: steps.guard.outputs.ready == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Install postgresql-client (psql)
+        if: steps.guard.outputs.ready == 'true'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+
+      - name: Apply migrations (status → command)
+        if: steps.guard.outputs.ready == 'true'
+        env:
+          RAILWAY_DATABASE_URL_UNPOOLED: ${{ secrets.RAILWAY_DATABASE_URL_UNPOOLED }}
+          # push → 'up' ; workflow_dispatch → choix (up|baseline|status). Valeur de
+          # liste déroulante (sûre), passée par env par prudence.
+          COMMAND: ${{ github.event.inputs.command || 'up' }}
+        run: |
+          set -euo pipefail
+          node scripts/migrate-railway.mjs status
+          node scripts/migrate-railway.mjs "$COMMAND"
