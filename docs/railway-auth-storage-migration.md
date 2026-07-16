@@ -1,10 +1,12 @@
 # Migration Auth + Storage hors Supabase — plan & prérequis (Phase 2)
 
-> État : **Phase A (Storage) LIVE EN PRODUCTION (2026-07-15).**
+> État : **Phase A (Storage) LIVE EN PRODUCTION (2026-07-15) — web ET mobile.**
 > `NEXT_PUBLIC_STORAGE_BACKEND=r2` posé en Production (+ Preview), `vercel --prod`
 > déployé, upload réel confirmé sur `suimini.vercel.app` (PUT 200, CORS OK, photo
 > affichée via `pub-294a3e5b78874be9a57f9627498a4c81.r2.dev`). Tout l'historique de
 > validation (dry-run, prod brut, Preview isolée, prod réelle) est détaillé en §4.
+> **Mobile flippé et testé en local le 2026-07-16 (tâche #34)** — reste seulement le
+> test sur un build EAS packagé avant d'aller en prod mobile (voir §7).
 > **Phase B (Auth) reste non commencée, sans plan ni feu vert** — voir §5.
 >
 > ⚠️ **Supabase reste une dépendance ACTIVE et CRITIQUE malgré le flip Storage.**
@@ -291,7 +293,16 @@ maintenant vers R2.
       teda-p69-*.jpg` confirmée. Trou CORS supplémentaire découvert et corrigé :
       chaque déploiement Preview Vercel a sa PROPRE origine unique → ajout du motif
       `https://suimini-*-ndjoumessis-projects.vercel.app` aux `AllowedOrigins` R2, en
-      plus du domaine de prod fixe.)** Mobile pas testé (EXPO_PUBLIC_* non posées).
+      plus du domaine de prod fixe.)**
+- [x] Upload **mobile** via R2 → l'image s'affiche. **(2026-07-16, tâche #34 : `EXPO_PUBLIC_STORAGE_BACKEND=r2`
+      + `EXPO_PUBLIC_R2_PUBLIC_BASE_URL` posées dans `mobile/.env` local — une valeur
+      était déjà présente mais sous la mauvaise clé `NEXT_PUBLIC_R2_PUBLIC_BASE_URL`,
+      donc silencieusement ignorée par Expo, corrigé. Upload réel testé par l'user
+      sur `expo start` avec un vrai compte (arbre TEDA) → objet confirmé dans le
+      dashboard Cloudflare R2 : `a8d07d13-f795-41ec-824f-5453cce02c0e/
+      teda-p69-1784217752654.webp`, `image/webp`, convention de path respectée.
+      Test EAS build (packagé, hors `expo start`) : pas encore fait — voir `docs/
+      r2-mobile-test-checklist.md` §6.)**
 - [x] Compte des objets Supabase == compte des objets R2 après copie (réconciliation,
       façon 71/122 de la data). **(2026-07-15, via `scripts/copy-avatars-to-r2.sh
       DRY_RUN=0` : 11 objets Supabase → 11 transférés → 11 côté R2, comptes égaux.
@@ -408,7 +419,7 @@ plusieurs semaines ET que le provider n'a pas été tranché (§5.1).
 | Frontière/seam | `DataStore` ✅ | `StorageProvider` ✅ | à concevoir |
 | Impl neuve | `RailwayStore` ✅ live 100% | `ObjectStoreProvider` ✅ **LIVE 100% (web)** | ⏳ (préparation seulement) |
 | Backend cible | Railway PG | Cloudflare R2 | GoTrue self-host (proposé) |
-| Prêt à démarrer ? | fait | **web fait — mobile pas encore flippé (EXPO_PUBLIC_* non posées)** | **non — attendre le soak** |
+| Prêt à démarrer ? | fait | **web fait — mobile flippé et testé en local (2026-07-16), EAS pas encore fait** | **non — attendre le soak** |
 | Rollback | Edge Config une-ligne | flag client absent/`supabase` + redeploy | repointage GoTrue (fragile) |
 
 > **Storage — LIVE EN PRODUCTION (2026-07-15).** `NEXT_PUBLIC_STORAGE_BACKEND=r2`
@@ -429,7 +440,11 @@ plusieurs semaines ET que le provider n'a pas été tranché (§5.1).
 > Preview isolée** (photo affichée, URL R2 confirmée) → **flip Production** →
 > **upload réel via l'UI en prod confirmé** (PUT 200, CORS OK, URL R2 confirmée).
 >
-> Restant : **mobile** (code écrit, jamais flippé — poser `EXPO_PUBLIC_STORAGE_
-> BACKEND=r2` + `EXPO_PUBLIC_R2_PUBLIC_BASE_URL` dans `mobile/.env` et tester un
-> upload réel avant un build) ; rollback jamais déclenché en conditions réelles
-> (trivial par construction, voir §4.6 et la note de tête de document).
+> **Mobile flippé et testé (2026-07-16, tâche #34)** : `EXPO_PUBLIC_STORAGE_BACKEND=r2`
+> + `EXPO_PUBLIC_R2_PUBLIC_BASE_URL` posées dans `mobile/.env` (local), upload réel
+> confirmé (`expo start`, vrai compte, objet visible dans le dashboard R2). Restant :
+> poser les mêmes 2 variables sur EAS (`eas env:create`, voir `docs/
+> r2-mobile-test-checklist.md` §6) et refaire le test sur un vrai build APK avant
+> tout build de prod — `mobile/.env` n'est jamais inclus dans un build EAS. Rollback
+> jamais déclenché en conditions réelles (trivial par construction, voir §4.6 et la
+> note de tête de document).
