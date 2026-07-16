@@ -15,8 +15,8 @@ export default function DemoBanner({ onCreateAccount, onExit }: { onCreateAccoun
             <strong>{t('bannerTitle')}</strong>
             <span className="demo-banner-note"> · {t('bannerNote')}</span>
           </span>
-          <button onClick={onExit} className="demo-banner-exit">
-            <ArrowLeft size={12} aria-hidden="true" /> <span className="demo-banner-exit-label">{t('quit')}</span>
+          <button onClick={onExit} className="demo-banner-exit" aria-label={t('quit')}>
+            <ArrowLeft size={12} aria-hidden="true" /> <span className="demo-banner-exit-label" aria-hidden="true">{t('quit')}</span>
           </button>
           <button onClick={onCreateAccount} className="demo-banner-cta">
             {t('createAccount')} <ArrowRight size={13} aria-hidden="true" />

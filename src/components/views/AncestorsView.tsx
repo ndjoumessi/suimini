@@ -3,7 +3,7 @@ import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { FamilyTree, Person } from '@/types';
 import { Network, ArrowLeftRight, Scale, TreePine, Sprout, AlertCircle, Dna, ChevronDown } from 'lucide-react';
-import { GENDER_BAR } from '../tree/nodeStyle';
+import { GENDER_BAR, avatarColors } from '../tree/nodeStyle';
 import { PersonCombobox } from '../ui/PersonCombobox';
 import {
   getDisplayName, formatYear, formatAge, getAllAncestors, getAllDescendants,
@@ -406,9 +406,9 @@ export default function AncestorsView({ tree, onSelectPerson }: Props) {
 
 /** Square gender-coloured avatar (photo when present). */
 function Avatar({ person, size }: { person: Person; size: number }) {
-  const bg = genderColor(person);
+  const { bg, fg } = avatarColors(person.gender);
   return (
-    <span className="ex-avatar" style={{ width: size, height: size, background: person.profilePhoto ? 'var(--bg-muted)' : bg, fontSize: size * 0.34 }} aria-hidden="true">
+    <span className="ex-avatar" style={{ width: size, height: size, background: person.profilePhoto ? 'var(--bg-muted)' : bg, color: fg, fontSize: size * 0.34 }} aria-hidden="true">
       {person.profilePhoto ? <img src={person.profilePhoto} alt="" loading="lazy" decoding="async" /> : initials(person)}
     </span>
   );

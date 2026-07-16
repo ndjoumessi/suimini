@@ -53,6 +53,55 @@ function EventIcon({ type, size = 13 }: { type: string; size?: number }) {
   return <Icon size={size} aria-hidden="true" />;
 }
 
+/** Historical-era context popup (#3C). Extracted so it carries its own
+ *  `useOverlay` (focus-trap + Esc + scroll-lock) — the inline version had
+ *  `role="dialog" aria-modal` but neither behaviour (AUDIT-V5 P1 #9). */
+function EraEventModal({ event, locale, onClose, closeLabel }: { event: HistoricalEvent; locale: 'fr' | 'en'; onClose: () => void; closeLabel: string }) {
+  const overlayRef = useOverlay(onClose);
+  const copy = event[locale];
+  return (
+    <div
+      onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}
+      style={{ position: 'fixed', inset: 0, zIndex: 2100, background: 'var(--scrim, rgba(27,22,18,0.55))', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}
+    >
+      <div ref={overlayRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={copy.label} className="card animate-scale-in" style={{ maxWidth: '420px', padding: '22px' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '10px' }}>
+          <h3 className="serif" style={{ margin: 0, fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Landmark size={18} aria-hidden="true" style={{ color: 'var(--accent)', flexShrink: 0 }} />
+            {copy.label}
+          </h3>
+          <button onClick={onClose} className="icon-btn" aria-label={closeLabel}><X size={18} /></button>
+        </div>
+        <div className="label" style={{ color: 'var(--accent)', marginBottom: '10px' }}>
+          {event.start}{event.end ? `–${event.end}` : ''}
+        </div>
+        <p style={{ margin: 0, fontSize: '14px', lineHeight: 1.7, color: 'var(--text)' }}>
+          {copy.context}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/** Delete-photo confirmation. Same fix as `EraEventModal` above. */
+function PhotoDeleteConfirmModal({ title, text, cancelLabel, deleteLabel, onCancel, onConfirm }: { title: string; text: string; cancelLabel: string; deleteLabel: string; onCancel: () => void; onConfirm: () => void }) {
+  const overlayRef = useOverlay(onCancel);
+  return (
+    <div className="modal-overlay" onMouseDown={e => e.target === e.currentTarget && onCancel()}>
+      <div ref={overlayRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={title} className="modal" style={{ maxWidth: '360px' }}>
+        <div style={{ padding: '22px' }}>
+          <h3 className="serif" style={{ margin: '0 0 8px', fontSize: '1.1rem' }}>{title}</h3>
+          <p style={{ margin: '0 0 20px', fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>{text}</p>
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+            <button onClick={onCancel} className="btn btn-ghost btn-sm">{cancelLabel}</button>
+            <button onClick={onConfirm} className="btn btn-danger btn-sm" style={{ gap: '6px' }}><Trash2 size={14} aria-hidden="true" /> {deleteLabel}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Built-in event types we have translated labels for (others fall back to the raw type string).
 const KNOWN_EVENT_TYPES = new Set<string>(EVENT_TYPES);
 const REL_TYPES: RelationType[] = ['spouse', 'partner', 'parent', 'child', 'sibling'];
@@ -796,7 +845,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
                       <div key={rel.id} style={{ padding:'10px', background:'var(--bg-muted)', borderRadius:'var(--radius)', border:`1px solid ${self?'var(--danger)':'var(--border)'}` }}>
                         {editRelId===rel.id ? (
                           <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
-                            <select defaultValue={rel.type} id={`rel-type-${rel.id}`} className="input">
+                            <select defaultValue={rel.type} id={`rel-type-${rel.id}`} aria-label={t('relationType')} className="input">
                               {REL_TYPES.map(rt=><option key={rt} value={rt}>{relLabel(rt)}</option>)}
                             </select>
                             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'6px' }}>
@@ -1377,53 +1426,28 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
         )}
       </div>
 
-      {/* Historical context popup (#3C) */}
+      {/* Historical context popup (#3C) — mounted only while open, own
+          useOverlay (focus-trap + Esc + scroll-lock), was a raw role="dialog"
+          with neither (AUDIT-V5 P1 #9). */}
       {eraEvent && (
-        <div
-          onMouseDown={e=>{ if(e.target===e.currentTarget) setEraEvent(null); }}
-          style={{ position:'fixed', inset:0, zIndex:2100, background:'var(--scrim, rgba(27,22,18,0.55))', display:'flex', alignItems:'center', justifyContent:'center', padding:'24px' }}
-          role="dialog" aria-modal="true" aria-label={eraEvent[locale==='en'?'en':'fr'].label}
-        >
-          <div className="card animate-scale-in" style={{ maxWidth:'420px', padding:'22px' }}>
-            <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:'12px', marginBottom:'10px' }}>
-              <h3 className="serif" style={{ margin:0, fontSize:'1.15rem', display:'flex', alignItems:'center', gap:'8px' }}>
-                <Landmark size={18} aria-hidden="true" style={{ color:'var(--accent)', flexShrink:0 }} />
-                {eraEvent[locale==='en'?'en':'fr'].label}
-              </h3>
-              <button onClick={()=>setEraEvent(null)} className="icon-btn" aria-label={t('close')}><X size={18} /></button>
-            </div>
-            <div className="label" style={{ color:'var(--accent)', marginBottom:'10px' }}>
-              {eraEvent.start}{eraEvent.end?`–${eraEvent.end}`:''}
-            </div>
-            <p style={{ margin:0, fontSize:'14px', lineHeight:1.7, color:'var(--text)' }}>
-              {eraEvent[locale==='en'?'en':'fr'].context}
-            </p>
-          </div>
-        </div>
+        <EraEventModal event={eraEvent} locale={locale === 'en' ? 'en' : 'fr'} onClose={() => setEraEvent(null)} closeLabel={t('close')} />
       )}
 
-      {/* Delete-photo confirmation */}
+      {/* Delete-photo confirmation — same fix as above. */}
       {photoToDelete !== null && (person.photos?.[photoToDelete] !== undefined) && (
-        <div className="modal-overlay" onMouseDown={e => e.target === e.currentTarget && setPhotoToDelete(null)}>
-          <div role="dialog" aria-modal="true" aria-label={t('photoDeleteTitle')} className="modal" style={{ maxWidth: '360px' }}>
-            <div style={{ padding: '22px' }}>
-              <h3 className="serif" style={{ margin: '0 0 8px', fontSize: '1.1rem' }}>{t('photoDeleteTitle')}</h3>
-              <p style={{ margin: '0 0 20px', fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>{t('photoDeleteText')}</p>
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                <button onClick={() => setPhotoToDelete(null)} className="btn btn-ghost btn-sm">{t('cancel')}</button>
-                <button
-                  onClick={() => {
-                    if (photoToDelete === null) return;
-                    const url = person.photos?.[photoToDelete];
-                    onUpdate({ photos: (person.photos || []).filter((_, idx) => idx !== photoToDelete) });
-                    if (url) void deleteAvatarByUrl(url);
-                    setPhotoToDelete(null);
-                  }}
-                  className="btn btn-danger btn-sm" style={{ gap: '6px' }}><Trash2 size={14} aria-hidden="true" /> {t('delete')}</button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <PhotoDeleteConfirmModal
+          title={t('photoDeleteTitle')}
+          text={t('photoDeleteText')}
+          cancelLabel={t('cancel')}
+          deleteLabel={t('delete')}
+          onCancel={() => setPhotoToDelete(null)}
+          onConfirm={() => {
+            const url = person.photos?.[photoToDelete];
+            onUpdate({ photos: (person.photos || []).filter((_, idx) => idx !== photoToDelete) });
+            if (url) void deleteAvatarByUrl(url);
+            setPhotoToDelete(null);
+          }}
+        />
       )}
 
       <style>{`
@@ -1453,9 +1477,9 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
         @media (prefers-reduced-motion: reduce) { .pp-avatar-scrim { transition: none; } }
 
         .pp-photo { position: relative; }
-        .pp-photo-del { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; background: rgba(176,42,42,0.9); color: #fff; border: none; cursor: pointer; opacity: 0; transition: opacity 150ms ease, background 150ms ease; }
+        .pp-photo-del { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--danger) 88%, transparent); color: #fff; border: none; cursor: pointer; opacity: 0; transition: opacity 150ms ease, background 150ms ease; }
         .pp-photo:hover .pp-photo-del, .pp-photo-del:focus-visible { opacity: 1; }
-        .pp-photo-del:hover { background: #c0392b; }
+        .pp-photo-del:hover { background: var(--danger); }
 
         /* Relations editor (edit tab) */
         .pp-rel { display: flex; flex-direction: column; gap: 16px; }
@@ -1466,7 +1490,7 @@ export default function PersonPanel({ person, tree, onClose, onUpdate, onDelete,
         .pp-relname:hover { color: var(--accent-text); }
         .pp-relstatus { flex-shrink: 0; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-light); }
         .pp-relx { flex-shrink: 0; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; background: transparent; border: none; color: var(--text-muted); cursor: pointer; transition: color 150ms ease, background 150ms ease; }
-        .pp-relx:hover { color: #fff; background: rgba(176,42,42,0.9); }
+        .pp-relx:hover { color: #fff; background: color-mix(in srgb, var(--danger) 88%, transparent); }
         .pp-reladd-btn { align-self: flex-start; background: none; border: none; padding: 2px 0; cursor: pointer; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.03em; color: var(--accent-text); transition: color 150ms ease; }
         .pp-reladd-btn:hover { color: var(--accent); }
         .pp-reladd { display: flex; flex-direction: column; gap: 6px; padding: 8px; background: var(--bg-muted); border: 1px solid var(--border); }
@@ -1606,14 +1630,21 @@ function LifeTimeline({ person }: { person: Person }) {
   const ticks: number[] = [];
   for (let y = Math.ceil(startYear / 10) * 10; y <= endYear; y += 10) ticks.push(y);
 
+  const rangeLabel = t('timelineRange', { start: startYear, end: (!person.isAlive && person.deathDate ? formatYear(person.deathDate) : t('today')) });
+  // Text summary of every point on the graphic — the SVG otherwise only
+  // describes events via <title> (mouse-hover only, invisible to keyboard/SR
+  // users, AUDIT-V5 P1 #15). role="img" + this aria-label give the whole
+  // chart a single accessible description instead.
+  const eventsSummary = points.map(ev => `${eventTypeLabel(ev.type)} ${formatYear(ev.date)}`).join(', ');
+
   return (
     <div>
       <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', display:'flex', alignItems:'center', gap:'5px' }}>
-        <Clock size={12} aria-hidden="true" /> {t('timelineRange', { start: startYear, end: (!person.isAlive && person.deathDate ? formatYear(person.deathDate) : t('today')) })}
+        <Clock size={12} aria-hidden="true" /> {rangeLabel}
         {span > 0 && <> · {t('ageYears', { age: span })}</>}
       </div>
       <div style={{ overflowX: 'auto', overflowY: 'hidden', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-muted)' }}>
-        <svg width={width} height={HEIGHT} style={{ display: 'block' }}>
+        <svg width={width} height={HEIGHT} style={{ display: 'block' }} role="img" aria-label={eventsSummary ? `${rangeLabel}. ${eventsSummary}` : rangeLabel}>
           {/* Decade ticks */}
           {ticks.map(y => (
             <g key={y}>

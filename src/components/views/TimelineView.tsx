@@ -7,6 +7,7 @@ import { PersonCombobox } from '../ui/PersonCombobox';
 import { FamilyTree, EventType, Person } from '@/types';
 import { getDisplayName, formatDate, getChildren, getParents } from '@/lib/treeUtils';
 import { eventsOverlapping, type HistoricalEvent } from '@/lib/history';
+import { currentNodeMode } from '../tree/nodeStyle';
 
 interface TimelineEntry {
   date: string;
@@ -98,6 +99,18 @@ function genColor(gen: number | null): string {
   return GENERATION_PALETTE[gen % GENERATION_PALETTE.length];
 }
 
+// Indexes of GENERATION_PALETTE whose token keeps the SAME hue/lightness in
+// both themes (accent, female, male) — dark ink text stays correct on them.
+// --info/--success/--warning (indexes 1-3) flip to a DARK variant in light
+// theme (they're designed as TEXT colours elsewhere), so painting the same
+// dark ink on top of them as a FILL drops to ~3.35:1 (AUDIT-V5 P1 #6) —
+// those three need a light foreground in light mode only.
+const THEME_STABLE_GEN_INDEXES = new Set([0, 4, 5]);
+function genBarFg(gen: number | null, mode: 'light' | 'dark'): string {
+  if (gen == null || mode === 'dark') return 'var(--ink-on-accent)';
+  return THEME_STABLE_GEN_INDEXES.has(gen % GENERATION_PALETTE.length) ? 'var(--ink-on-accent)' : 'var(--bg)';
+}
+
 // Event type → Lucide icon + accent colour for the timeline list.
 function eventVisual(type: string): { Icon: typeof Star; color: string } {
   if (type === 'birth') return { Icon: Sparkles, color: 'var(--accent-text)' };
@@ -126,6 +139,7 @@ function TLRow({ side, children }: { side: 'left' | 'right'; children: React.Rea
 export default function TimelineView({ tree, onSelectPerson }: Props) {
   const t = useTranslations('timeline');
   const locale = useLocale() as 'fr' | 'en';
+  const nodeMode = currentNodeMode();
 
   const [view, setView] = useState<ViewMode>('list');
   const [scope, setScope] = useState<Scope>('family');
@@ -466,7 +480,7 @@ export default function TimelineView({ tree, onSelectPerson }: Props) {
                         width: `${width}%`,
                         minWidth: '14px',
                         background: color,
-                        color: 'var(--ink-on-accent)',
+                        color: genBarFg(bar.generation, nodeMode),
                         border: 'var(--bw) solid var(--border-strong)',
                         borderRight: living ? '2.5px dotted var(--border-strong)' : `var(--bw) solid var(--border-strong)`,
                         borderRadius: 'var(--radius)',

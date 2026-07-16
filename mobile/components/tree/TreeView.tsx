@@ -1,15 +1,22 @@
 import { useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { StyleSheet, View, Pressable } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
+  withTiming,
 } from 'react-native-reanimated';
+import { Plus, Minus, RotateCcw } from 'lucide-react-native';
 import type { Person, Relationship } from '@/lib/types';
 import { computeLayout } from '@/lib/treeLayout';
 import { PersonNode } from './PersonNode';
 import { useTheme } from '@/hooks/useTheme';
+
+const MIN_SCALE = 0.3;
+const MAX_SCALE = 3;
+const ZOOM_STEP = 1.3;
 
 interface TreeViewProps {
   persons: Person[];
@@ -30,6 +37,7 @@ export function TreeView({
   onSelect,
 }: TreeViewProps) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const layout = useMemo(
     () => computeLayout(persons, relationships),
     [persons, relationships],
@@ -54,7 +62,7 @@ export function TreeView({
 
   const pinch = Gesture.Pinch()
     .onUpdate((e) => {
-      scale.value = Math.min(Math.max(baseScale.value * e.scale, 0.3), 3);
+      scale.value = Math.min(Math.max(baseScale.value * e.scale, MIN_SCALE), MAX_SCALE);
     })
     .onEnd(() => {
       baseScale.value = scale.value;
@@ -69,6 +77,28 @@ export function TreeView({
       { scale: scale.value },
     ],
   }));
+
+  // Button-driven zoom/reset — the only way to reach these transforms without
+  // a pinch gesture (VoiceOver/TalkBack users, or anyone without two-finger
+  // dexterity). Mirrors the web toolbar's zoom controls (AUDIT-V5 P0 #3).
+  const zoomIn = () => {
+    const next = Math.min(baseScale.value * ZOOM_STEP, MAX_SCALE);
+    baseScale.value = next;
+    scale.value = withTiming(next, { duration: 200 });
+  };
+  const zoomOut = () => {
+    const next = Math.max(baseScale.value / ZOOM_STEP, MIN_SCALE);
+    baseScale.value = next;
+    scale.value = withTiming(next, { duration: 200 });
+  };
+  const resetView = () => {
+    baseScale.value = 1;
+    offsetX.value = 0;
+    offsetY.value = 0;
+    scale.value = withTiming(1, { duration: 200 });
+    translateX.value = withTiming(0, { duration: 200 });
+    translateY.value = withTiming(0, { duration: 200 });
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
@@ -115,6 +145,33 @@ export function TreeView({
           </Svg>
         </Animated.View>
       </GestureDetector>
+
+      <View style={styles.zoomBar} pointerEvents="box-none">
+        <Pressable
+          onPress={zoomIn}
+          accessibilityRole="button"
+          accessibilityLabel={t('tree.zoomIn')}
+          style={[styles.zoomBtn, { backgroundColor: colors.bgCard, borderColor: colors.borderStrong }]}
+        >
+          <Plus size={18} color={colors.text} />
+        </Pressable>
+        <Pressable
+          onPress={zoomOut}
+          accessibilityRole="button"
+          accessibilityLabel={t('tree.zoomOut')}
+          style={[styles.zoomBtn, { backgroundColor: colors.bgCard, borderColor: colors.borderStrong }]}
+        >
+          <Minus size={18} color={colors.text} />
+        </Pressable>
+        <Pressable
+          onPress={resetView}
+          accessibilityRole="button"
+          accessibilityLabel={t('tree.zoomReset')}
+          style={[styles.zoomBtn, { backgroundColor: colors.bgCard, borderColor: colors.borderStrong }]}
+        >
+          <RotateCcw size={16} color={colors.text} />
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -122,4 +179,23 @@ export function TreeView({
 const styles = StyleSheet.create({
   container: { flex: 1, overflow: 'hidden' },
   canvas: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  zoomBar: {
+    position: 'absolute',
+    right: 14,
+    bottom: 14,
+    gap: 8,
+  },
+  zoomBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
 });

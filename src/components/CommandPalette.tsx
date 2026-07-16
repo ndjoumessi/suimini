@@ -478,7 +478,7 @@ export default function CommandPalette({ tree, trees, activeTreeId, onClose, onO
             </span>
           )}
           {aiState === 'error' && (
-            <span role="alert" style={{ fontSize: '11px', color: 'var(--accent)', marginLeft: aiResults ? 0 : 'auto' }}>{aiErrorMsg || ts('aiError')}</span>
+            <span role="alert" style={{ fontSize: '11px', color: 'var(--danger)', marginLeft: aiResults ? 0 : 'auto' }}>{aiErrorMsg || ts('aiError')}</span>
           )}
         </div>
 

@@ -98,7 +98,7 @@ export default function TreeToolbar({
         </button>
         {showSearch && (
           <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 200, marginTop: '4px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px', width: '240px', boxShadow: 'var(--shadow-lg)' }}>
-            <input autoFocus value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder={t('personNamePlaceholder')} className="input" style={{ marginBottom: '6px' }} />
+            <input autoFocus value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder={t('personNamePlaceholder')} aria-label={t('personNamePlaceholder')} className="input" style={{ marginBottom: '6px' }} />
             {/* Surligner sans re-centrer — n'a de sens qu'en vue Complète (canvas). */}
             {treeMode === 'full' && layoutMode === 'vertical' && (
               <button

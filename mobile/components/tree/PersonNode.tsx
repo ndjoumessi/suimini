@@ -37,8 +37,19 @@ export function PersonNode({
   const { t } = useTranslation();
   const spine = getRoleColor(person);
 
+  // Mirror of the web tree's aria-label (TreeView.tsx) — name, gender stated
+  // in words (not just the colour dot), birth year when known. VoiceOver/
+  // TalkBack otherwise see an unlabelled tappable shape (AUDIT-V5 P0 #3).
+  const genderWord = person.gender === 'female' ? t('tree.genderF') : person.gender === 'male' ? t('tree.genderM') : '';
+  const name = `${person.firstName || ''} ${person.lastName || ''}`.trim() || t('tree.unknownNode');
+  const accessibilityLabel = `${name}${genderWord ? `, ${genderWord}` : ''}${person.birthDate ? `, ${t('tree.born')} ${person.birthDate.slice(0, 4)}` : ''}`;
+
   return (
-    <G onPress={() => onPress?.(person)}>
+    <G
+      onPress={() => onPress?.(person)}
+      accessible
+      accessibilityLabel={accessibilityLabel}
+    >
       <Rect
         x={x}
         y={y}

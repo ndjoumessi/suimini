@@ -62,6 +62,23 @@ const LIGHT_STYLES = {
   pivot:   { bg: '#F6E8C4', bar: '#C9A84C',          name: '#211B12' },
 } as const satisfies Record<string, NodeStyle>;
 
+/** Foreground for INITIALS/text drawn directly on a flat `GENDER_BAR` fill
+ *  (avatars, legends) — distinct from `nodeStyle()`'s tree-face palette, which
+ *  re-tints the FILL itself per light/dark theme. Here the fill is always the
+ *  fixed `GENDER_BAR` colour (theme-independent), so the foreground must also
+ *  be a fixed colour chosen for THAT exact fill. Using a theme-flipping token
+ *  like `var(--ink)` here was the bug (AUDIT-V5 P0 #1 / P1 #5): on the
+ *  "unknown" muted-brown fill, `--ink` flips to dark ink in light mode →
+ *  near-black text on a near-black fill (1.7:1). Verified contrasts (WCAG,
+ *  recomputed): male/female → dark ink 5.1-6.7:1 ; unknown → light cream
+ *  8.6:1. Never use `var(--ink-on-accent)` for "unknown" — it was designed
+ *  for the (bright) gold accent fill, not this dark brown one. */
+export function avatarColors(gender: Person['gender']): { bg: string; fg: string } {
+  if (gender === 'male') return { bg: GENDER_BAR.male, fg: '#171006' };
+  if (gender === 'female') return { bg: GENDER_BAR.female, fg: '#171006' };
+  return { bg: GENDER_BAR.unknown, fg: '#f3ecdf' };
+}
+
 /** Reads the active theme straight off <html> — see the module comment for
  *  why this beats prop-drilling here. SSR-safe (no `document` → 'dark'). */
 export function currentNodeMode(): 'light' | 'dark' {

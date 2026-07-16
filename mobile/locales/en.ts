@@ -74,6 +74,12 @@ export const en: Resources = {
     emptyDesc: 'Add people to see the tree take shape.',
     hint: 'Drag to explore · pinch to zoom · tap a profile',
     born: 'born',
+    genderM: 'male',
+    genderF: 'female',
+    unknownNode: 'Unnamed person',
+    zoomIn: 'Zoom in',
+    zoomOut: 'Zoom out',
+    zoomReset: 'Reset zoom',
   },
   people: {
     title: 'People',

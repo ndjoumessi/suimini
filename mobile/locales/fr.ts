@@ -72,6 +72,12 @@ export const fr = {
     emptyDesc: "Ajoutez des personnes pour voir l'arbre se dessiner.",
     hint: 'Glissez pour explorer · pincez pour zoomer · touchez une fiche',
     born: 'né·e',
+    genderM: 'homme',
+    genderF: 'femme',
+    unknownNode: 'Personne sans nom',
+    zoomIn: 'Zoomer',
+    zoomOut: 'Dézoomer',
+    zoomReset: 'Réinitialiser le zoom',
   },
   people: {
     title: 'Personnes',

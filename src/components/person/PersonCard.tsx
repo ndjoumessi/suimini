@@ -3,7 +3,7 @@ import { useTranslations } from 'next-intl';
 import { Person } from '@/types';
 import { formatYear } from '@/lib/treeUtils';
 import { MapPin } from 'lucide-react';
-import { GENDER_BAR } from '../tree/nodeStyle';
+import { GENDER_BAR, avatarColors } from '../tree/nodeStyle';
 
 interface Props {
   person: Person;
@@ -32,7 +32,7 @@ function dateStr(p: Person): string {
 export default function PersonCard({ person: p, onSelect, variant = 'row' }: Props) {
   const t = useTranslations('list');
   const bar = genderColor(p);
-  const inkOnAvatar = p.gender === 'male' || p.gender === 'female' ? 'var(--ink-on-accent)' : 'var(--ink)';
+  const { bg: avatarBg, fg: avatarFg } = avatarColors(p.gender);
   const dates = dateStr(p);
   const city = p.birthPlace?.city;
   const firstName = (p.firstName || '').trim();
@@ -44,7 +44,7 @@ export default function PersonCard({ person: p, onSelect, variant = 'row' }: Pro
     : (lastName || firstName || t('noFirstName'));
 
   const avatar = (cls: string) => (
-    <span className={cls} style={{ background: bar, color: inkOnAvatar }} aria-hidden="true">
+    <span className={cls} style={{ background: avatarBg, color: avatarFg }} aria-hidden="true">
       {p.profilePhoto ? <img src={p.profilePhoto} alt="" loading="lazy" decoding="async" /> : initials(p)}
     </span>
   );

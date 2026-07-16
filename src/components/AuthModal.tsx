@@ -345,8 +345,8 @@ const AUTH_CSS = `
 /* messages */
 .auth-msg { display: flex; align-items: center; gap: 8px; padding: 11px 14px; border-radius: var(--radius); font-size: 13px; line-height: 1.4; font-family: var(--font-body); }
 .auth-msg svg { flex-shrink: 0; }
-.auth-msg-err { background: #1A0A0A; border: 1px solid #5a2a2a; color: #ef9a9a; }
-.auth-msg-ok { background: #0A1A0A; border: 1px solid #2f5a3f; color: #86c79b; }
+.auth-msg-err { background: color-mix(in srgb, var(--danger) 14%, var(--bg-card)); border: 1px solid color-mix(in srgb, var(--danger) 45%, var(--border)); color: var(--danger); }
+.auth-msg-ok { background: color-mix(in srgb, var(--success) 14%, var(--bg-card)); border: 1px solid color-mix(in srgb, var(--success) 45%, var(--border)); color: var(--success); }
 
 /* submit CTA */
 .auth-submit { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 48px; background: var(--accent); border: none; border-radius: var(--radius); color: var(--ink-on-accent); font-weight: 700; font-size: 14px; font-family: var(--font-body); cursor: pointer; transition: filter 150ms ease, opacity 200ms ease; }

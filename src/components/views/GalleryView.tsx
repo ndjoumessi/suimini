@@ -9,7 +9,7 @@ import { getDisplayName, formatYear } from '@/lib/treeUtils';
 import { uploadAvatar, deleteAvatarByUrl } from '@/lib/uploadImage';
 import { formatBytes } from '@/lib/imageCompression';
 import { cropToCanvas, cropToFile } from '@/lib/imageCrop';
-import { GENDER_BAR } from '../tree/nodeStyle';
+import { GENDER_BAR, currentNodeMode } from '../tree/nodeStyle';
 import { useOverlay } from '@/hooks/useOverlay';
 
 interface Props {
@@ -209,7 +209,12 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
   }, [sortedPersons, personQuery]);
   const selectedPerson = addPersonId ? tree.persons.find(p => p.id === addPersonId) : undefined;
 
-  const FALLBACK_IMG = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='120'><rect width='160' height='120' fill='%231a1a24'/><g transform='translate(60,40) scale(1.7)' fill='none' stroke='%236c6c82' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z'/><circle cx='12' cy='13' r='3'/></g></svg>";
+  // Broken-image placeholder (data URI, so it must carry its own literal
+  // colours — CSS vars don't resolve inside an <img src>). Picked per current
+  // theme so it doesn't render as a dark tile in light mode (AUDIT-V5 P1 #8).
+  const fallbackSurface = currentNodeMode() === 'light' ? '%23e9e1cd' : '%231a1a24';
+  const fallbackStroke = currentNodeMode() === 'light' ? '%236a5e46' : '%236c6c82';
+  const FALLBACK_IMG = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='120'><rect width='160' height='120' fill='${fallbackSurface}'/><g transform='translate(60,40) scale(1.7)' fill='none' stroke='${fallbackStroke}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z'/><circle cx='12' cy='13' r='3'/></g></svg>`;
 
   return (
     <div className="gv-root" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -487,9 +492,9 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
         .gv-ov-name { color: var(--ink); font-size: 15px; font-weight: 700; line-height: 1.15; }
         .gv-ov-dates { color: var(--accent-text); font-family: var(--font-mono); font-size: 11px; }
         /* delete button — appears on hover/focus, top-right (over the gender dot) */
-        .gv-del { position: absolute; top: 6px; right: 6px; z-index: 3; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; background: rgba(176,42,42,0.9); color: #fff; border: none; border-radius: var(--radius-sm); cursor: pointer; opacity: 0; transition: opacity 150ms ease, background 150ms ease; }
+        .gv-del { position: absolute; top: 6px; right: 6px; z-index: 3; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--danger) 88%, transparent); color: #fff; border: none; border-radius: var(--radius-sm); cursor: pointer; opacity: 0; transition: opacity 150ms ease, background 150ms ease; }
         .gv-tile:hover .gv-del, .gv-del:focus-visible { opacity: 1; }
-        .gv-del:hover { background: #c0392b; }
+        .gv-del:hover { background: var(--danger); }
 
         /* List */
         .gv-list { display: flex; flex-direction: column; gap: 6px; }
@@ -504,7 +509,7 @@ export default function GalleryView({ tree, onSelectPerson, onUpdatePerson, onAn
         .gv-dot-static { position: static; flex-shrink: 0; }
         .gv-del-row { flex-shrink: 0; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; background: transparent; color: var(--text-muted); border: none; cursor: pointer; transition: color 150ms ease, background 150ms ease; }
         .gv-del-row { border-radius: var(--radius-sm); }
-        .gv-del-row:hover, .gv-del-row:focus-visible { color: #fff; background: rgba(176,42,42,0.9); outline: none; }
+        .gv-del-row:hover, .gv-del-row:focus-visible { color: #fff; background: color-mix(in srgb, var(--danger) 88%, transparent); outline: none; }
 
         /* Modal */
         .gv-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: var(--bw) solid var(--border-strong); }

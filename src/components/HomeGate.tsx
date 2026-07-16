@@ -28,10 +28,10 @@ function Splash() {
 function ExpiredBanner({ onClose }: { onClose: () => void }) {
   const t = useTranslations('homeGate');
   return (
-    <div role="alert" style={{ position: 'fixed', top: '10px', left: '12px', right: '12px', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '13px 16px', background: 'var(--warning)', color: 'var(--ink-on-accent)', fontFamily: "var(--font-body)", fontSize: '14px', fontWeight: 700, border: '1px solid rgba(0,0,0,0.25)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow)' }}>
-      <AlertTriangle size={16} aria-hidden="true" />
+    <div role="alert" style={{ position: 'fixed', top: '10px', left: '12px', right: '12px', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '13px 16px', background: 'color-mix(in srgb, var(--warning) 18%, var(--bg-card))', color: 'var(--ink)', fontFamily: "var(--font-body)", fontSize: '14px', fontWeight: 700, border: '1px solid var(--warning)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow)' }}>
+      <AlertTriangle size={16} aria-hidden="true" color="var(--warning)" />
       <span>{t('linkExpired')}</span>
-      <button onClick={onClose} aria-label={t('close')} style={{ position: 'absolute', right: '12px', background: 'transparent', border: 'none', borderRadius: 'var(--radius-sm)', color: 'var(--ink-on-accent)', fontSize: '20px', lineHeight: 1, cursor: 'pointer', padding: '2px 6px' }}>×</button>
+      <button onClick={onClose} aria-label={t('close')} style={{ position: 'absolute', right: '12px', background: 'transparent', border: 'none', borderRadius: 'var(--radius-sm)', color: 'var(--ink)', fontSize: '20px', lineHeight: 1, cursor: 'pointer', padding: '2px 6px' }}>×</button>
     </div>
   );
 }

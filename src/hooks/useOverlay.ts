@@ -6,6 +6,18 @@ const SELECTOR = 'a[href],button:not([disabled]),textarea:not([disabled]),input:
 // Reference-count scroll-lock so stacked overlays don't release the body early.
 let lockCount = 0;
 
+// LIFO registry of currently-open overlays (by mount order). Escape/Tab must
+// only ever be handled by the TOPMOST (most recently opened) overlay — before
+// this, every overlay registered its OWN `document` keydown listener and
+// merely called `stopPropagation()` on Escape, which does nothing for
+// sibling listeners on the same node: two overlays open at once (e.g.
+// PersonPanel's era popup over the panel itself) both closed on a single
+// Escape press (AUDIT-V5 P1 #11). Each instance now checks "am I the top of
+// this stack?" before acting — correct regardless of DOM listener order —
+// and additionally calls `stopImmediatePropagation()` so it can't also
+// trigger unrelated Escape handlers elsewhere in the app.
+const overlayStack: symbol[] = [];
+
 /**
  * Accessibility helper for modal overlays:
  * - traps Tab focus inside the container,
@@ -26,6 +38,9 @@ export function useOverlay<T extends HTMLElement = HTMLDivElement>(onClose: () =
     if (!enabled) return;
     const node = ref.current;
     const previouslyFocused = document.activeElement as HTMLElement | null;
+    const id = Symbol('overlay');
+    overlayStack.push(id);
+    const isTop = () => overlayStack[overlayStack.length - 1] === id;
 
     // Scroll lock
     lockCount += 1;
@@ -41,7 +56,8 @@ export function useOverlay<T extends HTMLElement = HTMLDivElement>(onClose: () =
     (first || node)?.focus?.();
 
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); onClose(); return; }
+      if (!isTop()) return; // a more recently opened overlay owns the keyboard
+      if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); onClose(); return; }
       if (e.key !== 'Tab' || !node) return;
       const items = focusable();
       if (items.length === 0) { e.preventDefault(); return; }
@@ -58,6 +74,8 @@ export function useOverlay<T extends HTMLElement = HTMLDivElement>(onClose: () =
     document.addEventListener('keydown', onKeyDown, true);
     return () => {
       document.removeEventListener('keydown', onKeyDown, true);
+      const i = overlayStack.indexOf(id);
+      if (i !== -1) overlayStack.splice(i, 1);
       lockCount = Math.max(0, lockCount - 1);
       if (lockCount === 0) document.body.classList.remove('modal-open');
       previouslyFocused?.focus?.();

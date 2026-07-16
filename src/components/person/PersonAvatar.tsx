@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { Person } from '@/types';
-import { GENDER_BAR } from '../tree/nodeStyle';
+import { avatarColors } from '../tree/nodeStyle';
 
 /* =====================================================================
    PersonAvatar — élégant, « Veillée ». Photo réelle si présente,
@@ -35,9 +35,7 @@ export default function PersonAvatar({ person, size = 44, round = true, style }:
 }) {
   const [broken, setBroken] = useState(false);
   const showPhoto = !!person.profilePhoto && !broken;
-  const gender = person.gender;
-  const bg = gender === 'male' ? GENDER_BAR.male : gender === 'female' ? GENDER_BAR.female : GENDER_BAR.unknown;
-  const fg = gender === 'male' || gender === 'female' ? 'var(--ink-on-accent)' : 'var(--ink)';
+  const { bg, fg } = avatarColors(person.gender);
 
   return (
     <span
