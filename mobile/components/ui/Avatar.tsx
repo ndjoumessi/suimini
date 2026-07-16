@@ -4,7 +4,7 @@ import { fonts, borderWidth } from '@/lib/theme';
 import { useTheme } from '@/hooks/useTheme';
 import type { Person } from '@/lib/types';
 import { getInitials } from '@/lib/treeUtils';
-import { getRoleColor } from '@/lib/theme';
+import { getRoleColor, roleTextColor } from '@/lib/theme';
 
 interface AvatarProps {
   person: Person;
@@ -19,8 +19,12 @@ interface AvatarProps {
  * <Image> ne rend pas les SVG distants) au profit d'initiales propres.
  */
 export function Avatar({ person, size = 48, ring = true }: AvatarProps) {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   const tint = getRoleColor(person);
+  // Initials are TEXT on the tinted disc — `tint` alone only cleared ~3.3:1 in
+  // dark mode (AUDIT-V5 P1 #17); the ring/disc tint fill keeps `tint` as-is
+  // (non-text, 3:1 threshold, already fine).
+  const textTint = roleTextColor(person, scheme);
   const isRaster =
     !!person.profilePhoto && !person.profilePhoto.toLowerCase().includes('.svg') &&
     !person.profilePhoto.toLowerCase().includes('/svg');
@@ -67,7 +71,7 @@ export function Avatar({ person, size = 48, ring = true }: AvatarProps) {
         style={{
           fontFamily: fonts.display,
           fontSize: size * 0.38,
-          color: tint,
+          color: textTint,
         }}
       >
         {getInitials(person)}

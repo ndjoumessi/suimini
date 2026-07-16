@@ -285,6 +285,8 @@ export default function PersonEditScreen() {
             {([
               { key: 'male', label: t('person.male') },
               { key: 'female', label: t('person.female') },
+              { key: 'other', label: t('person.other') },
+              { key: 'unknown', label: t('person.unknown') },
             ] as { key: Gender; label: string }[]).map((g) => {
               const active = gender === g.key;
               return (
@@ -449,9 +451,14 @@ const styles = StyleSheet.create({
   demoText: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm },
   field: { gap: spacing.xs + 2 },
   label: { fontFamily: fonts.bodyMedium, fontSize: fontSize.sm, letterSpacing: 0.2 },
-  genderRow: { flexDirection: 'row', gap: spacing.sm },
+  // wrap: 4 options (was 2) no longer reliably fit one row on narrow phones
+  // once "other"/"unknown" were added for parity with the data model
+  // (AUDIT-V5 P1 #16 — only male/female were previously offered, silently
+  // losing data for anyone recorded as `other`/`unknown` elsewhere).
+  genderRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   genderBtn: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: '47%', // 2-per-row grid now that there are 4 options (was flex:1 across 2)
     borderWidth,
     borderRadius: radius.full,
     paddingVertical: spacing.smd,

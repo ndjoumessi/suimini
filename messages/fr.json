@@ -775,7 +775,10 @@
     "birth": "Naissance",
     "death": "Décès",
     "emptyTitle": "Aucun lieu à afficher",
-    "emptyDescription": "Renseignez une ville de naissance ou de décès pour les membres afin de les voir apparaître sur la carte."
+    "emptyDescription": "Renseignez une ville de naissance ou de décès pour les membres afin de les voir apparaître sur la carte.",
+    "emptyCta": "Ouvrir une fiche pour renseigner un lieu",
+    "markerAriaGroup": "{count} événements à {place}",
+    "markerAriaSingle": "{name}, {kind}, {place}"
   },
   "journal": {
     "title": "Journal familial",
@@ -1199,6 +1202,7 @@
     "exportPdf": "Exporter en PDF (A3)",
     "print": "Imprimer",
     "exportFailed": "L'export de l'arbre a échoué. Réessayez.",
+    "printBlocked": "Le navigateur a bloqué la fenêtre d'impression (popup). Autorisez les popups pour ce site puis réessayez.",
     "fileSuffix": "arbre",
     "pdfFooter": "{count} personnes · Généré par Suimini le {date}",
     "livretCover": "Livret de famille",

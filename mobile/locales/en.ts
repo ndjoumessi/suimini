@@ -157,6 +157,7 @@ export const en: Resources = {
     male: 'Male',
     female: 'Female',
     other: 'Other',
+    unknown: 'Unknown',
     birthDate: 'Birth date',
     deathDate: 'Death date (empty if living)',
     birthPlace: 'Birthplace',

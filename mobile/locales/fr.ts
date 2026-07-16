@@ -155,6 +155,7 @@ export const fr = {
     male: 'Homme',
     female: 'Femme',
     other: 'Autre',
+    unknown: 'Inconnu',
     birthDate: 'Date de naissance',
     deathDate: 'Date de décès (vide si vivant·e)',
     birthPlace: 'Lieu de naissance',

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
-import { fonts, fontSize, spacing, getRoleColor } from '@/lib/theme';
+import { fonts, fontSize, spacing, getRoleColor, roleTextColor } from '@/lib/theme';
 import { useTheme } from '@/hooks/useTheme';
 import type { Person, Relationship } from '@/lib/types';
 import {
@@ -32,7 +32,7 @@ export function PersonDetail({
   onSelectRelative,
 }: PersonDetailProps) {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   const tint = getRoleColor(person);
   const age = getAge(person.birthDate, person.deathDate);
 
@@ -64,7 +64,7 @@ export function PersonDetail({
                     ? t('person.female')
                     : t('person.other')
               }
-              color={tint}
+              color={roleTextColor(person, scheme)}
             />
           ) : null}
         </View>

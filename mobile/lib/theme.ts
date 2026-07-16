@@ -201,7 +201,10 @@ export const shadows = {
 /** Largeur de bordure structurelle (hairline visuelle). */
 export const borderWidth = 1;
 
-/** Couleur-signal d'une personne (genre / statut) — avatars, nœuds d'arbre. */
+/** Couleur-signal d'une personne (genre / statut) — avatars, nœuds d'arbre.
+ *  Fixed across both themes: used for FILLS/rings (avatar tint, tree dot),
+ *  where WCAG 1.4.11's 3:1 non-text threshold applies and these colours
+ *  already clear it against every surface tone in use. */
 export function getRoleColor(person: {
   gender?: string;
   isAlive?: boolean;
@@ -210,4 +213,29 @@ export function getRoleColor(person: {
   if (person.gender === 'male') return colors.male;
   if (person.gender === 'female') return colors.female;
   return colors.unknown;
+}
+
+// Lightened (mixed 35% toward white) role colours for TEXT drawn on a dark
+// surface — `colors.male/female/deceased/unknown` were fixed across both
+// themes and only cleared ~3.3:1 as small (11pt) TEXT on dark backgrounds
+// (Badge.tsx tonal chip, Avatar.tsx initials), below the 4.5:1 AA floor
+// (AUDIT-V5 P1 #17). Verified via WCAG relative-luminance: ≥5.3:1 against
+// both `darkPalette.bgCard` (#1D221D) and `.bgMuted` (#272D27).
+const DARK_ROLE_TEXT = {
+  male: '#84A3BD',
+  female: '#C694A7',
+  deceased: '#A9A59D',
+  unknown: '#AAA69C',
+} as const;
+
+/** Same signal as `getRoleColor`, but scheme-aware and meant for TEXT
+ *  (Badge labels, avatar initials) — pass the active `scheme` from
+ *  `useTheme()`. Light theme reuses `getRoleColor` unchanged (already ≥4.5:1
+ *  on light surfaces). */
+export function roleTextColor(person: { gender?: string; isAlive?: boolean }, scheme: ThemeName): string {
+  if (scheme === 'light') return getRoleColor(person);
+  if (person.isAlive === false) return DARK_ROLE_TEXT.deceased;
+  if (person.gender === 'male') return DARK_ROLE_TEXT.male;
+  if (person.gender === 'female') return DARK_ROLE_TEXT.female;
+  return DARK_ROLE_TEXT.unknown;
 }

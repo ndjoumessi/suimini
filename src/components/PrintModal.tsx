@@ -7,6 +7,12 @@ import { getDisplayName, formatDate, formatYear, formatAge, getAge, computeTreeS
 import { buildTreeLayout, validateVisualTree, NODE_W, NODE_H } from '@/lib/treeLayout';
 import { GENDER_BAR } from './tree/nodeStyle';
 import { List, LayoutGrid, BarChart3, TreePine, BookOpen, Printer, X, Moon, Sun } from 'lucide-react';
+import { ErrorMessage } from './ui/ErrorMessage';
+
+// Built-in event types with a translated label under the `personPanel`
+// namespace (`event_*`) — anything else falls back to a capitalised raw
+// type string, same convention as PersonPanel's own `eventTypeLabel`.
+const KNOWN_EVENT_TYPES = new Set(['birth', 'death', 'marriage', 'divorce', 'baptism', 'graduation', 'military', 'immigration', 'other']);
 
 /* ─────────────────────────────────────────────────────────────────────────
  * PREVIEW THEME (on-screen only) — the printed output is NEVER affected by
@@ -120,12 +126,17 @@ type PrintMode = 'livret' | 'list' | 'cards' | 'summary' | 'tree';
 
 export default function PrintModal({ tree, onClose }: Props) {
   const t = useTranslations('printModal');
+  const tp = useTranslations('personPanel');
   const locale = useLocale();
+  const eventTypeLabel = (type: string) =>
+    KNOWN_EVENT_TYPES.has(type) ? tp(`event_${type}`) : (type.charAt(0).toUpperCase() + type.slice(1));
   const [mode, setMode] = useState<PrintMode>('livret');
   const [includePhotos, setIncludePhotos] = useState(true);
   const [includeDeceased, setIncludeDeceased] = useState(true);
   const [includeEvents, setIncludeEvents] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [printError, setPrintError] = useState<string | null>(null);
   // On-screen preview theme. Default = current behaviour (dark) until a saved
   // preference is read on mount. Does NOT alter the printed document.
   const [previewMode, setPreviewMode] = useState<PreviewMode>('dark');
@@ -159,6 +170,7 @@ export default function PrintModal({ tree, onClose }: Props) {
   async function exportTreePdf() {
     if (!treeRef.current) return;
     setExporting(true);
+    setExportError(null);
     try {
       const [{ default: html2canvas }, jspdfMod] = await Promise.all([
         import('html2canvas'),
@@ -252,7 +264,7 @@ export default function PrintModal({ tree, onClose }: Props) {
       pdf.save(`${tree.name.replace(/\s+/g, '_')}_${t('fileSuffix')}.pdf`);
     } catch (err) {
       console.error('Export PDF échoué', err);
-      alert(t('exportFailed'));
+      setExportError(t('exportFailed'));
     } finally {
       setExporting(false);
     }
@@ -285,8 +297,14 @@ export default function PrintModal({ tree, onClose }: Props) {
 
   function doPrint() {
     if (!printRef.current) return;
+    setPrintError(null);
     const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
+    if (!printWindow) {
+      // Popup blocked by the browser — used to fail silently (AUDIT-V5 P1
+      // #13), leaving the user pressing "Imprimer" with no feedback at all.
+      setPrintError(t('printBlocked'));
+      return;
+    }
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -399,6 +417,15 @@ export default function PrintModal({ tree, onClose }: Props) {
             </button>
           )}
         </div>
+
+        {(exportError || printError) && (
+          <div style={{ padding: '0 20px 14px' }}>
+            <ErrorMessage
+              message={exportError || printError || ''}
+              onRetry={exportError ? exportTreePdf : doPrint}
+            />
+          </div>
+        )}
 
         {/* Print preview — paper-coloured well around the white document.
             tabIndex : une région défilante doit être atteignable au clavier (axe
@@ -522,7 +549,7 @@ export default function PrintModal({ tree, onClose }: Props) {
                         {p.bio && <div style={{ fontSize: '11.5px', color: P.faint, marginTop: '4px', fontStyle: 'italic' }}>{p.bio.slice(0, 150)}{p.bio.length > 150 ? '…' : ''}</div>}
                         {includeEvents && p.events && p.events.length > 0 && (
                           <div className="mono" style={{ fontSize: '10px', color: P.faint, marginTop: '4px' }}>
-                            {p.events.map(e => `${e.type}${e.date ? ' ' + formatYear(e.date) : ''}`).join(' · ')}
+                            {p.events.map(e => `${eventTypeLabel(e.type)}${e.date ? ' ' + formatYear(e.date) : ''}`).join(' · ')}
                           </div>
                         )}
                       </div>

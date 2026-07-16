@@ -8,6 +8,7 @@ import 'leaflet/dist/leaflet.css';
 import { FamilyTree, Person } from '@/types';
 import { resolveCoords, placeLabel } from '@/lib/geo';
 import { getDisplayName, formatYear } from '@/lib/treeUtils';
+import { EmptyState } from '../ui/EmptyState';
 
 interface Props {
   tree: FamilyTree;
@@ -41,19 +42,33 @@ function buildAvatar(person: Person): string {
   return `<span style="font-size:13px;font-weight:700;color:var(--accent);font-family:var(--font-body), sans-serif;">${initialsOf(person)}</span>`;
 }
 
-function makeIcon(group: MarkerGroup): L.DivIcon {
+/** Escapes text dropped into a raw HTML attribute (place/person names can
+ *  contain quotes) — `makeIcon`'s markup is handed straight to Leaflet's
+ *  `L.divIcon`, so this isn't JSX-escaped for us. */
+function escapeAttr(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function makeIcon(group: MarkerGroup, ariaLabel: string): L.DivIcon {
   const count = group.points.length;
+  const label = escapeAttr(ariaLabel);
   if (count > 1) {
-    const html = `<div style="width:42px;height:42px;border-radius:50%;background:var(--accent);color:var(--ink-on-accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;border:3px solid var(--bg-card);box-shadow:0 2px 8px rgba(0,0,0,0.3);font-family:var(--font-body), sans-serif;">${count}</div>`;
+    const html = `<div role="img" aria-label="${label}" style="width:42px;height:42px;border-radius:50%;background:var(--accent);color:var(--ink-on-accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;border:3px solid var(--bg-card);box-shadow:0 2px 8px rgba(0,0,0,0.3);font-family:var(--font-body), sans-serif;">${count}</div>`;
     return L.divIcon({ html, className: 'suimini-marker', iconSize: [42, 42], iconAnchor: [21, 21], popupAnchor: [0, -21] });
   }
   const pt = group.points[0];
   const ring = pt.kind === 'birth' ? 'var(--success)' : 'var(--deceased)';
-  // Kind is encoded by the ring + corner-dot colour (birth=success, death=deceased); no glyph.
+  // Kind used to be encoded by the ring/corner-dot COLOUR alone (birth=success,
+  // death=deceased) — a distinction invisible to anyone who can't perceive
+  // that hue difference (WCAG 1.4.1, AUDIT-V5 P1 #14). A glyph (▲ birth /
+  // ✝ death) now carries the same information without relying on colour, on
+  // top of the `role="img" aria-label` giving the marker a name at all
+  // (raw `L.divIcon` markup otherwise has none).
+  const glyph = pt.kind === 'birth' ? '▲' : '✝';
   const html = `
-    <div style="position:relative;width:40px;height:40px;">
+    <div role="img" aria-label="${label}" style="position:relative;width:40px;height:40px;">
       <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;background:var(--accent-light);border:3px solid ${ring};box-shadow:0 2px 8px rgba(26,22,18,0.3);display:flex;align-items:center;justify-content:center;text-align:center;">${buildAvatar(pt.person)}</div>
-      <div style="position:absolute;bottom:-3px;right:-3px;width:12px;height:12px;border-radius:50%;background:${ring};border:2px solid var(--bg-card);"></div>
+      <div style="position:absolute;bottom:-3px;right:-3px;width:14px;height:14px;border-radius:50%;background:${ring};border:2px solid var(--bg-card);display:flex;align-items:center;justify-content:center;font-size:8px;line-height:1;color:#fff;">${glyph}</div>
     </div>`;
   return L.divIcon({ html, className: 'suimini-marker', iconSize: [40, 40], iconAnchor: [20, 20], popupAnchor: [0, -20] });
 }
@@ -149,8 +164,16 @@ export default function MapView({ tree, onSelectPerson }: Props) {
                 maxZoom={20}
               />
               <FitBounds groups={groups} />
-              {groups.map(group => (
-                <Marker key={group.key} position={group.coords} icon={makeIcon(group)}>
+              {groups.map(group => {
+                const ariaLabel = group.points.length > 1
+                  ? t('markerAriaGroup', { count: group.points.length, place: group.points[0].place || t('thisPlace') })
+                  : t('markerAriaSingle', {
+                      name: getDisplayName(group.points[0].person),
+                      kind: group.points[0].kind === 'birth' ? t('birth') : t('death'),
+                      place: group.points[0].place || t('thisPlace'),
+                    });
+                return (
+                <Marker key={group.key} position={group.coords} icon={makeIcon(group, ariaLabel)}>
                   <Popup>
                     <div style={{ minWidth: '180px', maxHeight: '240px', overflowY: 'auto' }}>
                       {group.points.length > 1 && (
@@ -183,16 +206,16 @@ export default function MapView({ tree, onSelectPerson }: Props) {
                     </div>
                   </Popup>
                 </Marker>
-              ))}
+                );
+              })}
             </MapContainer>
           ) : (
-            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', color: 'var(--text-muted)', padding: '24px' }}>
-              <MapPin size={48} strokeWidth={1.25} style={{ color: 'var(--text-light)' }} aria-hidden="true" />
-              <h3 style={{ margin: 0, color: 'var(--text)' }}>{t('emptyTitle')}</h3>
-              <p style={{ maxWidth: '360px', textAlign: 'center', margin: 0 }}>
-                {t('emptyDescription')}
-              </p>
-            </div>
+            <EmptyState
+              icon={MapPin}
+              title={t('emptyTitle')}
+              description={t('emptyDescription')}
+              action={tree.persons.length > 0 ? { label: t('emptyCta'), onClick: () => onSelectPerson(tree.persons[0].id) } : undefined}
+            />
         )}
       </div>
     </div>
