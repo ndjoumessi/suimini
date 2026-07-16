@@ -214,19 +214,19 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
   // is added to an empty tree (or stale after switching trees / deleting the root)
   // — and buildLayout then returns zero nodes, so the person exists in DB but no
   // SVG node renders. Re-point it to the tree's declared root, else the first person.
-  useEffect(() => {
-    const valid = rootId && tree.persons.some(p => p.id === rootId);
-    if (valid) return;
-    const next = (tree.rootPersonId && tree.persons.some(p => p.id === tree.rootPersonId))
+  // Adjust-state-during-render (same idiom as prevTreeId above) instead of an
+  // effect : purely derived from this render's props/state, no external system.
+  const rootValid = !!rootId && tree.persons.some(p => p.id === rootId);
+  if (!rootValid) {
+    const nextRoot = (tree.rootPersonId && tree.persons.some(p => p.id === tree.rootPersonId))
       ? tree.rootPersonId
       : (tree.persons[0]?.id ?? null);
-    if (next !== rootId) setRootId(next);
-  }, [tree.persons, tree.rootPersonId, rootId]);
+    if (nextRoot !== rootId) setRootId(nextRoot);
+  }
 
-  // Keep the focused person valid; fall back to the current root.
-  useEffect(() => {
-    if (!focusPersonId || !tree.persons.some(p => p.id === focusPersonId)) setFocusPersonId(rootId);
-  }, [tree.persons, rootId, focusPersonId]);
+  // Keep the focused person valid; fall back to the current root. Same idiom.
+  const focusPersonValid = !!focusPersonId && tree.persons.some(p => p.id === focusPersonId);
+  if (!focusPersonValid && focusPersonId !== rootId) setFocusPersonId(rootId);
 
   // Close-family id set for focus mode (focus person + spouses + parents + children + siblings).
   const focusSet: Set<string> | null = (() => {
@@ -520,15 +520,29 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
   // racine : un nœud qui (ré)apparaît ensuite au pan/zoom monte SANS animation,
   // sinon chaque pan provoquait un pop-in différé (delay jusqu'à 600 ms).
   const [entranceDone, setEntranceDone] = useState(false);
-  useEffect(() => {
+  // Reset synchronously during render (adjust-state-during-render idiom, same as
+  // prevTreeId/rootValid above) when the entrance trigger (root or view mode)
+  // changes — the effect below then owns ONLY the actual timer (a legitimate
+  // external-system subscription), never a synchronous state reset in its body.
+  const [prevEntranceRoot, setPrevEntranceRoot] = useState(rootId);
+  const [prevEntranceMode, setPrevEntranceMode] = useState(treeMode);
+  if (prevEntranceRoot !== rootId || prevEntranceMode !== treeMode) {
+    setPrevEntranceRoot(rootId);
+    setPrevEntranceMode(treeMode);
     setEntranceDone(false);
+  }
+  useEffect(() => {
+    if (entranceDone) return;
     const timer = setTimeout(() => setEntranceDone(true), 950);
     return () => clearTimeout(timer);
-    // treeMode : l'entrée rejoue quand on BASCULE sur la vue Complète (le timer
-    // du mount courait pendant le mode Focus, l'entrée aurait été sautée).
-  }, [rootId, treeMode]);
+  }, [entranceDone]);
 
   // Mesure de perf dev-only : durée du commit quand le nombre de nœuds montés change.
+  // `performance.now()` lu PENDANT le rendu (impur, react-hooks/purity) est
+  // nécessaire ici : c'est justement l'instant de DÉPART du rendu qu'on veut
+  // mesurer, inaccessible depuis un effet (qui ne s'exécute qu'APRÈS le commit).
+  // Diagnostic dev-only sans effet sur le rendu réel — aucune alternative pure.
+  // eslint-disable-next-line react-hooks/purity
   const renderT0 = typeof performance !== 'undefined' ? performance.now() : 0;
   useEffect(() => {
     if (process.env.NODE_ENV === 'production' || typeof performance === 'undefined') return;
@@ -552,16 +566,26 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
   };
   const recenter = () => centerOn(rootId);
   // Latest recenter, so the resize observer (mounted once) never calls a stale one.
+  // Kept current via useLayoutEffect (runs after commit, before paint) rather than
+  // a direct assignment during render — a ref MUTATION during render is itself
+  // impure/disallowed (react-hooks/purity), even though only this ref reads it.
   const recenterRef = useRef(recenter);
+  useLayoutEffect(() => {
+    recenterRef.current = recenter;
+  });
 
   // External navigation (e.g. from the command-palette search): re-root + center the
   // tree on the requested person, then clear the one-shot request. Fires at mount when
   // the view switches to the tree, and on each new target while already on the tree.
   // (Placed among the hooks — never after an early return — and inlined rather than
   //  calling pickRoot, which is declared further down.)
+  // Genuinely effectful (consumes an external one-shot signal via onNavConsumed +
+  // schedules an async recenter) — not derivable during render, so the synchronous
+  // setState calls below are intentional despite react-hooks/set-state-in-effect.
   useEffect(() => {
     if (!navTarget) return;
     if (tree.persons.some(p => p.id === navTarget)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRootId(navTarget);
       setFocusPersonId(navTarget);
       setFocusId(null);
@@ -570,7 +594,6 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
     onNavConsumed?.();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navTarget]);
-  recenterRef.current = recenter;
 
   // Fit-to-screen: scale + offset so the WHOLE tree fits the viewport with padding.
   // The real cure for wide sibling rows (e.g. TSANA Sébastien's 11 children) running
@@ -688,8 +711,13 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
   // when Supabase is configured AND we have a real (non-guest) user; otherwise
   // stays a no-op and `peers` remains []. The leave function tears the channel
   // down on unmount or when the tree/user changes.
+  // The early-return reset below is a real effect responsibility (mirrors the
+  // subscription-teardown reset in this same effect's cleanup, a few lines down,
+  // which the same rule does NOT flag) — not derivable during render since the
+  // "connected" branch also opens a realtime channel subscription.
   useEffect(() => {
     if (!collaborationEnabled() || !user || !tree?.id) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPeers([]);
       return;
     }
@@ -1142,11 +1170,11 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
                       moveKbFocus(p.id, e.key);
                     }
                   }}
-                  {/* Deceased cards read very pale once ALSO caught by focus-mode
-                      dimming (AUDIT-V5 P2 #31) — 0.72 was already faint against
-                      the node's own muted face colour; 0.82 keeps the "deceased"
-                      cue readable while `dimmed` (0.15) still wins outright when
-                      a node falls outside the focus set. */}
+                  // Deceased cards read very pale once ALSO caught by focus-mode
+                  // dimming (AUDIT-V5 P2 #31) — 0.72 was already faint against
+                  // the node's own muted face colour; 0.82 keeps the "deceased"
+                  // cue readable while `dimmed` (0.15) still wins outright when
+                  // a node falls outside the focus set.
                   opacity={dimmed ? 0.15 : (p.isAlive ? 1 : 0.82)}
                   style={{
                     cursor: dimmed ? 'default' : 'pointer',
@@ -1317,6 +1345,11 @@ export default function TreeView({ tree, selectedPersonId, navTarget, onNavConsu
               // peers carry SVG-viewBox coordinates that don't map to content space.
               if (peer.layout === 'fan') return null;
               if (peer.x === undefined || peer.y === undefined) return null;
+              // Date.now() read during render is impure (react-hooks/purity), but this
+              // is purely cosmetic ephemeral UI (a live cursor), not persisted/derived
+              // data — and the ~1s cursorTick effect above already forces a periodic
+              // re-render specifically so this recomputes and self-corrects.
+              // eslint-disable-next-line react-hooks/purity
               if (!peer.t || Date.now() - peer.t > 3000) return null;
               const labelW = peer.name.length * 7 + 8;
               return (
@@ -1728,6 +1761,8 @@ function FanChart({ fan, fanGenColor, r0, ring, selectedPersonId, onSelectPerson
       {peers.map(peer => {
         if (peer.layout !== 'fan') return null;
         if (peer.x === undefined || peer.y === undefined) return null;
+        // Same justified exception as the vertical-layout cursors above.
+        // eslint-disable-next-line react-hooks/purity
         if (!peer.t || Date.now() - peer.t > 3000) return null;
         const labelW = peer.name.length * 7 + 8;
         return (
