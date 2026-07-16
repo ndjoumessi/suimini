@@ -1,43 +1,10 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
-import type { FamilyTree, Person, Relationship } from '@/types';
+import { guardTreeRead, checkOrigin } from '@/lib/apiData';
 import { generateFamilyBookHTML, type ExportOptions } from '@/lib/pdfTemplates';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// Row → object mappers. We cannot reuse loadOneTree() here because it relies on
-// the browser Supabase client (no session cookies on the server), which RLS would
-// treat as anonymous. Instead we query with the request-scoped, cookie-authenticated
-// client below and map the fields the booklet needs (extra JSON carries the rest,
-// e.g. birthDateApprox / events).
-function rowToPerson(r: any): Person {
-  // `extra` étalé EN PREMIER → les colonnes canoniques priment toujours (miroir de
-  // src/lib/supabaseSync.ts). Étalé en dernier, un `extra` pollué par une clé
-  // canonique résiduelle (updatedAt/birthPlace…) écrasait la vraie valeur de colonne.
-  return {
-    ...(r.extra || {}),
-    id: r.id, firstName: r.first_name || '', lastName: r.last_name || '',
-    gender: r.gender || 'unknown',
-    birthDate: r.birth_date || undefined, birthPlace: r.birth_place || undefined,
-    deathDate: r.death_date || undefined, deathPlace: r.death_place || undefined,
-    isAlive: r.is_alive ?? true, occupation: r.occupation || undefined, bio: r.bio || undefined,
-    profilePhoto: r.profile_photo || undefined,
-    createdAt: r.created_at, updatedAt: r.updated_at,
-  };
-}
-function rowToRel(r: any): Relationship {
-  // `extra` en premier → colonnes canoniques prioritaires (cf. rowToPerson).
-  return {
-    ...(r.extra || {}),
-    id: r.id, type: r.type, person1Id: r.person1_id, person2Id: r.person2_id,
-    startDate: r.start_date || undefined, endDate: r.end_date || undefined,
-    isActive: r.is_active ?? undefined, notes: r.notes || undefined,
-  };
-}
-
-// Node runtime: we read cookies + Supabase. We return the booklet HTML — the
-// actual PDF rendering is done by the browser print dialog (Chromium can't run
-// on Vercel), so this is a secondary/programmatic endpoint.
+// Node runtime: we return the booklet HTML — the actual PDF rendering is done
+// by the browser print dialog (Chromium can't run on Vercel), so this is a
+// secondary/programmatic endpoint.
 export const runtime = 'nodejs';
 
 function normalizeOptions(raw: unknown): ExportOptions {
@@ -57,20 +24,19 @@ function normalizeOptions(raw: unknown): ExportOptions {
 
 /**
  * POST /api/export-pdf  { treeId, options }
- * Returns a standalone HTML booklet for the given tree. Caller MUST be authenticated.
+ * Returns a standalone HTML booklet for the given tree. Caller MUST be authenticated
+ * and have read access to the tree.
+ *
+ * Archi F8 : lisait `trees`/`persons`/`relationships` DIRECTEMENT via un client
+ * Supabase construit à la main — mort depuis le cutover Railway (100% des arbres
+ * vivent désormais sur Railway ; ce chemin lisait un instantané figé/vide côté
+ * Supabase). Route maintenant via `guardTreeRead` + `store.loadOneTree` comme le
+ * reste de `/api/data/*` — même AuthZ (`canReadTreeAsMember`), même backend
+ * effectif que les données réelles de l'arbre.
  */
 export async function POST(req: Request) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return NextResponse.json({ error: 'Supabase non configuré.' }, { status: 500 });
-
-  // --- AuthN ---
-  const cookieStore = await cookies();
-  const supabase = createServerClient(url, key, {
-    cookies: { getAll() { return cookieStore.getAll(); }, setAll() { /* read-only */ } },
-  });
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 });
+  const originErr = await checkOrigin();
+  if (originErr) return originErr;
 
   // --- Payload ---
   let body: { treeId?: string; options?: unknown };
@@ -79,25 +45,13 @@ export async function POST(req: Request) {
   const treeId = body.treeId?.trim();
   if (!treeId) return NextResponse.json({ error: 'treeId manquant.' }, { status: 400 });
 
+  const guard = await guardTreeRead(treeId);
+  if (!guard.ok) return guard.res;
+
   const options = normalizeOptions(body.options);
 
-  // RLS on the trees/persons tables scopes access to what this user may read.
-  const { data: t } = await supabase.from('trees').select('*').eq('id', treeId).single();
-  if (!t) return NextResponse.json({ error: 'Arbre introuvable.' }, { status: 404 });
-
-  const [personsRes, relsRes] = await Promise.all([
-    supabase.from('persons').select('*').eq('tree_id', treeId),
-    supabase.from('relationships').select('*').eq('tree_id', treeId),
-  ]);
-
-  const tree: FamilyTree = {
-    id: t.id, name: t.name, description: t.description || undefined,
-    settings: t.settings || undefined, createdAt: t.created_at, updatedAt: t.updated_at,
-    rootPersonId: t.settings?.rootPersonId,
-    // Filtre les tombstones soft-delete (voir supabase/soft-delete.sql).
-    persons: (personsRes.data || []).filter((r: { deleted_at?: string | null }) => !r.deleted_at).map(rowToPerson),
-    relationships: (relsRes.data || []).filter((r: { deleted_at?: string | null }) => !r.deleted_at).map(rowToRel),
-  };
+  const tree = await guard.store.loadOneTree(treeId);
+  if (!tree) return NextResponse.json({ error: 'Arbre introuvable.' }, { status: 404 });
 
   const html = generateFamilyBookHTML(tree, options);
   const safeName = (tree.name || 'livret').replace(/[^a-zA-Z0-9_-]+/g, '_').slice(0, 60) || 'livret';

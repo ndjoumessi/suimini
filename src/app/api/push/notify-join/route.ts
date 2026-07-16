@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
 import { type ExpoPushMessage, type PushLocale, memberJoinedPushMessage, sendExpoPush } from '@/lib/push';
-import { checkOrigin } from '@/lib/apiData';
+import { guardTreeRead, checkOrigin } from '@/lib/apiData';
 
 // Server-only. Node runtime (fetch vers l'API Expo + Supabase).
 export const runtime = 'nodejs';
@@ -19,7 +17,13 @@ export const runtime = 'nodejs';
  * membre) sont résolues côté serveur depuis treeId (jamais depuis le client).
  * La RLS de push_tokens (user_id = auth.uid()) empêche le membre de lire les
  * tokens du propriétaire → passage par la RPC SECURITY DEFINER scopée
- * get_tree_owner_push_targets (migration 0019).
+ * get_tree_owner_push_targets (migration 0019, TOUJOURS Supabase — table
+ * push_tokens/identité, jamais migrée).
+ *
+ * Archi F8 : résolvait `trees.name`/`owner_id` par un SELECT Supabase direct —
+ * mort depuis le cutover Railway. Passe maintenant par `guardTreeRead` (même
+ * AuthZ que les autres endpoints) + `store.authz.getTreeOwnerId`/`loadOneTree`
+ * (backend effectif de l'arbre).
  *
  * No-op gracieux (200 { skipped }) : self-join, arbre introuvable, propriétaire
  * sans token, ou Supabase non configuré.
@@ -28,41 +32,30 @@ export async function POST(req: Request) {
   const originErr = await checkOrigin();
   if (originErr) return originErr;
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return NextResponse.json({ error: 'Supabase non configuré.' }, { status: 500 });
-
-  // --- AuthN : le nouveau membre doit être authentifié ---
-  const cookieStore = await cookies();
-  const supabase = createServerClient(url, key, {
-    cookies: { getAll() { return cookieStore.getAll(); }, setAll() { /* read-only ici */ } },
-  });
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 });
-
   // --- Payload ---
   let body: { treeId?: string };
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Corps invalide.' }, { status: 400 }); }
   const treeId = body.treeId?.trim();
   if (!treeId) return NextResponse.json({ error: 'treeId manquant.' }, { status: 400 });
 
-  // --- Résolution de l'arbre (nom + propriétaire) ; le membre y a accès (RLS) ---
-  const { data: tree } = await supabase
-    .from('trees')
-    .select('name, owner_id')
-    .eq('id', treeId)
-    .single();
-  const ownerId = (tree as { name?: string; owner_id?: string } | null)?.owner_id;
-  const treeName = (tree as { name?: string } | null)?.name || 'votre arbre';
+  // --- AuthN + AuthZ : le nouveau membre doit avoir accès en lecture ---
+  const guard = await guardTreeRead(treeId);
+  if (!guard.ok) return guard.res;
+  const { client: supabase, caller: user } = guard;
+
+  // --- Résolution de l'arbre (nom + propriétaire), backend effectif ---
+  const ownerId = await guard.store.authz.getTreeOwnerId(treeId);
   if (!ownerId) return NextResponse.json({ skipped: true, reason: 'Arbre introuvable.' });
+  const tree = await guard.store.loadOneTree(treeId);
+  const treeName = tree?.name || 'votre arbre';
 
   // Rejoindre son propre arbre → aucune notif.
-  if (ownerId === user.id) return NextResponse.json({ skipped: true, reason: 'self-join' });
+  if (ownerId === user.userId) return NextResponse.json({ skipped: true, reason: 'self-join' });
 
-  // --- Nom du membre (affichage), RLS-safe via get_public_profiles ---
-  const { data: profiles } = await supabase.rpc('get_public_profiles', { ids: [user.id] });
+  // --- Nom du membre (affichage), RLS-safe via get_public_profiles (identité, Supabase) ---
+  const { data: profiles } = await supabase.rpc('get_public_profiles', { ids: [user.userId] });
   const member = ((profiles as Array<{ id: string; display_name: string | null; email: string | null }> | null) ?? [])
-    .find(p => p.id === user.id);
+    .find(p => p.id === user.userId);
   const memberName = member?.display_name?.trim() || member?.email?.trim() || 'Un nouveau membre';
 
   // --- Tokens push du propriétaire + sa locale (RPC SECURITY DEFINER scopée) ---

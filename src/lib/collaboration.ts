@@ -140,6 +140,21 @@ export async function addCommentDirect(
 /**
  * Subscribe to new comments for a person (realtime INSERTs).
  * Returns an unsubscribe function (safe to call when offline).
+ *
+ * ⚠️ Archi F8 (documenté, non corrigé) : depuis le cutover Railway (100% des
+ * arbres), `person_comments` est écrite sur Railway — ce canal Supabase
+ * Realtime écoute une table qui ne bouge plus et NE SE DÉCLENCHE JAMAIS pour
+ * un vrai commentaire d'un autre utilisateur (dégradation silencieuse, pas de
+ * crash : l'appelant voit juste l'absence de mise à jour live, comme avant le
+ * chargement initial). C'est le même problème que celui déjà résolu pour
+ * persons/relationships par le relais LISTEN/NOTIFY Railway (voir
+ * `docs/railway-realtime-plan.md`), mais `person_comments` n'est PAS dans la
+ * liste de tables du trigger `notify_tree_change` (`railway/realtime-notify.sql`)
+ * — l'ajouter et brancher un consommateur dédié (le relais actuel ne notifie
+ * qu'un salon PAR ARBRE, pas par personne) reste à faire quand ce chantier
+ * sera repris. Ne pas confondre avec `joinTreePresence` ci-dessous, qui reste
+ * un WebSocket direct Supabase pour la présence (hors périmètre du cutover
+ * données — non affecté).
  */
 export function subscribeComments(personId: string, onInsert: (c: PersonComment) => void): () => void {
   if (!supabase) return () => {};

@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
 import { MEMBER_JOINED_SUBJECT, memberJoinedEmailHtml } from '@/lib/emails';
-import { checkOrigin } from '@/lib/apiData';
+import { guardTreeRead, checkOrigin } from '@/lib/apiData';
 
 // Server-only: RESEND_API_KEY is never exposed to the browser.
 export const runtime = 'nodejs';
@@ -17,24 +15,19 @@ const APP_BASE = 'https://suimini.vercel.app';
  * The caller (authenticated user) IS the new member — we never trust client-supplied
  * emails: the owner/member identities are resolved server-side from `treeId`.
  * Profiles can't be read directly across users (RLS: id = auth.uid()), so we resolve
- * emails via the SECURITY DEFINER get_public_profiles() RPC.
+ * emails via the SECURITY DEFINER get_public_profiles() RPC (identité — reste
+ * TOUJOURS sur Supabase, y compris pour un arbre backé par Railway).
  * No-ops gracefully (200 { skipped }) on self-join, missing owner email, or no RESEND_API_KEY.
+ *
+ * Archi F8 : résolvait `trees.name`/`owner_id` par un SELECT Supabase direct —
+ * mort depuis le cutover Railway (les arbres réels n'y vivent plus). Le
+ * treeId/ownerId passent maintenant par `guardTreeRead` (même AuthZ que les
+ * autres endpoints — le membre qui vient d'accepter a un accès `canReadTreeAsMember`)
+ * + `store.authz.getTreeOwnerId`/`store.loadOneTree` (backend effectif).
  */
 export async function POST(req: Request) {
   const originErr = await checkOrigin();
   if (originErr) return originErr;
-
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return NextResponse.json({ error: 'Supabase non configuré.' }, { status: 500 });
-
-  // --- AuthN: the new member must be authenticated ---
-  const cookieStore = await cookies();
-  const supabase = createServerClient(url, key, {
-    cookies: { getAll() { return cookieStore.getAll(); }, setAll() { /* read-only here */ } },
-  });
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 });
 
   // --- Payload ---
   let body: { treeId?: string };
@@ -42,24 +35,26 @@ export async function POST(req: Request) {
   const treeId = body.treeId?.trim();
   if (!treeId) return NextResponse.json({ error: 'treeId manquant.' }, { status: 400 });
 
-  // --- Resolve tree (name + owner). Member has read access via RLS. ---
-  const { data: tree } = await supabase
-    .from('trees')
-    .select('name, owner_id')
-    .eq('id', treeId)
-    .single();
-  const ownerId = (tree as { name?: string; owner_id?: string } | null)?.owner_id;
-  const treeName = (tree as { name?: string } | null)?.name || 'votre arbre';
+  // --- AuthN + AuthZ : le nouveau membre doit avoir accès en lecture (owner |
+  // tree_shares | membre accepté) — même backend que les données de l'arbre. ---
+  const guard = await guardTreeRead(treeId);
+  if (!guard.ok) return guard.res;
+  const { client: supabase, caller: user } = guard;
+
+  // --- Résolution de l'arbre (nom + propriétaire), backend effectif ---
+  const ownerId = await guard.store.authz.getTreeOwnerId(treeId);
   if (!ownerId) return NextResponse.json({ skipped: true, reason: 'Arbre introuvable.' });
+  const tree = await guard.store.loadOneTree(treeId);
+  const treeName = tree?.name || 'votre arbre';
 
   // Joining your own tree → no notification needed.
-  if (ownerId === user.id) return NextResponse.json({ skipped: true, reason: 'self-join' });
+  if (ownerId === user.userId) return NextResponse.json({ skipped: true, reason: 'self-join' });
 
-  // --- Resolve owner + member identities (RLS-safe SECURITY DEFINER RPC) ---
-  const { data: profiles } = await supabase.rpc('get_public_profiles', { ids: [ownerId, user.id] });
+  // --- Resolve owner + member identities (RLS-safe SECURITY DEFINER RPC, TOUJOURS Supabase) ---
+  const { data: profiles } = await supabase.rpc('get_public_profiles', { ids: [ownerId, user.userId] });
   const rows = (profiles as Array<{ id: string; display_name: string | null; email: string | null }> | null) ?? [];
   const owner = rows.find(p => p.id === ownerId);
-  const member = rows.find(p => p.id === user.id);
+  const member = rows.find(p => p.id === user.userId);
 
   const ownerEmail = owner?.email?.trim();
   if (!ownerEmail || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(ownerEmail)) {
