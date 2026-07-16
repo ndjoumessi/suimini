@@ -1,13 +1,27 @@
 # Temps réel sur Railway — plan & mécanisme de relais
 
-> État : **CODE POSÉ, INERTE PAR DÉFAUT (2026-07-15).** Le seam client (web +
-> mobile), le service relais (`scripts/realtime-relay/`) et le trigger SQL
-> (`railway/realtime-notify.sql`) sont écrits et type-checkés, mais **rien n'est
-> activé** : sans `NEXT_PUBLIC_REALTIME_BACKEND=railway` / `EXPO_PUBLIC_REALTIME_BACKEND=railway`,
-> l'app se comporte EXACTEMENT comme avant (canal Supabase historique + resync
-> au retour de focus/premier plan). **Déploiement du relais + exécution du SQL +
-> flip = MANUEL (user)** — l'agent n'a ni credentials Railway/Supabase de prod, ni
-> accès réseau vers un hébergeur. Voir §6.
+> État : **LIVE EN PRODUCTION (2026-07-16, tâche #76/F6 étape 1).** Trigger SQL
+> appliqué sur Railway (4 triggers vérifiés : persons/relationships/journal_entries/
+> tree_members), relais déployé en service Railway séparé (Root Directory
+> `scripts/realtime-relay`, TLS via `RAILWAY_DB_INSECURE_SSL=1` — le certificat
+> auto-signé de Railway est rejeté par défaut même sur le réseau privé, ce repli
+> documenté a été nécessaire), `/health` → `{"ok":true,"listen":true}`. Flags posés
+> et redéployés des deux côtés : web (`NEXT_PUBLIC_REALTIME_BACKEND=railway` +
+> `NEXT_PUBLIC_REALTIME_URL=wss://suimini.up.railway.app/realtime`, `vercel --prod`)
+> et mobile (`EXPO_PUBLIC_REALTIME_BACKEND`/`_URL` dans `mobile/.env` + posées sur
+> EAS, 3 environnements). **Chemin nominal confirmé en conditions réelles** : édition
+> dans un onglet → mise à jour + toast dans un second onglet en < 2s, sans reload
+> manuel. **Anti-écho confirmé** (après un premier faux positif au tout premier test,
+> dû au cold-start du relais fraîchement déployé dépassant la fenêtre de 6s — un
+> second essai avec le relais "chaud" a confirmé le filtrage correct : l'onglet
+> éditeur ne voit plus son propre toast).
+>
+> **Restant, non bloquant** : tests négatifs AuthN/AuthZ du handshake WS (token
+> invalide/absent → `4401` ; arbre non autorisé → `4403`), test de coalescence
+> explicite (rafale d'éditions → un seul toast) et test de reconnexion (redémarrage
+> du relais → clients se reconnectent seuls) — non exécutés formellement, mais le
+> code implémentant ces trois garanties n'a pas changé depuis l'écriture initiale
+> (§7 ci-dessous liste la checklist complète si on veut les dérouler plus tard).
 >
 > **Rollback (une ligne)** : retirer le flag `NEXT_PUBLIC_REALTIME_BACKEND` (web) /
 > `EXPO_PUBLIC_REALTIME_BACKEND` (mobile) + redeploy → le nouveau chemin ne s'ouvre
