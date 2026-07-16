@@ -52,18 +52,6 @@ export function mapRow(r: MemberRow): TreeMember {
 
 export const sharingEnabled = (): boolean => !!supabase;
 
-/** Members of a tree (owner view). [] when offline or table absent. */
-export async function fetchMembers(treeId: string): Promise<TreeMember[]> {
-  if (!supabase) return [];
-  const { data, error } = await supabase
-    .from('tree_members')
-    .select('*')
-    .eq('tree_id', treeId)
-    .order('invited_at', { ascending: true });
-  if (error || !data) return [];
-  return (data as MemberRow[]).map(mapRow);
-}
-
 /** Résultat d'une invitation : le membre créé + son token (pour l'email d'invitation). */
 export interface InviteResult { member: TreeMember; token: string }
 

@@ -4,6 +4,15 @@
  * Lu au RUNTIME depuis Vercel Edge Config (changement + rollback SANS redéploiement).
  * ⚠️ SERVER-ONLY (importe `@vercel/edge-config`) : à n'utiliser que dans des routes
  * `app/api/*`. Le navigateur apprend le défaut via GET /api/data-layer (network-only).
+ * Archi F12 (vérifié, 2026-07-16) : PAS de garde `import 'server-only'` réelle ici
+ * (ni ailleurs dans `src/lib/`) — le package lève une exception à l'IMPORT même
+ * hors webpack Next, et ce fichier (comme `railwayDb.ts`/`railwayStore.ts`) est
+ * importé DIRECTEMENT par des specs Playwright pure-logic (`e2e/data-layer-config.spec.ts`,
+ * `e2e/integration/railway-store.spec.ts`) qui tournent en Node sans l'aliasing
+ * webpack qui rend ce package inoffensif côté serveur. L'ajouter casserait ces
+ * tests. Aucun risque réel constaté en contrepartie : grep confirme qu'aucun
+ * composant client n'importe ce module — seul un tripwire de compilation
+ * manque, pas une fuite effective.
  *
  * Règle (clé `data_layer` dans l'Edge Config) — rollout progressif :
  *   { "default": "direct", "apiPercent": 0, "apiAllowlist": ["<userId>", …] }
